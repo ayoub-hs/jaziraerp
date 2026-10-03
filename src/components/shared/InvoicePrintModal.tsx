@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { X, FileText, Printer } from 'lucide-react';
 import type { SaleSummary } from '../../types/index.js';
 import { formatMoney, formatDate } from '../../utils/formatters.js';
+import { calculateTaxBreakdown } from '../../utils/tax.js';
 
 interface InvoicePrintModalProps {
   isOpen: boolean;
@@ -124,7 +125,8 @@ export const InvoicePrintModal: React.FC<InvoicePrintModalProps> = ({
                     {sale.items?.map(item => {
                       const name = item.description || item.name || (item as any).catalog_product_name || (item as any).quick_add_name || 'Article';
                       const lineTTC = item.total_line ?? (item as any).line_total ?? (item.quantity * item.unit_price);
-                      const lineHT = Math.round((lineTTC / 1.19) * 1000) / 1000;
+                      const tax = calculateTaxBreakdown(lineTTC, 0.19);
+                      const lineHT = tax.subtotalHT;
                       const unitHT = Math.round((lineHT / (item.quantity || 1)) * 1000) / 1000;
                       return (
                         <tr key={item.id} className="text-[11px]">

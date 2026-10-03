@@ -3,10 +3,10 @@
  * e.g. 12.5 -> "12.500 DT"
  */
 export function formatMoney(amount: number | null | undefined): string {
-  if (amount === null || amount === undefined || isNaN(amount)) {
+  if (amount === null || amount === undefined || isNaN(Number(amount))) {
     return '0.000 DT';
   }
-  return `${Number(amount).toFixed(3)} DT`;
+  return `${roundMoney(Number(amount)).toFixed(3)} DT`;
 }
 
 /**
@@ -14,17 +14,18 @@ export function formatMoney(amount: number | null | undefined): string {
  * e.g. 12.5 -> "12.500"
  */
 export function formatMoneyRaw(amount: number | null | undefined): string {
-  if (amount === null || amount === undefined || isNaN(amount)) {
+  if (amount === null || amount === undefined || isNaN(Number(amount))) {
     return '0.000';
   }
-  return Number(amount).toFixed(3);
+  return roundMoney(Number(amount)).toFixed(3);
 }
 
 /**
  * Rounds to 3 decimal places to prevent floating point inaccuracies.
  */
 export function roundMoney(amount: number): number {
-  return Math.round((Number(amount) || 0) * 1000) / 1000;
+  const val = Number(amount) || 0;
+  return Math.round((val + Number.EPSILON) * 1000) / 1000;
 }
 
 /**
