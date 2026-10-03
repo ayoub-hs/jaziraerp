@@ -179,14 +179,10 @@ export const InvoicePrintModal: React.FC<InvoicePrintModalProps> = ({
                         <span className="font-mono">-{formatMoney(sale.total_discount || 0)}</span>
                       </div>
                     )}
-                    <div className="flex justify-between text-slate-600">
-                      <span>Droit de Timbre:</span>
-                      <span className="font-mono">1.000 DT</span>
-                    </div>
                     <div className="flex justify-between text-sm font-black text-slate-900 pt-2 border-t-2 border-slate-800">
                       <span>NET À PAYER TTC:</span>
                       <span className="font-mono text-base text-blue-700">
-                        {formatMoney(sale.total_ttc + 1.000)}
+                        {formatMoney(sale.total_ttc)}
                       </span>
                     </div>
                   </div>
