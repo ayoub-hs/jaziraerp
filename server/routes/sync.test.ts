@@ -1,0 +1,187 @@
+import { describe, it, expect, beforeEach } from 'vitest';
+import { app, request, getDb, resetTestDb } from '../../tests/testApp.js';
+
+describe('Offline Storage & Sync Engine Module (HTTP Routes)', () => {
+  beforeEach(() => {
+    resetTestDb();
+  });
+
+  it('GET /api/sync/pull returns master catalog and active register state', async () => {
+    const res = await request(app).get('/api/sync/pull');
+    expect(res.status).toBe(200);
+    expect(Array.isArray(res.body.products)).toBe(true);
+    expect(Array.isArray(res.body.customers)).toBe(true);
+    expect(Array.isArray(res.body.container_types)).toBe(true);
+    expect(Array.isArray(res.body.open_sessions)).toBe(true);
+    expect(typeof res.body.server_time).toBe('string');
+  });
+
+  it('accepts double-selling the last unit from two offline counters without blocking (accepted risk)', async () => {
+    // 1. Create family & product with stock = 1
+    const famRes = await request(app)
+      .post('/api/products/families')
+      .send({
+        name: 'Sync Test Family',
+        category: 'Detergents',
+        type: 'MANUFACTURED'
+      });
+    const familyId = famRes.body.id;
+
+    const prodRes = await request(app)
+      .post('/api/products')
+      .send({
+        family_id: familyId,
+        name: 'Last Unit Item',
+        size_label: '1L',
+        barcode: '619000999111',
+        stock_quantity: 1,
+        retail_price: 10.000,
+        wholesale_price: 8.000
+      });
+    const productId = prodRes.body.id;
+
+    // 2. Create customer
+    const custRes = await request(app)
+      .post('/api/customers')
+      .send({
+        name: 'Offline Customer',
+        type: 'RESELLER'
+      });
+    const customerId = custRes.body.id;
+
+    // 3. Counter 1 & Counter 2 both sold the item offline. Now they flush to server.
+    const flushRes = await request(app)
+      .post('/api/sync/flush')
+      .send({
+        operations: [
+          {
+            temp_client_id: 'temp_counter1_sale',
+            action_type: 'SALE',
+            payload: {
+              customer_id: customerId,
+              items: [{ product_id: productId, quantity: 1, unit_price: 10.000, pack_multiplier: 1 }],
+              cash_paid: 10.000,
+              date: '2026-09-07T10:00:00Z'
+            }
+          },
+          {
+            temp_client_id: 'temp_counter2_sale',
+            action_type: 'SALE',
+            payload: {
+              customer_id: customerId,
+              items: [{ product_id: productId, quantity: 1, unit_price: 10.000, pack_multiplier: 1 }],
+              cash_paid: 10.000,
+              date: '2026-09-07T10:05:00Z'
+            }
+          }
+        ]
+      });
+
+    expect(flushRes.status).toBe(200);
+    expect(flushRes.body.success).toBe(true);
+    expect(flushRes.body.processed_count).toBe(2);
+
+    // 4. Verify both sales exist in the DB
+    const db = getDb();
+    const sales = db.prepare('SELECT id, synced_from_client_id FROM sales').all();
+    expect(sales.length).toBe(2);
+
+    // 5. Verify stock dropped to -1 (recorded cleanly as deficit for manual resolution, NOT blocked)
+    const updatedProd = await request(app).get(`/api/products/${productId}`);
+    expect(updatedProd.body.stock_quantity).toBe(-1);
+  });
+
+  it('reconciles offline sales and generates official sequential numbers and tickets upon sync', async () => {
+    // 1. Setup product & customer
+    const famRes = await request(app)
+      .post('/api/products/families')
+      .send({ name: 'Fam', category: 'Detergents', type: 'RESALE' });
+    const prodRes = await request(app)
+      .post('/api/products')
+      .send({ family_id: famRes.body.id, name: 'Prod', stock_quantity: 5, retail_price: 10.000 });
+    const custRes = await request(app)
+      .post('/api/customers')
+      .send({ name: 'Credit Customer', type: 'RESELLER' });
+
+    // 2. Flush offline credit sale
+    const flushRes = await request(app)
+      .post('/api/sync/flush')
+      .send({
+        operations: [
+          {
+            temp_client_id: 'temp-sync-ticket-01',
+            action_type: 'SALE',
+            payload: {
+              customer_id: custRes.body.id,
+              items: [{ product_id: prodRes.body.id, quantity: 1, unit_price: 10.000, pack_multiplier: 1 }],
+              credit_amount: 10.000,
+              total_discount: 0
+            }
+          }
+        ]
+      });
+
+    expect(flushRes.status).toBe(200);
+    expect(flushRes.body.reconciled.length).toBe(1);
+
+    const reconciled = flushRes.body.reconciled[0];
+    expect(reconciled.temp_client_id).toBe('temp-sync-ticket-01');
+    expect(reconciled.receipt_number).toMatch(/^REC-/);
+    expect(reconciled.ticket_number).toMatch(/^TKT-/);
+
+    // 3. Verify debt ticket exists in DB with UNPAID status
+    const db = getDb();
+    const ticket: any = db.prepare('SELECT * FROM customer_debt_tickets WHERE sale_id = ?').get(reconciled.server_id);
+    expect(ticket).toBeDefined();
+    expect(ticket.ticket_number).toBe(reconciled.ticket_number);
+    expect(ticket.remaining_amount).toBe(10);
+    expect(ticket.status).toBe('UNPAID');
+  });
+
+  it('syncs offline container transactions and updates customer loans and shop stock', async () => {
+    // 1. Create container type with initial stock 10
+    const ctRes = await request(app)
+      .post('/api/containers/types')
+      .send({ name: '10L Jerrycan', stock_quantity: 10 });
+    const containerTypeId = ctRes.body.id;
+
+    // 2. Create customer
+    const custRes = await request(app)
+      .post('/api/customers')
+      .send({ name: 'Container Client', type: 'RESELLER' });
+    const customerId = custRes.body.id;
+
+    // 3. Flush offline GIVE action: 3 containers
+    const flushRes = await request(app)
+      .post('/api/sync/flush')
+      .send({
+        operations: [
+          {
+            temp_client_id: 'temp-cont-01',
+            action_type: 'CONTAINER_TRANSACTION',
+            payload: {
+              customer_id: customerId,
+              container_type_id: containerTypeId,
+              action: 'GIVE',
+              quantity: 3,
+              notes: 'Offline loan'
+            }
+          }
+        ]
+      });
+
+    expect(flushRes.status).toBe(200);
+    expect(flushRes.body.processed_count).toBe(1);
+
+    // 4. Verify shop stock decremented to 7 via GET /api/containers/types
+    const typesRes = await request(app).get('/api/containers/types');
+    const ct = typesRes.body.find((t: any) => t.id === containerTypeId);
+    expect(ct.stock_quantity).toBe(7);
+
+    // 5. Verify customer loan balance is 3 via GET /api/containers/loans?customer_id=...
+    const loansRes = await request(app).get(`/api/containers/loans?customer_id=${customerId}`);
+    expect(loansRes.status).toBe(200);
+    const loan = loansRes.body.find((l: any) => l.container_type_id === containerTypeId);
+    expect(loan.quantity_owed).toBe(3);
+  });
+});

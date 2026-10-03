@@ -1,0 +1,209 @@
+import { clientDb, type PendingSyncItem } from '../db/clientDb.js';
+
+export type SyncState = 'ONLINE_SYNCED' | 'OFFLINE_PENDING' | 'SYNCING';
+
+export class SyncManager {
+  private state: SyncState = 'ONLINE_SYNCED';
+  private listeners: Array<(state: SyncState, pendingCount: number) => void> = [];
+
+  constructor() {
+    if (typeof window !== 'undefined') {
+      window.addEventListener('online', () => this.handleNetworkChange());
+      window.addEventListener('offline', () => this.handleNetworkChange());
+    }
+  }
+
+  public subscribe(fn: (state: SyncState, pendingCount: number) => void): () => void {
+    this.listeners.push(fn);
+    this.notify();
+    return () => {
+      this.listeners = this.listeners.filter(l => l !== fn);
+    };
+  }
+
+  public getState(): SyncState {
+    return this.state;
+  }
+
+  public async getPendingCount(): Promise<number> {
+    try {
+      return await clientDb.pending_sync_queue.count();
+    } catch {
+      return 0;
+    }
+  }
+
+  private async notify() {
+    const count = await this.getPendingCount();
+    for (const listener of this.listeners) {
+      listener(this.state, count);
+    }
+  }
+
+  private async handleNetworkChange() {
+    if (navigator.onLine) {
+      const count = await this.getPendingCount();
+      if (count > 0) {
+        await this.flushSyncQueue();
+      } else {
+        this.state = 'ONLINE_SYNCED';
+        await this.notify();
+      }
+    } else {
+      this.state = 'OFFLINE_PENDING';
+      await this.notify();
+    }
+  }
+
+  /**
+   * Pulls current master catalog from server and replicates locally into IndexedDB.
+   */
+  public async pullMasterCatalog(): Promise<void> {
+    try {
+      const res = await fetch('/api/sync/pull');
+      if (!res.ok) throw new Error(`HTTP error: ${res.status}`);
+      const data = await res.json();
+
+      await clientDb.transaction('rw', [clientDb.products, clientDb.customers, clientDb.container_types], async () => {
+        await clientDb.products.clear();
+        await clientDb.customers.clear();
+        await clientDb.container_types.clear();
+
+        if (Array.isArray(data.products)) {
+          await clientDb.products.bulkPut(data.products);
+        }
+        if (Array.isArray(data.customers)) {
+          await clientDb.customers.bulkPut(data.customers);
+        }
+        if (Array.isArray(data.container_types)) {
+          await clientDb.container_types.bulkPut(data.container_types);
+        }
+      });
+
+      const pendingCount = await this.getPendingCount();
+      this.state = pendingCount > 0 ? 'OFFLINE_PENDING' : 'ONLINE_SYNCED';
+      await this.notify();
+    } catch (err) {
+      console.warn('[SyncManager] Failed to pull master catalog:', err);
+      const pendingCount = await this.getPendingCount();
+      this.state = pendingCount > 0 ? 'OFFLINE_PENDING' : 'ONLINE_SYNCED';
+      await this.notify();
+    }
+  }
+
+  /**
+   * Queues an offline sale, optimistically decrements local product stock in IndexedDB,
+   * and attempts immediate background flush if network is available.
+   */
+  public async queueOfflineSale(payload: any): Promise<string> {
+    const tempClientId = 'temp_' + crypto.randomUUID();
+
+    // Optimistically deduct local stock in IndexedDB
+    try {
+      for (const item of payload.items || []) {
+        if (!item.is_quick_add && item.product_id) {
+          const localProd = await clientDb.products.get(item.product_id);
+          if (localProd) {
+            const deductQty = (Number(item.quantity) || 1) * (Number(item.pack_multiplier) || 1);
+            await clientDb.products.update(item.product_id, {
+              stock_quantity: localProd.stock_quantity - deductQty
+            });
+          }
+        }
+      }
+    } catch (err) {
+      console.warn('[SyncManager] Error optimistically updating local stock:', err);
+    }
+
+    // Add to outbox queue
+    await clientDb.pending_sync_queue.add({
+      temp_client_id: tempClientId,
+      action_type: 'SALE',
+      payload: { ...payload, temp_client_id: tempClientId },
+      created_at: new Date().toISOString()
+    });
+
+    this.state = 'OFFLINE_PENDING';
+    await this.notify();
+
+    // If online, attempt background flush
+    if (typeof navigator !== 'undefined' && navigator.onLine) {
+      this.flushSyncQueue().catch(() => {});
+    }
+
+    return tempClientId;
+  }
+
+  /**
+   * Queues a non-sale offline operation (cash movement, container action, price/stock edit).
+   */
+  public async queueOfflineAction(
+    actionType: PendingSyncItem['action_type'],
+    payload: any
+  ): Promise<string> {
+    const tempClientId = 'temp_' + crypto.randomUUID();
+
+    await clientDb.pending_sync_queue.add({
+      temp_client_id: tempClientId,
+      action_type: actionType,
+      payload: { ...payload, temp_client_id: tempClientId },
+      created_at: new Date().toISOString()
+    });
+
+    this.state = 'OFFLINE_PENDING';
+    await this.notify();
+
+    if (typeof navigator !== 'undefined' && navigator.onLine) {
+      this.flushSyncQueue().catch(() => {});
+    }
+
+    return tempClientId;
+  }
+
+  /**
+   * Flushes all queued offline actions to the server.
+   */
+  public async flushSyncQueue(): Promise<{ processed: number }> {
+    const items = await clientDb.pending_sync_queue.toArray();
+    if (items.length === 0) {
+      this.state = 'ONLINE_SYNCED';
+      await this.notify();
+      return { processed: 0 };
+    }
+
+    this.state = 'SYNCING';
+    await this.notify();
+
+    try {
+      const res = await fetch('/api/sync/flush', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ operations: items })
+      });
+
+      if (!res.ok) {
+        throw new Error(`Sync flush failed with status ${res.status}`);
+      }
+
+      const data = await res.json();
+
+      // Clear synced items from queue
+      const queueIds = items.map(i => i.queue_id!).filter(Boolean);
+      await clientDb.pending_sync_queue.bulkDelete(queueIds);
+
+      // Refresh master catalog
+      await this.pullMasterCatalog();
+
+      this.state = 'ONLINE_SYNCED';
+      await this.notify();
+      return { processed: data.processed_count || items.length };
+    } catch (err) {
+      console.warn('[SyncManager] Flush failed, keeping queue for next retry:', err);
+      this.state = 'OFFLINE_PENDING';
+      await this.notify();
+      throw err;
+    }
+  }
+}
+
+export const syncManager = new SyncManager();

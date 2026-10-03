@@ -1,0 +1,232 @@
+import { describe, it, expect } from 'vitest';
+import {
+  getProductPriceForCustomer,
+  calculateCartTotals,
+  validateSplitPayment,
+  parseSizeToLiters,
+  calculateContainersNeeded
+} from './cart.js';
+import type { Customer, Product, CartItem } from '../types/index.js';
+
+describe('Cart Utilities', () => {
+  const dummyProduct: Product = {
+    id: 'prod-1',
+    family_id: 'fam-1',
+    category: 'Detergents',
+    name: 'Dish Soap 1L',
+    stock_quantity: 50,
+    low_stock_threshold: 5,
+    cost_reference: 1.200,
+    retail_price: 3.500,
+    wholesale_price: 2.800,
+    active: 1
+  };
+
+  describe('getProductPriceForCustomer', () => {
+    it('returns retail price for walk-in / null customer', () => {
+      expect(getProductPriceForCustomer(dummyProduct, null)).toBe(3.500);
+    });
+
+    it('returns retail price for RETAIL customer', () => {
+      const cust: Customer = {
+        id: 'c1',
+        name: 'Retail Joe',
+        type: 'RETAIL',
+        reseller_discount_percent: 0,
+        wallet_balance: 0
+      };
+      expect(getProductPriceForCustomer(dummyProduct, cust)).toBe(3.500);
+    });
+
+    it('returns wholesale price for WHOLESALE customer', () => {
+      const cust: Customer = {
+        id: 'c2',
+        name: 'Supermarket Wholesale',
+        type: 'WHOLESALE',
+        reseller_discount_percent: 0,
+        wallet_balance: 0
+      };
+      expect(getProductPriceForCustomer(dummyProduct, cust)).toBe(2.800);
+    });
+
+    it('applies negotiated discount off wholesale price for RESELLER customer', () => {
+      const cust: Customer = {
+        id: 'c3',
+        name: 'Reseller Ahmed',
+        type: 'RESELLER',
+        reseller_discount_percent: 10, // 10% off 2.800 = 2.520
+        wallet_balance: 0
+      };
+      expect(getProductPriceForCustomer(dummyProduct, cust)).toBe(2.520);
+    });
+  });
+
+  describe('calculateCartTotals', () => {
+    it('accurately computes subtotal HT, 19% TVA, and total TTC in 3 decimal places', () => {
+      const items: CartItem[] = [
+        {
+          cart_item_id: 'item-1',
+          product_id: 'prod-1',
+          name: 'Dish Soap 1L',
+          unit_price: 10.000,
+          quantity: 1,
+          pack_multiplier: 1
+        }
+      ];
+
+      const totals = calculateCartTotals(items);
+      expect(totals.totalTTC).toBe(10.000);
+      expect(totals.subtotalHT).toBe(8.403);
+      expect(totals.tvaAmount).toBe(1.597);
+      expect(totals.subtotalHT + totals.tvaAmount).toBe(totals.totalTTC);
+      expect(totals.itemCount).toBe(1);
+      expect(totals.totalPieces).toBe(1);
+    });
+
+    it('correctly accounts for pack multiplier on total pieces', () => {
+      const items: CartItem[] = [
+        {
+          cart_item_id: 'item-1',
+          product_id: 'prod-1',
+          name: 'Dish Soap 1L (Pack of 6)',
+          unit_price: 20.000,
+          quantity: 2,
+          pack_multiplier: 6
+        }
+      ];
+
+      const totals = calculateCartTotals(items);
+      expect(totals.totalTTC).toBe(40.000);
+      expect(totals.totalPieces).toBe(12); // 2 packs * 6 pcs
+    });
+
+    it('correctly applies per-item discount and per-sale discount to calculate net total TTC and TVA', () => {
+      const items: CartItem[] = [
+        {
+          cart_item_id: 'item-1',
+          product_id: 'prod-1',
+          name: 'Dish Soap 1L',
+          unit_price: 10.000,
+          quantity: 2, // 20.000 gross
+          discount_amount: 2.000, // 18.000 after line discount
+          pack_multiplier: 1
+        }
+      ];
+
+      // 18.000 - 3.000 sale discount = 15.000 TTC
+      const totals = calculateCartTotals(items, 3.000);
+      expect(totals.rawTotalTTC).toBe(20.000);
+      expect(totals.totalDiscount).toBe(5.000); // 2.000 line + 3.000 sale
+      expect(totals.totalTTC).toBe(15.000);
+      expect(totals.subtotalHT + totals.tvaAmount).toBe(15.000);
+      expect(totals.subtotalHT).toBe(12.605);
+      expect(totals.tvaAmount).toBe(2.395);
+    });
+  });
+
+  describe('validateSplitPayment', () => {
+    const customerWithWallet: Customer = {
+      id: 'c1',
+      name: 'Walid',
+      type: 'RETAIL',
+      reseller_discount_percent: 0,
+      wallet_balance: 15.000
+    };
+
+    it('rejects if wallet payment exceeds available wallet balance', () => {
+      const res = validateSplitPayment(20.000, 0, 16.000, 0, customerWithWallet);
+      expect(res.valid).toBe(false);
+      expect(res.error).toContain('exceeds available balance');
+    });
+
+    it('rejects wallet or credit payment for anonymous walk-in customer', () => {
+      const resWallet = validateSplitPayment(20.000, 10.000, 10.000, 0, null);
+      expect(resWallet.valid).toBe(false);
+
+      const resCredit = validateSplitPayment(20.000, 10.000, 0, 10.000, null);
+      expect(resCredit.valid).toBe(false);
+    });
+
+    it('calculates accurate change due on cash overpayment', () => {
+      const res = validateSplitPayment(20.000, 30.000, 0, 0, null);
+      expect(res.valid).toBe(true);
+      expect(res.changeDue).toBe(10.000);
+    });
+
+    it('handles exact split across Cash, Wallet, and Credit', () => {
+      // Total 50 DT: 10 Cash, 15 Wallet, 25 Credit
+      const res = validateSplitPayment(50.000, 10.000, 15.000, 25.000, customerWithWallet);
+      expect(res.valid).toBe(true);
+      expect(res.changeDue).toBe(0);
+    });
+  });
+
+  describe('parseSizeToLiters', () => {
+    it('parses standard liter sizes', () => {
+      expect(parseSizeToLiters('10L')).toBe(10);
+      expect(parseSizeToLiters('1L')).toBe(1);
+      expect(parseSizeToLiters('1.5L')).toBe(1.5);
+      expect(parseSizeToLiters('5l')).toBe(5);
+      expect(parseSizeToLiters('20 Litres')).toBe(20);
+      expect(parseSizeToLiters('Litre')).toBe(1);
+    });
+
+    it('parses milliliter sizes into fractional liters', () => {
+      expect(parseSizeToLiters('500ml')).toBe(0.5);
+      expect(parseSizeToLiters('750 ml')).toBe(0.75);
+    });
+
+    it('falls back to product name if size label is not specified or non-volume', () => {
+      expect(parseSizeToLiters(null, 'Liquide Vaisselle Citron 10L')).toBe(10);
+      expect(parseSizeToLiters('Piece', 'Javel 5L')).toBe(5);
+      expect(parseSizeToLiters(null, 'Éponge Abrasive')).toBeNull();
+    });
+  });
+
+  describe('calculateContainersNeeded', () => {
+    it('calculates 1 container for 10L vaisselle in a 10L bidon (user scenario)', () => {
+      const result = calculateContainersNeeded(10, 1, null, 10, 'Liquide Vaisselle');
+      expect(result).toBe(1);
+    });
+
+    it('calculates 2 containers for 20L vaisselle in 10L bidons', () => {
+      const result = calculateContainersNeeded(20, 1, null, 10, 'Liquide Vaisselle');
+      expect(result).toBe(2);
+    });
+
+    it('calculates 1 container for qty between 10 and 20 (e.g. 15L in 10L bidons requires 1 bidon, not 2)', () => {
+      const result = calculateContainersNeeded(15, 1, null, 10, 'Liquide Vaisselle');
+      expect(result).toBe(1);
+    });
+
+    it('handles volume less than container capacity (5L in 10L bidon requires 0 bidons)', () => {
+      const result = calculateContainersNeeded(5, 1, null, 10, 'Liquide Vaisselle');
+      expect(result).toBe(0);
+    });
+
+    it('correctly handles pre-packaged sized products (e.g. 2 x 5L bottles with 5L bidon)', () => {
+      const result = calculateContainersNeeded(2, 1, '5L', 5, 'Liquide Vaisselle 5L');
+      expect(result).toBe(2);
+    });
+
+    it('correctly handles pre-packaged 10L bottle (1 x 10L bottle with 10L bidon)', () => {
+      const result = calculateContainersNeeded(1, 1, '10L', 10, 'Liquide Vaisselle 10L');
+      expect(result).toBe(1);
+    });
+
+    it('handles pack multipliers (1 pack of 12 x 1L bottles with 1L container)', () => {
+      const result = calculateContainersNeeded(1, 12, '1L', 1, 'Sol Lavande 1L');
+      expect(result).toBe(12);
+    });
+
+    it('returns 1 container per unit when container has no capacity limit', () => {
+      const result = calculateContainersNeeded(4, 1, 'Piece', null, 'Caisse Resale');
+      expect(result).toBe(4);
+    });
+
+    it('returns 0 when quantity is 0 or negative', () => {
+      expect(calculateContainersNeeded(0, 1, '10L', 10)).toBe(0);
+      expect(calculateContainersNeeded(-5, 1, '10L', 10)).toBe(0);
+    });
+  });
+});

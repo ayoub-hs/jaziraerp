@@ -1,0 +1,196 @@
+import { describe, it, expect, beforeEach } from 'vitest';
+import { app, request, resetTestDb } from '../../tests/testApp.js';
+
+describe('Reports API Endpoints', () => {
+  beforeEach(() => {
+    resetTestDb();
+  });
+
+  it('generates Sales by Customer report with tender breakdown and summary', async () => {
+    // 0. Open register session
+    await request(app)
+      .post('/api/register/open')
+      .send({ counter_name: 'Countertop', opening_cash: 100 });
+
+    // 1. Create a customer
+    const custRes = await request(app)
+      .post('/api/customers')
+      .send({ name: 'Société CleanPlus', phone: '98111222' });
+    const customerId = custRes.body.id;
+
+    // 2. Create a sale for this customer
+    await request(app)
+      .post('/api/sales')
+      .send({
+        customer_id: customerId,
+        date: '2026-09-08T10:00:00Z',
+        items: [{ is_quick_add: 1, quick_add_name: 'Detergent Bulk 10L', quantity: 2, unit_price: 25.000 }],
+        subtotal_ht: 42.017,
+        tva_rate: 0.19,
+        tva_amount: 7.983,
+        total_ttc: 50.000,
+        cash_paid: 30.000,
+        wallet_paid: 0,
+        credit_amount: 20.000
+      });
+
+    // 3. Create a walk-in sale (no customer_id)
+    await request(app)
+      .post('/api/sales')
+      .send({
+        date: '2026-09-08T11:00:00Z',
+        items: [{ is_quick_add: 1, quick_add_name: 'Bleach 1L', quantity: 1, unit_price: 3.500 }],
+        subtotal_ht: 2.941,
+        tva_rate: 0.19,
+        tva_amount: 0.559,
+        total_ttc: 3.500,
+        cash_paid: 3.500,
+        cash_tendered: 5.000,
+        change_given: 1.500
+      });
+
+    // 4. Request report
+    const res = await request(app)
+      .get('/api/reports/sales-by-customer?start_date=2026-09-01&end_date=2026-09-30');
+    expect(res.status).toBe(200);
+    expect(res.body.customer_sales.length).toBe(2);
+
+    const named = res.body.customer_sales.find((c: any) => c.customer_name === 'Société CleanPlus');
+    expect(named).toBeDefined();
+    expect(named.total_ttc).toBe(50.000);
+    expect(named.cash_paid).toBe(30.000);
+    expect(named.credit_amount).toBe(20.000);
+
+    const walkIn = res.body.customer_sales.find((c: any) => c.customer_name === 'Walk-in Customer');
+    expect(walkIn).toBeDefined();
+    expect(walkIn.total_ttc).toBe(3.500);
+
+    // Summary verification
+    expect(res.body.summary.total_sales_count).toBe(2);
+    expect(res.body.summary.total_ttc).toBe(53.500);
+    expect(res.body.summary.total_credit).toBe(20.000);
+  });
+
+  it('generates Sales by Register report grouped by counter_name', async () => {
+    // 1. Open session on Countertop
+    const s1 = await request(app)
+      .post('/api/register/open')
+      .send({ counter_name: 'Countertop', opening_cash: 100 });
+    const s1Id = s1.body.id;
+
+    // Sale on Countertop
+    await request(app)
+      .post('/api/sales')
+      .send({
+        session_id: s1Id,
+        date: '2026-09-08T10:00:00Z',
+        items: [{ is_quick_add: 1, quick_add_name: 'Item A', quantity: 1, unit_price: 15 }],
+        subtotal_ht: 12.605,
+        tva_rate: 0.19,
+        tva_amount: 2.395,
+        total_ttc: 15.000,
+        cash_paid: 15.000
+      });
+
+    // 2. Open session on Mobile Register
+    const s2 = await request(app)
+      .post('/api/register/open')
+      .send({ counter_name: 'Mobile Register', opening_cash: 0 });
+    const s2Id = s2.body.id;
+
+    // Sale on Mobile Register
+    await request(app)
+      .post('/api/sales')
+      .send({
+        session_id: s2Id,
+        date: '2026-09-08T12:00:00Z',
+        items: [{ is_quick_add: 1, quick_add_name: 'Item B', quantity: 2, unit_price: 10 }],
+        subtotal_ht: 16.807,
+        tva_rate: 0.19,
+        tva_amount: 3.193,
+        total_ttc: 20.000,
+        cash_paid: 20.000
+      });
+
+    const res = await request(app).get('/api/reports/sales-by-register');
+    expect(res.status).toBe(200);
+    expect(res.body.register_sales.length).toBe(2);
+
+    const countertop = res.body.register_sales.find((r: any) => r.counter_name === 'Countertop');
+    expect(countertop.total_ttc).toBe(15.000);
+
+    const mobile = res.body.register_sales.find((r: any) => r.counter_name === 'Mobile Register');
+    expect(mobile.total_ttc).toBe(20.000);
+
+    expect(res.body.summary.total_ttc).toBe(35.000);
+  });
+
+  it('generates Customer Debt Payments report with chronological and customer groupings', async () => {
+    // 1. Create customer
+    const c = await request(app)
+      .post('/api/customers')
+      .send({ name: 'Hôtel Le Sultan', phone: '72000111' });
+    const customerId = c.body.id;
+
+    // 2. Record 2 debt repayments
+    await request(app)
+      .post(`/api/customers/${customerId}/payments`)
+      .send({
+        amount: 80.000,
+        payment_method: 'Cash',
+        notes: 'Partial payment invoice #44'
+      });
+
+    await request(app)
+      .post(`/api/customers/${customerId}/payments`)
+      .send({
+        amount: 40.000,
+        payment_method: 'Bank Transfer',
+        notes: 'Final settlement'
+      });
+
+    const res = await request(app).get('/api/reports/customer-debt-payments');
+    expect(res.status).toBe(200);
+    expect(res.body.payments.length).toBe(2);
+    expect(res.body.by_customer.length).toBe(1);
+    expect(res.body.by_customer[0].total_paid).toBe(120.000);
+    expect(res.body.summary.total_amount_paid).toBe(120.000);
+  });
+
+  it('generates Inventory Valuation report calculating line valuations and grand totals', async () => {
+    // 1. Create product family & SKU
+    const fam = await request(app)
+      .post('/api/products/families')
+      .send({ name: 'Bleach Regular', category: 'Detergents', type: 'MANUFACTURED' });
+
+    await request(app)
+      .post('/api/products')
+      .send({
+        family_id: fam.body.id,
+        name: 'Bleach 1L',
+        stock_quantity: 100,
+        cost_reference: 1.200,
+        retail_price: 2.000
+      });
+
+    // 2. Create raw material
+    await request(app)
+      .post('/api/materials')
+      .send({
+        name: 'Chlorine Concentrate',
+        category: 'Chemicals',
+        unit: 'kg',
+        stock_quantity: 50,
+        latest_purchase_cost: 4.000
+      });
+
+    const res = await request(app).get('/api/reports/inventory-valuation');
+    expect(res.status).toBe(200);
+    // Product valuation: 100 * 1.200 = 120.000 DT
+    expect(res.body.summary.product_cost_valuation).toBe(120.000);
+    // Material valuation: 50 * 4.000 = 200.000 DT
+    expect(res.body.summary.material_cost_valuation).toBe(200.000);
+    // Grand total = 320.000 DT
+    expect(res.body.summary.grand_total_cost_valuation).toBe(320.000);
+  });
+});

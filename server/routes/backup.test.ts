@@ -1,0 +1,104 @@
+import { describe, it, expect, beforeEach, afterEach } from 'vitest';
+import Database, { Database as DatabaseType } from 'better-sqlite3';
+import fs from 'fs';
+import path from 'path';
+import os from 'os';
+import { BackupService } from '../services/backupService.js';
+
+describe('Step 15: Backup Service & Snapshot Verification', () => {
+  let tempBackupDir: string;
+  let service: BackupService;
+
+  beforeEach(() => {
+    tempBackupDir = fs.mkdtempSync(path.join(os.tmpdir(), 'erp-test-backups-'));
+    service = new BackupService(tempBackupDir);
+  });
+
+  afterEach(() => {
+    if (fs.existsSync(tempBackupDir)) {
+      fs.rmSync(tempBackupDir, { recursive: true, force: true });
+    }
+  });
+
+  it('creates a valid, queryable SQLite snapshot file on demand', async () => {
+    const backupMeta = await service.createBackup();
+    expect(backupMeta.filename.startsWith('backup-')).toBe(true);
+    expect(backupMeta.filename.endsWith('.sqlite')).toBe(true);
+    expect(backupMeta.size_bytes).toBeGreaterThan(0);
+    expect(backupMeta.created_at).toBeTruthy();
+
+    const fullPath = path.join(tempBackupDir, backupMeta.filename);
+    expect(fs.existsSync(fullPath)).toBe(true);
+
+    // Verify the snapshot can be opened and queried as a valid SQLite DB
+    const restoredDb: DatabaseType = new Database(fullPath, { readonly: true });
+    const tables = restoredDb.prepare(`SELECT name FROM sqlite_master WHERE type='table'`).all() as Array<{ name: string }>;
+    expect(tables.length).toBeGreaterThan(0);
+    restoredDb.close();
+  });
+
+  it('lists existing backups in descending chronological order', async () => {
+    // Create first backup
+    const b1 = await service.createBackup();
+
+    // Create a mock older backup
+    const olderFile = 'backup-2026-08-01_10-00-00.sqlite';
+    const olderPath = path.join(tempBackupDir, olderFile);
+    fs.writeFileSync(olderPath, 'fake-sqlite-content');
+    // Set older mtime
+    const oldDate = new Date('2026-08-01T10:00:00Z');
+    fs.utimesSync(olderPath, oldDate, oldDate);
+
+    const list = service.listBackups();
+    expect(list.length).toBe(2);
+    expect(list[0].filename).toBe(b1.filename); // Newest first
+    expect(list[1].filename).toBe(olderFile);
+  });
+
+  it('prunes backup snapshots older than 30 days while retaining recent ones', async () => {
+    // 1. Fresh backup
+    const recent = await service.createBackup();
+
+    // 2. Old backup (45 days old)
+    const oldFile = 'backup-2026-07-01_10-00-00.sqlite';
+    const oldPath = path.join(tempBackupDir, oldFile);
+    fs.writeFileSync(oldPath, 'fake-sqlite-data');
+    const oldDate = new Date(Date.now() - 45 * 24 * 60 * 60 * 1000);
+    fs.utimesSync(oldPath, oldDate, oldDate);
+
+    const prunedCount = service.pruneOldBackups(30);
+    expect(prunedCount).toBe(1);
+
+    expect(fs.existsSync(oldPath)).toBe(false);
+    expect(fs.existsSync(path.join(tempBackupDir, recent.filename))).toBe(true);
+  });
+
+  it('guards against directory traversal in getBackupFilePath', () => {
+    // Normal file
+    const safeFile = 'backup-test.sqlite';
+    fs.writeFileSync(path.join(tempBackupDir, safeFile), 'data');
+    expect(service.getBackupFilePath(safeFile)).toBe(path.join(tempBackupDir, safeFile));
+
+    // Traversal attempts
+    expect(service.getBackupFilePath('../../../etc/passwd')).toBe(null);
+    expect(service.getBackupFilePath('nonexistent.sqlite')).toBe(null);
+    expect(service.getBackupFilePath('something.txt')).toBe(null);
+  });
+
+  it('restores a valid database snapshot from file and verifies content', async () => {
+    // 1. Create a valid backup
+    const backupMeta = await service.createBackup();
+    expect(backupMeta.filename).toBeTruthy();
+
+    // 2. Restore from the filename
+    const res = await service.restoreBackup({ filename: backupMeta.filename });
+    expect(res.success).toBe(true);
+    expect(res.message).toContain('restored');
+  });
+
+  it('rejects invalid or corrupted files when attempting restore', async () => {
+    // Invalid base64 file data
+    const fakeData = Buffer.from('this is not a sqlite database').toString('base64');
+    await expect(service.restoreBackup({ fileData: fakeData })).rejects.toThrow();
+  });
+});
