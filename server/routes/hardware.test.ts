@@ -18,11 +18,21 @@ describe('Hardware Router & USB Serial Cash Drawer (HTTP Routes)', () => {
   it('POST /api/hardware/drawer/kick safely fails with 500 when port is nonexistent', async () => {
     const res = await request(app)
       .post('/api/hardware/drawer/kick')
-      .send({ port: '/dev/ttyNONEXISTENT_TEST_PORT' });
+      .send({ port: '/dev/ttyUSB99' });
 
     expect(res.status).toBe(500);
     expect(res.body.success).toBe(false);
     expect(res.body.error).toContain('not found');
+  });
+
+  it('POST /api/hardware/drawer/kick ignores non-serial paths and does not overwrite arbitrary files', async () => {
+    // If an attacker supplies an arbitrary file path, it must be ignored rather than truncated/opened
+    const res = await request(app)
+      .post('/api/hardware/drawer/kick')
+      .send({ port: '/etc/passwd' });
+
+    // It falls back to default serial device rather than targeting /etc/passwd
+    expect(res.body.port).not.toBe('/etc/passwd');
   });
 
   it('GET /api/hardware/printer/status returns printer hardware status', async () => {

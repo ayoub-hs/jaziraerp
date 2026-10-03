@@ -1,6 +1,6 @@
 import { Router, Request, Response } from 'express';
 import fs from 'fs';
-import { execSync, spawnSync } from 'child_process';
+import { execFileSync, spawnSync } from 'child_process';
 import path from 'path';
 import { getDb } from '../db/index.js';
 
@@ -23,7 +23,9 @@ export function findSerialPort(): string | null {
  * Triggers the solenoid kick pulse on a serial port
  */
 export function kickSerialDrawer(portPath?: string): { success: boolean; port: string; error?: string } {
-  const targetPort = portPath || findSerialPort() || '/dev/ttyUSB0';
+  const isValidPort = typeof portPath === 'string' && /^\/dev\/(ttyUSB|ttyACM|ttyS)\d+$/.test(portPath.trim());
+  const validatedPort = isValidPort ? portPath.trim() : null;
+  const targetPort = validatedPort || findSerialPort() || '/dev/ttyUSB0';
 
   if (!fs.existsSync(targetPort)) {
     return {
@@ -34,11 +36,11 @@ export function kickSerialDrawer(portPath?: string): { success: boolean; port: s
   }
 
   try {
-    // Open in non-blocking write mode and transmit pulses
+    // Open in non-blocking write mode without truncation and transmit pulses
     // Standard ESC/POS kick: 1B 70 00 19 FA
     // Standalone USB trigger box triggers (BT-100U / Maken): 0x01, 0x07, 0x00
     const pulse = Buffer.from([0x1b, 0x70, 0x00, 0x19, 0xfa, 0x01, 0x07, 0x00]);
-    const fd = fs.openSync(targetPort, 'w');
+    const fd = fs.openSync(targetPort, fs.constants.O_WRONLY | fs.constants.O_NOCTTY);
     fs.writeSync(fd, pulse);
     fs.closeSync(fd);
 
@@ -65,7 +67,7 @@ hardwareRouter.get('/drawer/status', (req: Request, res: Response) => {
 
   if (port) {
     try {
-      const udevOut = execSync(`udevadm info -q property -n ${port} 2>/dev/null || true`).toString();
+      const udevOut = execFileSync('udevadm', ['info', '-q', 'property', '-n', port]).toString();
       const modelMatch = udevOut.match(/ID_MODEL_FROM_DATABASE=(.+)/) || udevOut.match(/ID_MODEL=(.+)/);
       if (modelMatch && modelMatch[1]) {
         usbDeviceName = modelMatch[1].trim();
