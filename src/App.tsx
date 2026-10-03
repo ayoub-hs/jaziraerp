@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import type { 
   Product, 
   ProductFamily, 
@@ -42,12 +42,17 @@ export default function App() {
   const [printReceiptSaleId, setPrintReceiptSaleId] = useState<string | null>(null);
   const [printInvoiceSaleId, setPrintInvoiceSaleId] = useState<string | null>(null);
   const [isLocked, setIsLocked] = useState<boolean>(authService.isLocked());
+  const prevSyncStateRef = useRef<SyncState>('ONLINE_SYNCED');
 
   // Subscribe to sync manager events & auth status
   useEffect(() => {
     const unsubscribe = syncManager.subscribe((state, count) => {
       setSyncState(state);
       setPendingSyncCount(count);
+      if (state === 'ONLINE_SYNCED' && prevSyncStateRef.current !== 'ONLINE_SYNCED') {
+        loadAllData();
+      }
+      prevSyncStateRef.current = state;
     });
     const unsubAuth = authService.subscribeLockState(setIsLocked);
     authService.syncStatus();
