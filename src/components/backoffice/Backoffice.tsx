@@ -1249,7 +1249,7 @@ export const Backoffice: React.FC<BackofficeProps> = ({
                       </div>
                     )}
                   </div>
-                ) : (
+                )) : (
                   <div className="text-center text-slate-400 text-xs py-12">
                     Fill the form on the left to execute a production run.
                   </div>
