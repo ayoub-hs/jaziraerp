@@ -165,7 +165,7 @@ export class SyncManager {
   /**
    * Flushes all queued offline actions to the server.
    */
-  public async flushSyncQueue(): Promise<{ processed: number }> {
+  public flushSyncQueue(): Promise<{ processed: number }> {
     if (this.isFlushing && this.flushPromise) {
       return this.flushPromise;
     }
@@ -231,14 +231,12 @@ export class SyncManager {
         await this.notify();
         throw err;
       }
-    })();
-
-    try {
-      return await this.flushPromise;
-    } finally {
+    })().finally(() => {
       this.isFlushing = false;
       this.flushPromise = null;
-    }
+    });
+
+    return this.flushPromise;
   }
 }
 

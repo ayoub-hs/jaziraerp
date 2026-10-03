@@ -240,6 +240,27 @@ describe('Register Sessions & Cash Management Module', () => {
     expect(response.movements.length).toBe(1);
     expect(response.sales.length).toBe(1);
   });
+
+  it('correctly calculates expected cash when sale includes cash payment and change_given', () => {
+    const testSessionId = 'ses-change-calc';
+    db.prepare(`
+      INSERT INTO register_sessions (id, session_number, counter_name, opened_at, opening_cash, status)
+      VALUES (?, 'SES-TEST-CHANGE', 'Counter 1', '2026-09-09T08:00:00Z', 50.000, 'OPEN')
+    `).run(testSessionId);
+
+    // Sale: item costs 15 DT TTC. Customer paid 15 DT net cash (tendered 20 DT note -> change_given = 5 DT)
+    // cash_paid = 15.000, change_given = 5.000
+    db.prepare(`
+      INSERT INTO sales (id, receipt_number, session_id, date, subtotal_ht, tva_amount, total_ttc, cash_paid, change_given, status, created_at)
+      VALUES ('s-change-1', 'REC-C01', ?, '2026-09-09T09:00:00Z', 12.605, 2.395, 15.000, 15.000, 5.000, 'COMPLETED', '2026-09-09T09:00:00Z')
+    `).run(testSessionId);
+
+    const breakdown = calculateSessionExpectedCash(db, testSessionId);
+    // cash_sales must be 15.000 (NOT 15 - 5 = 10)
+    expect(breakdown.cash_sales).toBe(15.000);
+    // expected_cash = 50 opening + 15 cash sales = 65.000
+    expect(breakdown.expected_cash).toBe(65.000);
+  });
 });
 
 describe('Persistent Register / Counter Management API', () => {
@@ -310,3 +331,5 @@ describe('Persistent Register / Counter Management API', () => {
     expect(allNames).toContain('Drive Thru');
   });
 });
+
+
