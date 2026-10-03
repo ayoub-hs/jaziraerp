@@ -41,28 +41,51 @@ reportsRouter.get('/sales-by-customer', (req: Request, res: Response) => {
       COUNT(s.id) as sale_count,
       ROUND(SUM(s.subtotal_ht), 3) as total_ht,
       ROUND(SUM(s.tva_amount), 3) as total_tva,
-      ROUND(SUM(s.total_ttc), 3) as total_ttc,
-      ROUND(SUM(s.cash_paid), 3) as cash_paid,
-      ROUND(SUM(s.wallet_paid), 3) as wallet_paid,
-      ROUND(SUM(s.credit_amount), 3) as credit_amount
+      ROUND(SUM(s.total_ttc), 3) as gross_ttc,
+      ROUND(SUM(COALESCE(r.total_refunded, 0)), 3) as refunded_amount,
+      ROUND(SUM(s.total_ttc) - SUM(COALESCE(r.total_refunded, 0)), 3) as net_ttc,
+      ROUND(SUM(s.total_ttc) - SUM(COALESCE(r.total_refunded, 0)), 3) as total_ttc,
+      ROUND(SUM(s.cash_paid), 3) as gross_cash,
+      ROUND(SUM(COALESCE(r.cash_refunded, 0)), 3) as cash_refunded,
+      ROUND(SUM(s.cash_paid) - SUM(COALESCE(r.cash_refunded, 0)), 3) as cash_paid,
+      ROUND(SUM(s.wallet_paid), 3) as gross_wallet,
+      ROUND(SUM(COALESCE(r.wallet_refunded, 0)), 3) as wallet_refunded,
+      ROUND(SUM(s.wallet_paid) - SUM(COALESCE(r.wallet_refunded, 0)), 3) as wallet_paid,
+      ROUND(SUM(s.credit_amount), 3) as gross_credit,
+      ROUND(SUM(COALESCE(r.credit_reduced, 0)), 3) as credit_reduced,
+      ROUND(SUM(s.credit_amount) - SUM(COALESCE(r.credit_reduced, 0)), 3) as credit_amount
     FROM sales s
+    LEFT JOIN (
+      SELECT 
+        sale_id,
+        SUM(total_refunded) as total_refunded,
+        SUM(cash_refunded) as cash_refunded,
+        SUM(wallet_refunded) as wallet_refunded,
+        SUM(credit_reduced) as credit_reduced
+      FROM refunds
+      GROUP BY sale_id
+    ) r ON s.id = r.sale_id
     LEFT JOIN customers c ON s.customer_id = c.id
     ${whereClause}
     GROUP BY COALESCE(s.customer_id, 'WALK_IN')
-    ORDER BY total_ttc DESC
+    ORDER BY net_ttc DESC
   `;
 
   const rows: any[] = db.prepare(query).all(...params);
 
   // Summary totals
-  let grandTtc = 0;
+  let grandGrossTtc = 0;
+  let grandRefunded = 0;
+  let grandNetTtc = 0;
   let grandCash = 0;
   let grandWallet = 0;
   let grandCredit = 0;
   let grandCount = 0;
 
   for (const r of rows) {
-    grandTtc += r.total_ttc || 0;
+    grandGrossTtc += r.gross_ttc || 0;
+    grandRefunded += r.refunded_amount || 0;
+    grandNetTtc += r.net_ttc || 0;
     grandCash += r.cash_paid || 0;
     grandWallet += r.wallet_paid || 0;
     grandCredit += r.credit_amount || 0;
@@ -75,7 +98,10 @@ reportsRouter.get('/sales-by-customer', (req: Request, res: Response) => {
     customer_sales: rows,
     summary: {
       total_sales_count: grandCount,
-      total_ttc: round3(grandTtc),
+      total_gross_ttc: round3(grandGrossTtc),
+      total_refunded: round3(grandRefunded),
+      total_net_ttc: round3(grandNetTtc),
+      total_ttc: round3(grandNetTtc),
       total_cash: round3(grandCash),
       total_wallet: round3(grandWallet),
       total_credit: round3(grandCredit)
@@ -114,27 +140,50 @@ reportsRouter.get('/sales-by-register', (req: Request, res: Response) => {
       COUNT(s.id) as sale_count,
       ROUND(SUM(s.subtotal_ht), 3) as total_ht,
       ROUND(SUM(s.tva_amount), 3) as total_tva,
-      ROUND(SUM(s.total_ttc), 3) as total_ttc,
-      ROUND(SUM(s.cash_paid), 3) as cash_paid,
-      ROUND(SUM(s.wallet_paid), 3) as wallet_paid,
-      ROUND(SUM(s.credit_amount), 3) as credit_amount
+      ROUND(SUM(s.total_ttc), 3) as gross_ttc,
+      ROUND(SUM(COALESCE(r.total_refunded, 0)), 3) as refunded_amount,
+      ROUND(SUM(s.total_ttc) - SUM(COALESCE(r.total_refunded, 0)), 3) as net_ttc,
+      ROUND(SUM(s.total_ttc) - SUM(COALESCE(r.total_refunded, 0)), 3) as total_ttc,
+      ROUND(SUM(s.cash_paid), 3) as gross_cash,
+      ROUND(SUM(COALESCE(r.cash_refunded, 0)), 3) as cash_refunded,
+      ROUND(SUM(s.cash_paid) - SUM(COALESCE(r.cash_refunded, 0)), 3) as cash_paid,
+      ROUND(SUM(s.wallet_paid), 3) as gross_wallet,
+      ROUND(SUM(COALESCE(r.wallet_refunded, 0)), 3) as wallet_refunded,
+      ROUND(SUM(s.wallet_paid) - SUM(COALESCE(r.wallet_refunded, 0)), 3) as wallet_paid,
+      ROUND(SUM(s.credit_amount), 3) as gross_credit,
+      ROUND(SUM(COALESCE(r.credit_reduced, 0)), 3) as credit_reduced,
+      ROUND(SUM(s.credit_amount) - SUM(COALESCE(r.credit_reduced, 0)), 3) as credit_amount
     FROM sales s
+    LEFT JOIN (
+      SELECT 
+        sale_id,
+        SUM(total_refunded) as total_refunded,
+        SUM(cash_refunded) as cash_refunded,
+        SUM(wallet_refunded) as wallet_refunded,
+        SUM(credit_reduced) as credit_reduced
+      FROM refunds
+      GROUP BY sale_id
+    ) r ON s.id = r.sale_id
     LEFT JOIN register_sessions rs ON s.session_id = rs.id
     ${whereClause}
     GROUP BY COALESCE(rs.counter_name, 'Countertop')
-    ORDER BY total_ttc DESC
+    ORDER BY net_ttc DESC
   `;
 
   const rows: any[] = db.prepare(query).all(...params);
 
-  let grandTtc = 0;
+  let grandGrossTtc = 0;
+  let grandRefunded = 0;
+  let grandNetTtc = 0;
   let grandCash = 0;
   let grandWallet = 0;
   let grandCredit = 0;
   let grandCount = 0;
 
   for (const r of rows) {
-    grandTtc += r.total_ttc || 0;
+    grandGrossTtc += r.gross_ttc || 0;
+    grandRefunded += r.refunded_amount || 0;
+    grandNetTtc += r.net_ttc || 0;
     grandCash += r.cash_paid || 0;
     grandWallet += r.wallet_paid || 0;
     grandCredit += r.credit_amount || 0;
@@ -147,7 +196,10 @@ reportsRouter.get('/sales-by-register', (req: Request, res: Response) => {
     register_sales: rows,
     summary: {
       total_sales_count: grandCount,
-      total_ttc: round3(grandTtc),
+      total_gross_ttc: round3(grandGrossTtc),
+      total_refunded: round3(grandRefunded),
+      total_net_ttc: round3(grandNetTtc),
+      total_ttc: round3(grandNetTtc),
       total_cash: round3(grandCash),
       total_wallet: round3(grandWallet),
       total_credit: round3(grandCredit)
