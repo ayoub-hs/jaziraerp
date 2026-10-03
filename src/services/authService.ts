@@ -132,13 +132,18 @@ export class AuthService {
 
         if (res.ok) {
           const data = await res.json();
-          // Cache the verified pin hash locally for offline use
-          if (data.pin_hash && typeof localStorage !== 'undefined') {
-            localStorage.setItem(STORAGE_KEYS.PIN_HASH, data.pin_hash);
-          }
-          if (isMasterPassword && typeof localStorage !== 'undefined') {
-            const masterHash = await computeSha256(clean);
-            localStorage.setItem(STORAGE_KEYS.MASTER_HASH, masterHash);
+          // Cache client-computed SHA-256 locally so offline unlock works
+          if (typeof localStorage !== 'undefined') {
+            if (isMasterPassword) {
+              const masterHash = await computeSha256(clean);
+              localStorage.setItem(STORAGE_KEYS.MASTER_HASH, masterHash);
+            } else {
+              const pinHash = await computeSha256(clean);
+              localStorage.setItem(STORAGE_KEYS.PIN_HASH, pinHash);
+            }
+            if (data.shop_name) {
+              localStorage.setItem(STORAGE_KEYS.SHOP_NAME, data.shop_name);
+            }
           }
           this.setLockedState(false);
           return true;

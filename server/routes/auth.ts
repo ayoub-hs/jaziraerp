@@ -119,8 +119,7 @@ authRouter.post('/setup', (req: Request, res: Response) => {
   res.json({
     success: true,
     configured: true,
-    message: 'Authentication configured successfully',
-    pin_hash: pinHash
+    message: 'Authentication configured successfully'
   });
 });
 
@@ -172,7 +171,6 @@ authRouter.post('/unlock', (req: Request, res: Response) => {
     unlocked: true,
     locked: false,
     message: 'Unlocked successfully',
-    pin_hash: pinHashRow.value,
     shop_name: shopNameRow?.value || 'Société Al Jazira SHSP'
   });
 });

@@ -77,7 +77,7 @@ describe('Auth Router — Real HTTP Integration Tests & scrypt Hardening', () =>
 
     expect(res.status).toBe(200);
     expect(res.body.success).toBe(true);
-    expect(res.body.pin_hash).toBeDefined();
+    expect(res.body.pin_hash).toBeUndefined();
 
     // Verify database state
     const db = getDb();

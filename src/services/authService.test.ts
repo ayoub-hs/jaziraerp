@@ -78,4 +78,39 @@ describe('Step 15: Client Offline Auth & PIN Unlock Service', () => {
     expect(success).toBe(true);
     expect(auth.isLocked()).toBe(false);
   });
+
+  it('online unlock caches client SHA-256 so subsequent offline unlock succeeds', async () => {
+    const auth = new AuthService();
+    const pin = '2468';
+    const clientExpectedHash = await computeSha256(pin);
+
+    // 1. Simulate ONLINE unlock with mock fetch
+    vi.stubGlobal('navigator', { onLine: true });
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
+      ok: true,
+      status: 200,
+      json: async () => ({
+        success: true,
+        unlocked: true,
+        locked: false,
+        message: 'Unlocked successfully'
+      })
+    }));
+
+    const onlineUnlocked = await auth.unlock(pin);
+    expect(onlineUnlocked).toBe(true);
+
+    // Verify localStorage now contains client-computed SHA-256
+    expect(mockStorage['aljazira_pin_hash']).toBe(clientExpectedHash);
+
+    // 2. Lock again and switch to OFFLINE mode
+    await auth.lock();
+    expect(auth.isLocked()).toBe(true);
+    vi.stubGlobal('navigator', { onLine: false });
+
+    // 3. Unlock offline with the same PIN
+    const offlineUnlocked = await auth.unlock(pin);
+    expect(offlineUnlocked).toBe(true);
+    expect(auth.isLocked()).toBe(false);
+  });
 });
