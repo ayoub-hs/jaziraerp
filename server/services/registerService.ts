@@ -25,9 +25,9 @@ export function calculateSessionExpectedCash(db: any, sessionId: string): Sessio
 
   const openingCash = round3(session.opening_cash || 0);
 
-  // 1. Cash received from sales (cash_paid minus change_given)
+  // 1. Cash received from sales (cash_paid is net applied cash)
   const salesCashRow: any = db.prepare(`
-    SELECT COALESCE(SUM(cash_paid - change_given), 0) as total_cash_sales
+    SELECT COALESCE(SUM(cash_paid), 0) as total_cash_sales
     FROM sales
     WHERE session_id = ?
   `).get(sessionId);

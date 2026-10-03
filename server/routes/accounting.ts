@@ -135,9 +135,9 @@ accountingRouter.get('/cash-flow', (req: Request, res: Response) => {
   }
 
   // --- MONEY IN ---
-  // 1. Cash received from sales (cash_paid - change_given)
+  // 1. Cash received from sales (cash_paid is net applied cash)
   const salesCashRow: any = db.prepare(`
-    SELECT COALESCE(SUM(cash_paid - change_given), 0) as total
+    SELECT COALESCE(SUM(cash_paid), 0) as total
     FROM sales
     WHERE 1=1 ${dateFilter}
   `).get(...params);

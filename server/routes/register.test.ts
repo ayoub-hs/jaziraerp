@@ -81,7 +81,7 @@ describe('Register Sessions & Cash Management Module', () => {
     // Sale 2: Split payment sale -> 25.000 DT TTC (Cash 15.000 DT tendered with 20 DT note -> change 5 DT = net cash 15 DT + Wallet 10.000 DT)
     db.prepare(`
       INSERT INTO sales (id, receipt_number, session_id, date, subtotal_ht, tva_amount, total_ttc, cash_paid, wallet_paid, change_given, status, created_at)
-      VALUES ('s-2', 'REC-002', ?, '2026-09-07T10:30:00Z', 21.008, 3.992, 25.000, 20.000, 10.000, 5.000, 'COMPLETED', '2026-09-07T10:30:00Z')
+      VALUES ('s-2', 'REC-002', ?, '2026-09-07T10:30:00Z', 21.008, 3.992, 25.000, 15.000, 10.000, 5.000, 'COMPLETED', '2026-09-07T10:30:00Z')
     `).run(sessionId);
 
     // Cash in 50 DT, Cash out 20 DT
