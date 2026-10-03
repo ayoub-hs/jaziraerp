@@ -187,10 +187,37 @@ export class BackupService {
   }
 
   /**
-   * Starts daily automated backup schedule (runs every 24 hours).
+   * Checks whether the newest backup is older than 24 hours (or none exists)
+   * and runs an initial backup snapshot immediately if needed.
+   */
+  public async checkAndRunInitialBackup(): Promise<boolean> {
+    try {
+      const backups = this.listBackups();
+      const newest = backups[0];
+      const nowMs = Date.now();
+      const oneDayMs = 24 * 60 * 60 * 1000;
+
+      const isOlderThan24h = !newest || (nowMs - new Date(newest.created_at).getTime()) > oneDayMs;
+      if (isOlderThan24h) {
+        console.log('[BackupService] Newest backup is older than 24h (or none exists). Running startup backup...');
+        const res = await this.createBackup();
+        console.log(`[BackupService] Startup backup completed: ${res.filename} (${res.size_bytes} bytes)`);
+        return true;
+      }
+      return false;
+    } catch (err) {
+      console.error('[BackupService] Startup backup check failed:', err);
+      return false;
+    }
+  }
+
+  /**
+   * Starts daily automated backup schedule (runs startup check, then every 24 hours).
    */
   public startDailySchedule(): void {
     if (this.timer) return;
+    this.checkAndRunInitialBackup().catch(() => {});
+
     const intervalMs = 24 * 60 * 60 * 1000; // 24 hours
     this.timer = setInterval(async () => {
       try {

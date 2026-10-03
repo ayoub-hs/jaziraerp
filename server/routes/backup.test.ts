@@ -101,4 +101,29 @@ describe('Step 15: Backup Service & Snapshot Verification', () => {
     const fakeData = Buffer.from('this is not a sqlite database').toString('base64');
     await expect(service.restoreBackup({ fileData: fakeData })).rejects.toThrow();
   });
+
+  it('runs initial backup at startup if no backup exists or newest is older than 24h', async () => {
+    // 1. No backup exists -> runs initial backup
+    expect(service.listBackups().length).toBe(0);
+    const ranInitial = await service.checkAndRunInitialBackup();
+    expect(ranInitial).toBe(true);
+    expect(service.listBackups().length).toBe(1);
+
+    // 2. Newest backup is fresh (< 24h) -> does not run backup
+    const ranFresh = await service.checkAndRunInitialBackup();
+    expect(ranFresh).toBe(false);
+    expect(service.listBackups().length).toBe(1);
+
+    // 3. Newest backup is older than 24h -> runs backup
+    const current = service.listBackups()[0];
+    const olderFile = 'backup-2026-10-01_10-00-00.sqlite';
+    fs.renameSync(path.join(tempBackupDir, current.filename), path.join(tempBackupDir, olderFile));
+    const olderDate = new Date(Date.now() - 25 * 60 * 60 * 1000);
+    fs.utimesSync(path.join(tempBackupDir, olderFile), olderDate, olderDate);
+
+    const ranStale = await service.checkAndRunInitialBackup();
+    expect(ranStale).toBe(true);
+    expect(service.listBackups().length).toBe(2);
+  });
 });
+
