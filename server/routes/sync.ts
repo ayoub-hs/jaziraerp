@@ -403,6 +403,9 @@ syncRouter.post('/flush', (req: Request, res: Response) => {
         });
       } else if (action_type === 'PRICE_STOCK_EDIT') {
         const { product_id, retail_price, wholesale_price, stock_quantity } = payload;
+        const currentProd: any = db.prepare('SELECT stock_quantity FROM products WHERE id = ?').get(product_id);
+        const oldQty = currentProd ? Number(currentProd.stock_quantity) : 0;
+
         db.prepare(`
           UPDATE products
           SET retail_price = COALESCE(?, retail_price),
@@ -417,6 +420,17 @@ syncRouter.post('/flush', (req: Request, res: Response) => {
           now,
           product_id
         );
+
+        if (stock_quantity !== undefined && currentProd) {
+          const newQty = Number(stock_quantity);
+          const delta = round3(newQty - oldQty);
+          if (delta !== 0) {
+            db.prepare(`
+              INSERT INTO inventory_adjustments (id, date, item_type, material_id, product_id, quantity_delta, reason, created_at)
+              VALUES (?, ?, 'PRODUCT', NULL, ?, ?, 'SYNC_PRICE_STOCK_EDIT', ?)
+            `).run(crypto.randomUUID(), payload.date || now, product_id, delta, now);
+          }
+        }
 
         reconciled.push({
           temp_client_id,

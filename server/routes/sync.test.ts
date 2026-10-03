@@ -290,6 +290,55 @@ describe('Offline Storage & Sync Engine Module (HTTP Routes)', () => {
     const failedSale = db.prepare('SELECT id FROM sales WHERE synced_from_client_id = ?').get('temp-sale-overdraw');
     expect(failedSale).toBeUndefined();
   });
+
+  it('inserts an inventory_adjustments record when PRICE_STOCK_EDIT changes stock_quantity', async () => {
+    // 1. Create a product with initial stock 10
+    const famRes = await request(app)
+      .post('/api/products/families')
+      .send({ name: 'Stock Edit Family', category: 'Cleaning', type: 'MANUFACTURED' });
+    const prodRes = await request(app)
+      .post('/api/products')
+      .send({
+        family_id: famRes.body.id,
+        name: 'Stock Edit Item',
+        stock_quantity: 10,
+        retail_price: 5.0,
+        wholesale_price: 4.0
+      });
+    const productId = prodRes.body.id;
+
+    // 2. Sync flush PRICE_STOCK_EDIT changing stock from 10 to 25
+    const flushRes = await request(app)
+      .post('/api/sync/flush')
+      .send({
+        operations: [
+          {
+            temp_client_id: 'temp-edit-stock-1',
+            action_type: 'PRICE_STOCK_EDIT',
+            payload: {
+              product_id: productId,
+              stock_quantity: 25
+            }
+          }
+        ]
+      });
+
+    expect(flushRes.status).toBe(200);
+    expect(flushRes.body.processed_count).toBe(1);
+
+    // 3. Verify product stock is 25
+    const db = getDb();
+    const prod: any = db.prepare('SELECT stock_quantity FROM products WHERE id = ?').get(productId);
+    expect(prod.stock_quantity).toBe(25);
+
+    // 4. Verify inventory_adjustments has a row with delta 15 and reason SYNC_PRICE_STOCK_EDIT
+    const adj: any = db.prepare('SELECT * FROM inventory_adjustments WHERE product_id = ?').get(productId);
+    expect(adj).toBeDefined();
+    expect(adj.quantity_delta).toBe(15);
+    expect(adj.reason).toBe('SYNC_PRICE_STOCK_EDIT');
+    expect(adj.item_type).toBe('PRODUCT');
+  });
 });
+
 
 
