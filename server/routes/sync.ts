@@ -91,26 +91,50 @@ syncRouter.post('/flush', (req: Request, res: Response) => {
   const db = getDb();
   const now = new Date().toISOString();
   const reconciled: any[] = [];
+  const failed: any[] = [];
 
-  const syncTx = db.transaction(() => {
-    for (const op of operations) {
-      const { temp_client_id, action_type, payload } = op;
+  for (const op of operations) {
+    const { temp_client_id, action_type, payload } = op;
 
-      if (action_type === 'SALE') {
-        const clientId = temp_client_id || payload?.temp_client_id;
-        if (clientId) {
-          const existingSale: any = db.prepare('SELECT id, receipt_number FROM sales WHERE synced_from_client_id = ?').get(clientId);
-          if (existingSale) {
-            reconciled.push({
-              temp_client_id: clientId,
-              action_type: 'SALE',
-              server_id: existingSale.id,
-              receipt_number: existingSale.receipt_number,
-              status: 'SYNCED'
-            });
-            continue;
+    try {
+      const opTx = db.transaction(() => {
+        if (action_type === 'SALE') {
+          const clientId = temp_client_id || payload?.temp_client_id;
+          if (clientId) {
+            const existingSale: any = db.prepare('SELECT id, receipt_number FROM sales WHERE synced_from_client_id = ?').get(clientId);
+            if (existingSale) {
+              reconciled.push({
+                temp_client_id: clientId,
+                action_type: 'SALE',
+                server_id: existingSale.id,
+                receipt_number: existingSale.receipt_number,
+                status: 'SYNCED'
+              });
+              return;
+            }
           }
-        }
+
+          const walletAmount = round3(Number(payload.wallet_paid) || 0);
+          if (walletAmount > 0) {
+            if (!payload.customer_id) {
+              failed.push({
+                temp_client_id,
+                action_type: 'SALE',
+                reason: 'INSUFFICIENT_WALLET'
+              });
+              return;
+            }
+            const customer: any = db.prepare('SELECT wallet_balance FROM customers WHERE id = ?').get(payload.customer_id);
+            const currentBalance = round3(customer?.wallet_balance || 0);
+            if (!customer || currentBalance < walletAmount) {
+              failed.push({
+                temp_client_id,
+                action_type: 'SALE',
+                reason: 'INSUFFICIENT_WALLET'
+              });
+              return;
+            }
+          }
 
         const saleId = crypto.randomUUID();
         const receiptNumber = generateReceiptNumber(db);
@@ -158,7 +182,6 @@ syncRouter.post('/flush', (req: Request, res: Response) => {
         const totalTTC = Math.max(0, round3(computedSubtotal - (Number(payload.total_discount) || 0)));
         const taxBreakdown = calculateTaxBreakdown(totalTTC, 0.19);
         const cashAmount = round3(Number(payload.cash_paid) || 0);
-        const walletAmount = round3(Number(payload.wallet_paid) || 0);
         const creditAmount = round3(Number(payload.credit_amount) || 0);
 
         // Resolve session_id safely to prevent FK failure
@@ -238,7 +261,7 @@ syncRouter.post('/flush', (req: Request, res: Response) => {
         // Wallet deduction
         if (walletAmount > 0 && payload.customer_id) {
           db.prepare(`
-            UPDATE customers SET wallet_balance = MAX(0, wallet_balance - ?), updated_at = ? WHERE id = ?
+            UPDATE customers SET wallet_balance = wallet_balance - ?, updated_at = ? WHERE id = ?
           `).run(walletAmount, now, payload.customer_id);
 
           db.prepare(`
@@ -402,14 +425,22 @@ syncRouter.post('/flush', (req: Request, res: Response) => {
           status: 'SYNCED'
         });
       }
-    }
-  });
+    });
 
-  syncTx();
+    opTx();
+  } catch (err: any) {
+    failed.push({
+      temp_client_id,
+      action_type,
+      reason: err.message || 'OP_FAILED'
+    });
+  }
+}
 
-  res.json({
-    success: true,
-    processed_count: operations.length,
-    reconciled
-  });
+res.json({
+  success: true,
+  processed_count: reconciled.length,
+  reconciled,
+  failed
+});
 });

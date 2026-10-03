@@ -229,5 +229,67 @@ describe('Offline Storage & Sync Engine Module (HTTP Routes)', () => {
     const count: any = db.prepare('SELECT COUNT(*) as c FROM sales WHERE synced_from_client_id = ?').get('temp-sale-unique-123');
     expect(count.c).toBe(1);
   });
+
+  it('rejects sync sale with INSUFFICIENT_WALLET and leaves other ops unaffected', async () => {
+    // Create customer with 5 DT wallet
+    const custRes = await request(app)
+      .post('/api/customers')
+      .send({ name: 'Poor Customer', type: 'RESELLER' });
+    const customerId = custRes.body.id;
+
+    // Top up 5 DT
+    await request(app)
+      .post(`/api/customers/${customerId}/wallet/top-up`)
+      .send({ amount: 5 });
+
+    // Flush batch with 1 failing wallet sale and 1 valid cash sale
+    const flushRes = await request(app)
+      .post('/api/sync/flush')
+      .send({
+        operations: [
+          {
+            temp_client_id: 'temp-sale-overdraw',
+            action_type: 'SALE',
+            payload: {
+              customer_id: customerId,
+              cash_paid: 0,
+              wallet_paid: 20, // Exceeds 5 DT balance
+              credit_amount: 0,
+              items: [{ quick_add_name: 'Overdraw Item', unit_price: 20, quantity: 1, is_quick_add: 1 }]
+            }
+          },
+          {
+            temp_client_id: 'temp-sale-valid-cash',
+            action_type: 'SALE',
+            payload: {
+              cash_paid: 10,
+              wallet_paid: 0,
+              credit_amount: 0,
+              items: [{ quick_add_name: 'Cash Item', unit_price: 10, quantity: 1, is_quick_add: 1 }]
+            }
+          }
+        ]
+      });
+
+    expect(flushRes.status).toBe(200);
+    expect(flushRes.body.failed).toHaveLength(1);
+    expect(flushRes.body.failed[0]).toMatchObject({
+      temp_client_id: 'temp-sale-overdraw',
+      action_type: 'SALE',
+      reason: 'INSUFFICIENT_WALLET'
+    });
+    expect(flushRes.body.reconciled).toHaveLength(1);
+    expect(flushRes.body.reconciled[0].temp_client_id).toBe('temp-sale-valid-cash');
+
+    // Customer wallet remains intact at 5 DT
+    const db = getDb();
+    const cust: any = db.prepare('SELECT wallet_balance FROM customers WHERE id = ?').get(customerId);
+    expect(cust.wallet_balance).toBe(5);
+
+    // Overdrawn sale was not created
+    const failedSale = db.prepare('SELECT id FROM sales WHERE synced_from_client_id = ?').get('temp-sale-overdraw');
+    expect(failedSale).toBeUndefined();
+  });
 });
+
 
