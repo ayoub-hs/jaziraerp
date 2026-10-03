@@ -91,6 +91,12 @@ authRouter.post('/setup', (req: Request, res: Response) => {
   }
 
   const db = getDb();
+  const configuredRow: any = db.prepare("SELECT value FROM settings WHERE key = 'is_auth_configured'").get();
+  if (configuredRow && configuredRow.value === 'true') {
+    res.status(400).json({ error: 'Authentication is already configured. Cannot overwrite credentials.' });
+    return;
+  }
+
   const salt = getInstallSalt(db);
   const pinHash = hashSecret(String(pin), salt);
   const masterHash = hashSecret(String(effectivePassword), salt);
