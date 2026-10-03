@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { 
   Package, 
   FlaskConical, 
@@ -136,12 +136,22 @@ export const Backoffice: React.FC<BackofficeProps> = ({
   const [debtPayAmount, setDebtPayAmount] = useState('');
   const [walletTopUpAmount, setWalletTopUpAmount] = useState('');
   const [actionNotice, setActionNotice] = useState<string | null>(null);
+  const [isPayingCustomerDebt, setIsPayingCustomerDebt] = useState(false);
+  const isPayingCustomerDebtRef = useRef(false);
+  const [isToppingUpWallet, setIsToppingUpWallet] = useState(false);
+  const isToppingUpWalletRef = useRef(false);
 
   // Supplier ledger drill-down & debt payment
   const [selectedSupplier, setSelectedSupplier] = useState<Supplier | null>(null);
   const [supplierTickets, setSupplierTickets] = useState<SupplierDebtTicket[]>([]);
   const [supplierDebtPayAmount, setSupplierDebtPayAmount] = useState('');
   const [supplierActionNotice, setSupplierActionNotice] = useState<string | null>(null);
+  const [isPayingSupplierDebt, setIsPayingSupplierDebt] = useState(false);
+  const isPayingSupplierDebtRef = useRef(false);
+
+  // Batch Wizard state
+  const [isExecutingBatch, setIsExecutingBatch] = useState(false);
+  const isExecutingBatchRef = useRef(false);
 
   // Edit states for CRUD modals (Section C)
   const [materialToEdit, setMaterialToEdit] = useState<RawMaterial | null>(null);
@@ -299,10 +309,14 @@ export const Backoffice: React.FC<BackofficeProps> = ({
   };
 
   const handlePaySupplierDebt = async () => {
+    if (isPayingSupplierDebtRef.current) return;
     if (!selectedSupplier) return;
     const amount = parseFloat(supplierDebtPayAmount);
     if (isNaN(amount) || amount <= 0) return;
 
+    isPayingSupplierDebtRef.current = true;
+    setIsPayingSupplierDebt(true);
+    setSupplierActionNotice(null);
     try {
       const res = await fetch(`/api/suppliers/${selectedSupplier.id}/debt/repay`, {
         method: 'POST',
@@ -321,9 +335,16 @@ export const Backoffice: React.FC<BackofficeProps> = ({
           if (updated) setSelectedSupplier(updated);
         }
         onRefreshData();
+      } else {
+        const data = await res.json().catch(() => ({}));
+        setSupplierActionNotice(`Error: ${data.error || `Payment failed (${res.status})`}`);
       }
-    } catch (err) {
+    } catch (err: any) {
       console.warn('Supplier debt payment failed:', err);
+      setSupplierActionNotice(`Error: ${err.message || 'Payment failed'}`);
+    } finally {
+      isPayingSupplierDebtRef.current = false;
+      setIsPayingSupplierDebt(false);
     }
   };
 
@@ -340,10 +361,14 @@ export const Backoffice: React.FC<BackofficeProps> = ({
   };
 
   const handlePayCustomerDebt = async () => {
+    if (isPayingCustomerDebtRef.current) return;
     if (!selectedCustomer) return;
     const amount = parseFloat(debtPayAmount);
     if (isNaN(amount) || amount <= 0) return;
 
+    isPayingCustomerDebtRef.current = true;
+    setIsPayingCustomerDebt(true);
+    setActionNotice(null);
     try {
       const res = await fetch(`/api/customers/${selectedCustomer.id}/payments`, {
         method: 'POST',
@@ -355,17 +380,28 @@ export const Backoffice: React.FC<BackofficeProps> = ({
         setDebtPayAmount('');
         handleSelectCustomerForTickets(selectedCustomer);
         onRefreshData();
+      } else {
+        const data = await res.json().catch(() => ({}));
+        setActionNotice(`Error: ${data.error || `Payment failed (${res.status})`}`);
       }
-    } catch (err) {
+    } catch (err: any) {
       console.warn('Payment failed:', err);
+      setActionNotice(`Error: ${err.message || 'Payment failed'}`);
+    } finally {
+      isPayingCustomerDebtRef.current = false;
+      setIsPayingCustomerDebt(false);
     }
   };
 
   const handleTopUpWallet = async () => {
+    if (isToppingUpWalletRef.current) return;
     if (!selectedCustomer) return;
     const amount = parseFloat(walletTopUpAmount);
     if (isNaN(amount) || amount <= 0) return;
 
+    isToppingUpWalletRef.current = true;
+    setIsToppingUpWallet(true);
+    setActionNotice(null);
     try {
       const res = await fetch(`/api/customers/${selectedCustomer.id}/wallet/top-up`, {
         method: 'POST',
@@ -376,16 +412,26 @@ export const Backoffice: React.FC<BackofficeProps> = ({
         setActionNotice(`Wallet topped up with ${formatMoney(amount)}.`);
         setWalletTopUpAmount('');
         onRefreshData();
+      } else {
+        const data = await res.json().catch(() => ({}));
+        setActionNotice(`Error: ${data.error || `Top up failed (${res.status})`}`);
       }
-    } catch (err) {
+    } catch (err: any) {
       console.warn('Topup failed:', err);
+      setActionNotice(`Error: ${err.message || 'Top up failed'}`);
+    } finally {
+      isToppingUpWalletRef.current = false;
+      setIsToppingUpWallet(false);
     }
   };
 
   const handleRunBatchWizard = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (isExecutingBatchRef.current) return;
     if (!selectedFormulationId || !targetProductId) return;
 
+    isExecutingBatchRef.current = true;
+    setIsExecutingBatch(true);
     try {
       const res = await fetch('/api/production/batches', {
         method: 'POST',
@@ -402,9 +448,16 @@ export const Backoffice: React.FC<BackofficeProps> = ({
         setBatchResult(data);
         onRefreshData();
         loadBackofficeData();
+      } else {
+        const data = await res.json().catch(() => ({}));
+        setBatchResult({ error: data.error || `Batch wizard failed (${res.status})` });
       }
-    } catch (err) {
+    } catch (err: any) {
       console.warn('Batch wizard failed:', err);
+      setBatchResult({ error: err.message || 'Batch wizard failed' });
+    } finally {
+      isExecutingBatchRef.current = false;
+      setIsExecutingBatch(false);
     }
   };
 
@@ -1156,10 +1209,11 @@ export const Backoffice: React.FC<BackofficeProps> = ({
 
                   <button
                     type="submit"
-                    className="w-full py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl shadow text-xs transition-colors flex items-center justify-center gap-1.5"
+                    disabled={isExecutingBatch}
+                    className="w-full py-3 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white font-bold rounded-xl shadow text-xs transition-colors flex items-center justify-center gap-1.5"
                   >
                     <FlaskConical className="w-4 h-4" />
-                    Execute Production Batch
+                    {isExecutingBatch ? 'Executing Batch...' : 'Execute Production Batch'}
                   </button>
                 </form>
               </div>
@@ -1167,6 +1221,12 @@ export const Backoffice: React.FC<BackofficeProps> = ({
               {/* Batch Execution Results */}
               <div className="bg-slate-50 p-5 rounded-2xl border border-slate-200 flex flex-col justify-center">
                 {batchResult ? (
+                  batchResult.error ? (
+                    <div className="p-3 bg-rose-50 border border-rose-200 text-rose-800 rounded-xl text-xs flex items-center gap-2">
+                      <AlertTriangle className="w-4 h-4 shrink-0" />
+                      <span>{batchResult.error}</span>
+                    </div>
+                  ) : (
                   <div className="space-y-3">
                     <div className="flex items-center gap-2 text-emerald-700 font-bold text-sm">
                       <Check className="w-5 h-5" />
@@ -1405,10 +1465,12 @@ export const Backoffice: React.FC<BackofficeProps> = ({
                             className="w-full text-xs font-bold font-mono px-2 py-1.5 border border-slate-300 rounded-lg"
                           />
                           <button
+                            type="button"
+                            disabled={isPayingCustomerDebt}
                             onClick={handlePayCustomerDebt}
-                            className="bg-amber-600 hover:bg-amber-700 text-white font-bold px-3 py-1.5 rounded-lg text-xs shrink-0"
+                            className="bg-amber-600 hover:bg-amber-700 disabled:opacity-50 text-white font-bold px-3 py-1.5 rounded-lg text-xs shrink-0 transition-colors"
                           >
-                            Pay
+                            {isPayingCustomerDebt ? 'Paying...' : 'Pay'}
                           </button>
                         </div>
                       </div>
@@ -1429,10 +1491,12 @@ export const Backoffice: React.FC<BackofficeProps> = ({
                             className="w-full text-xs font-bold font-mono px-2 py-1.5 border border-slate-300 rounded-lg"
                           />
                           <button
+                            type="button"
+                            disabled={isToppingUpWallet}
                             onClick={handleTopUpWallet}
-                            className="bg-purple-600 hover:bg-purple-700 text-white font-bold px-3 py-1.5 rounded-lg text-xs shrink-0"
+                            className="bg-purple-600 hover:bg-purple-700 disabled:opacity-50 text-white font-bold px-3 py-1.5 rounded-lg text-xs shrink-0 transition-colors"
                           >
-                            Top Up
+                            {isToppingUpWallet ? 'Top Up...' : 'Top Up'}
                           </button>
                         </div>
                       </div>
@@ -1626,10 +1690,12 @@ export const Backoffice: React.FC<BackofficeProps> = ({
                           className="w-full text-xs font-bold font-mono px-3 py-2 border border-slate-300 rounded-lg"
                         />
                         <button
+                          type="button"
+                          disabled={isPayingSupplierDebt}
                           onClick={handlePaySupplierDebt}
-                          className="bg-rose-600 hover:bg-rose-700 text-white font-bold px-4 py-2 rounded-lg text-xs shrink-0 transition-colors shadow-sm"
+                          className="bg-rose-600 hover:bg-rose-700 disabled:opacity-50 text-white font-bold px-4 py-2 rounded-lg text-xs shrink-0 transition-colors shadow-sm"
                         >
-                          Pay Supplier
+                          {isPayingSupplierDebt ? 'Paying...' : 'Pay Supplier'}
                         </button>
                       </div>
                     </div>

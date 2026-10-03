@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { 
   ShoppingCart, 
   Search, 
@@ -98,12 +98,16 @@ export const MobileRegister: React.FC<MobileRegisterProps> = ({
   const [paymentAmount, setPaymentAmount] = useState('');
   const [paymentMsg, setPaymentMsg] = useState<string | null>(null);
   const [isSubmittingPayment, setIsSubmittingPayment] = useState(false);
+  const isSubmittingPaymentRef = useRef(false);
 
   // Container give/return in customer view
   const [isContainerModalOpen, setIsContainerModalOpen] = useState(false);
   const [containerAction, setContainerAction] = useState<'GIVE' | 'RETURN'>('GIVE');
   const [selectedContainerTypeId, setSelectedContainerTypeId] = useState<string>('');
   const [containerQty, setContainerQty] = useState('1');
+  const [isSubmittingContainer, setIsSubmittingContainer] = useState(false);
+  const [containerError, setContainerError] = useState<string | null>(null);
+  const isSubmittingContainerRef = useRef(false);
 
   // Camera & Scanner State
   const [isCameraOpen, setIsCameraOpen] = useState(false);
@@ -413,9 +417,11 @@ export const MobileRegister: React.FC<MobileRegisterProps> = ({
   };
 
   const handleRecordCustomerPayment = async (customer: Customer) => {
+    if (isSubmittingPaymentRef.current) return;
     const val = parseFloat(paymentAmount);
     if (isNaN(val) || val <= 0) return;
 
+    isSubmittingPaymentRef.current = true;
     setIsSubmittingPayment(true);
     setPaymentMsg(null);
     try {
@@ -429,19 +435,27 @@ export const MobileRegister: React.FC<MobileRegisterProps> = ({
         setPaymentMsg(`Payment of ${formatMoney(val)} recorded via FIFO debt tickets.`);
         setPaymentAmount('');
         onRefreshData();
+      } else {
+        const data = await res.json().catch(() => ({}));
+        setPaymentMsg(data.error || `Erreur paiement (${res.status})`);
       }
     } catch (err: any) {
-      setPaymentMsg('Error processing payment');
+      setPaymentMsg(err.message || 'Error processing payment');
     } finally {
+      isSubmittingPaymentRef.current = false;
       setIsSubmittingPayment(false);
     }
   };
 
   const handleContainerTransaction = async () => {
+    if (isSubmittingContainerRef.current) return;
     if (!selectedCustDetails || !selectedContainerTypeId) return;
     const qty = parseInt(containerQty);
     if (isNaN(qty) || qty <= 0) return;
 
+    isSubmittingContainerRef.current = true;
+    setIsSubmittingContainer(true);
+    setContainerError(null);
     try {
       const res = await fetch('/api/containers/transactions', {
         method: 'POST',
@@ -455,10 +469,17 @@ export const MobileRegister: React.FC<MobileRegisterProps> = ({
       });
       if (res.ok) {
         setIsContainerModalOpen(false);
+        setContainerQty('1');
         onRefreshData();
+      } else {
+        const data = await res.json().catch(() => ({}));
+        setContainerError(data.error || `Erreur contenant (${res.status})`);
       }
-    } catch (err) {
-      console.warn('Container error:', err);
+    } catch (err: any) {
+      setContainerError(err.message || 'Container error');
+    } finally {
+      isSubmittingContainerRef.current = false;
+      setIsSubmittingContainer(false);
     }
   };
 
@@ -897,9 +918,9 @@ export const MobileRegister: React.FC<MobileRegisterProps> = ({
                         <button
                           disabled={isSubmittingPayment}
                           onClick={() => handleRecordCustomerPayment(customer)}
-                          className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-3 py-1.5 rounded-lg text-xs shrink-0"
+                          className="bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white font-bold px-3 py-1.5 rounded-lg text-xs shrink-0 transition-colors"
                         >
-                          Payer (FIFO)
+                          {isSubmittingPayment && selectedCustDetails?.id === customer.id ? 'Paiement...' : 'Payer (FIFO)'}
                         </button>
                       </div>
 
@@ -1228,18 +1249,30 @@ export const MobileRegister: React.FC<MobileRegisterProps> = ({
               />
             </div>
 
+            {containerError && (
+              <div className="p-2.5 bg-rose-50 border border-rose-200 text-rose-700 rounded-xl text-xs font-semibold">
+                {containerError}
+              </div>
+            )}
+
             <div className="flex gap-2 pt-2">
               <button
-                onClick={() => setIsContainerModalOpen(false)}
-                className="flex-1 py-2 bg-slate-100 font-bold rounded-xl text-xs text-slate-700"
+                type="button"
+                onClick={() => {
+                  setIsContainerModalOpen(false);
+                  setContainerError(null);
+                }}
+                className="flex-1 py-2 bg-slate-100 font-bold rounded-xl text-xs text-slate-700 hover:bg-slate-200 transition-colors"
               >
                 Cancel
               </button>
               <button
+                type="button"
+                disabled={isSubmittingContainer}
                 onClick={handleContainerTransaction}
-                className="flex-1 py-2 bg-emerald-600 font-bold rounded-xl text-xs text-white"
+                className="flex-1 py-2 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 font-bold rounded-xl text-xs text-white transition-colors"
               >
-                Save
+                {isSubmittingContainer ? 'Enregistrement...' : 'Save'}
               </button>
             </div>
           </div>
