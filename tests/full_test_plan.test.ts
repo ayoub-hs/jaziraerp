@@ -968,6 +968,11 @@ describe('Full Acceptance Test Plan — Al Jazira SHSP ERP', () => {
       expect(allocation).toBeDefined();
       expect(allocation.ticket_id).toBe(ticket.id);
       expect(allocation.amount_allocated).toBe(300.000);
+
+      // Attempting to repay more than the remaining 700 DT should return 400
+      const overpayRes = await request(app).post(`/api/suppliers/${supplierId}/debt/repay`).send({ amount: 800.000 });
+      expect(overpayRes.status).toBe(400);
+      expect(overpayRes.body.error).toContain('exceeds supplier total outstanding debt');
     });
   });
 

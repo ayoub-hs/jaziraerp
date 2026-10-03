@@ -171,6 +171,32 @@ describe('Suppliers, Purchases & Supplier Debt Ledger Module', () => {
     expect(allocations.length).toBe(2);
   });
 
+  it('rejects supplier payment larger than total outstanding debt', () => {
+    // sup-alpha currently has 0 debt tickets seeded initially
+    expect(() => {
+      allocateSupplierPayment(db, {
+        supplierId: 'sup-alpha',
+        amount: 50.000,
+        paymentMethod: 'Cash'
+      });
+    }).toThrow(/exceeds supplier total outstanding debt/);
+
+    // Seed a 100 DT ticket
+    db.prepare(`
+      INSERT INTO supplier_debt_tickets (id, ticket_number, supplier_id, date, total_amount, remaining_amount, status, created_at, updated_at)
+      VALUES ('stkt-excess', 'STKT-EX', 'sup-alpha', '2026-01-05', 100.000, 100.000, 'UNPAID', '2026-01-05', '2026-01-05')
+    `).run();
+
+    // 150 DT exceeds 100 DT
+    expect(() => {
+      allocateSupplierPayment(db, {
+        supplierId: 'sup-alpha',
+        amount: 150.000,
+        paymentMethod: 'Cash'
+      });
+    }).toThrow(/exceeds supplier total outstanding debt/);
+  });
+
   it('handles multi-item purchase with raw material and resale goods, updating stock and debt ticket', () => {
     const purchaseId = 'po-multi-1';
     const purchaseNumber = 'PO-MULTI-01';

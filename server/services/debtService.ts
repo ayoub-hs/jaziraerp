@@ -215,6 +215,11 @@ export function allocateSupplierPayment(
     ORDER BY date ASC, created_at ASC
   `).all(input.supplierId);
 
+  const totalOutstanding = round3(openTickets.reduce((sum: number, t: any) => sum + round3(t.remaining_amount), 0));
+  if (amount > totalOutstanding) {
+    throw new Error(`Payment amount (${amount.toFixed(3)} DT) exceeds supplier total outstanding debt (${totalOutstanding.toFixed(3)} DT)`);
+  }
+
   let unallocated = amount;
   const ticketsAffected: SupplierAllocationResult['tickets_affected'] = [];
 
