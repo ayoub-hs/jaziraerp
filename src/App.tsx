@@ -27,6 +27,7 @@ export default function App() {
   const [activeSession, setActiveSession] = useState<RegisterSession | null>(null);
   const [syncState, setSyncState] = useState<SyncState>('ONLINE_SYNCED');
   const [pendingSyncCount, setPendingSyncCount] = useState<number>(0);
+  const [reviewSyncCount, setReviewSyncCount] = useState<number>(0);
 
   // Core Data
   const [products, setProducts] = useState<Product[]>([]);
@@ -46,9 +47,10 @@ export default function App() {
 
   // Subscribe to sync manager events & auth status
   useEffect(() => {
-    const unsubscribe = syncManager.subscribe((state, count) => {
+    const unsubscribe = syncManager.subscribe((state, count, reviewCount) => {
       setSyncState(state);
       setPendingSyncCount(count);
+      setReviewSyncCount(reviewCount);
       if (state === 'ONLINE_SYNCED' && prevSyncStateRef.current !== 'ONLINE_SYNCED') {
         loadAllData();
       }
@@ -259,6 +261,7 @@ export default function App() {
         onSelectSession={sess => setActiveSession(sess)}
         syncState={syncState}
         pendingSyncCount={pendingSyncCount}
+        reviewSyncCount={reviewSyncCount}
         onManualSync={handleManualSync}
         onPopDrawer={handlePopDrawer}
         onOpenCashMovement={() => setIsCashMovementOpen(true)}

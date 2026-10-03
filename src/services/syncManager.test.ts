@@ -175,5 +175,75 @@ describe('SyncManager & Offline Fallback', () => {
       wallet_balance: 5.000
     });
   });
+
+  it('flushSyncQueue does NOT send queue items with needs_review: true and preserves OFFLINE_PENDING state', async () => {
+    const mockItems = [
+      { queue_id: 1, temp_client_id: 't-normal', action_type: 'SALE', payload: {}, created_at: 'now' },
+      { queue_id: 2, temp_client_id: 't-review', action_type: 'SALE', payload: {}, needs_review: true, error: 'INSUFFICIENT_WALLET', created_at: 'now' }
+    ];
+
+    vi.spyOn(clientDb.pending_sync_queue, 'toArray').mockResolvedValue(mockItems as any);
+    vi.spyOn(clientDb.pending_sync_queue, 'bulkDelete').mockResolvedValue(undefined as any);
+    vi.spyOn(syncMgr, 'pullMasterCatalog').mockResolvedValue(undefined);
+
+    const fetchSpy = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        success: true,
+        reconciled: [{ temp_client_id: 't-normal', status: 'SYNCED' }],
+        failed: []
+      })
+    });
+    vi.stubGlobal('fetch', fetchSpy);
+
+    // Initial flush with 1 normal and 1 review item
+    await syncMgr.flushSyncQueue();
+
+    // Verify fetch was only called with the non-review operation
+    expect(fetchSpy).toHaveBeenCalledTimes(1);
+    const sentBody = JSON.parse(fetchSpy.mock.calls[0][1].body);
+    expect(sentBody.operations).toHaveLength(1);
+    expect(sentBody.operations[0].temp_client_id).toBe('t-normal');
+
+    // Now test when ONLY needs_review items remain in queue
+    fetchSpy.mockClear();
+    vi.spyOn(clientDb.pending_sync_queue, 'toArray').mockResolvedValue([mockItems[1]] as any);
+    vi.spyOn(syncMgr, 'getPendingCount').mockResolvedValue(1);
+
+    const res = await syncMgr.flushSyncQueue();
+
+    // Fetch should NOT be called at all
+    expect(fetchSpy).not.toHaveBeenCalled();
+    expect(res.processed).toBe(0);
+    // State must NOT be ONLINE_SYNCED when review items remain
+    expect(syncMgr.getState()).toBe('OFFLINE_PENDING');
+  });
+
+  it('retryReviewItems clears needs_review and error and triggers flush', async () => {
+    const reviewItem = {
+      queue_id: 5,
+      temp_client_id: 't-rev-5',
+      action_type: 'SALE',
+      payload: {},
+      needs_review: true,
+      error: 'SOME_ERROR',
+      created_at: 'now'
+    };
+
+    const filterMock = {
+      toArray: vi.fn().mockResolvedValue([reviewItem])
+    };
+    vi.spyOn(clientDb.pending_sync_queue, 'filter').mockReturnValue(filterMock as any);
+    const updateSpy = vi.spyOn(clientDb.pending_sync_queue, 'update').mockResolvedValue(1 as any);
+    const flushSpy = vi.spyOn(syncMgr, 'flushSyncQueue').mockResolvedValue({ processed: 1 });
+
+    await syncMgr.retryReviewItems();
+
+    expect(updateSpy).toHaveBeenCalledWith(5, {
+      needs_review: false,
+      error: undefined
+    });
+    expect(flushSpy).toHaveBeenCalledTimes(1);
+  });
 });
 
