@@ -1186,7 +1186,7 @@ describe('Full Acceptance Test Plan — Al Jazira SHSP ERP', () => {
       expect(Array.from(pulse)).toEqual([0x1b, 0x70, 0x00, 0x19, 0xfa]);
 
       // Real HTTP call to drawer kick endpoint
-      const kickRes = await request(app).post('/api/hardware/drawer/kick').send({ port: '/dev/ttyNONEXISTENT' });
+      const kickRes = await request(app).post('/api/hardware/drawer/kick').send({ port: '/dev/ttyUSB99' });
       expect(kickRes.status).toBe(500);
       expect(kickRes.body.success).toBe(false);
       expect(kickRes.body.error).toContain('not found');
