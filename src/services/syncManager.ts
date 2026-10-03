@@ -1,4 +1,5 @@
 import { clientDb, type PendingSyncItem } from '../db/clientDb.js';
+import { roundMoney } from '../utils/formatters.js';
 
 export type SyncState = 'ONLINE_SYNCED' | 'OFFLINE_PENDING' | 'SYNCING';
 
@@ -99,6 +100,24 @@ export class SyncManager {
    */
   public async queueOfflineSale(payload: any): Promise<string> {
     const tempClientId = 'temp_' + crypto.randomUUID();
+
+    // Check and deduct customer wallet balance if used
+    const walletPaid = Number(payload.wallet_paid) || 0;
+    if (walletPaid > 0) {
+      if (!payload.customer_id) {
+        throw new Error('Customer required for wallet payment');
+      }
+      const localCust = await clientDb.customers.get(payload.customer_id);
+      const currentBalance = localCust ? (Number(localCust.wallet_balance) || 0) : 0;
+      if (walletPaid > currentBalance) {
+        throw new Error(`Solde portefeuille insuffisant hors-ligne (Disponible: ${currentBalance.toFixed(3)} DT, Demandé: ${walletPaid.toFixed(3)} DT)`);
+      }
+      if (localCust) {
+        await clientDb.customers.update(payload.customer_id, {
+          wallet_balance: Math.max(0, roundMoney(currentBalance - walletPaid))
+        });
+      }
+    }
 
     // Optimistically deduct local stock in IndexedDB
     try {

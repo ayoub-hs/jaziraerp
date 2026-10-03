@@ -128,4 +128,52 @@ describe('SyncManager & Offline Fallback', () => {
     expect(offlineResult).toBe('temp-123');
     expect(queueSpy).toHaveBeenCalledTimes(1);
   });
+
+  it('queueOfflineSale blocks offline sale when cached wallet balance is insufficient', async () => {
+    vi.spyOn(clientDb.customers, 'get').mockResolvedValue({
+      id: 'cust-1',
+      name: 'Client Test',
+      type: 'RETAIL',
+      reseller_discount_percent: 0,
+      wallet_balance: 5.000
+    } as any);
+
+    const updateSpy = vi.spyOn(clientDb.customers, 'update');
+    const queueAddSpy = vi.spyOn(clientDb.pending_sync_queue, 'add');
+
+    // Attempt offline sale paying 10 DT from 5 DT wallet
+    await expect(syncMgr.queueOfflineSale({
+      customer_id: 'cust-1',
+      wallet_paid: 10.000,
+      items: []
+    })).rejects.toThrow(/Solde portefeuille insuffisant/);
+
+    expect(updateSpy).not.toHaveBeenCalled();
+    expect(queueAddSpy).not.toHaveBeenCalled();
+  });
+
+  it('queueOfflineSale deducts wallet balance in IndexedDB when wallet_paid is valid', async () => {
+    vi.spyOn(clientDb.customers, 'get').mockResolvedValue({
+      id: 'cust-1',
+      name: 'Client Test',
+      type: 'RETAIL',
+      reseller_discount_percent: 0,
+      wallet_balance: 20.000
+    } as any);
+
+    const updateSpy = vi.spyOn(clientDb.customers, 'update').mockResolvedValue(1 as any);
+    vi.spyOn(clientDb.pending_sync_queue, 'add').mockResolvedValue(1 as any);
+
+    const tempId = await syncMgr.queueOfflineSale({
+      customer_id: 'cust-1',
+      wallet_paid: 15.000,
+      items: []
+    });
+
+    expect(tempId).toMatch(/^temp_/);
+    expect(updateSpy).toHaveBeenCalledWith('cust-1', {
+      wallet_balance: 5.000
+    });
+  });
 });
+
