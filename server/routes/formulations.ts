@@ -192,7 +192,13 @@ formulationsRouter.delete('/:id', (req: Request, res: Response) => {
   const db = getDb();
   const linkedFamilies: any = db.prepare('SELECT COUNT(*) as count FROM product_families WHERE formulation_id = ?').get(req.params.id);
   if (linkedFamilies && linkedFamilies.count > 0) {
-    res.status(400).json({ error: 'Cannot delete formulation linked to active product families' });
+    res.status(409).json({ error: 'Cannot delete formulation linked to active product families' });
+    return;
+  }
+
+  const linkedBatches: any = db.prepare('SELECT COUNT(*) as count FROM production_batches WHERE formulation_id = ?').get(req.params.id);
+  if (linkedBatches && linkedBatches.count > 0) {
+    res.status(409).json({ error: 'Cannot delete formulation referenced in production batches' });
     return;
   }
 

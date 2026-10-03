@@ -440,7 +440,7 @@ export const Backoffice: React.FC<BackofficeProps> = ({
     confirmDelete({
       title: 'Delete Product SKU',
       itemName: prod.name,
-      message: `Are you sure you want to delete "${prod.name}"? If referenced by past sales or batches, it will be safely deactivated/archived.`,
+      message: `Are you sure you want to delete "${prod.name}"? If referenced by past sales, batches, purchases, or inventory adjustments, deletion will be rejected.`,
       onConfirm: async () => {
         const res = await fetch(`/api/products/${prod.id}`, { method: 'DELETE' });
         if (!res.ok) {
@@ -474,7 +474,7 @@ export const Backoffice: React.FC<BackofficeProps> = ({
     confirmDelete({
       title: 'Delete Raw Material',
       itemName: mat.name,
-      message: `Are you sure you want to delete "${mat.name}"? If used in formulations, batches, or purchases, it will be safely deactivated.`,
+      message: `Are you sure you want to delete "${mat.name}"? If used in formulations, batches, purchases, or inventory adjustments, deletion will be rejected.`,
       onConfirm: async () => {
         const res = await fetch(`/api/materials/${mat.id}`, { method: 'DELETE' });
         if (!res.ok) {

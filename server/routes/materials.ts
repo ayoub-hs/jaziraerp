@@ -278,18 +278,19 @@ materialsRouter.delete('/:id', (req: Request, res: Response) => {
     return;
   }
 
-  // Check references: formulation_items, production_batch_materials_consumed, purchase_items
+  // Check references: formulation_items, production_batch_materials_consumed, purchase_items, inventory_adjustments
   const hasFormulas: any = db.prepare('SELECT COUNT(*) as count FROM formulation_items WHERE material_id = ?').get(req.params.id);
   const hasBatches: any = db.prepare('SELECT COUNT(*) as count FROM production_batch_materials_consumed WHERE material_id = ?').get(req.params.id);
   const hasPurchases: any = db.prepare('SELECT COUNT(*) as count FROM purchase_items WHERE material_id = ?').get(req.params.id);
+  const hasAdjustments: any = db.prepare('SELECT COUNT(*) as count FROM inventory_adjustments WHERE material_id = ?').get(req.params.id);
 
-  const isReferenced = (hasFormulas?.count > 0) || (hasBatches?.count > 0) || (hasPurchases?.count > 0);
+  const isReferenced = (hasFormulas?.count > 0) || (hasBatches?.count > 0) || (hasPurchases?.count > 0) || (hasAdjustments?.count > 0);
 
   if (isReferenced) {
-    db.prepare('UPDATE raw_materials SET active = 0, updated_at = ? WHERE id = ?').run(new Date().toISOString(), req.params.id);
-    res.json({ success: true, soft_deleted: true, id: req.params.id, message: 'Material deactivated' });
-  } else {
-    db.prepare('DELETE FROM raw_materials WHERE id = ?').run(req.params.id);
-    res.json({ success: true, soft_deleted: false, id: req.params.id, message: 'Material deleted permanently' });
+    res.status(409).json({ error: 'Cannot delete raw material referenced in formulations, production batches, purchases, or inventory adjustments' });
+    return;
   }
+
+  db.prepare('DELETE FROM raw_materials WHERE id = ?').run(req.params.id);
+  res.json({ success: true, soft_deleted: false, id: req.params.id, message: 'Material deleted permanently' });
 });

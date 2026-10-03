@@ -475,6 +475,18 @@ productsRouter.post('/:id/pack-sizes', (req: Request, res: Response) => {
 // DELETE /api/products/pack-sizes/:packId - delete a pack size multiplier
 productsRouter.delete('/pack-sizes/:packId', (req: Request, res: Response) => {
   const db = getDb();
+  const pack = db.prepare('SELECT * FROM product_pack_sizes WHERE id = ?').get(req.params.packId);
+  if (!pack) {
+    res.status(404).json({ error: 'Pack size not found' });
+    return;
+  }
+
+  const linkedSales: any = db.prepare('SELECT COUNT(*) as count FROM sale_items WHERE pack_size_id = ?').get(req.params.packId);
+  if (linkedSales && linkedSales.count > 0) {
+    res.status(409).json({ error: 'Cannot delete pack size referenced in sales history' });
+    return;
+  }
+
   db.prepare('DELETE FROM product_pack_sizes WHERE id = ?').run(req.params.packId);
   res.json({ success: true, id: req.params.packId });
 });
@@ -500,7 +512,7 @@ productsRouter.delete('/families/:id', (req: Request, res: Response) => {
   }
 });
 
-// DELETE /api/products/:id - delete or soft-delete product SKU
+// DELETE /api/products/:id - delete product SKU
 productsRouter.delete('/:id', (req: Request, res: Response) => {
   const db = getDb();
   const product: any = db.prepare('SELECT * FROM products WHERE id = ?').get(req.params.id);
@@ -509,19 +521,25 @@ productsRouter.delete('/:id', (req: Request, res: Response) => {
     return;
   }
 
-  // Check references: sale_items, production_batches, purchase_items
+  // Check references: sale_items, production_batches, purchase_items, inventory_adjustments, refund_items
   const hasSales: any = db.prepare('SELECT COUNT(*) as count FROM sale_items WHERE product_id = ?').get(req.params.id);
   const hasBatches: any = db.prepare('SELECT COUNT(*) as count FROM production_batches WHERE target_product_id = ?').get(req.params.id);
   const hasPurchases: any = db.prepare('SELECT COUNT(*) as count FROM purchase_items WHERE product_id = ?').get(req.params.id);
+  const hasAdjustments: any = db.prepare('SELECT COUNT(*) as count FROM inventory_adjustments WHERE product_id = ?').get(req.params.id);
+  const hasRefunds: any = db.prepare(`
+    SELECT COUNT(*) as count FROM refund_items ri
+    JOIN sale_items si ON ri.sale_item_id = si.id
+    WHERE si.product_id = ?
+  `).get(req.params.id);
 
-  const isReferenced = (hasSales?.count > 0) || (hasBatches?.count > 0) || (hasPurchases?.count > 0);
+  const isReferenced = (hasSales?.count > 0) || (hasBatches?.count > 0) || (hasPurchases?.count > 0) || (hasAdjustments?.count > 0) || (hasRefunds?.count > 0);
 
   if (isReferenced) {
-    db.prepare('UPDATE products SET active = 0, updated_at = ? WHERE id = ?').run(new Date().toISOString(), req.params.id);
-    res.json({ success: true, soft_deleted: true, id: req.params.id, message: 'Product deactivated (preserved in sales history)' });
-  } else {
-    db.prepare('DELETE FROM products WHERE id = ?').run(req.params.id);
-    res.json({ success: true, soft_deleted: false, id: req.params.id, message: 'Product deleted permanently' });
+    res.status(409).json({ error: 'Cannot delete product referenced in sales, production batches, purchases, or inventory adjustments' });
+    return;
   }
+
+  db.prepare('DELETE FROM products WHERE id = ?').run(req.params.id);
+  res.json({ success: true, soft_deleted: false, id: req.params.id, message: 'Product deleted permanently' });
 });
 
