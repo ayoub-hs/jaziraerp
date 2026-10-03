@@ -1251,8 +1251,8 @@ export const MobileRegister: React.FC<MobileRegisterProps> = ({
         isOpen={isCheckoutOpen}
         activeSession={activeSession}
         onOpenSessionModal={onOpenSessionModal}
-        onClose={() => {
-          setIsCheckoutOpen(false);
+        onClose={() => setIsCheckoutOpen(false)}
+        onSaleDone={() => {
           setCart([]);
           setSaleDiscount(0);
         }}

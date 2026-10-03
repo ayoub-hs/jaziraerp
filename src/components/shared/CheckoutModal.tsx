@@ -32,11 +32,13 @@ interface CheckoutModalProps {
   }) => Promise<{ sale_id: string; receipt_number: string } | null>;
   onPrintReceipt: (saleId: string) => void;
   onPrintInvoice: (saleId: string) => void;
+  onSaleDone?: () => void;
 }
 
 export const CheckoutModal: React.FC<CheckoutModalProps> = ({
   isOpen,
   onClose,
+  onSaleDone,
   items,
   customer,
   saleDiscount = 0,
@@ -292,7 +294,10 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
 
               <div className="pt-2">
                 <button
-                  onClick={onClose}
+                  onClick={() => {
+                    onSaleDone?.();
+                    onClose();
+                  }}
                   className="text-slate-600 hover:text-slate-900 font-semibold text-sm underline"
                 >
                   Start Next Sale

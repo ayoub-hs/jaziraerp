@@ -809,8 +809,8 @@ export const DesktopPos: React.FC<DesktopPosProps> = ({
         isOpen={isCheckoutOpen}
         activeSession={activeSession}
         onOpenSessionModal={onOpenSessionModal}
-        onClose={() => {
-          setIsCheckoutOpen(false);
+        onClose={() => setIsCheckoutOpen(false)}
+        onSaleDone={() => {
           setCart([]);
           setSaleDiscount(0);
         }}
