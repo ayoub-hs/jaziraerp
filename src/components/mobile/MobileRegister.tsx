@@ -26,9 +26,10 @@ import type {
   Customer, 
   CartItem, 
   RegisterSession,
-  ContainerType 
+  ContainerType,
+  PackSize
 } from '../../types/index.js';
-import { calculateCartTotals, getProductPriceForCustomer, calculateContainersNeeded } from '../../utils/cart.js';
+import { calculateCartTotals, getProductPriceForCustomer, getProductPackPrice, calculateContainersNeeded } from '../../utils/cart.js';
 import { formatMoney, roundMoney } from '../../utils/formatters.js';
 import { playBeep, playErrorBeep, vibrateError } from '../../utils/audio.js';
 import { CheckoutModal } from '../shared/CheckoutModal.js';
@@ -134,10 +135,12 @@ export const MobileRegister: React.FC<MobileRegisterProps> = ({
         if (item.is_quick_add || !item.product_id) return item;
         const prod = products.find(p => p.id === item.product_id);
         if (!prod) return item;
-        const effectivePrice = getProductPriceForCustomer(prod, selectedCustomer);
+        const packSize = item.selected_pack_size_id
+          ? prod.pack_sizes?.find(s => s.id === item.selected_pack_size_id)
+          : prod.pack_sizes?.find(s => s.multiplier === item.pack_multiplier);
         return {
           ...item,
-          unit_price: roundMoney(effectivePrice * (item.pack_multiplier || 1))
+          unit_price: getProductPackPrice(prod, selectedCustomer, packSize, item.pack_multiplier || 1)
         };
       })
     );
@@ -158,7 +161,9 @@ export const MobileRegister: React.FC<MobileRegisterProps> = ({
 
     if (activeTab === 'REGISTER') {
       let matchedProduct: Product | undefined;
+      let matchedPackSize: PackSize | undefined;
       let packMultiplier = 1;
+      let packLabel: string | undefined;
 
       for (const p of products) {
         if (p.barcode && p.barcode.toLowerCase() === cleanCode.toLowerCase()) {
@@ -168,17 +173,19 @@ export const MobileRegister: React.FC<MobileRegisterProps> = ({
         const ps = p.pack_sizes?.find(s => s.barcode && s.barcode.toLowerCase() === cleanCode.toLowerCase());
         if (ps) {
           matchedProduct = p;
+          matchedPackSize = ps;
           packMultiplier = ps.multiplier;
+          packLabel = ps.pack_label;
           break;
         }
       }
 
       if (matchedProduct) {
         playBeep();
-        addProductToCart(matchedProduct, packMultiplier);
+        addProductToCart(matchedProduct, packMultiplier, packLabel, matchedPackSize);
         setScanAlert({
           type: 'success',
-          message: `Ajouté : ${matchedProduct.name}${packMultiplier > 1 ? ` (Pack x${packMultiplier})` : ''}`
+          message: `Ajouté : ${matchedProduct.name}${packMultiplier > 1 ? ` (${packLabel || `Pack x${packMultiplier}`})` : ''}`
         });
       } else {
         playErrorBeep();
@@ -200,10 +207,26 @@ export const MobileRegister: React.FC<MobileRegisterProps> = ({
     handleBarcodeScanned(code);
   };
 
-  const addProductToCart = (product: Product, packMultiplier = 1) => {
-    const effectivePrice = getProductPriceForCustomer(product, selectedCustomer);
+  const addProductToCart = (
+    product: Product,
+    packMultiplier = 1,
+    packLabel?: string,
+    packSize?: PackSize | null
+  ) => {
+    const resolvedPackSize =
+      packSize ??
+      (packMultiplier > 1
+        ? product.pack_sizes?.find(s => s.multiplier === packMultiplier && (!packLabel || s.pack_label === packLabel))
+        : undefined);
+    const unitPrice = getProductPackPrice(product, selectedCustomer, resolvedPackSize, packMultiplier);
+
     setCart(prev => {
-      const idx = prev.findIndex(i => i.product_id === product.id && i.pack_multiplier === packMultiplier);
+      const idx = prev.findIndex(
+        i =>
+          i.product_id === product.id &&
+          i.pack_multiplier === packMultiplier &&
+          i.selected_pack_size_id === resolvedPackSize?.id
+      );
       if (idx >= 0) {
         const copy = [...prev];
         copy[idx] = { ...copy[idx], quantity: copy[idx].quantity + 1 };
@@ -218,9 +241,11 @@ export const MobileRegister: React.FC<MobileRegisterProps> = ({
           name: product.name,
           size_label: product.size_label,
           barcode: product.barcode,
-          unit_price: roundMoney(effectivePrice * packMultiplier),
+          unit_price: unitPrice,
           quantity: 1,
           pack_multiplier: packMultiplier,
+          pack_label: packLabel || resolvedPackSize?.pack_label,
+          selected_pack_size_id: resolvedPackSize?.id,
           discount_amount: 0,
           container_type_id: product.container_type_id || null,
           container_capacity_liters: container?.capacity_liters ?? null,
@@ -1297,6 +1322,7 @@ export const MobileRegister: React.FC<MobileRegisterProps> = ({
             customer_id: selectedCustomer?.id || null,
             items: cart.map(item => ({
               product_id: item.product_id || null,
+              pack_size_id: item.selected_pack_size_id || null,
               description: item.name,
               quantity: item.quantity,
               unit_price: item.unit_price,

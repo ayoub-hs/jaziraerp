@@ -31,6 +31,53 @@ export function getProductPriceForCustomer(product: Product, customer?: Customer
 }
 
 /**
+ * Calculates effective unit price for a product, customer tier, and pack size / multiplier,
+ * matching server computeExpectedCatalogPrice:
+ * - Base price is determined by customer tier:
+ *   - Retail / walk-in / null: product.retail_price
+ *   - Wholesale: product.wholesale_price
+ *   - Reseller: product.wholesale_price * (100 - reseller_discount_percent) / 100
+ * - Pack override:
+ *   - If packSize has price_override != null and (customer == null || customer.type === 'RETAIL'),
+ *     finalPrice = Number(packSize.price_override)
+ *   - Else if packSize:
+ *     finalPrice = basePrice * (Number(packSize.multiplier) || 1)
+ *   - Else if packMultiplier > 1:
+ *     finalPrice = basePrice * packMultiplier
+ *   - Else:
+ *     finalPrice = basePrice
+ */
+export function getProductPackPrice(
+  product: Product,
+  customer?: Customer | null,
+  packSize?: PackSize | null,
+  packMultiplier: number = 1
+): number {
+  let basePrice = Number(product.retail_price) || 0;
+  if (customer) {
+    if (customer.type === 'WHOLESALE') {
+      basePrice = Number(product.wholesale_price) || 0;
+    } else if (customer.type === 'RESELLER') {
+      const discount = Math.max(0, Math.min(100, Number(customer.reseller_discount_percent) || 0));
+      basePrice = (Number(product.wholesale_price) || 0) * ((100 - discount) / 100);
+    }
+  }
+
+  let finalPrice = basePrice;
+  if (packSize) {
+    if (packSize.price_override !== null && packSize.price_override !== undefined && (!customer || customer.type === 'RETAIL')) {
+      finalPrice = Number(packSize.price_override);
+    } else {
+      finalPrice = basePrice * (Number(packSize.multiplier) || 1);
+    }
+  } else if (packMultiplier && packMultiplier > 1) {
+    finalPrice = basePrice * packMultiplier;
+  }
+
+  return roundMoney(finalPrice);
+}
+
+/**
  * Calculates totals for current cart contents, taking into account per-item and per-sale discounts.
  */
 export function calculateCartTotals(items: CartItem[], saleDiscount: number = 0): CartTotals {
