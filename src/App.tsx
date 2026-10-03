@@ -176,27 +176,15 @@ export default function App() {
     };
 
     if (navigator.onLine) {
+      let res: Response;
       try {
-        const res = await fetch('/api/sales', {
+        res = await fetch('/api/sales', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(fullPayload)
         });
-
-        if (!res.ok) {
-          const errData = await res.json();
-          throw new Error(errData.error || 'Sale failed');
-        }
-
-        const data = await res.json();
-        triggerDrawerIfCash(Number(fullPayload.cash_paid || 0), currentView);
-        return {
-          sale_id: data.sale_id || data.id,
-          receipt_number: data.receipt_number
-        };
-      } catch (err: any) {
-        console.warn('Online sale failed, falling back to offline outbox queue:', err);
-        // Fallback to offline queue
+      } catch (networkErr: any) {
+        console.warn('Network error during sale, falling back to offline outbox queue:', networkErr);
         const tempId = await syncManager.queueOfflineSale(fullPayload);
         triggerDrawerIfCash(Number(fullPayload.cash_paid || 0), currentView);
         return {
@@ -204,6 +192,24 @@ export default function App() {
           receipt_number: 'REC-OFFLINE-' + tempId.slice(5, 13).toUpperCase()
         };
       }
+
+      if (!res.ok) {
+        let errorMsg = 'Sale failed';
+        try {
+          const errData = await res.json();
+          errorMsg = errData.error || errorMsg;
+        } catch {
+          errorMsg = `Server error (${res.status})`;
+        }
+        throw new Error(errorMsg);
+      }
+
+      const data = await res.json();
+      triggerDrawerIfCash(Number(fullPayload.cash_paid || 0), currentView);
+      return {
+        sale_id: data.sale_id || data.id,
+        receipt_number: data.receipt_number
+      };
     } else {
       // Offline mode: queue in IndexedDB
       const tempId = await syncManager.queueOfflineSale(fullPayload);
