@@ -53,15 +53,16 @@ accountingRouter.post('/expenses', (req: Request, res: Response) => {
       const session: any = db.prepare('SELECT status FROM register_sessions WHERE id = ?').get(session_id);
       if (session && session.status === 'OPEN') {
         db.prepare(`
-          INSERT INTO register_cash_movements (id, session_id, date, type, amount, reason, created_at)
-          VALUES (?, ?, ?, 'CASH_OUT', ?, ?, ?)
+          INSERT INTO register_cash_movements (id, session_id, date, type, amount, reason, created_at, expense_id)
+          VALUES (?, ?, ?, 'CASH_OUT', ?, ?, ?, ?)
         `).run(
           crypto.randomUUID(),
           session_id,
           date,
           expenseAmount,
           `Expense: ${category.trim()}${description ? ' - ' + description.trim() : ''}`,
-          now
+          now,
+          expenseId
         );
       }
     }
@@ -111,7 +112,12 @@ accountingRouter.delete('/expenses/:id', (req: Request, res: Response) => {
     return;
   }
 
-  db.prepare('DELETE FROM general_expenses WHERE id = ?').run(req.params.id);
+  const deleteTx = db.transaction(() => {
+    db.prepare('DELETE FROM register_cash_movements WHERE expense_id = ?').run(req.params.id);
+    db.prepare('DELETE FROM general_expenses WHERE id = ?').run(req.params.id);
+  });
+  deleteTx();
+
   res.json({ success: true, id: req.params.id, message: 'Expense deleted' });
 });
 

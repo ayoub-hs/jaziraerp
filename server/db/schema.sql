@@ -311,6 +311,7 @@ CREATE TABLE IF NOT EXISTS register_sessions (
 CREATE TABLE IF NOT EXISTS register_cash_movements (
     id TEXT PRIMARY KEY,
     session_id TEXT NOT NULL REFERENCES register_sessions(id) ON DELETE CASCADE,
+    expense_id TEXT REFERENCES general_expenses(id) ON DELETE SET NULL,
     date TEXT NOT NULL,
     type TEXT NOT NULL CHECK (type IN ('CASH_IN', 'CASH_OUT')),
     amount REAL NOT NULL,

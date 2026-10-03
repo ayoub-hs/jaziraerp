@@ -116,6 +116,48 @@ describe('Inventory Adjustments & Accounting Ledger Module — Real HTTP Integra
     expect(mov).toBeDefined();
     expect(mov.amount).toBe(15.000);
     expect(mov.type).toBe('CASH_OUT');
+    expect(mov.expense_id).toBe(suppRes.body.id);
+  });
+
+  it('deletes general expense and its linked register CASH_OUT movement in one transaction', async () => {
+    const db = getDb();
+    // 1. Create legacy movement without expense_id
+    db.prepare(`
+      INSERT INTO register_cash_movements (id, session_id, date, type, amount, reason, created_at, expense_id)
+      VALUES ('legacy-mov', 'ses-exp-1', '2026-09-07', 'CASH_OUT', 5.000, 'Legacy drawer payout', '2026-09-07', NULL)
+    `).run();
+
+    // 2. Create expense linked to register cash
+    const expRes = await request(app)
+      .post('/api/accounting/expenses')
+      .send({
+        category: 'Cleaning',
+        amount: 20.000,
+        payment_source: 'REGISTER_CASH',
+        session_id: 'ses-exp-1',
+        description: 'Brooms & mop'
+      });
+    expect(expRes.status).toBe(201);
+    const expId = expRes.body.id;
+
+    // Verify linked movement exists
+    const linkedMov: any = db.prepare('SELECT * FROM register_cash_movements WHERE expense_id = ?').get(expId);
+    expect(linkedMov).toBeDefined();
+    expect(linkedMov.amount).toBe(20.000);
+
+    // 3. Delete expense
+    const delRes = await request(app).delete(`/api/accounting/expenses/${expId}`);
+    expect(delRes.status).toBe(200);
+
+    // Verify both expense and linked movement are deleted
+    const deletedExp = db.prepare('SELECT * FROM general_expenses WHERE id = ?').get(expId);
+    expect(deletedExp).toBeUndefined();
+    const deletedMov = db.prepare('SELECT * FROM register_cash_movements WHERE expense_id = ?').get(expId);
+    expect(deletedMov).toBeUndefined();
+
+    // Verify legacy movement is untouched
+    const legacyMov = db.prepare('SELECT * FROM register_cash_movements WHERE id = ?').get('legacy-mov');
+    expect(legacyMov).toBeDefined();
   });
 
   it('reconciles cash-flow ledger: money in (sales, debt payments) vs money out (purchases, expenses, refunds)', async () => {
