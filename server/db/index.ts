@@ -53,6 +53,10 @@ export function getDb(customPath?: string): DatabaseType {
   ensureColumn('register_cash_movements', 'expense_id', 'TEXT REFERENCES general_expenses(id) ON DELETE SET NULL');
   try {
     db.exec('CREATE INDEX IF NOT EXISTS idx_register_movements_expense ON register_cash_movements(expense_id)');
+    db.exec('CREATE INDEX IF NOT EXISTS idx_general_expenses_date ON general_expenses(date)');
+    db.exec('CREATE INDEX IF NOT EXISTS idx_customer_payments_date ON customer_payments(date)');
+    db.exec('CREATE INDEX IF NOT EXISTS idx_supplier_payments_date ON supplier_payments(date)');
+    db.exec('CREATE INDEX IF NOT EXISTS idx_refunds_date ON refunds(date)');
   } catch {}
 
   try {
