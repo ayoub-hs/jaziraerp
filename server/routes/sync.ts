@@ -3,6 +3,7 @@ import crypto from 'crypto';
 import { getDb } from '../db/index.js';
 import { round3, addMoney, calculateTaxBreakdown } from '../utils/money.js';
 import { calculateContainersNeeded } from '../utils/container.js';
+import { computeExpectedCatalogPrice } from './sales.js';
 
 export const syncRouter = Router();
 
@@ -140,6 +141,11 @@ syncRouter.post('/flush', (req: Request, res: Response) => {
         const receiptNumber = generateReceiptNumber(db);
         const date = payload.date || now;
 
+        let customerRow: any = null;
+        if (payload.customer_id) {
+          customerRow = db.prepare('SELECT id, type, reseller_discount_percent FROM customers WHERE id = ?').get(payload.customer_id) || null;
+        }
+
         // Process line items
         let computedSubtotal = 0;
         const processedItems: any[] = [];
@@ -151,6 +157,14 @@ syncRouter.post('/flush', (req: Request, res: Response) => {
           const packMultiplier = Number(item.pack_multiplier) || 1;
           const isQuickAdd = item.is_quick_add ? 1 : 0;
           const baseDeducted = isQuickAdd ? 0 : qty * packMultiplier;
+
+          let catalogUnitPrice: number | null = null;
+          if (!isQuickAdd && item.product_id) {
+            const prodRow: any = db.prepare('SELECT * FROM products WHERE id = ?').get(item.product_id);
+            if (prodRow) {
+              catalogUnitPrice = computeExpectedCatalogPrice(db, prodRow, customerRow, item.pack_size_id, packMultiplier);
+            }
+          }
 
           const resolvedQuickName = item.quick_add_name || item.description || item.name || null;
           computedSubtotal = addMoney(computedSubtotal, lineTotal);
@@ -164,6 +178,7 @@ syncRouter.post('/flush', (req: Request, res: Response) => {
             quantity: qty,
             base_stock_deducted: baseDeducted,
             unit_price: unitPrice,
+            catalog_unit_price: catalogUnitPrice,
             discount_amount: Number(item.discount_amount) || 0,
             line_total: lineTotal
           });
@@ -237,8 +252,8 @@ syncRouter.post('/flush', (req: Request, res: Response) => {
           INSERT INTO sale_items (
             id, sale_id, product_id, is_quick_add, quick_add_name,
             pack_size_id, pack_multiplier, quantity, quantity_refunded,
-            base_stock_deducted, unit_price, discount_amount, line_total
-          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 0, ?, ?, ?, ?)
+            base_stock_deducted, unit_price, catalog_unit_price, discount_amount, line_total
+          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 0, ?, ?, ?, ?, ?)
         `);
 
         for (const item of processedItems) {
@@ -253,6 +268,7 @@ syncRouter.post('/flush', (req: Request, res: Response) => {
             item.quantity,
             item.base_stock_deducted,
             item.unit_price,
+            item.catalog_unit_price,
             item.discount_amount,
             item.line_total
           );

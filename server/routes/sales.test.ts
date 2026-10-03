@@ -561,4 +561,86 @@ describe('POS Sales & Checkout Module — Real HTTP Integration Tests', () => {
     expect(res.status).toBe(400);
     expect(res.body.error).toContain('caisse est fermée');
   });
+
+  it('computes catalog_unit_price and flags overridden price when operator deviates from catalog price', async () => {
+    // prod-clean-1l has retail_price: 3.000. Operator sells at 3.500 (overridden)
+    const res = await request(app)
+      .post('/api/sales')
+      .send({
+        session_id: 'ses-01',
+        items: [
+          {
+            product_id: 'prod-clean-1l',
+            quantity: 1,
+            unit_price: 3.500
+          }
+        ],
+        cash_paid: 3.500
+      });
+
+    expect(res.status).toBe(201);
+    const saleId = res.body.id;
+
+    const detailRes = await request(app).get(`/api/sales/${saleId}`);
+    expect(detailRes.status).toBe(200);
+    const item = detailRes.body.items[0];
+    expect(item.unit_price).toBe(3.500);
+    expect(item.catalog_unit_price).toBe(3.000);
+    expect(item.overridden).toBe(true);
+  });
+
+  it('computes catalog_unit_price and sets overridden: false when unit_price matches catalog price', async () => {
+    // prod-clean-1l has retail_price: 3.000. Operator sells at 3.000 (standard)
+    const res = await request(app)
+      .post('/api/sales')
+      .send({
+        session_id: 'ses-01',
+        items: [
+          {
+            product_id: 'prod-clean-1l',
+            quantity: 2,
+            unit_price: 3.000
+          }
+        ],
+        cash_paid: 6.000
+      });
+
+    expect(res.status).toBe(201);
+    const saleId = res.body.id;
+
+    const detailRes = await request(app).get(`/api/sales/${saleId}`);
+    expect(detailRes.status).toBe(200);
+    const item = detailRes.body.items[0];
+    expect(item.unit_price).toBe(3.000);
+    expect(item.catalog_unit_price).toBe(3.000);
+    expect(item.overridden).toBe(false);
+  });
+
+  it('legacy sale_items with NULL catalog_unit_price display as overridden: false', async () => {
+    const db = getDb();
+    const legacySaleId = 'sale-legacy-test';
+    const legacyItemId = 'item-legacy-test';
+
+    db.prepare(`
+      INSERT INTO sales (
+        id, receipt_number, session_id, date, subtotal_ht, tva_rate, tva_amount,
+        total_ttc, total_discount, cash_paid, wallet_paid, credit_amount, change_given,
+        status, created_at
+      ) VALUES (?, 'REC-LEGACY', 'ses-01', '2026-09-01', 2.521, 0.19, 0.479, 3.000, 0, 3.000, 0, 0, 0, 'COMPLETED', '2026-09-01')
+    `).run(legacySaleId);
+
+    db.prepare(`
+      INSERT INTO sale_items (
+        id, sale_id, product_id, is_quick_add, pack_multiplier, quantity,
+        quantity_refunded, base_stock_deducted, unit_price, catalog_unit_price, discount_amount, line_total
+      ) VALUES (?, ?, 'prod-clean-1l', 0, 1, 1, 0, 1, 4.000, NULL, 0, 4.000)
+    `).run(legacyItemId, legacySaleId);
+
+    const detailRes = await request(app).get(`/api/sales/${legacySaleId}`);
+    expect(detailRes.status).toBe(200);
+    const item = detailRes.body.items[0];
+    expect(item.catalog_unit_price).toBeNull();
+    expect(item.overridden).toBe(false);
+  });
 });
+

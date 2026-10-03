@@ -352,6 +352,7 @@ CREATE TABLE IF NOT EXISTS sale_items (
     quantity_refunded REAL NOT NULL DEFAULT 0,
     base_stock_deducted REAL NOT NULL,
     unit_price REAL NOT NULL,
+    catalog_unit_price REAL,
     discount_amount REAL NOT NULL DEFAULT 0,
     line_total REAL NOT NULL
 );

@@ -101,12 +101,19 @@ salesRouter.get('/:id', (req: Request, res: Response) => {
     WHERE si.sale_id = ?
   `).all(sale.id);
 
-  const mappedItems = items.map((si: any) => ({
-    ...si,
-    name: si.is_quick_add ? si.quick_add_name : (si.catalog_product_name || 'Article'),
-    description: si.is_quick_add ? si.quick_add_name : (si.catalog_product_name || 'Article'),
-    total_line: si.line_total
-  }));
+  const mappedItems = items.map((si: any) => {
+    const isOverridden = (si.catalog_unit_price !== null && si.catalog_unit_price !== undefined)
+      ? round3(Number(si.unit_price)) !== round3(Number(si.catalog_unit_price))
+      : false;
+    return {
+      ...si,
+      catalog_unit_price: si.catalog_unit_price ?? null,
+      overridden: isOverridden,
+      name: si.is_quick_add ? si.quick_add_name : (si.catalog_product_name || 'Article'),
+      description: si.is_quick_add ? si.quick_add_name : (si.catalog_product_name || 'Article'),
+      total_line: si.line_total
+    };
+  });
 
   // Shop header details
   const shopNameRow: any = db.prepare("SELECT value FROM settings WHERE key = 'shop_name'").get();
@@ -129,6 +136,8 @@ salesRouter.get('/:id', (req: Request, res: Response) => {
       pack_label: i.pack_label,
       quantity: i.quantity,
       unit_price: i.unit_price,
+      catalog_unit_price: i.catalog_unit_price ?? null,
+      overridden: i.overridden,
       discount_amount: i.discount_amount || 0,
       line_total: i.line_total,
       total_line: i.line_total
@@ -150,6 +159,44 @@ salesRouter.get('/:id', (req: Request, res: Response) => {
     receipt: receiptFormat
   });
 });
+
+export function computeExpectedCatalogPrice(
+  db: any,
+  product: any,
+  customer: any,
+  packSizeId?: string | null,
+  packMultiplier?: number | null
+): number | null {
+  if (!product) return null;
+
+  let basePrice = Number(product.retail_price) || 0;
+  if (customer) {
+    if (customer.type === 'WHOLESALE') {
+      basePrice = Number(product.wholesale_price) || 0;
+    } else if (customer.type === 'RESELLER') {
+      const discount = Math.max(0, Math.min(100, Number(customer.reseller_discount_percent) || 0));
+      basePrice = (Number(product.wholesale_price) || 0) * ((100 - discount) / 100);
+    }
+  }
+
+  let finalPrice = basePrice;
+  if (packSizeId) {
+    const packSize: any = db.prepare('SELECT * FROM product_pack_sizes WHERE id = ?').get(packSizeId);
+    if (packSize) {
+      if (packSize.price_override !== null && packSize.price_override !== undefined && (!customer || customer.type === 'RETAIL')) {
+        finalPrice = Number(packSize.price_override);
+      } else {
+        finalPrice = basePrice * (Number(packSize.multiplier) || 1);
+      }
+    } else if (packMultiplier && packMultiplier > 1) {
+      finalPrice = basePrice * packMultiplier;
+    }
+  } else if (packMultiplier && packMultiplier > 1) {
+    finalPrice = basePrice * packMultiplier;
+  }
+
+  return round3(finalPrice);
+}
 
 // POST /api/sales - process POS checkout with split tender, wallet validation, and drawer kick
 salesRouter.post('/', (req: Request, res: Response) => {
@@ -231,6 +278,7 @@ salesRouter.post('/', (req: Request, res: Response) => {
 
     let baseStockDeducted = qty;
     let packMultiplier = 1;
+    let catalogUnitPrice: number | null = null;
 
     const resolvedQuickAddName = item.quick_add_name || item.description || item.name;
     if (item.is_quick_add) {
@@ -257,6 +305,7 @@ salesRouter.post('/', (req: Request, res: Response) => {
           baseStockDeducted = qty * packMultiplier;
         }
       }
+      catalogUnitPrice = computeExpectedCatalogPrice(db, product, customer, item.pack_size_id, packMultiplier);
     }
 
     const loanContainer = Boolean(item.loan_container);
@@ -264,6 +313,10 @@ salesRouter.post('/', (req: Request, res: Response) => {
       res.status(400).json({ error: 'Loaning a container requires selecting a customer.' });
       return;
     }
+
+    const isOverridden = (catalogUnitPrice !== null && catalogUnitPrice !== undefined)
+      ? round3(unitPrice) !== round3(catalogUnitPrice)
+      : false;
 
     computedSubtotal = addMoney(computedSubtotal, lineTotal);
     processedItems.push({
@@ -277,6 +330,8 @@ salesRouter.post('/', (req: Request, res: Response) => {
       quantity_refunded: 0,
       base_stock_deducted: baseStockDeducted,
       unit_price: unitPrice,
+      catalog_unit_price: catalogUnitPrice,
+      overridden: isOverridden,
       discount_amount: discountAmount,
       line_total: lineTotal,
       loan_container: loanContainer
@@ -382,8 +437,8 @@ salesRouter.post('/', (req: Request, res: Response) => {
       INSERT INTO sale_items (
         id, sale_id, product_id, is_quick_add, quick_add_name,
         pack_size_id, pack_multiplier, quantity, quantity_refunded,
-        base_stock_deducted, unit_price, discount_amount, line_total
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        base_stock_deducted, unit_price, catalog_unit_price, discount_amount, line_total
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `);
 
     for (const item of processedItems) {
@@ -399,6 +454,7 @@ salesRouter.post('/', (req: Request, res: Response) => {
         0,
         item.base_stock_deducted,
         item.unit_price,
+        item.catalog_unit_price,
         item.discount_amount,
         item.line_total
       );

@@ -49,6 +49,7 @@ export function getDb(customPath?: string): DatabaseType {
   ensureColumn('customers', 'active', 'INTEGER NOT NULL DEFAULT 1');
   ensureColumn('suppliers', 'active', 'INTEGER NOT NULL DEFAULT 1');
   ensureColumn('container_types', 'active', 'INTEGER NOT NULL DEFAULT 1');
+  ensureColumn('sale_items', 'catalog_unit_price', 'REAL');
   ensureColumn('register_cash_movements', 'expense_id', 'TEXT REFERENCES general_expenses(id) ON DELETE SET NULL');
   try {
     db.exec('CREATE INDEX IF NOT EXISTS idx_register_movements_expense ON register_cash_movements(expense_id)');
