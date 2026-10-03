@@ -40,12 +40,24 @@ syncRouter.get('/pull', (req: Request, res: Response) => {
     ORDER BY pf.name ASC, p.name ASC
   `).all();
 
-  const enrichedProducts = products.map((prod) => {
-    const packSizes = db.prepare(`
-      SELECT * FROM product_pack_sizes WHERE product_id = ? ORDER BY multiplier ASC
-    `).all(prod.id);
-    return { ...prod, pack_sizes: packSizes };
-  });
+  const allPackSizes: any[] = db.prepare(`
+    SELECT * FROM product_pack_sizes ORDER BY multiplier ASC
+  `).all();
+
+  const packSizesByProduct = new Map<string, any[]>();
+  for (const ps of allPackSizes) {
+    let list = packSizesByProduct.get(ps.product_id);
+    if (!list) {
+      list = [];
+      packSizesByProduct.set(ps.product_id, list);
+    }
+    list.push(ps);
+  }
+
+  const enrichedProducts = products.map((prod) => ({
+    ...prod,
+    pack_sizes: packSizesByProduct.get(prod.id) || []
+  }));
 
   const customers: any[] = db.prepare('SELECT * FROM customers ORDER BY name ASC').all();
   const enrichedCustomers = customers.map((c) => {

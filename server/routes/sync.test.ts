@@ -338,7 +338,73 @@ describe('Offline Storage & Sync Engine Module (HTTP Routes)', () => {
     expect(adj.reason).toBe('SYNC_PRICE_STOCK_EDIT');
     expect(adj.item_type).toBe('PRODUCT');
   });
+
+  it('GET /api/sync/pull returns identical pack_sizes arrays for products with multiple, single, and no pack sizes', async () => {
+    const db = getDb();
+    const now = new Date().toISOString();
+
+    // 1. Create a product family
+    db.prepare(`
+      INSERT INTO product_families (id, name, category, type, created_at, updated_at)
+      VALUES ('fam-perf-test', 'Perf Family', 'Detergents', 'MANUFACTURED', ?, ?)
+    `).run(now, now);
+
+    // 2. Seed 3 products: prod-2packs, prod-1pack, prod-0packs
+    db.prepare(`
+      INSERT INTO products (id, family_id, name, size_label, barcode, stock_quantity, retail_price, wholesale_price, created_at, updated_at)
+      VALUES
+        ('prod-2packs', 'fam-perf-test', 'Product With 2 Packs', '1L', '619000111222', 50, 4.0, 3.0, ?, ?),
+        ('prod-1pack', 'fam-perf-test', 'Product With 1 Pack', '1L', '619000333444', 30, 4.0, 3.0, ?, ?),
+        ('prod-0packs', 'fam-perf-test', 'Product With 0 Packs', '1L', '619000555666', 20, 4.0, 3.0, ?, ?)
+    `).run(now, now, now, now, now, now);
+
+    // 3. Seed pack sizes (prod-2packs has 2: Box 12, Box 6; inserted in reverse order to test multiplier ASC ordering)
+    db.prepare(`
+      INSERT INTO product_pack_sizes (id, product_id, pack_label, multiplier, price_override, barcode)
+      VALUES
+        ('ps-12', 'prod-2packs', 'Box of 12', 12, 45.0, '619000111223'),
+        ('ps-6', 'prod-2packs', 'Pack of 6', 6, 23.0, '619000111224'),
+        ('ps-4', 'prod-1pack', 'Pack of 4', 4, 15.0, '619000333445')
+    `).run();
+
+    // 4. Compute expected results using the baseline query pattern
+    const expectedOldProd1PackSizes = db.prepare(
+      'SELECT * FROM product_pack_sizes WHERE product_id = ? ORDER BY multiplier ASC'
+    ).all('prod-2packs');
+    const expectedOldProd2PackSizes = db.prepare(
+      'SELECT * FROM product_pack_sizes WHERE product_id = ? ORDER BY multiplier ASC'
+    ).all('prod-1pack');
+    const expectedOldProd3PackSizes = db.prepare(
+      'SELECT * FROM product_pack_sizes WHERE product_id = ? ORDER BY multiplier ASC'
+    ).all('prod-0packs');
+
+    // 5. Call GET /api/sync/pull
+    const res = await request(app).get('/api/sync/pull');
+    expect(res.status).toBe(200);
+
+    const pullProd1 = res.body.products.find((p: any) => p.id === 'prod-2packs');
+    const pullProd2 = res.body.products.find((p: any) => p.id === 'prod-1pack');
+    const pullProd3 = res.body.products.find((p: any) => p.id === 'prod-0packs');
+
+    expect(pullProd1).toBeDefined();
+    expect(pullProd2).toBeDefined();
+    expect(pullProd3).toBeDefined();
+
+    // Assert pack_sizes arrays are identical to what the old code returned
+    expect(pullProd1.pack_sizes).toEqual(expectedOldProd1PackSizes);
+    expect(pullProd1.pack_sizes.length).toBe(2);
+    expect(pullProd1.pack_sizes[0].multiplier).toBe(6);
+    expect(pullProd1.pack_sizes[1].multiplier).toBe(12);
+
+    expect(pullProd2.pack_sizes).toEqual(expectedOldProd2PackSizes);
+    expect(pullProd2.pack_sizes.length).toBe(1);
+    expect(pullProd2.pack_sizes[0].multiplier).toBe(4);
+
+    expect(pullProd3.pack_sizes).toEqual(expectedOldProd3PackSizes);
+    expect(pullProd3.pack_sizes).toEqual([]);
+  });
 });
+
 
 
 
