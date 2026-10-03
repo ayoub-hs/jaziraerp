@@ -24,6 +24,7 @@ import { formatMoney } from '../../utils/formatters.js';
 import { webUsbPrinter, type UsbPrinterStatus } from '../../services/hardware/webusb.js';
 import { webBluetoothPrinter, type BluetoothPrinterStatus } from '../../services/hardware/webbluetooth.js';
 import { AuthCredentialsModal } from './AuthCredentialsModal.js';
+import { authService } from '../../services/authService.js';
 
 interface HeaderProps {
   currentView: 'DESKTOP_POS' | 'MOBILE_REGISTER' | 'BACKOFFICE';
@@ -64,9 +65,14 @@ export const Header: React.FC<HeaderProps> = ({
   const [printerHardwareInfo, setPrinterHardwareInfo] = useState<{ connected: boolean; device_name?: string; driver_type?: string } | null>(null);
   const [drawerKicking, setDrawerKicking] = useState(false);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
+  const [isAuthConfigured, setIsAuthConfigured] = useState<boolean>(authService.isConfigured());
   const [isReviewModalOpen, setIsReviewModalOpen] = useState(false);
   const [reviewItems, setReviewItems] = useState<PendingSyncItem[]>([]);
   const [isRetryingReview, setIsRetryingReview] = useState(false);
+
+  useEffect(() => {
+    authService.syncStatus().then(st => setIsAuthConfigured(st.configured));
+  }, []);
 
   useEffect(() => {
     const unsubUsb = webUsbPrinter.subscribeStatus(setUsbStatus);
@@ -438,8 +444,12 @@ export const Header: React.FC<HeaderProps> = ({
 
       <AuthCredentialsModal
         isOpen={isAuthModalOpen}
-        mode="CHANGE"
+        mode={isAuthConfigured ? 'CHANGE' : 'SETUP'}
         onClose={() => setIsAuthModalOpen(false)}
+        onSuccess={() => {
+          setIsAuthConfigured(true);
+          setIsAuthModalOpen(false);
+        }}
       />
 
       {/* Sync Review Items Modal */}

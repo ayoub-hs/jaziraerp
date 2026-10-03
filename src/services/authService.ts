@@ -29,6 +29,7 @@ const STORAGE_KEYS = {
   PIN_HASH: 'aljazira_pin_hash',
   MASTER_HASH: 'aljazira_master_hash',
   IS_LOCKED: 'aljazira_is_locked',
+  IS_CONFIGURED: 'aljazira_is_configured',
   SHOP_NAME: 'aljazira_shop_name'
 };
 
@@ -45,6 +46,13 @@ export class AuthService {
 
   public isLocked(): boolean {
     return this.locked;
+  }
+
+  public isConfigured(): boolean {
+    if (typeof localStorage !== 'undefined') {
+      return localStorage.getItem(STORAGE_KEYS.IS_CONFIGURED) === 'true' || Boolean(localStorage.getItem(STORAGE_KEYS.PIN_HASH));
+    }
+    return false;
   }
 
   public subscribeLockState(fn: (locked: boolean) => void): () => void {
@@ -75,6 +83,7 @@ export class AuthService {
   public async cacheCredentials(pin: string, masterPassword?: string): Promise<void> {
     if (typeof localStorage === 'undefined') return;
 
+    localStorage.setItem(STORAGE_KEYS.IS_CONFIGURED, 'true');
     if (pin) {
       const pinHash = await computeSha256(pin);
       localStorage.setItem(STORAGE_KEYS.PIN_HASH, pinHash);
@@ -96,8 +105,15 @@ export class AuthService {
         if (data.locked && !this.locked) {
           this.setLockedState(true);
         }
-        if (data.shop_name && typeof localStorage !== 'undefined') {
-          localStorage.setItem(STORAGE_KEYS.SHOP_NAME, data.shop_name);
+        if (typeof localStorage !== 'undefined') {
+          if (data.configured) {
+            localStorage.setItem(STORAGE_KEYS.IS_CONFIGURED, 'true');
+          } else {
+            localStorage.removeItem(STORAGE_KEYS.IS_CONFIGURED);
+          }
+          if (data.shop_name) {
+            localStorage.setItem(STORAGE_KEYS.SHOP_NAME, data.shop_name);
+          }
         }
         return data;
       }
@@ -106,7 +122,7 @@ export class AuthService {
     }
 
     return {
-      configured: true,
+      configured: this.isConfigured(),
       locked: this.locked,
       shop_name: typeof localStorage !== 'undefined' ? localStorage.getItem(STORAGE_KEYS.SHOP_NAME) || undefined : undefined
     };

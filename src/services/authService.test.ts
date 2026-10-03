@@ -113,4 +113,12 @@ describe('Step 15: Client Offline Auth & PIN Unlock Service', () => {
     expect(offlineUnlocked).toBe(true);
     expect(auth.isLocked()).toBe(false);
   });
+
+  it('tracks isConfigured correctly before and after setting credentials', async () => {
+    const auth = new AuthService();
+    expect(auth.isConfigured()).toBe(false);
+
+    await auth.cacheCredentials('1234', 'masterSecret');
+    expect(auth.isConfigured()).toBe(true);
+  });
 });
