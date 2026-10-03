@@ -66,6 +66,7 @@ export interface PendingSyncItem {
   created_at: string;
   attempts?: number;
   error?: string;
+  needs_review?: boolean;
 }
 
 export class AppClientDatabase extends Dexie {

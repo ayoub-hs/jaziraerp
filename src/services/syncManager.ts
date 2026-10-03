@@ -5,6 +5,8 @@ export type SyncState = 'ONLINE_SYNCED' | 'OFFLINE_PENDING' | 'SYNCING';
 export class SyncManager {
   private state: SyncState = 'ONLINE_SYNCED';
   private listeners: Array<(state: SyncState, pendingCount: number) => void> = [];
+  private isFlushing = false;
+  private flushPromise: Promise<{ processed: number }> | null = null;
 
   constructor() {
     if (typeof window !== 'undefined') {
@@ -128,7 +130,7 @@ export class SyncManager {
 
     // If online, attempt background flush
     if (typeof navigator !== 'undefined' && navigator.onLine) {
-      this.flushSyncQueue().catch(() => {});
+      this.flushSyncQueue().catch(err => console.error('[SyncManager] Background flush error:', err));
     }
 
     return tempClientId;
@@ -154,7 +156,7 @@ export class SyncManager {
     await this.notify();
 
     if (typeof navigator !== 'undefined' && navigator.onLine) {
-      this.flushSyncQueue().catch(() => {});
+      this.flushSyncQueue().catch(err => console.error('[SyncManager] Background flush error:', err));
     }
 
     return tempClientId;
@@ -164,44 +166,78 @@ export class SyncManager {
    * Flushes all queued offline actions to the server.
    */
   public async flushSyncQueue(): Promise<{ processed: number }> {
-    const items = await clientDb.pending_sync_queue.toArray();
-    if (items.length === 0) {
-      this.state = 'ONLINE_SYNCED';
-      await this.notify();
-      return { processed: 0 };
+    if (this.isFlushing && this.flushPromise) {
+      return this.flushPromise;
     }
 
-    this.state = 'SYNCING';
-    await this.notify();
-
-    try {
-      const res = await fetch('/api/sync/flush', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ operations: items })
-      });
-
-      if (!res.ok) {
-        throw new Error(`Sync flush failed with status ${res.status}`);
+    this.isFlushing = true;
+    this.flushPromise = (async () => {
+      const items = await clientDb.pending_sync_queue.toArray();
+      if (items.length === 0) {
+        this.state = 'ONLINE_SYNCED';
+        await this.notify();
+        return { processed: 0 };
       }
 
-      const data = await res.json();
-
-      // Clear synced items from queue
-      const queueIds = items.map(i => i.queue_id!).filter(Boolean);
-      await clientDb.pending_sync_queue.bulkDelete(queueIds);
-
-      // Refresh master catalog
-      await this.pullMasterCatalog();
-
-      this.state = 'ONLINE_SYNCED';
+      this.state = 'SYNCING';
       await this.notify();
-      return { processed: data.processed_count || items.length };
-    } catch (err) {
-      console.warn('[SyncManager] Flush failed, keeping queue for next retry:', err);
-      this.state = 'OFFLINE_PENDING';
-      await this.notify();
-      throw err;
+
+      try {
+        const res = await fetch('/api/sync/flush', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ operations: items })
+        });
+
+        if (!res.ok) {
+          throw new Error(`Sync flush failed with status ${res.status}`);
+        }
+
+        const data = await res.json();
+
+        // Flag failed items for manual review in queue
+        if (Array.isArray(data.failed) && data.failed.length > 0) {
+          for (const f of data.failed) {
+            const item = items.find(i => i.temp_client_id === f.temp_client_id);
+            if (item && item.queue_id) {
+              await clientDb.pending_sync_queue.update(item.queue_id, {
+                error: f.reason || 'FAILED',
+                needs_review: true
+              });
+            }
+          }
+        }
+
+        // Delete only the queue items whose temp_client_id appears in the server's reconciled response
+        const reconciledClientIds = new Set((data.reconciled || []).map((r: any) => r.temp_client_id));
+        const queueIdsToDelete = items
+          .filter(i => reconciledClientIds.has(i.temp_client_id) && i.queue_id)
+          .map(i => i.queue_id!);
+
+        if (queueIdsToDelete.length > 0) {
+          await clientDb.pending_sync_queue.bulkDelete(queueIdsToDelete);
+        }
+
+        // Refresh master catalog
+        await this.pullMasterCatalog();
+
+        const remainingCount = await this.getPendingCount();
+        this.state = remainingCount > 0 ? 'OFFLINE_PENDING' : 'ONLINE_SYNCED';
+        await this.notify();
+        return { processed: data.processed_count ?? (data.reconciled ? data.reconciled.length : 0) };
+      } catch (err) {
+        console.warn('[SyncManager] Flush failed, keeping queue for next retry:', err);
+        this.state = 'OFFLINE_PENDING';
+        await this.notify();
+        throw err;
+      }
+    })();
+
+    try {
+      return await this.flushPromise;
+    } finally {
+      this.isFlushing = false;
+      this.flushPromise = null;
     }
   }
 }
