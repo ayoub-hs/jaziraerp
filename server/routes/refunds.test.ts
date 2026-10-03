@@ -223,4 +223,58 @@ describe('Returns & Line-Item Partial Refunds Module — Real HTTP Integration T
     expect(listRes.body).toHaveLength(1);
     expect(listRes.body[0].wallet_refunded).toBe(10.000);
   });
+
+  it('guarantees exact remaining amount is refunded on the last unit of a line without rounding loss', async () => {
+    // 3 items @ 5.000 with 5.000 discount -> line_total = 10.000 DT (3.333333... DT effective each)
+    const saleRes = await request(app)
+      .post('/api/sales')
+      .send({
+        items: [{ is_quick_add: 1, quick_add_name: '3-for-10 Special', quantity: 3, unit_price: 5.000, discount_amount: 5.000 }],
+        subtotal_ht: 8.403,
+        tva_rate: 0.19,
+        tva_amount: 1.597,
+        total_ttc: 10.000,
+        cash_paid: 10.000
+      });
+
+    expect(saleRes.status).toBe(201);
+    const saleId = saleRes.body.sale.id;
+    const db = getDb();
+    const item: any = db.prepare('SELECT id FROM sale_items WHERE sale_id = ?').get(saleId);
+
+    // Refund unit 1: effectiveUnitPrice = 10 / 3 = 3.333 DT
+    const r1 = await request(app)
+      .post(`/api/sales/${saleId}/refund`)
+      .send({
+        items: [{ sale_item_id: item.id, quantity: 1 }],
+        cash_refunded: 3.333
+      });
+    expect(r1.status).toBe(201);
+    expect(r1.body.total_refunded).toBe(3.333);
+
+    // Refund unit 2: effectiveUnitPrice = 10 / 3 = 3.333 DT
+    const r2 = await request(app)
+      .post(`/api/sales/${saleId}/refund`)
+      .send({
+        items: [{ sale_item_id: item.id, quantity: 1 }],
+        cash_refunded: 3.333
+      });
+    expect(r2.status).toBe(201);
+    expect(r2.body.total_refunded).toBe(3.333);
+
+    // Refund unit 3 (last remaining unit): 10.000 - (3.333 + 3.333) = 3.334 DT
+    const r3 = await request(app)
+      .post(`/api/sales/${saleId}/refund`)
+      .send({
+        items: [{ sale_item_id: item.id, quantity: 1 }],
+        cash_refunded: 3.334
+      });
+    expect(r3.status).toBe(201);
+    expect(r3.body.total_refunded).toBe(3.334);
+    expect(r3.body.sale_status).toBe('FULLY_REFUNDED');
+
+    // Total of all 3 refunds equals 10.000 DT exactly
+    const sumRefunds: any = db.prepare('SELECT SUM(total_refunded) as sum FROM refunds WHERE sale_id = ?').get(saleId);
+    expect(sumRefunds.sum).toBe(10.000);
+  });
 });

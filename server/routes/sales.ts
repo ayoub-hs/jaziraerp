@@ -655,9 +655,24 @@ export function processRefund(saleId: string, req: Request, res: Response) {
       return;
     }
 
-    // Effective unit price for this line item
-    const effectiveUnitPrice = saleItem.line_total / saleItem.quantity;
-    const amountRefunded = round3(effectiveUnitPrice * qtyToRefund);
+    // For the last remaining quantity of a line, amountRefunded = line_total - already_refunded; otherwise effective unit price
+    let amountRefunded: number;
+    if (qtyToRefund === availableToRefund) {
+      const alreadyRefundedRow: any = db.prepare(`
+        SELECT COALESCE(SUM(amount_refunded), 0) as already_refunded
+        FROM refund_items
+        WHERE sale_item_id = ?
+      `).get(saleItem.id);
+      const alreadyRefundedDb = round3(alreadyRefundedRow?.already_refunded || 0);
+      const processedForThisLine = processedRefundItems
+        .filter(p => p.sale_item.id === saleItem.id)
+        .reduce((sum, p) => sum + p.amount_refunded, 0);
+      const alreadyRefunded = round3(alreadyRefundedDb + processedForThisLine);
+      amountRefunded = round3(saleItem.line_total - alreadyRefunded);
+    } else {
+      const effectiveUnitPrice = saleItem.line_total / saleItem.quantity;
+      amountRefunded = round3(effectiveUnitPrice * qtyToRefund);
+    }
 
     totalRefunded = addMoney(totalRefunded, amountRefunded);
     processedRefundItems.push({
