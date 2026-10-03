@@ -22,7 +22,6 @@ import { hardwareRouter } from './routes/hardware.js';
 import { categoriesRouter } from './routes/categories.js';
 import { reportsRouter } from './routes/reports.js';
 import { backupService } from './services/backupService.js';
-import { seedDatabase } from './db/seed.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -45,10 +44,9 @@ app.use(cors({
 }));
 app.use(express.json({ limit: '10mb' }));
 
-// Initialize SQLite database schema & seed initial data
+// Initialize SQLite database schema
 getDb();
 if (process.env.NODE_ENV !== 'test') {
-  seedDatabase();
   backupService.startDailySchedule();
 }
 
