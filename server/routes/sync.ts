@@ -97,6 +97,21 @@ syncRouter.post('/flush', (req: Request, res: Response) => {
       const { temp_client_id, action_type, payload } = op;
 
       if (action_type === 'SALE') {
+        const clientId = temp_client_id || payload?.temp_client_id;
+        if (clientId) {
+          const existingSale: any = db.prepare('SELECT id, receipt_number FROM sales WHERE synced_from_client_id = ?').get(clientId);
+          if (existingSale) {
+            reconciled.push({
+              temp_client_id: clientId,
+              action_type: 'SALE',
+              server_id: existingSale.id,
+              receipt_number: existingSale.receipt_number,
+              status: 'SYNCED'
+            });
+            continue;
+          }
+        }
+
         const saleId = crypto.randomUUID();
         const receiptNumber = generateReceiptNumber(db);
         const date = payload.date || now;

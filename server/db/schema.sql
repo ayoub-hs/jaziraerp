@@ -411,3 +411,4 @@ CREATE INDEX IF NOT EXISTS idx_purchases_supplier ON purchases(supplier_id);
 CREATE INDEX IF NOT EXISTS idx_purchases_date ON purchases(date);
 CREATE INDEX IF NOT EXISTS idx_batches_product ON production_batches(target_product_id);
 CREATE INDEX IF NOT EXISTS idx_register_movements_session ON register_cash_movements(session_id);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_sales_synced_client_id ON sales(synced_from_client_id) WHERE synced_from_client_id IS NOT NULL;

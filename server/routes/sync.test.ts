@@ -184,4 +184,50 @@ describe('Offline Storage & Sync Engine Module (HTTP Routes)', () => {
     const loan = loansRes.body.find((l: any) => l.container_type_id === containerTypeId);
     expect(loan.quantity_owed).toBe(3);
   });
+
+  it('idempotently skips and reconciles duplicate SALE op with existing synced_from_client_id', async () => {
+    const salePayload = {
+      cash_paid: 10,
+      wallet_paid: 0,
+      credit_amount: 0,
+      items: [{ quick_add_name: 'Custom Service', unit_price: 10, quantity: 1, is_quick_add: 1 }]
+    };
+
+    const firstFlush = await request(app)
+      .post('/api/sync/flush')
+      .send({
+        operations: [
+          {
+            temp_client_id: 'temp-sale-unique-123',
+            action_type: 'SALE',
+            payload: salePayload
+          }
+        ]
+      });
+    expect(firstFlush.status).toBe(200);
+    expect(firstFlush.body.processed_count).toBe(1);
+    const serverId = firstFlush.body.reconciled[0].server_id;
+
+    // Second flush with the exact same temp_client_id
+    const secondFlush = await request(app)
+      .post('/api/sync/flush')
+      .send({
+        operations: [
+          {
+            temp_client_id: 'temp-sale-unique-123',
+            action_type: 'SALE',
+            payload: salePayload
+          }
+        ]
+      });
+    expect(secondFlush.status).toBe(200);
+    expect(secondFlush.body.reconciled[0].server_id).toBe(serverId);
+    expect(secondFlush.body.reconciled[0].status).toBe('SYNCED');
+
+    // Confirm only 1 sale exists in database
+    const db = getDb();
+    const count: any = db.prepare('SELECT COUNT(*) as c FROM sales WHERE synced_from_client_id = ?').get('temp-sale-unique-123');
+    expect(count.c).toBe(1);
+  });
 });
+
