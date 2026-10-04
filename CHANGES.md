@@ -1,0 +1,12 @@
+- d4abfb7 fix: preserve cart items on checkout cancel and reset on sale done
+- 208794d fix: prevent double submit with ref guard and state, show error notices
+- 5acb9f0 fix: filter needs_review items from sync flush and expose review badge in header
+- 02c5169 fix: apply pack size price override for retail customers in cart
+- f20f083 fix: align invoice print total with sale total by removing uncollected fiscal stamp
+- edb01d8 fix: render setup modal exclusively without pin unlock pad underneath
+- a04f94a fix: auto-select refundable item and disable submit when fully refunded in refund modal
+- 74eb0d0 fix: share lazy module-level audio context across audio utils and scanner modal
+- 29114c4 fix: do not retry serial port request on user cancellation
+- cee003f fix: hide initial wallet balance field when editing customer
+- f2c2d7d fix: guard against null and undefined amounts in reports csv export
+- 962f0e3 fix: add 1-second cooldown to drawer kick and printer test in header
