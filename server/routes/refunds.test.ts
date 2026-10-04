@@ -277,4 +277,50 @@ describe('Returns & Line-Item Partial Refunds Module — Real HTTP Integration T
     const sumRefunds: any = db.prepare('SELECT SUM(total_refunded) as sum FROM refunds WHERE sale_id = ?').get(saleId);
     expect(sumRefunds.sum).toBe(10.000);
   });
+
+  it('rejects cash refund with 400 when register session is closed, but links to open session and updates expected cash when open', async () => {
+    const db = getDb();
+
+    // 1. Create a cash sale
+    const saleRes = await request(app)
+      .post('/api/sales')
+      .send({
+        customer_id: 'cust-refund-test',
+        items: [{ product_id: 'prod-bleach', quantity: 2, unit_price: 2.000 }],
+        cash_paid: 4.000,
+        cash_tendered: 4.000
+      });
+    expect(saleRes.status).toBe(201);
+    const saleId = saleRes.body.id;
+    const bleachItem: any = db.prepare('SELECT id FROM sale_items WHERE sale_id = ?').get(saleId);
+
+    // 2. Close the open session
+    db.prepare("UPDATE register_sessions SET status = 'CLOSED' WHERE id = 'ses-refund-test'").run();
+
+    // 3. Attempt cash refund with closed register -> 400
+    const closedRes = await request(app)
+      .post(`/api/sales/${saleId}/refund`)
+      .send({
+        items: [{ sale_item_id: bleachItem.id, quantity: 1 }],
+        cash_refunded: 2.000
+      });
+    expect(closedRes.status).toBe(400);
+    expect(closedRes.body.error).toContain('La caisse est fermée');
+
+    // 4. Reopen register session
+    db.prepare("UPDATE register_sessions SET status = 'OPEN' WHERE id = 'ses-refund-test'").run();
+
+    // 5. Attempt cash refund again -> succeeds (201) and links to open session
+    const openRes = await request(app)
+      .post(`/api/sales/${saleId}/refund`)
+      .send({
+        items: [{ sale_item_id: bleachItem.id, quantity: 1 }],
+        cash_refunded: 2.000
+      });
+    expect(openRes.status).toBe(201);
+
+    const refundRow: any = db.prepare('SELECT session_id FROM refunds WHERE id = ?').get(openRes.body.id);
+    expect(refundRow.session_id).toBe('ses-refund-test');
+  });
 });
+

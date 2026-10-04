@@ -690,14 +690,21 @@ export function processRefund(saleId: string, req: Request, res: Response) {
     date = new Date().toISOString()
   } = req.body;
 
-  const session_id = directSessionId || register_session_id || null;
+  const db = getDb();
+
+  let session: any = null;
+  const rawSessionId = directSessionId || register_session_id || null;
+  if (rawSessionId) {
+    session = db.prepare('SELECT * FROM register_sessions WHERE id = ?').get(rawSessionId);
+  } else {
+    session = db.prepare("SELECT * FROM register_sessions WHERE status = 'OPEN' ORDER BY opened_at DESC LIMIT 1").get();
+  }
 
   if (!Array.isArray(items) || items.length === 0) {
     res.status(400).json({ error: 'At least one line item must be refunded' });
     return;
   }
 
-  const db = getDb();
   const sale: any = db.prepare('SELECT * FROM sales WHERE id = ? OR receipt_number = ?').get(saleId, saleId);
   if (!sale) {
     res.status(404).json({ error: 'Sale not found' });
@@ -801,6 +808,16 @@ export function processRefund(saleId: string, req: Request, res: Response) {
     return;
   }
 
+  // Cash refunds require an active open register session
+  if (cashPayout > 0) {
+    if (!session || session.status !== 'OPEN') {
+      res.status(400).json({
+        error: 'La caisse est fermée. Une session de caisse ouverte est obligatoire pour effectuer un remboursement en espèces. (An active open register session is required for cash refunds).'
+      });
+      return;
+    }
+  }
+
   // 3. TARGETED CREDIT REDUCTION: Must reduce the specific ticket tied to THIS sale_id
   let targetTicket: any = null;
   if (creditReduction > 0) {
@@ -847,7 +864,7 @@ export function processRefund(saleId: string, req: Request, res: Response) {
       walletPayout,
       creditReduction,
       reason,
-      session_id || null,
+      session ? session.id : null,
       now
     );
 
