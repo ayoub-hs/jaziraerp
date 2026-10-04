@@ -1,6 +1,8 @@
 /// <reference types="vitest" />
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
+import os from 'os';
+import path from 'path';
 
 export default defineConfig({
   plugins: [react()],
@@ -17,6 +19,9 @@ export default defineConfig({
     globals: true,
     environment: 'node',
     fileParallelism: false,
-    include: ['server/**/*.test.ts', 'src/**/*.test.ts', 'src/**/*.test.tsx', 'tests/**/*.test.ts']
+    include: ['server/**/*.test.ts', 'src/**/*.test.ts', 'src/**/*.test.tsx', 'tests/**/*.test.ts'],
+    env: {
+      DATABASE_PATH: path.join(os.tmpdir(), 'erp-test.sqlite')
+    }
   }
 });
