@@ -184,7 +184,7 @@ export const CreateCustomerModal: React.FC<CreateCustomerModalProps> = ({
             />
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
+          <div className={!customerToEdit ? "grid grid-cols-2 gap-3" : ""}>
             {type === 'RESELLER' ? (
               <div>
                 <label className="block font-bold text-slate-700 mb-1">Reseller Discount %</label>
@@ -210,17 +210,19 @@ export const CreateCustomerModal: React.FC<CreateCustomerModalProps> = ({
               </div>
             )}
 
-            <div>
-              <label className="block font-bold text-slate-700 mb-1">Initial Wallet Credit (DT)</label>
-              <input
-                type="number"
-                min="0"
-                step="0.001"
-                value={walletBalance}
-                onChange={e => setWalletBalance(e.target.value)}
-                className="w-full font-bold font-mono px-3 py-2 border border-slate-300 rounded-xl focus:ring-2 focus:ring-amber-500 outline-none"
-              />
-            </div>
+            {!customerToEdit && (
+              <div>
+                <label className="block font-bold text-slate-700 mb-1">Initial Wallet Credit (DT)</label>
+                <input
+                  type="number"
+                  min="0"
+                  step="0.001"
+                  value={walletBalance}
+                  onChange={e => setWalletBalance(e.target.value)}
+                  className="w-full font-bold font-mono px-3 py-2 border border-slate-300 rounded-xl focus:ring-2 focus:ring-amber-500 outline-none"
+                />
+              </div>
+            )}
           </div>
 
           {/* Footer */}
