@@ -110,8 +110,8 @@ describe('SQLite Database Schema & Integrity', () => {
     `).run();
 
     db.prepare(`
-      INSERT INTO sale_items (id, sale_id, quantity, quantity_refunded, base_stock_deducted, unit_price, line_total)
-      VALUES ('item-1', 'sale-1', 5, 0, 5, 20.000, 100.000)
+      INSERT INTO sale_items (id, sale_id, is_quick_add, quantity, quantity_refunded, base_stock_deducted, unit_price, line_total)
+      VALUES ('item-1', 'sale-1', 1, 5, 0, 5, 20.000, 100.000)
     `).run();
 
     // Insert a partial refund of 2 units
@@ -139,5 +139,129 @@ describe('SQLite Database Schema & Integrity', () => {
 
     const item: any = db.prepare('SELECT * FROM sale_items WHERE id = ?').get('item-1');
     expect(item.quantity_refunded).toBe(2);
+  });
+
+  describe('C1: Table CHECK Constraints', () => {
+    it('enforces customers.wallet_balance >= 0', () => {
+      expect(() => {
+        db.prepare(`
+          INSERT INTO customers (id, name, type, wallet_balance, created_at, updated_at)
+          VALUES ('c-neg', 'Negative Wallet', 'RETAIL', -5.000, '2026-09-07', '2026-09-07')
+        `).run();
+      }).toThrow(/CHECK constraint failed/);
+
+      // Positive and zero succeed
+      db.prepare(`
+        INSERT INTO customers (id, name, type, wallet_balance, created_at, updated_at)
+        VALUES ('c-zero', 'Zero Wallet', 'RETAIL', 0, '2026-09-07', '2026-09-07')
+      `).run();
+      const c: any = db.prepare('SELECT wallet_balance FROM customers WHERE id = ?').get('c-zero');
+      expect(c.wallet_balance).toBe(0);
+    });
+
+    it('enforces customer_debt_tickets remaining_amount >= 0', () => {
+      db.prepare(`
+        INSERT INTO customers (id, name, type, wallet_balance, created_at, updated_at)
+        VALUES ('c-debt', 'Debt Cust', 'RETAIL', 0, '2026-09-07', '2026-09-07')
+      `).run();
+
+      expect(() => {
+        db.prepare(`
+          INSERT INTO customer_debt_tickets (id, ticket_number, customer_id, date, total_amount, remaining_amount, status, created_at, updated_at)
+          VALUES ('cdt-neg', 'TKT-NEG', 'c-debt', '2026-09-07', 100, -10, 'UNPAID', '2026-09-07', '2026-09-07')
+        `).run();
+      }).toThrow(/CHECK constraint failed/);
+    });
+
+    it('enforces supplier_debt_tickets remaining_amount >= 0', () => {
+      db.prepare(`
+        INSERT INTO suppliers (id, name, created_at, updated_at)
+        VALUES ('sup-tst', 'Supplier Test', '2026-09-07', '2026-09-07')
+      `).run();
+
+      expect(() => {
+        db.prepare(`
+          INSERT INTO supplier_debt_tickets (id, ticket_number, supplier_id, date, total_amount, remaining_amount, status, created_at, updated_at)
+          VALUES ('sdt-neg', 'STKT-NEG', 'sup-tst', '2026-09-07', 100, -5, 'UNPAID', '2026-09-07', '2026-09-07')
+        `).run();
+      }).toThrow(/CHECK constraint failed/);
+    });
+
+    it('enforces purchase_items item_type and foreign key consistency', () => {
+      db.prepare(`
+        INSERT INTO suppliers (id, name, created_at, updated_at)
+        VALUES ('sup-pi', 'Supplier PI', '2026-09-07', '2026-09-07')
+      `).run();
+      db.prepare(`
+        INSERT INTO purchases (id, purchase_number, supplier_id, date, total_amount, payment_status, created_at)
+        VALUES ('po-pi', 'PO-PI', 'sup-pi', '2026-09-07', 100, 'PAID', '2026-09-07')
+      `).run();
+      db.prepare(`
+        INSERT INTO raw_materials (id, name, category, unit, created_at, updated_at)
+        VALUES ('mat-pi', 'Surfactant', 'surfactant', 'kg', '2026-09-07', '2026-09-07')
+      `).run();
+
+      // RAW_MATERIAL without material_id must fail
+      expect(() => {
+        db.prepare(`
+          INSERT INTO purchase_items (id, purchase_id, item_type, material_id, product_id, quantity, unit_cost, total_cost)
+          VALUES ('pi-bad', 'po-pi', 'RAW_MATERIAL', NULL, NULL, 10, 5, 50)
+        `).run();
+      }).toThrow(/CHECK constraint failed/);
+
+      // RAW_MATERIAL with material_id succeeds
+      db.prepare(`
+        INSERT INTO purchase_items (id, purchase_id, item_type, material_id, product_id, quantity, unit_cost, total_cost)
+        VALUES ('pi-good', 'po-pi', 'RAW_MATERIAL', 'mat-pi', NULL, 10, 5, 50)
+      `).run();
+      const pi: any = db.prepare('SELECT * FROM purchase_items WHERE id = ?').get('pi-good');
+      expect(pi.material_id).toBe('mat-pi');
+    });
+
+    it('enforces sale_items is_quick_add or product_id requirement', () => {
+      db.prepare(`
+        INSERT INTO sales (id, receipt_number, date, subtotal_ht, tva_rate, tva_amount, total_ttc, status, created_at)
+        VALUES ('s-chk', 'REC-CHK', '2026-09-07', 10, 0.19, 1.9, 11.9, 'COMPLETED', '2026-09-07')
+      `).run();
+
+      // Not quick add and product_id is NULL must fail
+      expect(() => {
+        db.prepare(`
+          INSERT INTO sale_items (id, sale_id, product_id, is_quick_add, quantity, base_stock_deducted, unit_price, line_total)
+          VALUES ('si-bad', 's-chk', NULL, 0, 1, 1, 10, 10)
+        `).run();
+      }).toThrow(/CHECK constraint failed/);
+
+      // is_quick_add = 1 without product_id succeeds
+      db.prepare(`
+        INSERT INTO sale_items (id, sale_id, product_id, is_quick_add, quick_add_name, quantity, base_stock_deducted, unit_price, line_total)
+        VALUES ('si-qa', 's-chk', NULL, 1, 'Custom Service', 1, 0, 10, 10)
+      `).run();
+      const si: any = db.prepare('SELECT * FROM sale_items WHERE id = ?').get('si-qa');
+      expect(si.is_quick_add).toBe(1);
+    });
+
+    it('enforces inventory_adjustments item_type and foreign key consistency', () => {
+      db.prepare(`
+        INSERT INTO raw_materials (id, name, category, unit, created_at, updated_at)
+        VALUES ('mat-adj', 'Dye', 'dye', 'kg', '2026-09-07', '2026-09-07')
+      `).run();
+
+      // RAW_MATERIAL without material_id must fail
+      expect(() => {
+        db.prepare(`
+          INSERT INTO inventory_adjustments (id, date, item_type, material_id, product_id, quantity_delta, reason, created_at)
+          VALUES ('adj-bad', '2026-09-07', 'RAW_MATERIAL', NULL, NULL, 5, 'Audit count', '2026-09-07')
+        `).run();
+      }).toThrow(/CHECK constraint failed/);
+
+      // RAW_MATERIAL with material_id succeeds
+      db.prepare(`
+        INSERT INTO inventory_adjustments (id, date, item_type, material_id, product_id, quantity_delta, reason, created_at)
+        VALUES ('adj-good', '2026-09-07', 'RAW_MATERIAL', 'mat-adj', NULL, 5, 'Audit count', '2026-09-07')
+      `).run();
+      const adj: any = db.prepare('SELECT * FROM inventory_adjustments WHERE id = ?').get('adj-good');
+      expect(adj.material_id).toBe('mat-adj');
+    });
   });
 });
