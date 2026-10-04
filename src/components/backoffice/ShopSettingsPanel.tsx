@@ -8,6 +8,8 @@ export const ShopSettingsPanel: React.FC = () => {
   const [shopAddress, setShopAddress] = useState('');
   const [shopPhone, setShopPhone] = useState('');
   const [taxId, setTaxId] = useState('');
+  const [defaultRetailMarkup, setDefaultRetailMarkup] = useState('');
+  const [defaultWholesaleMarkup, setDefaultWholesaleMarkup] = useState('');
 
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
@@ -28,6 +30,8 @@ export const ShopSettingsPanel: React.FC = () => {
       setShopAddress(cached.shop_address);
       setShopPhone(cached.shop_phone);
       setTaxId(cached.tax_id);
+      setDefaultRetailMarkup(cached.default_retail_markup_percent || '');
+      setDefaultWholesaleMarkup(cached.default_wholesale_markup_percent || '');
 
       const res = await fetch('/api/settings/shop');
       if (res.ok) {
@@ -37,6 +41,8 @@ export const ShopSettingsPanel: React.FC = () => {
         setShopAddress(data.shop_address);
         setShopPhone(data.shop_phone);
         setTaxId(data.tax_id);
+        setDefaultRetailMarkup(data.default_retail_markup_percent || '');
+        setDefaultWholesaleMarkup(data.default_wholesale_markup_percent || '');
         setCachedShopInfo(data);
       }
     } catch (err: any) {
@@ -59,7 +65,9 @@ export const ShopSettingsPanel: React.FC = () => {
         shop_subtitle: shopSubtitle,
         shop_address: shopAddress,
         shop_phone: shopPhone,
-        tax_id: taxId
+        tax_id: taxId,
+        default_retail_markup_percent: defaultRetailMarkup,
+        default_wholesale_markup_percent: defaultWholesaleMarkup
       };
 
       const res = await fetch('/api/settings/shop', {
@@ -79,6 +87,8 @@ export const ShopSettingsPanel: React.FC = () => {
       setShopAddress(saved.shop_address);
       setShopPhone(saved.shop_phone);
       setTaxId(saved.tax_id);
+      setDefaultRetailMarkup(saved.default_retail_markup_percent || '');
+      setDefaultWholesaleMarkup(saved.default_wholesale_markup_percent || '');
       setCachedShopInfo(saved);
 
       setStatusMsg({
@@ -228,6 +238,52 @@ export const ShopSettingsPanel: React.FC = () => {
               className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-emerald-500 text-sm font-mono font-semibold text-slate-900 bg-white disabled:bg-slate-50"
             />
             <p className="text-[11px] text-slate-400 mt-1">Identifiant fiscal légal (max 30 caractères).</p>
+          </div>
+        </div>
+
+        {/* Default Markups for Pricing Suggestions */}
+        <div className="pt-3 border-t border-slate-100">
+          <h2 className="text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">
+            Marges par défaut / Default Markups (%)
+          </h2>
+          <p className="text-[11px] text-slate-400 mb-3">
+            Pourcentages de marge utilisés pour suggérer les prix de vente dans le formulaire de création de produit. Laisser vide si aucune suggestion par défaut.
+          </p>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-xs font-bold text-slate-700 mb-1">
+                Marge Détail par défaut (%) / Default Retail Markup (%)
+              </label>
+              <input
+                type="number"
+                step="0.1"
+                min="0"
+                max="1000"
+                value={defaultRetailMarkup}
+                onChange={e => setDefaultRetailMarkup(e.target.value)}
+                placeholder="ex: 30"
+                disabled={isLoading || isSaving}
+                className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-emerald-500 text-sm font-mono font-semibold text-slate-900 bg-white disabled:bg-slate-50"
+              />
+              <p className="text-[11px] text-slate-400 mt-1">Entre 0 et 1000 % (ex: 30 pour 30%).</p>
+            </div>
+            <div>
+              <label className="block text-xs font-bold text-slate-700 mb-1">
+                Marge Gros par défaut (%) / Default Wholesale Markup (%)
+              </label>
+              <input
+                type="number"
+                step="0.1"
+                min="0"
+                max="1000"
+                value={defaultWholesaleMarkup}
+                onChange={e => setDefaultWholesaleMarkup(e.target.value)}
+                placeholder="ex: 20"
+                disabled={isLoading || isSaving}
+                className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-emerald-500 text-sm font-mono font-semibold text-slate-900 bg-white disabled:bg-slate-50"
+              />
+              <p className="text-[11px] text-slate-400 mt-1">Entre 0 et 1000 % (ex: 20 pour 20%).</p>
+            </div>
           </div>
         </div>
 

@@ -22,7 +22,9 @@ describe('F6: Settings Route, Sales Integration, and Migration Cleanup', () => {
       shop_subtitle: '',
       shop_address: '',
       shop_phone: '',
-      tax_id: ''
+      tax_id: '',
+      default_retail_markup_percent: '',
+      default_wholesale_markup_percent: ''
     });
   });
 
@@ -45,7 +47,9 @@ describe('F6: Settings Route, Sales Integration, and Migration Cleanup', () => {
       shop_subtitle: 'Hygiène Pro',
       shop_address: 'Rue de la République, Djerba',
       shop_phone: '+216 75 123 456',
-      tax_id: '9876543/B/N/000'
+      tax_id: '9876543/B/N/000',
+      default_retail_markup_percent: '',
+      default_wholesale_markup_percent: ''
     });
 
     // Verify GET returns the saved data
@@ -56,7 +60,9 @@ describe('F6: Settings Route, Sales Integration, and Migration Cleanup', () => {
       shop_subtitle: 'Hygiène Pro',
       shop_address: 'Rue de la République, Djerba',
       shop_phone: '+216 75 123 456',
-      tax_id: '9876543/B/N/000'
+      tax_id: '9876543/B/N/000',
+      default_retail_markup_percent: '',
+      default_wholesale_markup_percent: ''
     });
   });
 
@@ -172,4 +178,56 @@ describe('F6: Settings Route, Sales Integration, and Migration Cleanup', () => {
 
     memoryDb.close();
   });
+
+  it('validates default_retail_markup_percent and default_wholesale_markup_percent range (0-1000) and blank allowed', async () => {
+    // Valid values (numeric or numeric strings, float allowed)
+    const validRes = await request(app)
+      .put('/api/settings/shop')
+      .send({
+        default_retail_markup_percent: 30,
+        default_wholesale_markup_percent: '25.5'
+      });
+    expect(validRes.status).toBe(200);
+    expect(validRes.body.default_retail_markup_percent).toBe('30');
+    expect(validRes.body.default_wholesale_markup_percent).toBe('25.5');
+
+    // Blank allowed
+    const blankRes = await request(app)
+      .put('/api/settings/shop')
+      .send({
+        default_retail_markup_percent: '',
+        default_wholesale_markup_percent: null
+      });
+    expect(blankRes.status).toBe(200);
+    expect(blankRes.body.default_retail_markup_percent).toBe('');
+    expect(blankRes.body.default_wholesale_markup_percent).toBe('');
+
+    // Rejection: negative < 0
+    const negRes = await request(app)
+      .put('/api/settings/shop')
+      .send({
+        default_retail_markup_percent: -5
+      });
+    expect(negRes.status).toBe(400);
+    expect(negRes.body.error).toContain('must be a number between 0 and 1000');
+
+    // Rejection: > 1000
+    const overRes = await request(app)
+      .put('/api/settings/shop')
+      .send({
+        default_wholesale_markup_percent: 1001
+      });
+    expect(overRes.status).toBe(400);
+    expect(overRes.body.error).toContain('must be a number between 0 and 1000');
+
+    // Rejection: non-numeric string
+    const nanRes = await request(app)
+      .put('/api/settings/shop')
+      .send({
+        default_retail_markup_percent: 'abc'
+      });
+    expect(nanRes.status).toBe(400);
+    expect(nanRes.body.error).toContain('must be a number between 0 and 1000');
+  });
 });
+

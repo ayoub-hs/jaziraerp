@@ -11,7 +11,15 @@ const MAX_LENGTHS: Record<string, number> = {
   tax_id: 30
 };
 
-const WHITELIST_KEYS = ['shop_name', 'shop_subtitle', 'shop_address', 'shop_phone', 'tax_id'] as const;
+const WHITELIST_KEYS = [
+  'shop_name',
+  'shop_subtitle',
+  'shop_address',
+  'shop_phone',
+  'tax_id',
+  'default_retail_markup_percent',
+  'default_wholesale_markup_percent'
+] as const;
 
 export interface ShopSettings {
   shop_name: string;
@@ -19,12 +27,14 @@ export interface ShopSettings {
   shop_address: string;
   shop_phone: string;
   tax_id: string;
+  default_retail_markup_percent: string;
+  default_wholesale_markup_percent: string;
 }
 
 export function getShopSettingsFromDb(db = getDb()): ShopSettings {
   const rows: any[] = db.prepare(`
     SELECT key, value FROM settings 
-    WHERE key IN ('shop_name', 'shop_subtitle', 'shop_address', 'shop_phone', 'tax_id')
+    WHERE key IN ('shop_name', 'shop_subtitle', 'shop_address', 'shop_phone', 'tax_id', 'default_retail_markup_percent', 'default_wholesale_markup_percent')
   `).all();
 
   const settings: ShopSettings = {
@@ -32,7 +42,9 @@ export function getShopSettingsFromDb(db = getDb()): ShopSettings {
     shop_subtitle: '',
     shop_address: '',
     shop_phone: '',
-    tax_id: ''
+    tax_id: '',
+    default_retail_markup_percent: '',
+    default_wholesale_markup_percent: ''
   };
 
   for (const row of rows) {
@@ -67,19 +79,46 @@ settingsRouter.put('/shop', (req: Request, res: Response) => {
   for (const key of WHITELIST_KEYS) {
     if (key in body) {
       const val = body[key];
-      if (typeof val !== 'string') {
-        res.status(400).json({ error: `Field "${key}" must be a string` });
-        return;
+      if (key === 'default_retail_markup_percent' || key === 'default_wholesale_markup_percent') {
+        if (val === '' || val === null || val === undefined) {
+          updates[key] = '';
+        } else if (typeof val === 'number') {
+          if (isNaN(val) || val < 0 || val > 1000) {
+            res.status(400).json({ error: `Field "${key}" must be a number between 0 and 1000` });
+            return;
+          }
+          updates[key] = String(val);
+        } else if (typeof val === 'string') {
+          const trimmed = val.trim();
+          if (trimmed === '') {
+            updates[key] = '';
+          } else {
+            const num = Number(trimmed);
+            if (isNaN(num) || num < 0 || num > 1000) {
+              res.status(400).json({ error: `Field "${key}" must be a number between 0 and 1000` });
+              return;
+            }
+            updates[key] = trimmed;
+          }
+        } else {
+          res.status(400).json({ error: `Field "${key}" must be a number between 0 and 1000` });
+          return;
+        }
+      } else {
+        if (typeof val !== 'string') {
+          res.status(400).json({ error: `Field "${key}" must be a string` });
+          return;
+        }
+        const trimmed = val.trim();
+        const maxLen = MAX_LENGTHS[key];
+        if (maxLen && trimmed.length > maxLen) {
+          res.status(400).json({ 
+            error: `Field "${key}" exceeds maximum length of ${maxLen} characters (received ${trimmed.length})` 
+          });
+          return;
+        }
+        updates[key] = trimmed;
       }
-      const trimmed = val.trim();
-      const maxLen = MAX_LENGTHS[key];
-      if (trimmed.length > maxLen) {
-        res.status(400).json({ 
-          error: `Field "${key}" exceeds maximum length of ${maxLen} characters (received ${trimmed.length})` 
-        });
-        return;
-      }
-      updates[key] = trimmed;
     }
   }
 

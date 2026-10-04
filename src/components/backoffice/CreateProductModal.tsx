@@ -63,6 +63,58 @@ export const CreateProductModal: React.FC<CreateProductModalProps> = ({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  // Price markup suggestions
+  const [retailMarkup, setRetailMarkup] = useState('');
+  const [wholesaleMarkup, setWholesaleMarkup] = useState('');
+
+  // Prefill default markup percentages from shop settings
+  useEffect(() => {
+    if (isOpen) {
+      fetch('/api/settings/shop')
+        .then(res => res.ok ? res.json() : null)
+        .then(data => {
+          if (data) {
+            setRetailMarkup(data.default_retail_markup_percent ? String(data.default_retail_markup_percent) : '');
+            setWholesaleMarkup(data.default_wholesale_markup_percent ? String(data.default_wholesale_markup_percent) : '');
+          }
+        })
+        .catch(() => {});
+    }
+  }, [isOpen]);
+
+  const costNum = parseFloat(costReference);
+  const isCostValid = !isNaN(costNum) && costNum > 0;
+
+  const retailMarkupNum = parseFloat(retailMarkup);
+  const isRetailMarkupValid = !isNaN(retailMarkupNum) && retailMarkup.trim() !== '';
+  const canSuggestRetail = isCostValid && isRetailMarkupValid;
+  const retailHint = !isCostValid
+    ? "Renseignez le coût d'abord (> 0)"
+    : !isRetailMarkupValid
+    ? "Renseignez la marge détail (%)"
+    : `Suggérer: ${(Math.round(((costNum * (1 + retailMarkupNum / 100)) + Number.EPSILON) * 1000) / 1000).toFixed(3)} DT`;
+
+  const wholesaleMarkupNum = parseFloat(wholesaleMarkup);
+  const isWholesaleMarkupValid = !isNaN(wholesaleMarkupNum) && wholesaleMarkup.trim() !== '';
+  const canSuggestWholesale = isCostValid && isWholesaleMarkupValid;
+  const wholesaleHint = !isCostValid
+    ? "Renseignez le coût d'abord (> 0)"
+    : !isWholesaleMarkupValid
+    ? "Renseignez la marge gros (%)"
+    : `Suggérer: ${(Math.round(((costNum * (1 + wholesaleMarkupNum / 100)) + Number.EPSILON) * 1000) / 1000).toFixed(3)} DT`;
+
+  const handleSuggestRetail = () => {
+    if (!canSuggestRetail) return;
+    const rounded = Math.round(((costNum * (1 + retailMarkupNum / 100)) + Number.EPSILON) * 1000) / 1000;
+    setRetailPrice(rounded.toFixed(3));
+  };
+
+  const handleSuggestWholesale = () => {
+    if (!canSuggestWholesale) return;
+    const rounded = Math.round(((costNum * (1 + wholesaleMarkupNum / 100)) + Number.EPSILON) * 1000) / 1000;
+    setWholesalePrice(rounded.toFixed(3));
+  };
+
   // Sync fields when editing
   useEffect(() => {
     if (familyToEdit) {
@@ -607,53 +659,127 @@ export const CreateProductModal: React.FC<CreateProductModalProps> = ({
                   />
                 </div>
 
-                <div className="col-span-2 grid grid-cols-3 gap-2.5 p-3 bg-white rounded-xl border border-blue-200">
-                  <div>
-                    <label className="block text-[11px] font-bold text-slate-700 mb-1">
-                      Cost Ref. (DT)
-                    </label>
-                    <input
-                      type="number"
-                      step="0.001"
-                      min="0"
-                      value={costReference}
-                      onChange={e => setCostReference(e.target.value)}
-                      placeholder="0.000"
-                      className="w-full text-xs font-bold font-mono px-2.5 py-1.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none bg-white"
-                    />
-                    <span className="text-[10px] text-slate-400">Manual / initial cost</span>
+                <div className="col-span-2 p-3 bg-white rounded-xl border border-blue-200 space-y-3">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                    <div>
+                      <label className="block text-[11px] font-bold text-slate-700">
+                        Coût de référence / Cost Ref. (DT)
+                      </label>
+                      <span className="text-[10px] text-slate-400">Coût d'achat ou de revient unitaire (DT)</span>
+                    </div>
+                    <div className="w-full sm:w-40">
+                      <input
+                        type="number"
+                        step="0.001"
+                        min="0"
+                        value={costReference}
+                        onChange={e => setCostReference(e.target.value)}
+                        placeholder="0.000"
+                        className="w-full text-xs font-bold font-mono px-2.5 py-1.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none bg-white text-right"
+                      />
+                    </div>
                   </div>
 
-                  <div>
-                    <label className="block text-[11px] font-bold text-slate-700 mb-1">
-                      Wholesale (DT) *
-                    </label>
-                    <input
-                      type="number"
-                      step="0.001"
-                      min="0"
-                      required
-                      value={wholesalePrice}
-                      onChange={e => setWholesalePrice(e.target.value)}
-                      className="w-full text-xs font-bold font-mono px-2.5 py-1.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none bg-white"
-                    />
-                    <span className="text-[10px] text-slate-400">Gros price</span>
-                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3 pt-2 border-t border-slate-100">
+                    {/* Wholesale */}
+                    <div className="p-2.5 bg-slate-50 rounded-lg border border-slate-200/80 space-y-2">
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs font-bold text-slate-800">Prix Gros / Wholesale (DT) *</span>
+                        <button
+                          type="button"
+                          onClick={handleSuggestWholesale}
+                          disabled={!canSuggestWholesale}
+                          title={wholesaleHint}
+                          className="px-2.5 py-1 text-[11px] font-bold rounded-lg bg-blue-600 text-white hover:bg-blue-700 disabled:bg-slate-200 disabled:text-slate-400 transition-colors shadow-sm cursor-pointer disabled:cursor-not-allowed"
+                        >
+                          Suggérer
+                        </button>
+                      </div>
+                      <div className="grid grid-cols-2 gap-2">
+                        <div>
+                          <label className="block text-[10px] font-semibold text-slate-500 mb-0.5">
+                            Marge Gros (%)
+                          </label>
+                          <input
+                            type="number"
+                            step="0.1"
+                            min="0"
+                            max="1000"
+                            value={wholesaleMarkup}
+                            onChange={e => setWholesaleMarkup(e.target.value)}
+                            placeholder="ex: 20"
+                            className="w-full text-xs font-mono font-semibold px-2 py-1.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none bg-white"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-[10px] font-semibold text-slate-500 mb-0.5">
+                            Prix Gros (DT) *
+                          </label>
+                          <input
+                            type="number"
+                            step="0.001"
+                            min="0"
+                            required
+                            value={wholesalePrice}
+                            onChange={e => setWholesalePrice(e.target.value)}
+                            className="w-full text-xs font-bold font-mono px-2 py-1.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none bg-white"
+                          />
+                        </div>
+                      </div>
+                      {!canSuggestWholesale && (
+                        <p className="text-[10px] text-slate-400 italic">{wholesaleHint}</p>
+                      )}
+                    </div>
 
-                  <div>
-                    <label className="block text-[11px] font-bold text-slate-700 mb-1">
-                      Retail (DT) *
-                    </label>
-                    <input
-                      type="number"
-                      step="0.001"
-                      min="0"
-                      required
-                      value={retailPrice}
-                      onChange={e => setRetailPrice(e.target.value)}
-                      className="w-full text-xs font-bold font-mono px-2.5 py-1.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none bg-white"
-                    />
-                    <span className="text-[10px] text-slate-400">Détail price</span>
+                    {/* Retail */}
+                    <div className="p-2.5 bg-slate-50 rounded-lg border border-slate-200/80 space-y-2">
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs font-bold text-slate-800">Prix Détail / Retail (DT) *</span>
+                        <button
+                          type="button"
+                          onClick={handleSuggestRetail}
+                          disabled={!canSuggestRetail}
+                          title={retailHint}
+                          className="px-2.5 py-1 text-[11px] font-bold rounded-lg bg-blue-600 text-white hover:bg-blue-700 disabled:bg-slate-200 disabled:text-slate-400 transition-colors shadow-sm cursor-pointer disabled:cursor-not-allowed"
+                        >
+                          Suggérer
+                        </button>
+                      </div>
+                      <div className="grid grid-cols-2 gap-2">
+                        <div>
+                          <label className="block text-[10px] font-semibold text-slate-500 mb-0.5">
+                            Marge Détail (%)
+                          </label>
+                          <input
+                            type="number"
+                            step="0.1"
+                            min="0"
+                            max="1000"
+                            value={retailMarkup}
+                            onChange={e => setRetailMarkup(e.target.value)}
+                            placeholder="ex: 30"
+                            className="w-full text-xs font-mono font-semibold px-2 py-1.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none bg-white"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-[10px] font-semibold text-slate-500 mb-0.5">
+                            Prix Détail (DT) *
+                          </label>
+                          <input
+                            type="number"
+                            step="0.001"
+                            min="0"
+                            required
+                            value={retailPrice}
+                            onChange={e => setRetailPrice(e.target.value)}
+                            className="w-full text-xs font-bold font-mono px-2 py-1.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none bg-white"
+                          />
+                        </div>
+                      </div>
+                      {!canSuggestRetail && (
+                        <p className="text-[10px] text-slate-400 italic">{retailHint}</p>
+                      )}
+                    </div>
                   </div>
                 </div>
 
