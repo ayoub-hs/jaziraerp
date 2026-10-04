@@ -19,3 +19,12 @@
 - 25aab33 feat(costing): switch server consumers to quantity-weighted material unit cost
 - dc7864a feat(ui): display and calculate formulation with current_cost_per_unit first
 - 19a5a67 test: weighted-average material unit cost
+- ca8809a feat(test): isolate test DATABASE_PATH in vite env
+- 84e9d3e feat(test): add non-test database guard to resetTestDb
+- b8d8f69 chore: remove tracked empty sqlite databases and ignore db files under server
+- 243ebfb feat(settings): clean placeholder settings, fix tax_id key in sales receipt format
+- bce4367 feat(settings): add GET and PUT /api/settings/shop route and refresh lock screen name
+- 395a17b feat(settings): add ShopSettingsPanel and mount in Backoffice tabs
+- bd10ae1 feat(settings): add offline-safe shopInfo service and fetch on start
+- 9ad7ffd feat(settings): use getShopInfo in thermal receipts, invoices, and ESC/POS builders with blank omission
+- 6327938 test: add tests for settings routes, blank-omission formatting, and legacy cleanup
