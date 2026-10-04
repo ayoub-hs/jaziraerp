@@ -22,7 +22,60 @@ export interface FormulationCostResult {
 }
 
 /**
- * Calculates current formulation cost based on the latest purchase cost of all ingredients and packaging.
+ * Calculates raw material unit costs as the quantity-weighted average of the current calendar year's purchases:
+ *   unit_cost(material) = round3( SUM(pi.total_cost) / SUM(pi.quantity) )
+ * for raw material purchases in currentYear (defaults to server's current calendar year).
+ * If a material has no purchases in currentYear (or total quantity === 0), falls back to raw_materials.latest_purchase_cost.
+ */
+export function getMaterialUnitCosts(db: any, currentYear: number = new Date().getFullYear()): Map<string, number> {
+  const yearStr = String(currentYear);
+  const rows: any[] = db.prepare(`
+    SELECT 
+      rm.id,
+      rm.latest_purchase_cost,
+      COALESCE(p_summary.total_cost, 0) as total_purchased_cost,
+      COALESCE(p_summary.total_qty, 0) as total_purchased_qty
+    FROM raw_materials rm
+    LEFT JOIN (
+      SELECT 
+        pi.material_id,
+        SUM(pi.total_cost) as total_cost,
+        SUM(pi.quantity) as total_qty
+      FROM purchase_items pi
+      JOIN purchases p ON pi.purchase_id = p.id
+      WHERE pi.item_type = 'RAW_MATERIAL'
+        AND substr(p.date, 1, 4) = ?
+      GROUP BY pi.material_id
+    ) p_summary ON rm.id = p_summary.material_id
+  `).all(yearStr);
+
+  const costMap = new Map<string, number>();
+  for (const row of rows) {
+    if (row.total_purchased_qty > 0) {
+      costMap.set(row.id, divideMoney(row.total_purchased_cost, row.total_purchased_qty));
+    } else {
+      costMap.set(row.id, round3(Number(row.latest_purchase_cost) || 0));
+    }
+  }
+
+  return costMap;
+}
+
+/**
+ * Returns the quantity-weighted average unit cost for a single material in currentYear,
+ * falling back to raw_materials.latest_purchase_cost.
+ */
+export function getMaterialUnitCost(db: any, materialId: string, currentYear: number = new Date().getFullYear()): number {
+  const costs = getMaterialUnitCosts(db, currentYear);
+  if (costs.has(materialId)) {
+    return costs.get(materialId)!;
+  }
+  const rm: any = db.prepare('SELECT latest_purchase_cost FROM raw_materials WHERE id = ?').get(materialId);
+  return round3(Number(rm?.latest_purchase_cost) || 0);
+}
+
+/**
+ * Calculates current formulation cost based on the quantity-weighted average purchase cost of all ingredients and packaging.
  */
 export function calculateFormulationCost(db: any, formulationId: string): FormulationCostResult {
   const formulation: any = db.prepare(`
