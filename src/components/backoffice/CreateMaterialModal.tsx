@@ -256,7 +256,7 @@ export const CreateMaterialModal: React.FC<CreateMaterialModalProps> = ({
 
             <div>
               <label className="block text-xs font-bold text-slate-700 mb-1">
-                Unit Cost (DT)
+                Initial / Last Purchase Cost (DT)
               </label>
               <input
                 type="number"
@@ -266,6 +266,9 @@ export const CreateMaterialModal: React.FC<CreateMaterialModalProps> = ({
                 onChange={e => setLatestPurchaseCost(e.target.value)}
                 className="w-full text-xs font-bold font-mono px-3 py-2 border border-slate-300 rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none"
               />
+              <p className="text-[10px] text-slate-500 mt-1">
+                Used only when there is no purchase this year; otherwise the average of this year's purchases is used.
+              </p>
             </div>
 
             <div>

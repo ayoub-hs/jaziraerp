@@ -989,7 +989,7 @@ export const Backoffice: React.FC<BackofficeProps> = ({
                 <tbody className="divide-y divide-slate-100">
                   {materials.map(m => {
                     const cat = m.category || m.type || 'General';
-                    const cost = m.latest_purchase_cost ?? m.current_cost_per_unit ?? 0;
+                    const cost = m.current_cost_per_unit ?? m.latest_purchase_cost ?? 0;
                     return (
                       <tr key={m.id} className="hover:bg-slate-50">
                         <td className="p-3 font-bold text-slate-900">{m.name}</td>
