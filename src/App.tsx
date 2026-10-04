@@ -21,6 +21,7 @@ import { webUsbPrinter } from './services/hardware/webusb.js';
 import { webBluetoothPrinter } from './services/hardware/webbluetooth.js';
 import { webSerialDrawer } from './services/hardware/webserial.js';
 import { authService } from './services/authService.js';
+import { fetchShopInfo } from './services/shopInfo.js';
 
 export default function App() {
   const [currentView, setCurrentView] = useState<'DESKTOP_POS' | 'MOBILE_REGISTER' | 'BACKOFFICE'>('DESKTOP_POS');
@@ -68,6 +69,7 @@ export default function App() {
   // Initial load
   useEffect(() => {
     loadAllData();
+    fetchShopInfo();
   }, []);
 
   // Responsive default view detection (if mobile screen on load, default to MOBILE_REGISTER)
