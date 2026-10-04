@@ -31,6 +31,10 @@ export const RefundModal: React.FC<RefundModalProps> = ({
   const [reason, setReason] = useState<string>('Customer returned goods');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  // Register sessions for cash refunds
+  const [openSessions, setOpenSessions] = useState<any[]>([]);
+  const [selectedSessionId, setSelectedSessionId] = useState<string>('');
+
   useEffect(() => {
     if (isOpen) {
       if (initialSaleId) {
@@ -43,8 +47,25 @@ export const RefundModal: React.FC<RefundModalProps> = ({
       setError(null);
       setSuccess(null);
       setSearchReceipt('');
+
+      // Fetch open register sessions
+      fetch('/api/register/open-sessions')
+        .then(res => res.ok ? res.json() : [])
+        .then((sessions: any[]) => {
+          setOpenSessions(sessions || []);
+          if (sessions && sessions.length > 0) {
+            setSelectedSessionId(prev => {
+              if (prev && sessions.some(s => s.id === prev)) return prev;
+              const saleMatch = sessions.find(s => s.id === selectedSale?.session_id);
+              return saleMatch ? saleMatch.id : sessions[0].id;
+            });
+          } else {
+            setSelectedSessionId('');
+          }
+        })
+        .catch(() => setOpenSessions([]));
     }
-  }, [isOpen, initialSaleId]);
+  }, [isOpen, initialSaleId, selectedSale?.session_id]);
 
   const fetchRecentSales = async () => {
     try {
@@ -136,6 +157,7 @@ export const RefundModal: React.FC<RefundModalProps> = ({
         body: JSON.stringify({
           refund_method: refundMethod,
           reason,
+          session_id: refundMethod === 'CASH' ? selectedSessionId || undefined : undefined,
           items: [
             {
               sale_item_id: selectedItemId,
@@ -166,7 +188,8 @@ export const RefundModal: React.FC<RefundModalProps> = ({
 
   const currentItem = selectedSale?.items?.find(i => i.id === selectedItemId);
   const currentRemaining = currentItem ? (currentItem.quantity || 0) - (currentItem.refunded_quantity || 0) : 0;
-  const isSubmitDisabled = isSubmitting || currentRemaining <= 0 || !refundQuantity || parseFloat(refundQuantity) <= 0;
+  const isCashWithNoSession = refundMethod === 'CASH' && openSessions.length === 0;
+  const isSubmitDisabled = isSubmitting || currentRemaining <= 0 || !refundQuantity || parseFloat(refundQuantity) <= 0 || isCashWithNoSession;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
@@ -355,6 +378,43 @@ export const RefundModal: React.FC<RefundModalProps> = ({
                   </select>
                 </div>
               </div>
+
+              {/* Cash Refund Register Session Selector */}
+              {refundMethod === 'CASH' && (
+                <div>
+                  {openSessions.length === 0 ? (
+                    <div className="p-3 bg-rose-50 border border-rose-200 rounded-xl flex items-center gap-2 text-rose-800 text-xs font-semibold">
+                      <AlertCircle className="w-4 h-4 shrink-0 text-rose-600" />
+                      <span>La caisse est fermée. Une session de caisse ouverte est obligatoire pour effectuer un remboursement en espèces.</span>
+                    </div>
+                  ) : openSessions.length === 1 ? (
+                    <div className="p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs flex items-center justify-between">
+                      <span className="font-semibold text-slate-600">Caisse de remboursement (espèces) :</span>
+                      <span className="font-bold text-slate-900 font-mono">{openSessions[0].counter_name} ({openSessions[0].session_number})</span>
+                    </div>
+                  ) : (
+                    <div>
+                      <label className="block text-xs font-bold text-slate-700 mb-1">
+                        Caisse effectuant le remboursement en espèces *
+                      </label>
+                      <select
+                        value={selectedSessionId}
+                        onChange={e => setSelectedSessionId(e.target.value)}
+                        className="w-full text-sm font-semibold px-3 py-2 border border-slate-300 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:outline-none bg-white"
+                      >
+                        {openSessions.map(s => (
+                          <option key={s.id} value={s.id}>
+                            {s.counter_name} — Session {s.session_number} ({formatMoney(s.opening_cash)})
+                          </option>
+                        ))}
+                      </select>
+                      <p className="text-[11px] text-slate-400 mt-1">
+                        Plusieurs caisses sont ouvertes. Choisissez la session de caisse qui décaisse le montant.
+                      </p>
+                    </div>
+                  )}
+                </div>
+              )}
 
               {/* Return Reason */}
               <div>

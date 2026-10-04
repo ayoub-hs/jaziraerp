@@ -692,19 +692,6 @@ export function processRefund(saleId: string, req: Request, res: Response) {
 
   const db = getDb();
 
-  let session: any = null;
-  const rawSessionId = directSessionId || register_session_id || null;
-  if (rawSessionId) {
-    session = db.prepare('SELECT * FROM register_sessions WHERE id = ?').get(rawSessionId);
-  } else {
-    session = db.prepare("SELECT * FROM register_sessions WHERE status = 'OPEN' ORDER BY opened_at DESC LIMIT 1").get();
-  }
-
-  if (!Array.isArray(items) || items.length === 0) {
-    res.status(400).json({ error: 'At least one line item must be refunded' });
-    return;
-  }
-
   const sale: any = db.prepare('SELECT * FROM sales WHERE id = ? OR receipt_number = ?').get(saleId, saleId);
   if (!sale) {
     res.status(404).json({ error: 'Sale not found' });
@@ -714,6 +701,32 @@ export function processRefund(saleId: string, req: Request, res: Response) {
   if (sale.status === 'FULLY_REFUNDED') {
     res.status(400).json({ error: 'Sale is already fully refunded' });
     return;
+  }
+
+  if (!Array.isArray(items) || items.length === 0) {
+    res.status(400).json({ error: 'At least one line item must be refunded' });
+    return;
+  }
+
+  // Register session resolution
+  const openSessions: any[] = db.prepare("SELECT * FROM register_sessions WHERE status = 'OPEN' ORDER BY opened_at DESC").all();
+  let session: any = null;
+  const rawSessionId = directSessionId || register_session_id || null;
+
+  if (rawSessionId) {
+    session = db.prepare('SELECT * FROM register_sessions WHERE id = ?').get(rawSessionId);
+    if (!session) {
+      res.status(400).json({ error: `Session de caisse introuvable: ${rawSessionId}` });
+      return;
+    }
+  } else if (openSessions.length === 1) {
+    session = openSessions[0];
+  } else if (openSessions.length > 1) {
+    // If original sale session is currently open, default to it
+    const saleSession = openSessions.find(s => s.id === sale.session_id);
+    if (saleSession) {
+      session = saleSession;
+    }
   }
 
   const now = new Date().toISOString();
@@ -810,9 +823,21 @@ export function processRefund(saleId: string, req: Request, res: Response) {
 
   // Cash refunds require an active open register session
   if (cashPayout > 0) {
-    if (!session || session.status !== 'OPEN') {
+    if (openSessions.length === 0) {
       res.status(400).json({
         error: 'La caisse est fermée. Une session de caisse ouverte est obligatoire pour effectuer un remboursement en espèces. (An active open register session is required for cash refunds).'
+      });
+      return;
+    }
+    if (!session) {
+      res.status(400).json({
+        error: 'Plusieurs sessions de caisse sont ouvertes. Veuillez sélectionner la caisse effectuant le remboursement en espèces. (Multiple sessions are open; please specify session_id).'
+      });
+      return;
+    }
+    if (session.status !== 'OPEN') {
+      res.status(400).json({
+        error: `La session de caisse sélectionnée (${session.session_number}) est fermée.`
       });
       return;
     }

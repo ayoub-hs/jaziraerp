@@ -189,6 +189,7 @@ export interface SaleSummary {
   id: string;
   receipt_number: string;
   invoice_number?: string | null;
+  session_id?: string | null;
   date: string;
   customer_id?: string | null;
   customer_name?: string | null;
