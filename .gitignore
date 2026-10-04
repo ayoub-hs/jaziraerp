@@ -4,3 +4,7 @@ data
 backups
 tsconfig.tsbuildinfo
 ERP.zip
+server/**/*.sqlite
+server/**/*.db
+server/*.sqlite
+server/*.db
