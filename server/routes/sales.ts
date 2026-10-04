@@ -117,13 +117,15 @@ salesRouter.get('/:id', (req: Request, res: Response) => {
 
   // Shop header details
   const shopNameRow: any = db.prepare("SELECT value FROM settings WHERE key = 'shop_name'").get();
+  const shopSubtitleRow: any = db.prepare("SELECT value FROM settings WHERE key = 'shop_subtitle'").get();
   const shopAddressRow: any = db.prepare("SELECT value FROM settings WHERE key = 'shop_address'").get();
   const shopPhoneRow: any = db.prepare("SELECT value FROM settings WHERE key = 'shop_phone'").get();
-  const shopTaxRow: any = db.prepare("SELECT value FROM settings WHERE key = 'shop_tax_id'").get();
+  const shopTaxRow: any = db.prepare("SELECT value FROM settings WHERE key = 'tax_id'").get();
 
   const receiptFormat = {
-    shop_name: shopNameRow?.value || 'Al Jazira SHSP',
-    shop_address: shopAddressRow?.value || 'Tunis, Tunisia',
+    shop_name: shopNameRow?.value || 'Société Al Jazira SHSP',
+    shop_subtitle: shopSubtitleRow?.value || '',
+    shop_address: shopAddressRow?.value || '',
     shop_phone: shopPhoneRow?.value || '',
     shop_tax_id: shopTaxRow?.value || '',
     receipt_number: sale.receipt_number,

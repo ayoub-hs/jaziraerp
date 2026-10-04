@@ -34,6 +34,9 @@ export function getDb(customPath?: string): DatabaseType {
   const schemaSql = fs.readFileSync(schemaPath, 'utf8');
   db.exec(schemaSql);
 
+  // Clean up old placeholder settings
+  cleanupOldSettings(db);
+
   // Auto-migrate active columns for existing databases
   const ensureColumn = (table: string, column: string, def: string) => {
     try {
@@ -85,4 +88,20 @@ export function closeDb(): void {
   }
 }
 
+export function cleanupOldSettings(db: DatabaseType): void {
+  try {
+    const oldPlaceholders = [
+      'Route de Gabès Km 3.5, Sfax, Tunisie',
+      '+216 74 000 000',
+      '1234567/A/M/000'
+    ];
+    const update = db.prepare("UPDATE settings SET value = '' WHERE value = ?");
+    for (const ph of oldPlaceholders) {
+      update.run(ph);
+    }
+    db.prepare("INSERT OR IGNORE INTO settings (key, value) VALUES ('shop_subtitle', '')").run();
+  } catch {}
+}
+
 export default getDb;
+

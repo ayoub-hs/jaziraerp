@@ -10,9 +10,10 @@ CREATE TABLE IF NOT EXISTS settings (
 
 INSERT OR IGNORE INTO settings (key, value) VALUES 
     ('shop_name', 'Société Al Jazira SHSP'),
-    ('shop_address', 'Route de Gabès Km 3.5, Sfax, Tunisie'),
-    ('shop_phone', '+216 74 000 000'),
-    ('tax_id', '1234567/A/M/000');
+    ('shop_subtitle', ''),
+    ('shop_address', ''),
+    ('shop_phone', ''),
+    ('tax_id', '');
 
 -- 2. Raw Materials & Packaging
 CREATE TABLE IF NOT EXISTS raw_materials (
