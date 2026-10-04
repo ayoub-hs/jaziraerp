@@ -63,6 +63,7 @@ import { ManageCategoriesModal } from './ManageCategoriesModal.js';
 import { ReportsTab } from './ReportsTab.js';
 import { ShopSettingsPanel } from './ShopSettingsPanel.js';
 import { SalesHistoryTab } from './SalesHistoryTab.js';
+import { CustomerStatementModal } from './CustomerStatementModal.js';
 
 interface BackofficeProps {
   products: Product[];
@@ -148,6 +149,7 @@ export const Backoffice: React.FC<BackofficeProps> = ({
   const isPayingCustomerDebtRef = useRef(false);
   const [isToppingUpWallet, setIsToppingUpWallet] = useState(false);
   const isToppingUpWalletRef = useRef(false);
+  const [isCustomerStatementOpen, setIsCustomerStatementOpen] = useState(false);
 
   // Supplier ledger drill-down & debt payment
   const [selectedSupplier, setSelectedSupplier] = useState<Supplier | null>(null);
@@ -1743,7 +1745,18 @@ export const Backoffice: React.FC<BackofficeProps> = ({
                   <>
                     <div className="flex justify-between items-center border-b border-slate-200 pb-3">
                       <div>
-                        <h3 className="text-base font-black text-slate-900">{selectedCustomer.name}</h3>
+                        <div className="flex items-center gap-2">
+                          <h3 className="text-base font-black text-slate-900">{selectedCustomer.name}</h3>
+                          <button
+                            type="button"
+                            onClick={() => setIsCustomerStatementOpen(true)}
+                            className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 text-xs font-bold transition-colors cursor-pointer"
+                            title="Consulter le relevé de compte complet (grand livre et historique des dettes/portefeuille)"
+                          >
+                            <FileText className="w-3.5 h-3.5" />
+                            <span>Relevé</span>
+                          </button>
+                        </div>
                         <p className="text-xs text-slate-500">{selectedCustomer.phone || 'No phone'} • {selectedCustomer.address || 'No address'}</p>
                       </div>
                       <div className="text-right">
@@ -3066,6 +3079,13 @@ export const Backoffice: React.FC<BackofficeProps> = ({
           onRefreshData();
           loadBackofficeData();
         }}
+      />
+
+      {/* Customer Statement & Ledger Modal */}
+      <CustomerStatementModal
+        isOpen={isCustomerStatementOpen}
+        onClose={() => setIsCustomerStatementOpen(false)}
+        customer={selectedCustomer}
       />
     </div>
   );
