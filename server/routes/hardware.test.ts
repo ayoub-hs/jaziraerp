@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach } from 'vitest';
-import { app, request, resetTestDb } from '../../tests/testApp.js';
+import { app, request, resetTestDb, getDb } from '../../tests/testApp.js';
 import { buildReceiptEscPosBuffer } from './hardware.js';
 
 describe('Hardware Router & USB Serial Cash Drawer (HTTP Routes)', () => {
@@ -130,5 +130,40 @@ describe('Hardware Router & USB Serial Cash Drawer (HTTP Routes)', () => {
     expect(text).toContain('25.000 DT');
     expect(text).toContain('Rendu:');
     expect(text).toContain('5.000 DT');
+  });
+
+  it('c) server text receipt builder: blank values omit lines, filled values appear', () => {
+    const db = getDb();
+    const sale = {
+      receipt_number: 'REC-BLANK-TEST',
+      date: '2026-10-04T12:00:00Z',
+      customer_name: 'Client C',
+      items: [
+        { name: 'Article C', quantity: 1, unit_price: 10.000, line_total: 10.000 }
+      ],
+      total_ttc: 10.000,
+      cash_paid: 10.000
+    };
+
+    // 1. With blank settings in DB (default after resetTestDb)
+    const blankBuffer = buildReceiptEscPosBuffer(sale, undefined, db);
+    const blankText = blankBuffer.toString('utf-8');
+    expect(blankText).toContain('Societe Al Jazira SHSP');
+    expect(blankText).not.toContain('Route de Gabes');
+    expect(blankText).not.toContain('Tel:');
+    expect(blankText).not.toContain('MF:');
+
+    // 2. With filled settings in DB
+    db.prepare("INSERT OR REPLACE INTO settings (key, value) VALUES ('shop_subtitle', 'Gros et Detail')").run();
+    db.prepare("INSERT OR REPLACE INTO settings (key, value) VALUES ('shop_address', 'Rue Principale, Djerba')").run();
+    db.prepare("INSERT OR REPLACE INTO settings (key, value) VALUES ('shop_phone', '+216 75 999 888')").run();
+    db.prepare("INSERT OR REPLACE INTO settings (key, value) VALUES ('tax_id', '9988776/M/A/000')").run();
+
+    const filledBuffer = buildReceiptEscPosBuffer(sale, undefined, db);
+    const filledText = filledBuffer.toString('utf-8');
+    expect(filledText).toContain('Gros et Detail');
+    expect(filledText).toContain('Rue Principale, Djerba');
+    expect(filledText).toContain('Tel: +216 75 999 888');
+    expect(filledText).toContain('MF: 9988776/M/A/000');
   });
 });
