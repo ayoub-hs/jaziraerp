@@ -48,12 +48,12 @@ export function getMaterialUnitCosts(
       JOIN purchases p ON pi.purchase_id = p.id
       WHERE pi.item_type = 'RAW_MATERIAL'
         AND pi.material_id IS NOT NULL
-        AND SUBSTR(p.date, 1, 4) = CAST(? AS TEXT)
+        AND SUBSTR(p.date, 1, 4) = ?
       GROUP BY pi.material_id
     ) purchases_this_year ON rm.id = purchases_this_year.material_id
   `;
 
-  const rows: any[] = db.prepare(query).all(targetYear);
+  const rows: any[] = db.prepare(query).all(String(targetYear));
   const costMap = new Map<string, number>();
 
   for (const row of rows) {

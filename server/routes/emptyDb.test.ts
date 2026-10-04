@@ -306,6 +306,8 @@ describe('C2: Empty-Database & Full Lifecycle API Tests', () => {
           date: '2026-10-04'
         });
       expect(batchRes.status).toBe(201);
+      expect(batchRes.body.total_batch_cost).toBe(61.340);
+      expect(batchRes.body.cost_per_unit).toBe(3.067);
 
       // -------------------------------------------------------------
       // 5. Open Register Session
@@ -644,25 +646,25 @@ describe('C2: Empty-Database & Full Lifecycle API Tests', () => {
       // Arithmetic:
       // Raw Material (Labsa):
       //   Stock: 130 kg (0 initial + 100 PO1 + 50 PO2 - 20 consumed)
-      //   Latest cost: 3.200 DT/kg (from PO2 unit_cost)
-      //   Valuation: 130 kg * 3.200 DT/kg = 416.000 DT
+      //   Weighted average cost: (100 kg * 3.000 + 50 kg * 3.200) / 150 kg = 460 / 150 = 3.067 DT/kg
+      //   Valuation: 130 kg * 3.067 DT/kg = 398.710 DT
       // Finished Product (Savon Liquide 5L):
       //   Stock: 13 units (0 initial + 20 batch - 2 S1 - 4 S2 - 2 S3 + 1 refund)
-      //   Unit cost: 3.200 DT/unit (Batch cost: 20 kg Labsa * 3.200 / 20 units = 3.200 DT)
-      //   Valuation: 13 units * 3.200 DT/unit = 41.600 DT
+      //   Unit cost: 3.067 DT/unit (Batch cost: 20 kg Labsa * 3.067 / 20 units = 3.067 DT)
+      //   Valuation: 13 units * 3.067 DT/unit = 39.871 DT
       // Total Inventory Valuation:
-      //   416.000 + 41.600 = 457.600 DT
+      //   398.710 + 39.871 = 438.581 DT
       const stockValRes = await request(app).get('/api/accounting/stock-valuation');
       expect(stockValRes.status).toBe(200);
-      expect(stockValRes.body.raw_materials_valuation).toBe(416.000);
-      expect(stockValRes.body.finished_goods_valuation).toBe(41.600);
-      expect(stockValRes.body.total_inventory_valuation).toBe(457.600);
+      expect(stockValRes.body.raw_materials_valuation).toBe(398.710);
+      expect(stockValRes.body.finished_goods_valuation).toBe(39.871);
+      expect(stockValRes.body.total_inventory_valuation).toBe(438.581);
 
       const invReportRes = await request(app).get('/api/reports/inventory-valuation');
       expect(invReportRes.status).toBe(200);
-      expect(invReportRes.body.summary.material_cost_valuation).toBe(416.000);
-      expect(invReportRes.body.summary.product_cost_valuation).toBe(41.600);
-      expect(invReportRes.body.summary.grand_total_cost_valuation).toBe(457.600);
+      expect(invReportRes.body.summary.material_cost_valuation).toBe(398.710);
+      expect(invReportRes.body.summary.product_cost_valuation).toBe(39.871);
+      expect(invReportRes.body.summary.grand_total_cost_valuation).toBe(438.581);
     });
   });
 });
