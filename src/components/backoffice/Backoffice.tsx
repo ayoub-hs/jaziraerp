@@ -205,6 +205,15 @@ export const Backoffice: React.FC<BackofficeProps> = ({
       setAllFamilies(null);
     }
   }, [showInactiveCatalog]);
+
+  // Search & Low Stock Filter States (Item 4)
+  const [catalogSearch, setCatalogSearch] = useState('');
+  const [catalogLowStockOnly, setCatalogLowStockOnly] = useState(false);
+  const [materialsSearch, setMaterialsSearch] = useState('');
+  const [materialsLowStockOnly, setMaterialsLowStockOnly] = useState(false);
+  const [customersSearch, setCustomersSearch] = useState('');
+  const [suppliersSearch, setSuppliersSearch] = useState('');
+  const [purchasesSearch, setPurchasesSearch] = useState('');
   const [loadingSessionDetail, setLoadingSessionDetail] = useState(false);
 
   // Persistent Counters Management
@@ -712,6 +721,62 @@ export const Backoffice: React.FC<BackofficeProps> = ({
   const displayedFamilies: ProductFamily[] = (showInactiveCatalog && allFamilies) ? allFamilies : families;
   const displayedProducts: Product[] = (showInactiveCatalog && allProducts) ? allProducts : products;
 
+  // Filtered lists and counts (Item 4)
+  const catalogLowStockCount = displayedProducts.filter(p => p.stock_quantity <= p.low_stock_threshold).length;
+  const filteredProducts = displayedProducts.filter(p => {
+    if (catalogLowStockOnly && p.stock_quantity > p.low_stock_threshold) return false;
+    if (catalogSearch.trim()) {
+      const q = catalogSearch.toLowerCase().trim();
+      const matchName = p.name?.toLowerCase().includes(q);
+      const matchBarcode = p.barcode?.toLowerCase().includes(q);
+      const matchCat = p.category?.toLowerCase().includes(q);
+      if (!matchName && !matchBarcode && !matchCat) return false;
+    }
+    return true;
+  });
+
+  const materialsLowStockCount = materials.filter(m => m.stock_quantity <= (m.low_stock_threshold || 0)).length;
+  const filteredMaterials = materials.filter(m => {
+    if (materialsLowStockOnly && m.stock_quantity > (m.low_stock_threshold || 0)) return false;
+    if (materialsSearch.trim()) {
+      const q = materialsSearch.toLowerCase().trim();
+      const cat = (m.category || m.type || '').toLowerCase();
+      const matchName = m.name?.toLowerCase().includes(q);
+      const matchCat = cat.includes(q);
+      if (!matchName && !matchCat) return false;
+    }
+    return true;
+  });
+
+  const filteredCustomers = customers.filter(c => {
+    if (customersSearch.trim()) {
+      const q = customersSearch.toLowerCase().trim();
+      const matchName = c.name?.toLowerCase().includes(q);
+      const matchPhone = c.phone?.toLowerCase().includes(q);
+      if (!matchName && !matchPhone) return false;
+    }
+    return true;
+  });
+
+  const filteredSuppliers = suppliers.filter(s => {
+    if (suppliersSearch.trim()) {
+      const q = suppliersSearch.toLowerCase().trim();
+      if (!s.name?.toLowerCase().includes(q)) return false;
+    }
+    return true;
+  });
+
+  const filteredPurchases = purchasesHistory.filter(p => {
+    if (purchasesSearch.trim()) {
+      const q = purchasesSearch.toLowerCase().trim();
+      const matchSupplier = p.supplier_name?.toLowerCase().includes(q);
+      const matchNumber = p.purchase_number?.toLowerCase().includes(q);
+      const matchInv = (p as any).supplier_invoice_number?.toLowerCase().includes(q);
+      if (!matchSupplier && !matchNumber && !matchInv) return false;
+    }
+    return true;
+  });
+
   return (
     <div className="flex-1 flex flex-col md:flex-row bg-slate-100 overflow-hidden">
       {/* Sidebar Navigation */}
@@ -882,23 +947,60 @@ export const Backoffice: React.FC<BackofficeProps> = ({
                   New Product / SKU
                 </button>
                 <button
-                  type="button"
-                  onClick={() => setShowInactiveCatalog(prev => !prev)}
-                  className={`flex items-center gap-1.5 text-xs font-bold px-3 py-2 rounded-xl transition-colors border ${
-                    showInactiveCatalog
-                      ? 'bg-slate-800 text-white border-slate-800'
-                      : 'bg-white hover:bg-slate-50 text-slate-700 border-slate-300'
-                  }`}
-                >
-                  <Eye className="w-4 h-4" />
-                  <span>Afficher inactifs</span>
-                </button>
-                <button
                   onClick={() => setIsBarcodeLabelModalOpen(true)}
                   className="flex items-center gap-1.5 bg-slate-800 hover:bg-slate-900 text-white text-xs font-bold px-3 py-2 rounded-xl shadow-sm transition-colors"
                 >
                   <Printer className="w-4 h-4 text-emerald-400" />
                   Print Barcode Labels
+                </button>
+              </div>
+            </div>
+
+            {/* Filter Bar (Search, Low Stock, Inactive) */}
+            <div className="flex flex-wrap items-center justify-between gap-3 bg-white p-3 rounded-2xl border border-slate-200">
+              <div className="relative flex-1 min-w-[220px] max-w-sm">
+                <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                <input
+                  type="text"
+                  placeholder="Rechercher produit, code-barres, catégorie..."
+                  value={catalogSearch}
+                  onChange={e => setCatalogSearch(e.target.value)}
+                  className="w-full pl-9 pr-8 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white"
+                />
+                {catalogSearch && (
+                  <button
+                    type="button"
+                    onClick={() => setCatalogSearch('')}
+                    className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 p-0.5"
+                  >
+                    <X className="w-3.5 h-3.5" />
+                  </button>
+                )}
+              </div>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => setCatalogLowStockOnly(prev => !prev)}
+                  className={`flex items-center gap-1.5 text-xs font-bold px-3 py-2 rounded-xl transition-colors border ${
+                    catalogLowStockOnly
+                      ? 'bg-amber-600 text-white border-amber-600 shadow-xs'
+                      : 'bg-white hover:bg-slate-50 text-slate-700 border-slate-300'
+                  }`}
+                >
+                  <AlertTriangle className="w-3.5 h-3.5" />
+                  <span>Stock bas ({catalogLowStockCount})</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setShowInactiveCatalog(prev => !prev)}
+                  className={`flex items-center gap-1.5 text-xs font-bold px-3 py-2 rounded-xl transition-colors border ${
+                    showInactiveCatalog
+                      ? 'bg-slate-800 text-white border-slate-800 shadow-xs'
+                      : 'bg-white hover:bg-slate-50 text-slate-700 border-slate-300'
+                  }`}
+                >
+                  <Eye className="w-4 h-4" />
+                  <span>Afficher inactifs</span>
                 </button>
               </div>
             </div>
@@ -972,7 +1074,7 @@ export const Backoffice: React.FC<BackofficeProps> = ({
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
-                  {displayedProducts.map(p => (
+                  {filteredProducts.map(p => (
                     <tr key={p.id} className={p.active === 0 ? "bg-slate-100/70 opacity-75 hover:bg-slate-100" : "hover:bg-slate-50"}>
                       <td className="p-3 font-bold text-slate-900">
                         <div className="flex items-center gap-1.5">
@@ -1023,13 +1125,19 @@ export const Backoffice: React.FC<BackofficeProps> = ({
                       </td>
                     </tr>
                   ))}
-                  {products.length === 0 && (
+                  {products.length === 0 ? (
                     <tr>
                       <td colSpan={9} className="p-8 text-center text-slate-400">
                         No products in catalog yet. Click &quot;+ New Product / SKU&quot; above to create one.
                       </td>
                     </tr>
-                  )}
+                  ) : filteredProducts.length === 0 ? (
+                    <tr>
+                      <td colSpan={9} className="p-8 text-center text-slate-400">
+                        Aucun résultat pour cette recherche
+                      </td>
+                    </tr>
+                  ) : null}
                 </tbody>
               </table>
             </div>
@@ -1076,6 +1184,43 @@ export const Backoffice: React.FC<BackofficeProps> = ({
               </div>
             </div>
 
+            {/* Filter Bar (Search, Low Stock) */}
+            <div className="flex flex-wrap items-center justify-between gap-3 bg-white p-3 rounded-2xl border border-slate-200">
+              <div className="relative flex-1 min-w-[220px] max-w-sm">
+                <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                <input
+                  type="text"
+                  placeholder="Rechercher matière première, catégorie..."
+                  value={materialsSearch}
+                  onChange={e => setMaterialsSearch(e.target.value)}
+                  className="w-full pl-9 pr-8 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white"
+                />
+                {materialsSearch && (
+                  <button
+                    type="button"
+                    onClick={() => setMaterialsSearch('')}
+                    className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 p-0.5"
+                  >
+                    <X className="w-3.5 h-3.5" />
+                  </button>
+                )}
+              </div>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => setMaterialsLowStockOnly(prev => !prev)}
+                  className={`flex items-center gap-1.5 text-xs font-bold px-3 py-2 rounded-xl transition-colors border ${
+                    materialsLowStockOnly
+                      ? 'bg-amber-600 text-white border-amber-600 shadow-xs'
+                      : 'bg-white hover:bg-slate-50 text-slate-700 border-slate-300'
+                  }`}
+                >
+                  <AlertTriangle className="w-3.5 h-3.5" />
+                  <span>Stock bas ({materialsLowStockCount})</span>
+                </button>
+              </div>
+            </div>
+
             <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
               <table className="w-full text-left border-collapse text-xs">
                 <thead>
@@ -1090,7 +1235,7 @@ export const Backoffice: React.FC<BackofficeProps> = ({
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
-                  {materials.map(m => {
+                  {filteredMaterials.map(m => {
                     const cat = m.category || m.type || 'General';
                     const cost = m.current_cost_per_unit ?? m.latest_purchase_cost ?? 0;
                     return (
@@ -1140,13 +1285,19 @@ export const Backoffice: React.FC<BackofficeProps> = ({
                       </tr>
                     );
                   })}
-                  {materials.length === 0 && (
+                  {materials.length === 0 ? (
                     <tr>
                       <td colSpan={7} className="p-8 text-center text-slate-400">
                         No raw materials recorded yet. Click &quot;+ New Material&quot; above to create one.
                       </td>
                     </tr>
-                  )}
+                  ) : filteredMaterials.length === 0 ? (
+                    <tr>
+                      <td colSpan={7} className="p-8 text-center text-slate-400">
+                        Aucun résultat pour cette recherche
+                      </td>
+                    </tr>
+                  ) : null}
                 </tbody>
               </table>
             </div>
@@ -1480,7 +1631,26 @@ export const Backoffice: React.FC<BackofficeProps> = ({
                 <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wide px-1">
                   Customer Directory
                 </h3>
-                {customers.map(c => (
+                <div className="relative mb-2">
+                  <Search className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-1/2 -translate-y-1/2" />
+                  <input
+                    type="text"
+                    placeholder="Rechercher client, tél..."
+                    value={customersSearch}
+                    onChange={e => setCustomersSearch(e.target.value)}
+                    className="w-full pl-8 pr-7 py-1.5 bg-slate-50 border border-slate-200 rounded-xl text-xs outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white"
+                  />
+                  {customersSearch && (
+                    <button
+                      type="button"
+                      onClick={() => setCustomersSearch('')}
+                      className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                    >
+                      <X className="w-3 h-3" />
+                    </button>
+                  )}
+                </div>
+                {filteredCustomers.map(c => (
                   <div
                     key={c.id}
                     onClick={() => handleSelectCustomerForTickets(c)}
@@ -1531,6 +1701,11 @@ export const Backoffice: React.FC<BackofficeProps> = ({
                     </div>
                   </div>
                 ))}
+                {filteredCustomers.length === 0 && (
+                  <div className="p-6 text-center text-slate-400 text-xs">
+                    Aucun résultat pour cette recherche
+                  </div>
+                )}
               </div>
 
               {/* Customer Detail & Actions */}
@@ -1700,7 +1875,26 @@ export const Backoffice: React.FC<BackofficeProps> = ({
                 <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wide px-1">
                   Supplier Directory
                 </h3>
-                {suppliers.map(s => (
+                <div className="relative mb-2">
+                  <Search className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-1/2 -translate-y-1/2" />
+                  <input
+                    type="text"
+                    placeholder="Rechercher fournisseur..."
+                    value={suppliersSearch}
+                    onChange={e => setSuppliersSearch(e.target.value)}
+                    className="w-full pl-8 pr-7 py-1.5 bg-slate-50 border border-slate-200 rounded-xl text-xs outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white"
+                  />
+                  {suppliersSearch && (
+                    <button
+                      type="button"
+                      onClick={() => setSuppliersSearch('')}
+                      className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                    >
+                      <X className="w-3 h-3" />
+                    </button>
+                  )}
+                </div>
+                {filteredSuppliers.map(s => (
                   <div
                     key={s.id}
                     onClick={() => handleSelectSupplierForTickets(s)}
@@ -1753,11 +1947,15 @@ export const Backoffice: React.FC<BackofficeProps> = ({
                     </div>
                   </div>
                 ))}
-                {suppliers.length === 0 && (
+                {suppliers.length === 0 ? (
                   <div className="p-4 text-center text-slate-400 text-xs">
                     No suppliers yet. Click &quot;+ New Supplier&quot; above to create one.
                   </div>
-                )}
+                ) : filteredSuppliers.length === 0 ? (
+                  <div className="p-6 text-center text-slate-400 text-xs">
+                    Aucun résultat pour cette recherche
+                  </div>
+                ) : null}
               </div>
 
               {/* Supplier Detail & Debt Ledger */}
@@ -1859,12 +2057,31 @@ export const Backoffice: React.FC<BackofficeProps> = ({
 
             {/* Purchase History Table */}
             <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
-              <div className="px-5 py-3.5 border-b border-slate-200 bg-slate-50 flex items-center justify-between">
+              <div className="px-5 py-3.5 border-b border-slate-200 bg-slate-50 flex flex-wrap items-center justify-between gap-3">
                 <div className="flex items-center gap-2">
                   <Truck className="w-4 h-4 text-emerald-600" />
                   <h3 className="font-bold text-xs text-slate-800 uppercase tracking-wider">
-                    Purchase Intake History ({purchasesHistory.length})
+                    Purchase Intake History ({filteredPurchases.length})
                   </h3>
+                </div>
+                <div className="relative w-64">
+                  <Search className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-1/2 -translate-y-1/2" />
+                  <input
+                    type="text"
+                    placeholder="Rechercher fournisseur, n°..."
+                    value={purchasesSearch}
+                    onChange={e => setPurchasesSearch(e.target.value)}
+                    className="w-full pl-8 pr-7 py-1.5 bg-white border border-slate-200 rounded-xl text-xs outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                  {purchasesSearch && (
+                    <button
+                      type="button"
+                      onClick={() => setPurchasesSearch('')}
+                      className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                    >
+                      <X className="w-3 h-3" />
+                    </button>
+                  )}
                 </div>
               </div>
               <div className="overflow-x-auto max-h-72 overflow-y-auto">
@@ -1882,7 +2099,7 @@ export const Backoffice: React.FC<BackofficeProps> = ({
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100">
-                    {purchasesHistory.map(p => (
+                    {filteredPurchases.map(p => (
                       <tr key={p.id} className="hover:bg-slate-50">
                         <td className="p-3 font-mono font-bold text-slate-900">{p.purchase_number}</td>
                         <td className="p-3 text-slate-500 font-mono text-[11px]">{formatDate(p.date)}</td>
@@ -1900,13 +2117,19 @@ export const Backoffice: React.FC<BackofficeProps> = ({
                         </td>
                       </tr>
                     ))}
-                    {purchasesHistory.length === 0 && (
+                    {purchasesHistory.length === 0 ? (
                       <tr>
                         <td colSpan={8} className="p-8 text-center text-slate-400">
                           No purchases recorded yet. Click &quot;+ New Purchase&quot; above to log an invoice.
                         </td>
                       </tr>
-                    )}
+                    ) : filteredPurchases.length === 0 ? (
+                      <tr>
+                        <td colSpan={8} className="p-8 text-center text-slate-400">
+                          Aucun résultat pour cette recherche
+                        </td>
+                      </tr>
+                    ) : null}
                   </tbody>
                 </table>
               </div>
