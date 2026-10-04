@@ -642,5 +642,50 @@ describe('POS Sales & Checkout Module — Real HTTP Integration Tests', () => {
     expect(item.catalog_unit_price).toBeNull();
     expect(item.overridden).toBe(false);
   });
+
+  it('supports listing sales with search, date range, status, limit, and offset filters', async () => {
+    const db = getDb();
+
+    // Create 3 sales on different dates and statuses
+    db.prepare(`
+      INSERT INTO sales (
+        id, receipt_number, session_id, customer_id, date, subtotal_ht, tva_rate, tva_amount,
+        total_ttc, total_discount, cash_paid, wallet_paid, credit_amount, change_given,
+        status, created_at
+      ) VALUES
+        ('sale-filter-1', 'REC-ALPHA-01', 'ses-01', 'cust-retail', '2026-09-10 10:00:00', 10, 0.19, 1.9, 11.9, 0, 11.9, 0, 0, 0, 'COMPLETED', '2026-09-10 10:00:00'),
+        ('sale-filter-2', 'REC-BETA-02', 'ses-01', 'cust-wallet', '2026-09-15 12:00:00', 20, 0.19, 3.8, 23.8, 0, 0, 20.0, 3.8, 0, 'PARTIALLY_REFUNDED', '2026-09-15 12:00:00'),
+        ('sale-filter-3', 'REC-GAMMA-03', 'ses-01', 'cust-reseller', '2026-09-20 14:00:00', 30, 0.19, 5.7, 35.7, 0, 35.7, 0, 0, 0, 'FULLY_REFUNDED', '2026-09-20 14:00:00')
+    `).run();
+
+    // 1. Search by receipt number
+    const resSearchRec = await request(app).get('/api/sales?search=ALPHA');
+    expect(resSearchRec.status).toBe(200);
+    expect(resSearchRec.body.length).toBe(1);
+    expect(resSearchRec.body[0].receipt_number).toBe('REC-ALPHA-01');
+
+    // 2. Search by customer name
+    const resSearchCust = await request(app).get('/api/sales?search=Wallet Customer');
+    expect(resSearchCust.status).toBe(200);
+    expect(resSearchCust.body.length).toBe(1);
+    expect(resSearchCust.body[0].receipt_number).toBe('REC-BETA-02');
+
+    // 3. Date range filter
+    const resDateRange = await request(app).get('/api/sales?from_date=2026-09-12&to_date=2026-09-18');
+    expect(resDateRange.status).toBe(200);
+    expect(resDateRange.body.length).toBe(1);
+    expect(resDateRange.body[0].receipt_number).toBe('REC-BETA-02');
+
+    // 4. Status filter
+    const resStatus = await request(app).get('/api/sales?status=FULLY_REFUNDED');
+    expect(resStatus.status).toBe(200);
+    expect(resStatus.body.length).toBe(1);
+    expect(resStatus.body[0].receipt_number).toBe('REC-GAMMA-03');
+
+    // 5. Pagination: limit and offset
+    const resPaginated = await request(app).get('/api/sales?limit=2&offset=1');
+    expect(resPaginated.status).toBe(200);
+    expect(resPaginated.body.length).toBe(2);
+  });
 });
 

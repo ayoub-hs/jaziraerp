@@ -62,6 +62,7 @@ import { ConfirmDeleteModal } from './ConfirmDeleteModal.js';
 import { ManageCategoriesModal } from './ManageCategoriesModal.js';
 import { ReportsTab } from './ReportsTab.js';
 import { ShopSettingsPanel } from './ShopSettingsPanel.js';
+import { SalesHistoryTab } from './SalesHistoryTab.js';
 
 interface BackofficeProps {
   products: Product[];
@@ -70,9 +71,12 @@ interface BackofficeProps {
   containerTypes: ContainerType[];
   onRefreshData: () => void;
   activeSession?: RegisterSession | null;
+  onPrintReceipt?: (saleId: string) => void;
+  onPrintInvoice?: (saleId: string) => void;
 }
 
 type BackofficeTab = 
+  | 'SALES'
   | 'CATALOG' 
   | 'MATERIALS' 
   | 'PRODUCTION' 
@@ -91,7 +95,9 @@ export const Backoffice: React.FC<BackofficeProps> = ({
   customers,
   containerTypes,
   onRefreshData,
-  activeSession
+  activeSession,
+  onPrintReceipt,
+  onPrintInvoice
 }) => {
   const [activeTab, setActiveTab] = useState<BackofficeTab>('CATALOG');
 
@@ -678,6 +684,15 @@ export const Backoffice: React.FC<BackofficeProps> = ({
         </div>
         <nav className="flex md:flex-col p-1.5 gap-1 text-xs font-semibold">
           <button
+            onClick={() => setActiveTab('SALES')}
+            className={`flex items-center gap-2 px-3 py-2 rounded-lg transition-colors whitespace-nowrap ${
+              activeTab === 'SALES' ? 'bg-emerald-600 text-white shadow-sm' : 'hover:bg-slate-800'
+            }`}
+          >
+            <Receipt className="w-4 h-4" />
+            <span>Ventes</span>
+          </button>
+          <button
             onClick={() => setActiveTab('CATALOG')}
             className={`flex items-center gap-2 px-3 py-2 rounded-lg transition-colors whitespace-nowrap ${
               activeTab === 'CATALOG' ? 'bg-emerald-600 text-white shadow-sm' : 'hover:bg-slate-800'
@@ -781,6 +796,14 @@ export const Backoffice: React.FC<BackofficeProps> = ({
 
       {/* Main Content Pane */}
       <main className="flex-1 p-4 md:p-6 overflow-y-auto">
+        {/* 0. SALES TAB */}
+        {activeTab === 'SALES' && (
+          <SalesHistoryTab
+            onPrintReceipt={onPrintReceipt || (() => {})}
+            onPrintInvoice={onPrintInvoice || (() => {})}
+          />
+        )}
+
         {/* 1. CATALOG TAB */}
         {activeTab === 'CATALOG' && (
           <div className="space-y-4">

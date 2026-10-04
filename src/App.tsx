@@ -327,6 +327,8 @@ export default function App() {
             containerTypes={containerTypes}
             activeSession={activeSession}
             onRefreshData={loadAllData}
+            onPrintReceipt={saleId => setPrintReceiptSaleId(saleId)}
+            onPrintInvoice={saleId => setPrintInvoiceSaleId(saleId)}
           />
         )}
       </div>

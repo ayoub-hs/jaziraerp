@@ -29,11 +29,11 @@ function generateTicketNumber(db: any): string {
 // GET /api/sales - list sales
 salesRouter.get('/', (req: Request, res: Response) => {
   const db = getDb();
-  const { session_id, customer_id, date, status } = req.query;
+  const { session_id, customer_id, date, status, search, from, to, from_date, to_date, start_date, end_date } = req.query;
 
   let query = `
     SELECT s.*, c.name as customer_name, c.type as customer_type,
-      rs.session_number,
+      rs.session_number, rs.counter_name,
       (SELECT COUNT(*) FROM sale_items si WHERE si.sale_id = s.id) as item_count
     FROM sales s
     LEFT JOIN customers c ON s.customer_id = c.id
@@ -57,17 +57,39 @@ salesRouter.get('/', (req: Request, res: Response) => {
     params.push(String(date));
   }
 
+  const startDate = from_date || start_date || from;
+  if (startDate) {
+    query += ` AND date(s.date) >= date(?)`;
+    params.push(String(startDate));
+  }
+
+  const endDate = to_date || end_date || to;
+  if (endDate) {
+    query += ` AND date(s.date) <= date(?)`;
+    params.push(String(endDate));
+  }
+
   if (status) {
     query += ` AND s.status = ?`;
     params.push(String(status));
   }
 
+  if (search) {
+    query += ` AND (s.receipt_number LIKE ? OR c.name LIKE ?)`;
+    params.push(`%${search}%`, `%${search}%`);
+  }
+
   query += ` ORDER BY s.date DESC, s.created_at DESC`;
 
-  if (req.query.limit) {
-    const lim = parseInt(String(req.query.limit), 10);
-    if (!isNaN(lim) && lim > 0) {
-      query += ` LIMIT ${lim}`;
+  const limitParam = req.query.limit !== undefined ? parseInt(String(req.query.limit), 10) : 25;
+  if (!isNaN(limitParam) && limitParam > 0) {
+    query += ` LIMIT ${limitParam}`;
+  }
+
+  if (req.query.offset) {
+    const offsetParam = parseInt(String(req.query.offset), 10);
+    if (!isNaN(offsetParam) && offsetParam >= 0) {
+      query += ` OFFSET ${offsetParam}`;
     }
   }
 

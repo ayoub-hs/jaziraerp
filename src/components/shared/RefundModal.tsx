@@ -7,12 +7,14 @@ interface RefundModalProps {
   isOpen: boolean;
   onClose: () => void;
   onRefundCompleted: () => void;
+  initialSaleId?: string | null;
 }
 
 export const RefundModal: React.FC<RefundModalProps> = ({
   isOpen,
   onClose,
-  onRefundCompleted
+  onRefundCompleted,
+  initialSaleId
 }) => {
   const [searchReceipt, setSearchReceipt] = useState('');
   const [recentSales, setRecentSales] = useState<SaleSummary[]>([]);
@@ -31,14 +33,18 @@ export const RefundModal: React.FC<RefundModalProps> = ({
 
   useEffect(() => {
     if (isOpen) {
-      fetchRecentSales();
-      setSelectedSale(null);
-      setSaleRefunds([]);
+      if (initialSaleId) {
+        handleSelectSale({ id: initialSaleId } as any);
+      } else {
+        fetchRecentSales();
+        setSelectedSale(null);
+        setSaleRefunds([]);
+      }
       setError(null);
       setSuccess(null);
       setSearchReceipt('');
     }
-  }, [isOpen]);
+  }, [isOpen, initialSaleId]);
 
   const fetchRecentSales = async () => {
     try {
