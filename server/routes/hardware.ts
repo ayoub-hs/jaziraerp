@@ -3,6 +3,7 @@ import fs from 'fs';
 import { execFileSync, spawnSync } from 'child_process';
 import path from 'path';
 import { getDb } from '../db/index.js';
+import { getShopSettingsFromDb } from './settings.js';
 
 export const hardwareRouter = Router();
 
@@ -179,8 +180,25 @@ function cleanAscii(str: string): string {
 /**
  * Builds 58mm ESC/POS byte buffer matching Kotlin DesktopReceiptPrinter.kt
  */
-export function buildReceiptEscPosBuffer(sale: any, storeName = 'SOCIETE AL JAZIRA'): Buffer {
+export function buildReceiptEscPosBuffer(sale: any, storeName?: string, customDb?: any): Buffer {
   const bytes: number[] = [];
+
+  const db = customDb || getDb();
+  let shopSettings;
+  try {
+    shopSettings = getShopSettingsFromDb(db);
+  } catch {
+    shopSettings = {
+      shop_name: 'Société Al Jazira SHSP',
+      shop_subtitle: '',
+      shop_address: '',
+      shop_phone: '',
+      tax_id: ''
+    };
+  }
+  const effectiveName = storeName && storeName !== 'SOCIETE AL JAZIRA'
+    ? storeName
+    : (shopSettings.shop_name || 'Société Al Jazira SHSP');
 
   const push = (...b: number[]) => bytes.push(...b);
   const text = (str: string) => {
@@ -212,13 +230,25 @@ export function buildReceiptEscPosBuffer(sale: any, storeName = 'SOCIETE AL JAZI
 
   // Store header
   push(0x1b, 0x61, 0x01); // Center
-  push(0x1b, 0x45, 0x01); // Bold on
-  line(storeName.slice(0, 32));
-  push(0x1b, 0x45, 0x00); // Bold off
-  line('SHSP - Detergents & Hygiene');
-  line('Route de Gabes Km 3.5, Sfax');
-  line('Tel: +216 74 000 000');
-  line('MF: 1234567/A/M/000');
+  if (effectiveName && effectiveName.trim()) {
+    push(0x1b, 0x45, 0x01); // Bold on
+    line(cleanAscii(effectiveName.trim()).slice(0, 32));
+    push(0x1b, 0x45, 0x00); // Bold off
+  }
+  if (shopSettings.shop_subtitle && shopSettings.shop_subtitle.trim()) {
+    line(cleanAscii(shopSettings.shop_subtitle.trim()).slice(0, 32));
+  }
+  if (shopSettings.shop_address && shopSettings.shop_address.trim()) {
+    line(cleanAscii(shopSettings.shop_address.trim()).slice(0, 32));
+  }
+  if (shopSettings.shop_phone && shopSettings.shop_phone.trim()) {
+    line(cleanAscii(`Tel: ${shopSettings.shop_phone.trim()}`).slice(0, 32));
+  }
+  if (shopSettings.tax_id && shopSettings.tax_id.trim()) {
+    const rawTax = shopSettings.tax_id.trim();
+    const taxLine = rawTax.startsWith('MF:') ? rawTax : `MF: ${rawTax}`;
+    line(cleanAscii(taxLine).slice(0, 32));
+  }
   divider('=');
 
   // Metadata
