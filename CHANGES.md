@@ -14,3 +14,4 @@
 - 071da7b test: add empty database get routes and full lifecycle tests
 - bdffb63 fix(sync): store and fallback to local product families in clientDb
 - aa28162 chore(deps): apply npm audit fix
+- a7e5d1d test: assert sales reports, cash flow, and inventory valuation with hand-computed arithmetic in emptyDb test
