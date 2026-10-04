@@ -148,7 +148,7 @@ export const ReportsTab: React.FC = () => {
         new Date(p.date).toLocaleString(),
         p.customer_name,
         p.customer_phone || '—',
-        p.amount.toFixed(3),
+        Number(p.amount || 0).toFixed(3),
         p.payment_method,
         p.notes || '—'
       ]);
@@ -163,18 +163,18 @@ export const ReportsTab: React.FC = () => {
         p.category,
         'Finished Product / SKU',
         p.stock_quantity,
-        p.unit_cost.toFixed(3),
-        p.line_cost_valuation.toFixed(3),
-        p.retail_price.toFixed(3),
-        p.line_retail_valuation.toFixed(3)
+        Number(p.unit_cost || 0).toFixed(3),
+        Number(p.line_cost_valuation || 0).toFixed(3),
+        Number(p.retail_price || 0).toFixed(3),
+        Number(p.line_retail_valuation || 0).toFixed(3)
       ]);
       const materialRows = (inventoryValuationData?.materials || []).map((m: any) => [
         m.name,
         m.category,
         `Raw Material (${m.unit})`,
         m.stock_quantity,
-        m.unit_cost.toFixed(3),
-        m.line_cost_valuation.toFixed(3),
+        Number(m.unit_cost || 0).toFixed(3),
+        Number(m.line_cost_valuation || 0).toFixed(3),
         '—',
         '—'
       ]);
