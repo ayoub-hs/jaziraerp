@@ -65,10 +65,20 @@ export const RefundModal: React.FC<RefundModalProps> = ({
       if (res.ok) {
         const fullSale = await res.json();
         setSelectedSale(fullSale);
+        setError(null);
         if (fullSale.items && fullSale.items.length > 0) {
-          setSelectedItemId(fullSale.items[0].id);
-          const maxAvail = (fullSale.items[0].quantity || 0) - (fullSale.items[0].refunded_quantity || 0);
-          setRefundQuantity(Math.max(1, maxAvail).toString());
+          const refundableItem = fullSale.items.find(
+            (i: any) => (i.quantity || 0) - (i.refunded_quantity || 0) > 0
+          );
+          if (refundableItem) {
+            setSelectedItemId(refundableItem.id);
+            const remaining = (refundableItem.quantity || 0) - (refundableItem.refunded_quantity || 0);
+            setRefundQuantity(remaining.toString());
+          } else {
+            setSelectedItemId(fullSale.items[0].id);
+            setRefundQuantity('');
+            setError('All items in this sale have already been fully refunded.');
+          }
         }
         // Auto default to CREDIT_REDUCTION if original sale was credit-heavy
         if (fullSale.credit_amount > 0) {
@@ -147,6 +157,10 @@ export const RefundModal: React.FC<RefundModalProps> = ({
   };
 
   if (!isOpen) return null;
+
+  const currentItem = selectedSale?.items?.find(i => i.id === selectedItemId);
+  const currentRemaining = currentItem ? (currentItem.quantity || 0) - (currentItem.refunded_quantity || 0) : 0;
+  const isSubmitDisabled = isSubmitting || currentRemaining <= 0 || !refundQuantity || parseFloat(refundQuantity) <= 0;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
@@ -281,8 +295,14 @@ export const RefundModal: React.FC<RefundModalProps> = ({
                     setSelectedItemId(e.target.value);
                     const item = selectedSale.items?.find(i => i.id === e.target.value);
                     if (item) {
-                      const maxAvail = (item.quantity || 0) - (item.refunded_quantity || 0);
-                      setRefundQuantity(Math.max(1, maxAvail).toString());
+                      const remaining = (item.quantity || 0) - (item.refunded_quantity || 0);
+                      if (remaining > 0) {
+                        setRefundQuantity(remaining.toString());
+                        setError(null);
+                      } else {
+                        setRefundQuantity('');
+                        setError('This item has already been fully refunded.');
+                      }
                     }
                   }}
                   className="w-full text-sm font-semibold px-3 py-2 border border-slate-300 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:outline-none"
@@ -360,8 +380,8 @@ export const RefundModal: React.FC<RefundModalProps> = ({
                 </button>
                 <button
                   type="submit"
-                  disabled={isSubmitting}
-                  className="flex-1 py-2.5 bg-amber-600 hover:bg-amber-700 text-white font-bold rounded-xl text-sm shadow transition-colors"
+                  disabled={isSubmitDisabled}
+                  className="flex-1 py-2.5 bg-amber-600 hover:bg-amber-700 disabled:opacity-50 text-white font-bold rounded-xl text-sm shadow transition-colors"
                 >
                   {isSubmitting ? 'Refunding...' : 'Confirm Refund & Restock'}
                 </button>
