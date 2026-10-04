@@ -22,39 +22,48 @@ export interface FormulationCostResult {
 }
 
 /**
- * Calculates raw material unit costs as the quantity-weighted average of the current calendar year's purchases:
- *   unit_cost(material) = round3( SUM(pi.total_cost) / SUM(pi.quantity) )
- * for raw material purchases in currentYear (defaults to server's current calendar year).
- * If a material has no purchases in currentYear (or total quantity === 0), falls back to raw_materials.latest_purchase_cost.
+ * Returns a Map of materialId -> unitCost for all raw materials.
+ * The unit cost is the quantity-weighted average cost of the material's purchases
+ * in the specified calendar year (default: current year).
+ * If there are no purchases in the target year (or total quantity === 0),
+ * it falls back to raw_materials.latest_purchase_cost.
  */
-export function getMaterialUnitCosts(db: any, currentYear: number = new Date().getFullYear()): Map<string, number> {
-  const yearStr = String(currentYear);
-  const rows: any[] = db.prepare(`
+export function getMaterialUnitCosts(
+  db: any,
+  targetYear: number = new Date().getFullYear()
+): Map<string, number> {
+  const query = `
     SELECT 
-      rm.id,
+      rm.id as material_id,
       rm.latest_purchase_cost,
-      COALESCE(p_summary.total_cost, 0) as total_purchased_cost,
-      COALESCE(p_summary.total_qty, 0) as total_purchased_qty
+      purchases_this_year.total_cost,
+      purchases_this_year.total_quantity
     FROM raw_materials rm
     LEFT JOIN (
       SELECT 
         pi.material_id,
         SUM(pi.total_cost) as total_cost,
-        SUM(pi.quantity) as total_qty
+        SUM(pi.quantity) as total_quantity
       FROM purchase_items pi
       JOIN purchases p ON pi.purchase_id = p.id
       WHERE pi.item_type = 'RAW_MATERIAL'
-        AND substr(p.date, 1, 4) = ?
+        AND pi.material_id IS NOT NULL
+        AND SUBSTR(p.date, 1, 4) = CAST(? AS TEXT)
       GROUP BY pi.material_id
-    ) p_summary ON rm.id = p_summary.material_id
-  `).all(yearStr);
+    ) purchases_this_year ON rm.id = purchases_this_year.material_id
+  `;
 
+  const rows: any[] = db.prepare(query).all(targetYear);
   const costMap = new Map<string, number>();
+
   for (const row of rows) {
-    if (row.total_purchased_qty > 0) {
-      costMap.set(row.id, divideMoney(row.total_purchased_cost, row.total_purchased_qty));
+    const qty = Number(row.total_quantity) || 0;
+    const cost = Number(row.total_cost) || 0;
+
+    if (qty > 0) {
+      costMap.set(row.material_id, divideMoney(cost, qty));
     } else {
-      costMap.set(row.id, round3(Number(row.latest_purchase_cost) || 0));
+      costMap.set(row.material_id, round3(Number(row.latest_purchase_cost) || 0));
     }
   }
 
@@ -62,11 +71,14 @@ export function getMaterialUnitCosts(db: any, currentYear: number = new Date().g
 }
 
 /**
- * Returns the quantity-weighted average unit cost for a single material in currentYear,
- * falling back to raw_materials.latest_purchase_cost.
+ * Returns the unit cost for a single material (thin wrapper around getMaterialUnitCosts).
  */
-export function getMaterialUnitCost(db: any, materialId: string, currentYear: number = new Date().getFullYear()): number {
-  const costs = getMaterialUnitCosts(db, currentYear);
+export function getMaterialUnitCost(
+  db: any,
+  materialId: string,
+  targetYear: number = new Date().getFullYear()
+): number {
+  const costs = getMaterialUnitCosts(db, targetYear);
   if (costs.has(materialId)) {
     return costs.get(materialId)!;
   }
@@ -75,7 +87,7 @@ export function getMaterialUnitCost(db: any, materialId: string, currentYear: nu
 }
 
 /**
- * Calculates current formulation cost based on the quantity-weighted average purchase cost of all ingredients and packaging.
+ * Calculates current formulation cost based on the latest purchase cost of all ingredients and packaging.
  */
 export function calculateFormulationCost(db: any, formulationId: string): FormulationCostResult {
   const formulation: any = db.prepare(`
