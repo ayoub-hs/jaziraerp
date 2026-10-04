@@ -21,6 +21,7 @@ import { backupRouter } from './routes/backup.js';
 import { hardwareRouter } from './routes/hardware.js';
 import { categoriesRouter } from './routes/categories.js';
 import { reportsRouter } from './routes/reports.js';
+import { settingsRouter } from './routes/settings.js';
 import { backupService } from './services/backupService.js';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -70,6 +71,7 @@ app.use('/api/sync', syncRouter);
 app.use('/api/hardware', hardwareRouter);
 app.use('/api/categories', categoriesRouter);
 app.use('/api/reports', reportsRouter);
+app.use('/api/settings', settingsRouter);
 
 // Health check endpoint
 app.get('/api/health', (req, res) => {

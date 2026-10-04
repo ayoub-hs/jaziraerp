@@ -12,8 +12,9 @@ interface LockScreenModalProps {
 export const LockScreenModal: React.FC<LockScreenModalProps> = ({
   isLocked,
   onUnlocked,
-  shopName = 'Société Al Jazira SHSP'
+  shopName
 }) => {
+  const effectiveShopName = shopName || authService.getShopName();
   const [pin, setPin] = useState<string>('');
   const [error, setError] = useState<string | null>(null);
   const [isVerifying, setIsVerifying] = useState(false);
@@ -153,7 +154,7 @@ export const LockScreenModal: React.FC<LockScreenModalProps> = ({
           <Lock className="w-7 h-7 text-emerald-400" />
         </div>
 
-        <h2 className="text-lg font-black text-white">{shopName}</h2>
+        <h2 className="text-lg font-black text-white">{effectiveShopName}</h2>
         <p className="text-xs text-slate-400 mt-0.5">
           {isMasterMode ? 'Master Password Unlock' : 'Enter 4-Digit Counter PIN'}
         </p>

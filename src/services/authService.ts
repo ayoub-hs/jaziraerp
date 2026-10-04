@@ -55,6 +55,19 @@ export class AuthService {
     return false;
   }
 
+  public getShopName(): string {
+    if (typeof localStorage !== 'undefined') {
+      return localStorage.getItem(STORAGE_KEYS.SHOP_NAME) || 'Société Al Jazira SHSP';
+    }
+    return 'Société Al Jazira SHSP';
+  }
+
+  public setShopName(name: string): void {
+    if (typeof localStorage !== 'undefined') {
+      localStorage.setItem(STORAGE_KEYS.SHOP_NAME, name);
+    }
+  }
+
   public subscribeLockState(fn: (locked: boolean) => void): () => void {
     this.listeners.push(fn);
     fn(this.locked);
