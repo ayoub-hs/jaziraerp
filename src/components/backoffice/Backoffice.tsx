@@ -212,6 +212,7 @@ export const Backoffice: React.FC<BackofficeProps> = ({
   const [materialsSearch, setMaterialsSearch] = useState('');
   const [materialsLowStockOnly, setMaterialsLowStockOnly] = useState(false);
   const [customersSearch, setCustomersSearch] = useState('');
+  const [customersOverdueOnly, setCustomersOverdueOnly] = useState(false);
   const [suppliersSearch, setSuppliersSearch] = useState('');
   const [purchasesSearch, setPurchasesSearch] = useState('');
   const [loadingSessionDetail, setLoadingSessionDetail] = useState(false);
@@ -748,7 +749,9 @@ export const Backoffice: React.FC<BackofficeProps> = ({
     return true;
   });
 
+  const overdueCustomersCount = customers.filter(c => !!c.has_overdue_tickets).length;
   const filteredCustomers = customers.filter(c => {
+    if (customersOverdueOnly && !c.has_overdue_tickets) return false;
     if (customersSearch.trim()) {
       const q = customersSearch.toLowerCase().trim();
       const matchName = c.name?.toLowerCase().includes(q);
@@ -1631,24 +1634,39 @@ export const Backoffice: React.FC<BackofficeProps> = ({
                 <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wide px-1">
                   Customer Directory
                 </h3>
-                <div className="relative mb-2">
-                  <Search className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-1/2 -translate-y-1/2" />
-                  <input
-                    type="text"
-                    placeholder="Rechercher client, tél..."
-                    value={customersSearch}
-                    onChange={e => setCustomersSearch(e.target.value)}
-                    className="w-full pl-8 pr-7 py-1.5 bg-slate-50 border border-slate-200 rounded-xl text-xs outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white"
-                  />
-                  {customersSearch && (
-                    <button
-                      type="button"
-                      onClick={() => setCustomersSearch('')}
-                      className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
-                    >
-                      <X className="w-3 h-3" />
-                    </button>
-                  )}
+                <div className="flex items-center gap-2 mb-2">
+                  <div className="relative flex-1">
+                    <Search className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-1/2 -translate-y-1/2" />
+                    <input
+                      type="text"
+                      placeholder="Rechercher client, tél..."
+                      value={customersSearch}
+                      onChange={e => setCustomersSearch(e.target.value)}
+                      className="w-full pl-8 pr-7 py-1.5 bg-slate-50 border border-slate-200 rounded-xl text-xs outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white"
+                    />
+                    {customersSearch && (
+                      <button
+                        type="button"
+                        onClick={() => setCustomersSearch('')}
+                        className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                      >
+                        <X className="w-3 h-3" />
+                      </button>
+                    )}
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setCustomersOverdueOnly(prev => !prev)}
+                    className={`flex items-center gap-1 text-[11px] font-bold px-2.5 py-1.5 rounded-xl transition-colors border shrink-0 ${
+                      customersOverdueOnly
+                        ? 'bg-rose-600 text-white border-rose-600 shadow-xs'
+                        : 'bg-white hover:bg-rose-50 text-rose-700 border-rose-200'
+                    }`}
+                    title="Afficher uniquement les clients avec dettes en retard"
+                  >
+                    <AlertTriangle className="w-3.5 h-3.5" />
+                    <span>En retard ({overdueCustomersCount})</span>
+                  </button>
                 </div>
                 {filteredCustomers.map(c => (
                   <div
@@ -1663,9 +1681,16 @@ export const Backoffice: React.FC<BackofficeProps> = ({
                     <div className="flex justify-between items-start">
                       <div>
                         <h4 className="font-bold text-xs text-slate-900">{c.name}</h4>
-                        <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-slate-100 text-slate-700">
-                          {c.type}
-                        </span>
+                        <div className="flex items-center gap-1.5 mt-0.5">
+                          <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-slate-100 text-slate-700">
+                            {c.type}
+                          </span>
+                          {c.has_overdue_tickets && (
+                            <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-rose-100 text-rose-700 uppercase">
+                              En retard
+                            </span>
+                          )}
+                        </div>
                       </div>
                       <div className="flex items-center gap-1">
                         <button
@@ -1695,7 +1720,7 @@ export const Backoffice: React.FC<BackofficeProps> = ({
                     </div>
                     <div className="flex justify-between items-center mt-2 text-[11px]">
                       <span className="text-slate-500">Wallet: {formatMoney(c.wallet_balance)}</span>
-                      <span className={`font-bold font-mono ${c.total_debt ? 'text-amber-700' : 'text-slate-400'}`}>
+                      <span className={`font-bold font-mono ${c.has_overdue_tickets ? 'text-rose-700 font-black' : c.total_debt ? 'text-amber-700' : 'text-slate-400'}`}>
                         Debt: {formatMoney(c.total_debt)}
                       </span>
                     </div>
