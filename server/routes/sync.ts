@@ -82,12 +82,14 @@ syncRouter.get('/pull', (req: Request, res: Response) => {
   `).all();
 
   const openSessions = db.prepare("SELECT * FROM register_sessions WHERE status = 'OPEN'").all();
+  const families = db.prepare("SELECT * FROM product_families WHERE active = 1 ORDER BY name ASC").all();
 
   res.json({
     products: enrichedProducts,
     customers: enrichedCustomers,
     container_types: containerTypes,
     open_sessions: openSessions,
+    families: families,
     server_time: new Date().toISOString()
   });
 });

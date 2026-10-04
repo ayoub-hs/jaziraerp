@@ -101,10 +101,11 @@ export class SyncManager {
       if (!res.ok) throw new Error(`HTTP error: ${res.status}`);
       const data = await res.json();
 
-      await clientDb.transaction('rw', [clientDb.products, clientDb.customers, clientDb.container_types], async () => {
+      await clientDb.transaction('rw', [clientDb.products, clientDb.customers, clientDb.container_types, clientDb.product_families], async () => {
         await clientDb.products.clear();
         await clientDb.customers.clear();
         await clientDb.container_types.clear();
+        await clientDb.product_families.clear();
 
         if (Array.isArray(data.products)) {
           await clientDb.products.bulkPut(data.products);
@@ -114,6 +115,10 @@ export class SyncManager {
         }
         if (Array.isArray(data.container_types)) {
           await clientDb.container_types.bulkPut(data.container_types);
+        }
+        const families = data.families || data.product_families;
+        if (Array.isArray(families)) {
+          await clientDb.product_families.bulkPut(families);
         }
       });
 

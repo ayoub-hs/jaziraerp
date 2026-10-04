@@ -69,6 +69,16 @@ export interface PendingSyncItem {
   needs_review?: boolean;
 }
 
+export interface LocalProductFamily {
+  id: string;
+  name: string;
+  category: string;
+  type?: 'MANUFACTURED' | 'RESALE';
+  formulation_id?: string | null;
+  image_url?: string | null;
+  active?: number;
+}
+
 export class AppClientDatabase extends Dexie {
   products!: Table<LocalProduct, string>;
   pack_sizes!: Table<LocalPackSize, string>;
@@ -76,6 +86,7 @@ export class AppClientDatabase extends Dexie {
   container_types!: Table<LocalContainerType, string>;
   active_session!: Table<LocalActiveSession, string>;
   pending_sync_queue!: Table<PendingSyncItem, number>;
+  product_families!: Table<LocalProductFamily, string>;
 
   constructor() {
     super('AlJaziraERP_ClientDB');
@@ -87,6 +98,10 @@ export class AppClientDatabase extends Dexie {
       container_types: 'id, name',
       active_session: 'id, counter_name, status',
       pending_sync_queue: '++queue_id, temp_client_id, action_type, created_at'
+    });
+
+    this.version(2).stores({
+      product_families: 'id, name, category'
     });
   }
 }

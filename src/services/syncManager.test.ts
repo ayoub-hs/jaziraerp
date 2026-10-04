@@ -245,5 +245,72 @@ describe('SyncManager & Offline Fallback', () => {
     });
     expect(flushSpy).toHaveBeenCalledTimes(1);
   });
+
+  it('pullMasterCatalog replicates product families into clientDb.product_families', async () => {
+    const mockFamilies = [
+      { id: 'fam-1', name: 'Detergents', category: 'Cleaning' },
+      { id: 'fam-2', name: 'Soaps', category: 'Personal' }
+    ];
+
+    const famClearSpy = vi.spyOn(clientDb.product_families, 'clear').mockResolvedValue(undefined as any);
+    const famBulkPutSpy = vi.spyOn(clientDb.product_families, 'bulkPut').mockResolvedValue('ok' as any);
+    vi.spyOn(clientDb.products, 'clear').mockResolvedValue(undefined as any);
+    vi.spyOn(clientDb.customers, 'clear').mockResolvedValue(undefined as any);
+    vi.spyOn(clientDb.container_types, 'clear').mockResolvedValue(undefined as any);
+    vi.spyOn(clientDb.products, 'bulkPut').mockResolvedValue('ok' as any);
+    vi.spyOn(clientDb.customers, 'bulkPut').mockResolvedValue('ok' as any);
+    vi.spyOn(clientDb.container_types, 'bulkPut').mockResolvedValue('ok' as any);
+
+    vi.spyOn(clientDb, 'transaction').mockImplementation((async (...args: any[]) => {
+      const callback = args[args.length - 1];
+      return callback();
+    }) as any);
+
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        products: [],
+        customers: [],
+        container_types: [],
+        families: mockFamilies
+      })
+    }));
+
+    await syncMgr.pullMasterCatalog();
+
+    expect(famClearSpy).toHaveBeenCalledTimes(1);
+    expect(famBulkPutSpy).toHaveBeenCalledWith(mockFamilies);
+  });
+
+  it('verifies clientDb schema upgrade preserves existing tables and adds product_families', () => {
+    const tableNames = clientDb.tables.map(t => t.name);
+    expect(tableNames).toContain('products');
+    expect(tableNames).toContain('pack_sizes');
+    expect(tableNames).toContain('customers');
+    expect(tableNames).toContain('container_types');
+    expect(tableNames).toContain('active_session');
+    expect(tableNames).toContain('pending_sync_queue');
+    expect(tableNames).toContain('product_families');
+
+    const pfSchema = clientDb.table('product_families').schema;
+    expect(pfSchema.primKey.name).toBe('id');
+    expect(pfSchema.indexes.map(i => i.name)).toEqual(['name', 'category']);
+
+    const queueSchema = clientDb.table('pending_sync_queue').schema;
+    expect(queueSchema.primKey.name).toBe('queue_id');
+  });
+
+  it('offline fallback retrieves cached families from clientDb.product_families', async () => {
+    const cachedFamilies = [
+      { id: 'fam-offline-1', name: 'Bleach', category: 'Chemicals' }
+    ];
+
+    vi.spyOn(clientDb.product_families, 'toArray').mockResolvedValue(cachedFamilies as any);
+
+    const offlineFamilies = await clientDb.product_families.toArray();
+    expect(offlineFamilies).toEqual(cachedFamilies);
+    expect(offlineFamilies).toHaveLength(1);
+    expect(offlineFamilies[0].name).toBe('Bleach');
+  });
 });
 

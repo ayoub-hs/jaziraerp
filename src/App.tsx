@@ -131,8 +131,10 @@ export default function App() {
       const localProducts = await clientDb.products.toArray();
       const localCustomers = await clientDb.customers.toArray();
       const localContainers = await clientDb.container_types.toArray();
+      const localFamilies = await clientDb.product_families.toArray();
 
       if (localProducts.length > 0) setProducts(localProducts as any);
+      if (localFamilies.length > 0) setFamilies(localFamilies as any);
       if (localCustomers.length > 0) setCustomers(localCustomers as any);
       if (localContainers.length > 0) setContainerTypes(localContainers as any);
     }
