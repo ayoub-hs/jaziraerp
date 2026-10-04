@@ -2,6 +2,7 @@ import { Router, Request, Response } from 'express';
 import crypto from 'crypto';
 import { getDb } from '../db/index.js';
 import { round3 } from '../utils/money.js';
+import { getMaterialUnitCosts, getMaterialUnitCost } from '../services/costingService.js';
 
 export const materialsRouter = Router();
 
@@ -108,7 +109,12 @@ materialsRouter.get('/', (req: Request, res: Response) => {
   query += ` ORDER BY m.name ASC`;
 
   const rows = db.prepare(query).all(...params);
-  res.json(rows);
+  const unitCosts = getMaterialUnitCosts(db);
+  const enriched = rows.map((m: any) => ({
+    ...m,
+    current_cost_per_unit: unitCosts.get(m.id) ?? round3(Number(m.latest_purchase_cost) || 0)
+  }));
+  res.json(enriched);
 });
 
 // GET /api/materials/:id - get single material with recent history
@@ -135,7 +141,13 @@ materialsRouter.get('/:id', (req: Request, res: Response) => {
     ORDER BY h.date DESC
   `).all(req.params.id);
 
-  res.json({ ...material, price_history: history });
+  const unitCost = getMaterialUnitCost(db, req.params.id);
+
+  res.json({
+    ...material,
+    current_cost_per_unit: unitCost,
+    price_history: history
+  });
 });
 
 // POST /api/materials - create raw material or packaging

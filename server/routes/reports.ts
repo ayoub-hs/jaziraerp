@@ -1,6 +1,7 @@
 import { Router, Request, Response } from 'express';
 import { getDb } from '../db/index.js';
 import { round3 } from '../utils/money.js';
+import { getMaterialUnitCosts } from '../services/costingService.js';
 
 export const reportsRouter = Router();
 
@@ -313,19 +314,30 @@ reportsRouter.get('/inventory-valuation', (req: Request, res: Response) => {
   }
 
   if (type === 'ALL' || type === 'MATERIALS') {
-    materials = db.prepare(`
+    const unitCosts = getMaterialUnitCosts(db);
+    const rawMaterials: any[] = db.prepare(`
       SELECT 
         id,
         name,
         category,
         unit,
         stock_quantity,
-        ROUND(latest_purchase_cost, 3) as unit_cost,
-        ROUND(stock_quantity * latest_purchase_cost, 3) as line_cost_valuation
+        ROUND(latest_purchase_cost, 3) as latest_purchase_cost
       FROM raw_materials
       WHERE (active = 1 OR active IS NULL)
       ORDER BY category ASC, name ASC
     `).all();
+
+    materials = rawMaterials.map((m: any) => {
+      const unitCost = unitCosts.get(m.id) ?? round3(Number(m.latest_purchase_cost) || 0);
+      const lineCostValuation = round3(m.stock_quantity * unitCost);
+      return {
+        ...m,
+        unit_cost: unitCost,
+        current_cost_per_unit: unitCost,
+        line_cost_valuation: lineCostValuation
+      };
+    });
   }
 
   let productCostValuation = 0;

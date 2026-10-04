@@ -89,7 +89,11 @@ export function getMaterialUnitCost(
 /**
  * Calculates current formulation cost based on the latest purchase cost of all ingredients and packaging.
  */
-export function calculateFormulationCost(db: any, formulationId: string): FormulationCostResult {
+export function calculateFormulationCost(
+  db: any,
+  formulationId: string,
+  targetYear?: number
+): FormulationCostResult {
   const formulation: any = db.prepare(`
     SELECT * FROM formulations WHERE id = ?
   `).get(formulationId);
@@ -101,17 +105,19 @@ export function calculateFormulationCost(db: any, formulationId: string): Formul
   const items: any[] = db.prepare(`
     SELECT fi.id, fi.material_id, fi.quantity_required,
            rm.name as material_name, rm.category as material_category,
-           rm.unit as material_unit, rm.latest_purchase_cost as unit_cost
+           rm.unit as material_unit
     FROM formulation_items fi
     JOIN raw_materials rm ON fi.material_id = rm.id
     WHERE fi.formulation_id = ?
     ORDER BY rm.category ASC, rm.name ASC
   `).all(formulationId);
 
+  const unitCosts = getMaterialUnitCosts(db, targetYear);
+
   let totalCost = 0;
   const costedItems: FormulationItemCost[] = items.map((item) => {
-    const unitCost = round3(item.unit_cost || 0);
-    const itemTotal = multiplyMoney(unitCost, item.quantity_required);
+    const unitCost = unitCosts.get(item.material_id) ?? 0;
+    const itemTotal = round3(item.quantity_required * unitCost);
     totalCost = addMoney(totalCost, itemTotal);
 
     return {
@@ -157,7 +163,8 @@ export interface ScaledBatchIngredient {
 export function calculateBatchRequirements(
   db: any,
   formulationId: string,
-  targetOutputUnits: number
+  targetOutputUnits: number,
+  targetYear?: number
 ): {
   targetOutputUnits: number;
   scalingFactor: number;
@@ -165,7 +172,7 @@ export function calculateBatchRequirements(
   costPerUnit: number;
   ingredients: ScaledBatchIngredient[];
 } {
-  const formulationCost = calculateFormulationCost(db, formulationId);
+  const formulationCost = calculateFormulationCost(db, formulationId, targetYear);
   const baseYield = formulationCost.base_yield_quantity;
   const scalingFactor = targetOutputUnits / baseYield;
 
@@ -175,7 +182,7 @@ export function calculateBatchRequirements(
     const currentStock = rawMaterial ? rawMaterial.stock_quantity : 0;
 
     const scaledQty = round3(item.quantity_required * scalingFactor);
-    const scaledItemTotal = multiplyMoney(item.unit_cost, scaledQty);
+    const scaledItemTotal = round3(scaledQty * item.unit_cost);
     totalBatchCost = addMoney(totalBatchCost, scaledItemTotal);
 
     return {

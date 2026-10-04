@@ -2,6 +2,7 @@ import { Router, Request, Response } from 'express';
 import crypto from 'crypto';
 import { getDb } from '../db/index.js';
 import { round3, addMoney, subtractMoney, multiplyMoney } from '../utils/money.js';
+import { getMaterialUnitCosts } from '../services/costingService.js';
 
 export const accountingRouter = Router();
 
@@ -228,13 +229,24 @@ accountingRouter.get('/stock-valuation', (req: Request, res: Response) => {
   const db = getDb();
 
   // 1. Raw Materials & Packaging valuation
-  const materials: any[] = db.prepare(`
-    SELECT id, name, category, unit, stock_quantity, latest_purchase_cost,
-      ROUND(stock_quantity * latest_purchase_cost, 3) as line_valuation
+  const unitCosts = getMaterialUnitCosts(db);
+  const rawMaterials: any[] = db.prepare(`
+    SELECT id, name, category, unit, stock_quantity, latest_purchase_cost
     FROM raw_materials
     WHERE stock_quantity > 0
     ORDER BY category ASC, name ASC
   `).all();
+
+  const materials = rawMaterials.map((m: any) => {
+    const unitCost = unitCosts.get(m.id) ?? round3(Number(m.latest_purchase_cost) || 0);
+    const lineValuation = round3(m.stock_quantity * unitCost);
+    return {
+      ...m,
+      current_cost_per_unit: unitCost,
+      unit_cost: unitCost,
+      line_valuation: lineValuation
+    };
+  });
 
   let rawMaterialsTotal = 0;
   for (const m of materials) {
