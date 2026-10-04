@@ -1062,7 +1062,8 @@ export const Backoffice: React.FC<BackofficeProps> = ({
             )}
 
             <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
-              <table className="w-full text-left border-collapse text-xs">
+              <div className="overflow-x-auto">
+                <table className="w-full text-left border-collapse text-xs min-w-[750px]">
                 <thead>
                   <tr className="bg-slate-50 border-b border-slate-200 font-bold text-slate-600 uppercase text-[10px]">
                     <th className="p-3">Product Name</th>
@@ -1143,6 +1144,7 @@ export const Backoffice: React.FC<BackofficeProps> = ({
                   ) : null}
                 </tbody>
               </table>
+              </div>
             </div>
           </div>
         )}
@@ -1225,7 +1227,8 @@ export const Backoffice: React.FC<BackofficeProps> = ({
             </div>
 
             <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
-              <table className="w-full text-left border-collapse text-xs">
+              <div className="overflow-x-auto">
+                <table className="w-full text-left border-collapse text-xs min-w-[700px]">
                 <thead>
                   <tr className="bg-slate-50 border-b border-slate-200 font-bold text-slate-600 uppercase text-[10px]">
                     <th className="p-3">Material Name</th>
@@ -1303,6 +1306,7 @@ export const Backoffice: React.FC<BackofficeProps> = ({
                   ) : null}
                 </tbody>
               </table>
+              </div>
             </div>
 
             {/* Inventory Adjustments Audit Log */}
@@ -1810,8 +1814,8 @@ export const Backoffice: React.FC<BackofficeProps> = ({
                       <h4 className="text-xs font-bold text-slate-700 uppercase tracking-wide">
                         Open Debt Tickets
                       </h4>
-                      <div className="border border-slate-200 rounded-xl overflow-hidden max-h-48 overflow-y-auto">
-                        <table className="w-full text-left border-collapse text-xs">
+                      <div className="border border-slate-200 rounded-xl max-h-48 overflow-y-auto overflow-x-auto">
+                        <table className="w-full text-left border-collapse text-xs min-w-[500px]">
                           <thead>
                             <tr className="bg-slate-50 font-bold text-slate-600 uppercase text-[10px]">
                               <th className="p-2">Ticket #</th>
@@ -2031,8 +2035,8 @@ export const Backoffice: React.FC<BackofficeProps> = ({
                       <h4 className="text-xs font-bold text-slate-700 uppercase tracking-wide">
                         Open Supplier Debt Tickets
                       </h4>
-                      <div className="border border-slate-200 rounded-xl overflow-hidden max-h-48 overflow-y-auto">
-                        <table className="w-full text-left border-collapse text-xs">
+                      <div className="border border-slate-200 rounded-xl max-h-48 overflow-y-auto overflow-x-auto">
+                        <table className="w-full text-left border-collapse text-xs min-w-[500px]">
                           <thead>
                             <tr className="bg-slate-50 font-bold text-slate-600 uppercase text-[10px]">
                               <th className="p-2">Ticket #</th>
@@ -2410,7 +2414,8 @@ export const Backoffice: React.FC<BackofficeProps> = ({
               </button>
             </div>
             <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
-              <table className="w-full text-left border-collapse text-xs">
+              <div className="overflow-x-auto">
+                <table className="w-full text-left border-collapse text-xs min-w-[850px]">
                 <thead>
                   <tr className="bg-slate-50 border-b border-slate-200 font-bold text-slate-600 uppercase text-[10px]">
                     <th className="p-3">Session #</th>
@@ -2471,6 +2476,7 @@ export const Backoffice: React.FC<BackofficeProps> = ({
                   )}
                 </tbody>
               </table>
+              </div>
             </div>
 
             {/* Session Drill-down Modal */}
@@ -2536,8 +2542,8 @@ export const Backoffice: React.FC<BackofficeProps> = ({
                           <div className="px-4 py-2.5 bg-slate-50 border-b border-slate-200 font-bold text-xs text-slate-700 uppercase tracking-wide">
                             Session Sales Receipts ({selectedSessionDetail.sales?.length || 0})
                           </div>
-                          <div className="max-h-56 overflow-y-auto">
-                            <table className="w-full text-left text-xs border-collapse">
+                          <div className="max-h-56 overflow-y-auto overflow-x-auto">
+                            <table className="w-full text-left text-xs border-collapse min-w-[550px]">
                               <thead>
                                 <tr className="bg-slate-50 text-slate-500 font-bold text-[10px] uppercase border-b border-slate-200">
                                   <th className="p-2.5">Receipt #</th>
@@ -2583,32 +2589,34 @@ export const Backoffice: React.FC<BackofficeProps> = ({
                             <div className="px-4 py-2 bg-slate-50 border-b border-slate-200 font-bold text-xs text-slate-700 uppercase tracking-wide">
                               Cash Movements ({selectedSessionDetail.movements.length})
                             </div>
-                            <table className="w-full text-left text-xs border-collapse">
-                              <thead>
-                                <tr className="bg-slate-50 text-slate-500 font-bold text-[10px] uppercase border-b border-slate-200">
-                                  <th className="p-2">Type</th>
-                                  <th className="p-2 text-right">Amount</th>
-                                  <th className="p-2">Reason</th>
-                                  <th className="p-2">Time</th>
-                                </tr>
-                              </thead>
-                              <tbody className="divide-y divide-slate-100">
-                                {selectedSessionDetail.movements.map((m: any) => (
-                                  <tr key={m.id}>
-                                    <td className="p-2 font-bold">
-                                      <span className={`px-1.5 py-0.5 rounded text-[10px] ${
-                                        m.type === 'CASH_IN' ? 'bg-emerald-100 text-emerald-800' : 'bg-rose-100 text-rose-800'
-                                      }`}>
-                                        {m.type}
-                                      </span>
-                                    </td>
-                                    <td className="p-2 text-right font-mono font-bold">{formatMoney(m.amount)}</td>
-                                    <td className="p-2 text-slate-600">{m.reason}</td>
-                                    <td className="p-2 text-slate-500 text-[11px]">{formatDateTime(m.created_at || m.date)}</td>
+                            <div className="overflow-x-auto">
+                              <table className="w-full text-left text-xs border-collapse min-w-[400px]">
+                                <thead>
+                                  <tr className="bg-slate-50 text-slate-500 font-bold text-[10px] uppercase border-b border-slate-200">
+                                    <th className="p-2">Type</th>
+                                    <th className="p-2 text-right">Amount</th>
+                                    <th className="p-2">Reason</th>
+                                    <th className="p-2">Time</th>
                                   </tr>
-                                ))}
-                              </tbody>
-                            </table>
+                                </thead>
+                                <tbody className="divide-y divide-slate-100">
+                                  {selectedSessionDetail.movements.map((m: any) => (
+                                    <tr key={m.id}>
+                                      <td className="p-2 font-bold">
+                                        <span className={`px-1.5 py-0.5 rounded text-[10px] ${
+                                          m.type === 'CASH_IN' ? 'bg-emerald-100 text-emerald-800' : 'bg-rose-100 text-rose-800'
+                                        }`}>
+                                          {m.type}
+                                        </span>
+                                      </td>
+                                      <td className="p-2 text-right font-mono font-bold">{formatMoney(m.amount)}</td>
+                                      <td className="p-2 text-slate-600">{m.reason}</td>
+                                      <td className="p-2 text-slate-500 text-[11px]">{formatDateTime(m.created_at || m.date)}</td>
+                                    </tr>
+                                  ))}
+                                </tbody>
+                              </table>
+                            </div>
                           </div>
                         )}
                       </>
@@ -2838,7 +2846,7 @@ export const Backoffice: React.FC<BackofficeProps> = ({
                 </button>
               </div>
               <div className="overflow-x-auto max-h-72 overflow-y-auto">
-                <table className="w-full text-left text-xs border-collapse">
+                <table className="w-full text-left text-xs border-collapse min-w-[600px]">
                   <thead>
                     <tr className="bg-slate-50 border-b border-slate-200 text-slate-500 font-bold text-[10px] uppercase">
                       <th className="p-3">Date</th>
