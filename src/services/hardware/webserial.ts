@@ -70,7 +70,10 @@ export class WebSerialDrawerService {
           { usbVendorId: 0x0403 }, // FTDI
           { usbVendorId: 0x10c4 }  // Silicon Labs CP210x
         ]
-      }).catch(async () => {
+      }).catch(async (err: any) => {
+        if (err?.name === 'NotFoundError' || err?.name === 'AbortError') {
+          throw err;
+        }
         // Fallback without filters if specific vendor filter misses
         return await (navigator as any).serial.requestPort();
       });
