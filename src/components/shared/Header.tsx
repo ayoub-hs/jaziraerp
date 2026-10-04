@@ -64,6 +64,8 @@ export const Header: React.FC<HeaderProps> = ({
   const [serialPortInfo, setSerialPortInfo] = useState<string | null>(null);
   const [printerHardwareInfo, setPrinterHardwareInfo] = useState<{ connected: boolean; device_name?: string; driver_type?: string } | null>(null);
   const [drawerKicking, setDrawerKicking] = useState(false);
+  const [drawerCooldown, setDrawerCooldown] = useState(false);
+  const [printCooldown, setPrintCooldown] = useState(false);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [isAuthConfigured, setIsAuthConfigured] = useState<boolean>(authService.isConfigured());
   const [isReviewModalOpen, setIsReviewModalOpen] = useState(false);
@@ -105,11 +107,47 @@ export const Header: React.FC<HeaderProps> = ({
   }, []);
 
   const handleDrawerClick = async () => {
+    if (drawerCooldown) return;
+    setDrawerCooldown(true);
     setDrawerKicking(true);
     try {
       await onPopDrawer();
     } finally {
-      setTimeout(() => setDrawerKicking(false), 1200);
+      setTimeout(() => {
+        setDrawerKicking(false);
+        setDrawerCooldown(false);
+      }, 1000);
+    }
+  };
+
+  const handlePrintClick = async () => {
+    if (printCooldown) return;
+    setPrintCooldown(true);
+    setTimeout(() => setPrintCooldown(false), 1000);
+
+    if (printerHardwareInfo?.connected) {
+      // Printer is already connected via direct libusb driver! Print a quick test slip
+      try {
+        const res = await fetch('/api/hardware/printer/print', { method: 'POST' });
+        if (res.ok) {
+          alert('Ticket de test envoyé à l\'imprimante H313 POS !');
+        } else {
+          const data = await res.json();
+          alert(data.error || 'Erreur impression');
+        }
+      } catch (e: any) {
+        alert(e.message || 'Erreur de communication imprimante');
+      }
+      return;
+    }
+    if (usbStatus.isSupported && !usbStatus.isConnected) {
+      try {
+        await webUsbPrinter.requestAndConnect();
+      } catch (err: any) {
+        if (err?.name !== 'NotFoundError' && !err?.message?.includes('No device selected')) {
+          alert(err.message || 'Failed to connect USB printer');
+        }
+      }
     }
   };
   return (
@@ -300,32 +338,8 @@ export const Header: React.FC<HeaderProps> = ({
 
           {/* USB Printer (Desktop) */}
           <button
-            onClick={async () => {
-              if (printerHardwareInfo?.connected) {
-                // Printer is already connected via direct libusb driver! Print a quick test slip
-                try {
-                  const res = await fetch('/api/hardware/printer/print', { method: 'POST' });
-                  if (res.ok) {
-                    alert('Ticket de test envoyé à l\'imprimante H313 POS !');
-                  } else {
-                    const data = await res.json();
-                    alert(data.error || 'Erreur impression');
-                  }
-                } catch (e: any) {
-                  alert(e.message || 'Erreur de communication imprimante');
-                }
-                return;
-              }
-              if (usbStatus.isSupported && !usbStatus.isConnected) {
-                try {
-                  await webUsbPrinter.requestAndConnect();
-                } catch (err: any) {
-                  if (err?.name !== 'NotFoundError' && !err?.message?.includes('No device selected')) {
-                    alert(err.message || 'Failed to connect USB printer');
-                  }
-                }
-              }
-            }}
+            disabled={printCooldown}
+            onClick={handlePrintClick}
             title={
               printerHardwareInfo?.connected
                 ? `H313 POS Imprimante Connectée (${printerHardwareInfo.driver_type}) — Cliquez pour tester`
@@ -334,6 +348,8 @@ export const Header: React.FC<HeaderProps> = ({
                 : 'Connecter l\'imprimante thermique USB 58mm (H313 POS)'
             }
             className={`flex items-center gap-1.5 px-2 py-1 rounded-lg text-xs font-semibold border transition-colors ${
+              printCooldown ? 'opacity-50 cursor-not-allowed ' : ''
+            }${
               printerHardwareInfo?.connected || usbStatus.isConnected
                 ? 'bg-emerald-950/60 border-emerald-600 text-emerald-400 shadow-[0_0_10px_rgba(16,185,129,0.2)]'
                 : 'bg-slate-800 border-slate-700 text-slate-300 hover:text-white'
@@ -375,6 +391,7 @@ export const Header: React.FC<HeaderProps> = ({
 
           {/* Quick Drawer & Cash Movement Actions */}
           <button
+            disabled={drawerCooldown || drawerKicking}
             onClick={handleDrawerClick}
             title={
               drawerKicking
@@ -384,6 +401,8 @@ export const Header: React.FC<HeaderProps> = ({
                 : 'Pop Cash Drawer'
             }
             className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-semibold border transition-all ${
+              drawerCooldown ? 'opacity-50 cursor-not-allowed ' : ''
+            }${
               drawerKicking
                 ? 'bg-amber-500 text-slate-950 border-amber-400 font-bold scale-95 shadow-md'
                 : serialPortInfo
