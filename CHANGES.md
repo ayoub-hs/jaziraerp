@@ -28,3 +28,10 @@
 - bd10ae1 feat(settings): add offline-safe shopInfo service and fetch on start
 - 9ad7ffd feat(settings): use getShopInfo in thermal receipts, invoices, and ESC/POS builders with blank omission
 - 6327938 test: add tests for settings routes, blank-omission formatting, and legacy cleanup
+- a70fa96 feat(backoffice): add Sales history tab with filters, receipt reprint, A4 invoice, and refunds
+- b1a3e38 feat(backoffice): add pack sizes repeater UI to CreateProductModal with multiplier, price override, and delete guard
+- 15fba3d feat(backoffice): add product/family active toggle, inactive view in catalog, and 409 delete text
+- 2ace580 feat(backoffice): add client-side search and low-stock filters with empty states across backoffice lists
+- eb995eb feat(backoffice): add customer overdue badge and overdue debt filter toggle
+- c5889a1 feat(backoffice): make all tables horizontally scrollable on mobile with min-width wrappers
+- b66a204 feat(backoffice): add default markup settings and price suggestion in CreateProductModal
