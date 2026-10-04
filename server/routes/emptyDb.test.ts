@@ -486,6 +486,9 @@ describe('C2: Empty-Database & Full Lifecycle API Tests', () => {
       // +  30.000 (net cash from Sale 1: 50.000 tender - 20.000 change)
       // -  15.000 (cash refund payout on Sale 1)
       // = 115.000 DT expected
+      // Note: S1 tenders 50.000 DT cash on a 30.000 DT total with 20.000 DT change.
+      // The old flawed formula (opening_cash + cash_paid - change_given - refund) would give 95.000 DT;
+      // the correct formula yields 115.000 DT.
       // Counted: 115.000 DT -> difference = 0.000 DT
       const closeSessionRes = await request(app)
         .post('/api/register/close')
@@ -543,6 +546,123 @@ describe('C2: Empty-Database & Full Lifecycle API Tests', () => {
       expect(sessionRow.expected_cash).toBe(115.000);
       expect(sessionRow.counted_cash).toBe(115.000);
       expect(sessionRow.difference).toBe(0.000);
+
+      // -------------------------------------------------------------
+      // 11. Reports & Financial Invariants Verification
+      // -------------------------------------------------------------
+
+      // a) Sales Report by Customer (GET /api/reports/sales-by-customer)
+      // Arithmetic:
+      //   Gross TTC: 30.000 (S1) + 54.000 (S2) + 27.000 (S3) = 111.000 DT
+      //   Refunded: 15.000 DT (Sale 1 partial refund)
+      //   Net TTC: 111.000 - 15.000 = 96.000 DT
+      //   Payment method net breakdown (reduced by matching refund amounts):
+      //     Cash: 30.000 gross - 15.000 cash refund = 15.000 DT net
+      //     Wallet: 54.000 gross - 0.000 wallet refund = 54.000 DT net
+      //     Credit: 27.000 gross - 0.000 credit reduced = 27.000 DT net
+      //     Total net payments: 15.000 + 54.000 + 27.000 = 96.000 DT
+      const salesCustReport = await request(app).get('/api/reports/sales-by-customer');
+      expect(salesCustReport.status).toBe(200);
+      expect(salesCustReport.body.summary.total_gross_ttc).toBe(111.000);
+      expect(salesCustReport.body.summary.total_refunded).toBe(15.000);
+      expect(salesCustReport.body.summary.total_net_ttc).toBe(96.000);
+      expect(salesCustReport.body.summary.total_cash).toBe(15.000);
+      expect(salesCustReport.body.summary.total_wallet).toBe(54.000);
+      expect(salesCustReport.body.summary.total_credit).toBe(27.000);
+
+      // Customer rows check:
+      // Retail customer: gross 30.000, refund 15.000, net 15.000, cash_paid 15.000
+      const retailRow = salesCustReport.body.customer_sales.find((r: any) => r.customer_id === retailCustomerId);
+      expect(retailRow).toBeDefined();
+      expect(retailRow.gross_ttc).toBe(30.000);
+      expect(retailRow.refunded_amount).toBe(15.000);
+      expect(retailRow.net_ttc).toBe(15.000);
+      expect(retailRow.cash_paid).toBe(15.000);
+
+      // Reseller customer: gross 81.000 (54 + 27), refund 0.000, net 81.000, wallet_paid 54.000, credit_amount 27.000
+      const resellerRow = salesCustReport.body.customer_sales.find((r: any) => r.customer_id === resellerCustomerId);
+      expect(resellerRow).toBeDefined();
+      expect(resellerRow.gross_ttc).toBe(81.000);
+      expect(resellerRow.refunded_amount).toBe(0.000);
+      expect(resellerRow.net_ttc).toBe(81.000);
+      expect(resellerRow.wallet_paid).toBe(54.000);
+      expect(resellerRow.credit_amount).toBe(27.000);
+
+      // b) Sales Report by Register (GET /api/reports/sales-by-register)
+      // Arithmetic:
+      //   Countertop register:
+      //   Gross TTC: 111.000 DT (30.000 + 54.000 + 27.000)
+      //   Refunded: 15.000 DT
+      //   Net TTC: 96.000 DT
+      //   Net payments: cash 15.000 DT, wallet 54.000 DT, credit 27.000 DT
+      const salesRegReport = await request(app).get('/api/reports/sales-by-register');
+      expect(salesRegReport.status).toBe(200);
+      expect(salesRegReport.body.summary.total_gross_ttc).toBe(111.000);
+      expect(salesRegReport.body.summary.total_refunded).toBe(15.000);
+      expect(salesRegReport.body.summary.total_net_ttc).toBe(96.000);
+      expect(salesRegReport.body.summary.total_cash).toBe(15.000);
+      expect(salesRegReport.body.summary.total_wallet).toBe(54.000);
+      expect(salesRegReport.body.summary.total_credit).toBe(27.000);
+
+      const regRow = salesRegReport.body.register_sales[0];
+      expect(regRow.gross_ttc).toBe(111.000);
+      expect(regRow.refunded_amount).toBe(15.000);
+      expect(regRow.net_ttc).toBe(96.000);
+      expect(regRow.cash_paid).toBe(15.000);
+      expect(regRow.wallet_paid).toBe(54.000);
+      expect(regRow.credit_amount).toBe(27.000);
+
+      // c) Accounting Cash-Flow Report (GET /api/accounting/cash-flow)
+      // Arithmetic:
+      // Money In:
+      //   sales_cash: 30.000 DT (Sale 1 cash)
+      //   customer_debt_repayments: 37.000 DT (Reseller debt payment)
+      //   wallet_top_ups: 100.000 DT (Reseller wallet deposit)
+      //   total_inflow = 30.000 + 37.000 + 100.000 = 167.000 DT
+      // Money Out:
+      //   paid_purchases: 300.000 DT (PO1 cash purchase)
+      //   supplier_debt_repayments: 160.000 DT (PO2 down payment: 60.000 DT + subsequent payment: 100.000 DT)
+      //   general_expenses: 0.000 DT
+      //   cash_refunds: 15.000 DT (Sale 1 partial refund payout)
+      //   total_outflow = 300.000 + 160.000 + 0 + 15.000 = 475.000 DT
+      // Net Cash Flow:
+      //   total_inflow (167.000) - total_outflow (475.000) = -308.000 DT
+      const cashFlowRes = await request(app).get('/api/accounting/cash-flow');
+      expect(cashFlowRes.status).toBe(200);
+      expect(cashFlowRes.body.total_inflow).toBe(167.000);
+      expect(cashFlowRes.body.total_outflow).toBe(475.000);
+      expect(cashFlowRes.body.net_cash_flow).toBe(-308.000);
+      expect(cashFlowRes.body.money_in.sales_cash).toBe(30.000);
+      expect(cashFlowRes.body.money_in.customer_debt_repayments).toBe(37.000);
+      expect(cashFlowRes.body.money_in.wallet_top_ups).toBe(100.000);
+      expect(cashFlowRes.body.money_out.paid_purchases).toBe(300.000);
+      expect(cashFlowRes.body.money_out.supplier_debt_repayments).toBe(160.000);
+      expect(cashFlowRes.body.money_out.general_expenses).toBe(0.000);
+      expect(cashFlowRes.body.money_out.cash_refunds).toBe(15.000);
+
+      // d) Inventory Stock Valuation Report (GET /api/accounting/stock-valuation & GET /api/reports/inventory-valuation)
+      // Arithmetic:
+      // Raw Material (Labsa):
+      //   Stock: 130 kg (0 initial + 100 PO1 + 50 PO2 - 20 consumed)
+      //   Latest cost: 3.200 DT/kg (from PO2 unit_cost)
+      //   Valuation: 130 kg * 3.200 DT/kg = 416.000 DT
+      // Finished Product (Savon Liquide 5L):
+      //   Stock: 13 units (0 initial + 20 batch - 2 S1 - 4 S2 - 2 S3 + 1 refund)
+      //   Unit cost: 3.200 DT/unit (Batch cost: 20 kg Labsa * 3.200 / 20 units = 3.200 DT)
+      //   Valuation: 13 units * 3.200 DT/unit = 41.600 DT
+      // Total Inventory Valuation:
+      //   416.000 + 41.600 = 457.600 DT
+      const stockValRes = await request(app).get('/api/accounting/stock-valuation');
+      expect(stockValRes.status).toBe(200);
+      expect(stockValRes.body.raw_materials_valuation).toBe(416.000);
+      expect(stockValRes.body.finished_goods_valuation).toBe(41.600);
+      expect(stockValRes.body.total_inventory_valuation).toBe(457.600);
+
+      const invReportRes = await request(app).get('/api/reports/inventory-valuation');
+      expect(invReportRes.status).toBe(200);
+      expect(invReportRes.body.summary.material_cost_valuation).toBe(416.000);
+      expect(invReportRes.body.summary.product_cost_valuation).toBe(41.600);
+      expect(invReportRes.body.summary.grand_total_cost_valuation).toBe(457.600);
     });
   });
 });
