@@ -14,22 +14,43 @@ export const productsRouter = Router();
 // GET /api/products/families - list product families with SKUs and pack sizes
 productsRouter.get('/families', (req: Request, res: Response) => {
   const db = getDb();
-  const families: any[] = db.prepare(`
+  const { active = '1' } = req.query;
+
+  let familyQuery = `
     SELECT pf.*, f.name as formulation_name,
-      (SELECT COUNT(*) FROM products p WHERE p.family_id = pf.id AND p.active = 1) as sku_count
+      (SELECT COUNT(*) FROM products p WHERE p.family_id = pf.id AND (p.active = 1 OR ? != '1')) as sku_count
     FROM product_families pf
     LEFT JOIN formulations f ON pf.formulation_id = f.id
-    ORDER BY pf.name ASC
-  `).all();
+  `;
+  const famParams: any[] = [String(active)];
+
+  if (active === '1') {
+    familyQuery += ` WHERE pf.active = 1`;
+  } else if (active === '0') {
+    familyQuery += ` WHERE pf.active = 0`;
+  }
+
+  familyQuery += ` ORDER BY pf.name ASC`;
+  const families: any[] = db.prepare(familyQuery).all(...famParams);
 
   const result = families.map((family) => {
-    const products: any[] = db.prepare(`
+    let prodQuery = `
       SELECT p.*,
         CASE WHEN p.stock_quantity <= p.low_stock_threshold THEN 1 ELSE 0 END as is_low_stock
       FROM products p
-      WHERE p.family_id = ? AND p.active = 1
-      ORDER BY p.size_label ASC, p.name ASC
-    `).all(family.id);
+      WHERE p.family_id = ?
+    `;
+    const prodParams: any[] = [family.id];
+
+    if (active === '1') {
+      prodQuery += ` AND p.active = 1`;
+    } else if (active === '0') {
+      prodQuery += ` AND p.active = 0`;
+    }
+
+    prodQuery += ` ORDER BY p.size_label ASC, p.name ASC`;
+
+    const products: any[] = db.prepare(prodQuery).all(...prodParams);
 
     const enrichedProducts = products.map((prod) => {
       const packSizes = db.prepare(`
@@ -163,6 +184,8 @@ productsRouter.get('/', (req: Request, res: Response) => {
 
   if (active === '1') {
     query += ` AND p.active = 1 AND pf.active = 1`;
+  } else if (active === '0') {
+    query += ` AND (p.active = 0 OR pf.active = 0)`;
   }
 
   if (category) {
@@ -503,9 +526,8 @@ productsRouter.delete('/families/:id', (req: Request, res: Response) => {
   const hasProducts: any = db.prepare('SELECT COUNT(*) as count FROM products WHERE family_id = ?').get(req.params.id);
   const now = new Date().toISOString();
   if (hasProducts?.count > 0) {
-    db.prepare('UPDATE product_families SET active = 0, updated_at = ? WHERE id = ?').run(now, req.params.id);
-    db.prepare('UPDATE products SET active = 0, updated_at = ? WHERE family_id = ?').run(now, req.params.id);
-    res.json({ success: true, soft_deleted: true, id: req.params.id, message: 'Family and SKUs deactivated' });
+    res.status(409).json({ error: 'Cannot delete product family with existing SKUs. Please deactivate the family or its SKUs instead.' });
+    return;
   } else {
     db.prepare('DELETE FROM product_families WHERE id = ?').run(req.params.id);
     res.json({ success: true, soft_deleted: false, id: req.params.id, message: 'Family deleted permanently' });
@@ -535,7 +557,7 @@ productsRouter.delete('/:id', (req: Request, res: Response) => {
   const isReferenced = (hasSales?.count > 0) || (hasBatches?.count > 0) || (hasPurchases?.count > 0) || (hasAdjustments?.count > 0) || (hasRefunds?.count > 0);
 
   if (isReferenced) {
-    res.status(409).json({ error: 'Cannot delete product referenced in sales, production batches, purchases, or inventory adjustments' });
+    res.status(409).json({ error: 'Cannot delete product referenced in sales, production batches, purchases, or inventory adjustments. Please deactivate it instead.' });
     return;
   }
 

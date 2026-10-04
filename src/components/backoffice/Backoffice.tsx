@@ -178,6 +178,33 @@ export const Backoffice: React.FC<BackofficeProps> = ({
   const [inventoryAdjustments, setInventoryAdjustments] = useState<any[]>([]);
   const [selectedSessionDetail, setSelectedSessionDetail] = useState<any | null>(null);
   const [isSessionDetailOpen, setIsSessionDetailOpen] = useState(false);
+
+  // Inactive Catalog toggle
+  const [showInactiveCatalog, setShowInactiveCatalog] = useState(false);
+  const [allProducts, setAllProducts] = useState<Product[] | null>(null);
+  const [allFamilies, setAllFamilies] = useState<ProductFamily[] | null>(null);
+
+  const fetchCatalogAll = async () => {
+    try {
+      const [pRes, fRes] = await Promise.all([
+        fetch('/api/products?active=all'),
+        fetch('/api/products/families?active=all')
+      ]);
+      if (pRes.ok) setAllProducts(await pRes.json());
+      if (fRes.ok) setAllFamilies(await fRes.json());
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
+  useEffect(() => {
+    if (showInactiveCatalog) {
+      fetchCatalogAll();
+    } else {
+      setAllProducts(null);
+      setAllFamilies(null);
+    }
+  }, [showInactiveCatalog]);
   const [loadingSessionDetail, setLoadingSessionDetail] = useState(false);
 
   // Persistent Counters Management
@@ -223,6 +250,9 @@ export const Backoffice: React.FC<BackofficeProps> = ({
   const loadBackofficeData = async () => {
     try {
       if (activeTab === 'MATERIALS' || activeTab === 'PRODUCTION' || activeTab === 'CATALOG') {
+        if (showInactiveCatalog) {
+          fetchCatalogAll();
+        }
         const [matRes, formRes, supRes, adjRes] = await Promise.all([
           fetch('/api/materials'),
           fetch('/api/formulations'),
@@ -505,6 +535,9 @@ export const Backoffice: React.FC<BackofficeProps> = ({
       onConfirm: async () => {
         const res = await fetch(`/api/products/${prod.id}`, { method: 'DELETE' });
         if (!res.ok) {
+          if (res.status === 409) {
+            throw new Error('Impossible de supprimer: déjà référencé. Désactivez-le plutôt.');
+          }
           const data = await res.json().catch(() => ({}));
           throw new Error(data.error || 'Failed to delete product SKU');
         }
@@ -522,6 +555,9 @@ export const Backoffice: React.FC<BackofficeProps> = ({
       onConfirm: async () => {
         const res = await fetch(`/api/products/families/${fam.id}`, { method: 'DELETE' });
         if (!res.ok) {
+          if (res.status === 409) {
+            throw new Error('Impossible de supprimer: déjà référencé. Désactivez-le plutôt.');
+          }
           const data = await res.json().catch(() => ({}));
           throw new Error(data.error || 'Failed to delete product family');
         }
@@ -672,6 +708,9 @@ export const Backoffice: React.FC<BackofficeProps> = ({
       setCounterError(err.message || 'Error creating counter');
     }
   };
+
+  const displayedFamilies: ProductFamily[] = (showInactiveCatalog && allFamilies) ? allFamilies : families;
+  const displayedProducts: Product[] = (showInactiveCatalog && allProducts) ? allProducts : products;
 
   return (
     <div className="flex-1 flex flex-col md:flex-row bg-slate-100 overflow-hidden">
@@ -843,6 +882,18 @@ export const Backoffice: React.FC<BackofficeProps> = ({
                   New Product / SKU
                 </button>
                 <button
+                  type="button"
+                  onClick={() => setShowInactiveCatalog(prev => !prev)}
+                  className={`flex items-center gap-1.5 text-xs font-bold px-3 py-2 rounded-xl transition-colors border ${
+                    showInactiveCatalog
+                      ? 'bg-slate-800 text-white border-slate-800'
+                      : 'bg-white hover:bg-slate-50 text-slate-700 border-slate-300'
+                  }`}
+                >
+                  <Eye className="w-4 h-4" />
+                  <span>Afficher inactifs</span>
+                </button>
+                <button
                   onClick={() => setIsBarcodeLabelModalOpen(true)}
                   className="flex items-center gap-1.5 bg-slate-800 hover:bg-slate-900 text-white text-xs font-bold px-3 py-2 rounded-xl shadow-sm transition-colors"
                 >
@@ -853,19 +904,28 @@ export const Backoffice: React.FC<BackofficeProps> = ({
             </div>
 
             {/* Product Families Section */}
-            {families.length > 0 && (
+            {displayedFamilies.length > 0 && (
               <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-4 space-y-3">
                 <div className="flex justify-between items-center">
                   <h3 className="text-xs font-bold text-slate-700 uppercase tracking-wider">
-                    Product Families ({families.length})
+                    Product Families ({displayedFamilies.length})
                   </h3>
                   <span className="text-[11px] text-slate-500">Click &quot;Edit&quot; to modify family category, manufacturing type, or recipe</span>
                 </div>
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-                  {families.map(f => (
-                    <div key={f.id} className="p-3 bg-slate-50 border border-slate-200/80 rounded-xl flex items-center justify-between">
+                  {displayedFamilies.map(f => (
+                    <div key={f.id} className={`p-3 border rounded-xl flex items-center justify-between ${
+                      f.active === 0 ? 'bg-slate-100/70 border-slate-300 opacity-75' : 'bg-slate-50 border-slate-200/80'
+                    }`}>
                       <div>
-                        <div className="font-bold text-xs text-slate-900">{f.name}</div>
+                        <div className="font-bold text-xs text-slate-900 flex items-center gap-1.5">
+                          <span>{f.name}</span>
+                          {f.active === 0 && (
+                            <span className="px-1.5 py-0.5 rounded text-[9px] font-bold bg-slate-200 text-slate-600 uppercase">
+                              Inactif
+                            </span>
+                          )}
+                        </div>
                         <div className="text-[10px] text-slate-500">
                           {f.category} • <span className={f.type === 'MANUFACTURED' ? 'text-emerald-700 font-semibold' : 'text-blue-700 font-semibold'}>{f.type}</span>
                         </div>
@@ -912,9 +972,18 @@ export const Backoffice: React.FC<BackofficeProps> = ({
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
-                  {products.map(p => (
-                    <tr key={p.id} className="hover:bg-slate-50">
-                      <td className="p-3 font-bold text-slate-900">{p.name}</td>
+                  {displayedProducts.map(p => (
+                    <tr key={p.id} className={p.active === 0 ? "bg-slate-100/70 opacity-75 hover:bg-slate-100" : "hover:bg-slate-50"}>
+                      <td className="p-3 font-bold text-slate-900">
+                        <div className="flex items-center gap-1.5">
+                          <span>{p.name}</span>
+                          {p.active === 0 && (
+                            <span className="px-1.5 py-0.5 rounded text-[9px] font-bold bg-slate-200 text-slate-600 uppercase">
+                              Inactif
+                            </span>
+                          )}
+                        </div>
+                      </td>
                       <td className="p-3 text-slate-500">{p.category}</td>
                       <td className="p-3">
                         <span className="bg-slate-100 text-slate-700 px-1.5 py-0.5 rounded font-semibold text-[10px]">

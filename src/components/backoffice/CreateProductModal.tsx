@@ -45,6 +45,10 @@ export const CreateProductModal: React.FC<CreateProductModalProps> = ({
   const [lowStockThreshold, setLowStockThreshold] = useState('5');
   const [containerTypeId, setContainerTypeId] = useState('');
 
+  // Active toggles for edit mode
+  const [familyActive, setFamilyActive] = useState(true);
+  const [skuActive, setSkuActive] = useState(true);
+
   // Pack sizes repeater state
   const [existingPacks, setExistingPacks] = useState<PackSize[]>([]);
   const [pendingPacks, setPendingPacks] = useState<any[]>([]);
@@ -66,6 +70,7 @@ export const CreateProductModal: React.FC<CreateProductModalProps> = ({
       setFamilyCategory(familyToEdit.category || 'General');
       setFamilyType(familyToEdit.type || 'MANUFACTURED');
       setFormulationId(familyToEdit.formulation_id || '');
+      setFamilyActive(familyToEdit.active !== 0);
       setExistingPacks([]);
       setPendingPacks([]);
       setPackError(null);
@@ -80,6 +85,7 @@ export const CreateProductModal: React.FC<CreateProductModalProps> = ({
       setLowStockThreshold(String(productToEdit.low_stock_threshold ?? 5));
       setContainerTypeId(productToEdit.container_type_id || '');
       setSelectedFamilyId(productToEdit.family_id || '');
+      setSkuActive(productToEdit.active !== 0);
       setPendingPacks([]);
       setPackError(null);
 
@@ -105,6 +111,8 @@ export const CreateProductModal: React.FC<CreateProductModalProps> = ({
       setStockQuantity('0');
       setLowStockThreshold('5');
       setContainerTypeId('');
+      setFamilyActive(true);
+      setSkuActive(true);
       setExistingPacks([]);
       setPendingPacks([]);
       setPackError(null);
@@ -232,7 +240,8 @@ export const CreateProductModal: React.FC<CreateProductModalProps> = ({
             name: finalFamilyName,
             category: familyCategory.trim() || 'General',
             type: familyType,
-            formulation_id: familyType === 'MANUFACTURED' && formulationId ? formulationId : null
+            formulation_id: familyType === 'MANUFACTURED' && formulationId ? formulationId : null,
+            active: familyActive ? 1 : 0
           })
         });
         if (!res.ok) {
@@ -259,7 +268,8 @@ export const CreateProductModal: React.FC<CreateProductModalProps> = ({
             wholesale_price: parseFloat(wholesalePrice) || 0,
             stock_quantity: parseFloat(stockQuantity) || 0,
             low_stock_threshold: parseFloat(lowStockThreshold) || 5,
-            container_type_id: containerTypeId || null
+            container_type_id: containerTypeId || null,
+            active: skuActive ? 1 : 0
           })
         });
         if (!res.ok) {
@@ -497,6 +507,20 @@ export const CreateProductModal: React.FC<CreateProductModalProps> = ({
                     </select>
                   </div>
                 )}
+
+                {familyToEdit && (
+                  <div className="col-span-2 pt-1">
+                    <label className="flex items-center gap-2 cursor-pointer select-none">
+                      <input
+                        type="checkbox"
+                        checked={familyActive}
+                        onChange={e => setFamilyActive(e.target.checked)}
+                        className="rounded border-slate-300 text-blue-600 focus:ring-blue-500 w-4 h-4"
+                      />
+                      <span className="text-xs font-bold text-slate-700">Actif (Famille active)</span>
+                    </label>
+                  </div>
+                )}
               </div>
             </div>
           )}
@@ -528,6 +552,20 @@ export const CreateProductModal: React.FC<CreateProductModalProps> = ({
               </h4>
 
               <div className="grid grid-cols-2 gap-3">
+                {productToEdit && (
+                  <div className="col-span-2 pb-1">
+                    <label className="flex items-center gap-2 cursor-pointer select-none">
+                      <input
+                        type="checkbox"
+                        checked={skuActive}
+                        onChange={e => setSkuActive(e.target.checked)}
+                        className="rounded border-slate-300 text-blue-600 focus:ring-blue-500 w-4 h-4"
+                      />
+                      <span className="text-xs font-bold text-slate-700">Actif (SKU actif pour la vente et le stock)</span>
+                    </label>
+                  </div>
+                )}
+
                 <div>
                   <label className="block text-xs font-bold text-slate-700 mb-1">
                     SKU Name *
