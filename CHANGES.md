@@ -15,3 +15,7 @@
 - bdffb63 fix(sync): store and fallback to local product families in clientDb
 - aa28162 chore(deps): apply npm audit fix
 - a7e5d1d test: assert sales reports, cash flow, and inventory valuation with hand-computed arithmetic in emptyDb test
+- b3f7fe6 feat(costing): implement quantity-weighted material unit cost helper
+- 25aab33 feat(costing): switch server consumers to quantity-weighted material unit cost
+- dc7864a feat(ui): display and calculate formulation with current_cost_per_unit first
+- 19a5a67 test: weighted-average material unit cost
