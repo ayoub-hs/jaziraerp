@@ -61,6 +61,7 @@ import { CreatePurchaseModal } from './CreatePurchaseModal.js';
 import { ConfirmDeleteModal } from './ConfirmDeleteModal.js';
 import { ManageCategoriesModal } from './ManageCategoriesModal.js';
 import { ReportsTab } from './ReportsTab.js';
+import { ShopSettingsPanel } from './ShopSettingsPanel.js';
 
 interface BackofficeProps {
   products: Product[];
@@ -81,7 +82,8 @@ type BackofficeTab =
   | 'SESSIONS' 
   | 'ACCOUNTING'
   | 'REPORTS'
-  | 'BACKUPS';
+  | 'BACKUPS'
+  | 'SETTINGS';
 
 export const Backoffice: React.FC<BackofficeProps> = ({
   products,
@@ -764,6 +766,15 @@ export const Backoffice: React.FC<BackofficeProps> = ({
           >
             <Database className="w-4 h-4" />
             <span>Database Backups</span>
+          </button>
+          <button
+            onClick={() => setActiveTab('SETTINGS')}
+            className={`flex items-center gap-2 px-3 py-2 rounded-lg transition-colors whitespace-nowrap ${
+              activeTab === 'SETTINGS' ? 'bg-emerald-600 text-white shadow-sm' : 'hover:bg-slate-800'
+            }`}
+          >
+            <Settings className="w-4 h-4" />
+            <span>Settings</span>
           </button>
         </nav>
       </aside>
@@ -2540,6 +2551,9 @@ export const Backoffice: React.FC<BackofficeProps> = ({
 
         {/* 10. BACKUPS TAB */}
         {activeTab === 'BACKUPS' && <BackupManager />}
+
+        {/* 11. SETTINGS TAB */}
+        {activeTab === 'SETTINGS' && <ShopSettingsPanel />}
       </main>
 
       {/* 1. Create Product / SKU Modal */}
