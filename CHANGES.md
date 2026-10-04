@@ -35,3 +35,4 @@
 - eb995eb feat(backoffice): add customer overdue badge and overdue debt filter toggle
 - c5889a1 feat(backoffice): make all tables horizontally scrollable on mobile with min-width wrappers
 - b66a204 feat(backoffice): add default markup settings and price suggestion in CreateProductModal
+- 563b4d6 fix(sales): require open register session for cash refunds and link to active session
