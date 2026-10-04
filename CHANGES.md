@@ -10,3 +10,7 @@
 - cee003f fix: hide initial wallet balance field when editing customer
 - f2c2d7d fix: guard against null and undefined amounts in reports csv export
 - 962f0e3 fix: add 1-second cooldown to drawer kick and printer test in header
+- e438744 fix(db): add schema CHECK constraints for items and balances
+- 071da7b test: add empty database get routes and full lifecycle tests
+- bdffb63 fix(sync): store and fallback to local product families in clientDb
+- aa28162 chore(deps): apply npm audit fix
