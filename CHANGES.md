@@ -36,3 +36,17 @@
 - c5889a1 feat(backoffice): make all tables horizontally scrollable on mobile with min-width wrappers
 - b66a204 feat(backoffice): add default markup settings and price suggestion in CreateProductModal
 - 563b4d6 fix(sales): require open register session for cash refunds and link to active session
+- 969f0e0 fix(checkout): separate applied cash from tendered cash via buildPaymentPayload
+- f4d6c7e fix(sync): shared sale payment validation with failed/needs_review routing
+- b7e643a fix(receipt): reprint shows received cash (applied + change) with change
+- 4fe14d3 feat(pwa): offline shell with hand-written SW, manifest, update banner
+- 8d94daf fix(backup): validate restore file, snapshot, atomic swap; default HOST to 127.0.0.1
+- f77251b fix(restore): core-table validation with post-restore migration; lock receipt received/change parity
+- fd1cbc6 fix(expenses): REGISTER_CASH requires open session; modal offers open sessions
+- 085039c fix(containers): reject RETURN above owed count unless correction=true
+- 2102558 fix(production): require manufactured family with matching formulation for batches
+- b0bef4b fix(production): wizard only offers SKUs linked to the chosen formulation
+- ea24912 fix(dates): receipt, ticket and batch numbers use Africa/Tunis business day
+- 3e60991 fix(customers): log opening wallet as TOP_UP Solde initial
+- 66f0579 fix(packs): require integer multiplier >= 2 and non-negative price_override
+- NOTE: server now binds 127.0.0.1 by default (HOST env overrides). LAN/VPN exposure previously needed HOST=0.0.0.0 plus a firewall rule; see README Deployment.
