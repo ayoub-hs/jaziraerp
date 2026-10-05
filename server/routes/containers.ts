@@ -143,6 +143,7 @@ containersRouter.post('/transactions', (req: Request, res: Response) => {
     container_type_id,
     action, // 'GIVE' or 'RETURN'
     quantity,
+    correction = false,
     notes = '',
     date = new Date().toISOString()
   } = req.body;
@@ -179,6 +180,21 @@ containersRouter.post('/transactions', (req: Request, res: Response) => {
   const txId = crypto.randomUUID();
   const loanId = crypto.randomUUID();
   const now = new Date().toISOString();
+
+  // RETURN above the customer's owed count is rejected unless sent as a correction.
+  // (GIVE at zero shop stock stays allowed per spec.)
+  if (action === 'RETURN' && !correction) {
+    const loan: any = db.prepare(
+      'SELECT quantity_owed FROM customer_container_loans WHERE customer_id = ? AND container_type_id = ?'
+    ).get(customer_id, container_type_id);
+    const owed = loan ? Number(loan.quantity_owed) || 0 : 0;
+    if (qty > owed) {
+      res.status(400).json({
+        error: `Return quantity (${qty}) exceeds customer's owed count (${owed}). Resubmit with correction=true to override.`
+      });
+      return;
+    }
+  }
 
   const containerTx = db.transaction(() => {
     // 1. Log transaction record

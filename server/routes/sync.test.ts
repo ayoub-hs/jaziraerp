@@ -185,6 +185,70 @@ describe('Offline Storage & Sync Engine Module (HTTP Routes)', () => {
     expect(loan.quantity_owed).toBe(3);
   });
 
+  it('routes sync RETURN above owed count to failed unless correction=true', async () => {
+    const ctRes = await request(app)
+      .post('/api/containers/types')
+      .send({ name: 'Sync Jerrycan', stock_quantity: 10 });
+    const custRes = await request(app)
+      .post('/api/customers')
+      .send({ name: 'Sync Container Client', type: 'RESELLER' });
+
+    const flushRes = await request(app)
+      .post('/api/sync/flush')
+      .send({
+        operations: [
+          {
+            temp_client_id: 'temp-sync-give-01',
+            action_type: 'CONTAINER_TRANSACTION',
+            payload: {
+              customer_id: custRes.body.id,
+              container_type_id: ctRes.body.id,
+              action: 'GIVE',
+              quantity: 2
+            }
+          }
+        ]
+      });
+    expect(flushRes.body.reconciled).toHaveLength(1);
+
+    const badFlush = await request(app)
+      .post('/api/sync/flush')
+      .send({
+        operations: [
+          {
+            temp_client_id: 'temp-sync-return-over',
+            action_type: 'CONTAINER_TRANSACTION',
+            payload: {
+              customer_id: custRes.body.id,
+              container_type_id: ctRes.body.id,
+              action: 'RETURN',
+              quantity: 5
+            }
+          },
+          {
+            temp_client_id: 'temp-sync-return-fix',
+            action_type: 'CONTAINER_TRANSACTION',
+            payload: {
+              customer_id: custRes.body.id,
+              container_type_id: ctRes.body.id,
+              action: 'RETURN',
+              quantity: 5,
+              correction: true
+            }
+          }
+        ]
+      });
+
+    expect(badFlush.body.failed).toHaveLength(1);
+    expect(badFlush.body.failed[0]).toMatchObject({
+      temp_client_id: 'temp-sync-return-over',
+      action_type: 'CONTAINER_TRANSACTION'
+    });
+    expect(badFlush.body.failed[0].reason).toMatch(/owed count/i);
+    expect(badFlush.body.reconciled).toHaveLength(1);
+    expect(badFlush.body.reconciled[0].temp_client_id).toBe('temp-sync-return-fix');
+  });
+
   it('idempotently skips and reconciles duplicate SALE op with existing synced_from_client_id', async () => {
     const salePayload = {
       cash_paid: 10,

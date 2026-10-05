@@ -425,8 +425,24 @@ syncRouter.post('/flush', (req: Request, res: Response) => {
         });
       } else if (action_type === 'CONTAINER_TRANSACTION') {
         const txId = crypto.randomUUID();
-        const { customer_id, container_type_id, action, quantity, notes } = payload;
+        const { customer_id, container_type_id, action, quantity, notes, correction } = payload;
         const qty = parseInt(quantity, 10);
+
+        // RETURN above the customer's owed count is rejected unless correction=true.
+        if (action === 'RETURN' && !correction) {
+          const loanRow: any = db.prepare(
+            'SELECT quantity_owed FROM customer_container_loans WHERE customer_id = ? AND container_type_id = ?'
+          ).get(customer_id, container_type_id);
+          const owed = loanRow ? Number(loanRow.quantity_owed) || 0 : 0;
+          if (qty > owed) {
+            failed.push({
+              temp_client_id,
+              action_type: 'CONTAINER_TRANSACTION',
+              reason: `Return quantity (${qty}) exceeds customer's owed count (${owed})`
+            });
+            return;
+          }
+        }
 
         db.prepare(`
           INSERT INTO container_transactions (id, date, customer_id, container_type_id, action, quantity, notes, created_at)
