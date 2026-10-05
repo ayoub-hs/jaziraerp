@@ -4,6 +4,7 @@ import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { allocateCustomerPayment, isTicketOverdue } from '../services/debtService.js';
+import { resetTestDb, app, request, getDb } from '../../tests/testApp.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -171,5 +172,33 @@ describe('Customers, Debt Tickets & Wallet Module', () => {
 
     const customer: any = db.prepare('SELECT wallet_balance FROM customers WHERE id = ?').get('cust-reseller-1');
     expect(customer.wallet_balance).toBe(50.000);
+  });
+
+  it('logs opening wallet as TOP_UP "Solde initial" so the statement ledger matches', async () => {
+    resetTestDb();
+    const res = await request(app)
+      .post('/api/customers')
+      .send({ name: 'Opening Wallet Client', type: 'RETAIL', wallet_balance: 20.0 });
+    expect(res.status).toBe(201);
+    expect(res.body.wallet_balance).toBe(20.0);
+
+    const tx: any = getDb()
+      .prepare("SELECT * FROM customer_wallet_transactions WHERE customer_id = ? AND type = 'TOP_UP'")
+      .get(res.body.id);
+    expect(tx).toBeDefined();
+    expect(tx.amount).toBe(20.0);
+    expect(tx.notes).toBe('Solde initial');
+
+    // Statement ledger wallet balance (credits minus debits) equals customers.wallet_balance
+    const statement = await request(app).get(`/api/customers/${res.body.id}/statement`);
+    expect(statement.status).toBe(200);
+    const walletLines = statement.body.filter((l: any) => l.entry_type === 'WALLET');
+    const ledgerBalance = walletLines.reduce((sum: number, l: any) => sum + (l.credit || 0) - (l.debit || 0), 0);
+    expect(Math.round(ledgerBalance * 1000) / 1000).toBe(res.body.wallet_balance);
+
+    // No register cash movement was created
+    const movements: any[] = getDb().prepare('SELECT * FROM register_cash_movements').all();
+    expect(movements).toHaveLength(0);
+    resetTestDb();
   });
 });

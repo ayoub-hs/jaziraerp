@@ -120,10 +120,22 @@ customersRouter.post('/', (req: Request, res: Response) => {
   const discount = Math.max(0, Math.min(100, Number(reseller_discount_percent) || 0));
   const wallet = round3(Number(wallet_balance) || 0);
 
-  db.prepare(`
-    INSERT INTO customers (id, name, phone, address, type, reseller_discount_percent, wallet_balance, created_at, updated_at)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-  `).run(id, name.trim(), phone, address, type, discount, wallet, now, now);
+  const createTx = db.transaction(() => {
+    db.prepare(`
+      INSERT INTO customers (id, name, phone, address, type, reseller_discount_percent, wallet_balance, created_at, updated_at)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `).run(id, name.trim(), phone, address, type, discount, wallet, now, now);
+
+    // Opening wallet balance is store credit, not register cash: log it as
+    // TOP_UP "Solde initial" so the statement ledger reconciles. No cash movement.
+    if (wallet > 0) {
+      db.prepare(`
+        INSERT INTO customer_wallet_transactions (id, customer_id, date, type, amount, reference_id, notes, created_at)
+        VALUES (?, ?, ?, 'TOP_UP', ?, NULL, 'Solde initial', ?)
+      `).run(crypto.randomUUID(), id, now, wallet, now);
+    }
+  });
+  createTx();
 
   const created = db.prepare('SELECT * FROM customers WHERE id = ?').get(id);
   res.status(201).json(created);
