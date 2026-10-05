@@ -33,6 +33,21 @@ accountingRouter.post('/expenses', (req: Request, res: Response) => {
   const expenseAmount = round3(Number(amount));
   const now = new Date().toISOString();
 
+  // REGISTER_CASH expenses move real drawer cash: require an OPEN session.
+  // No session (or a closed one) => reject without recording anything.
+  let openSession: any = null;
+  if (payment_source === 'REGISTER_CASH') {
+    openSession = session_id
+      ? db.prepare('SELECT * FROM register_sessions WHERE id = ?').get(session_id)
+      : null;
+    if (!openSession || openSession.status !== 'OPEN') {
+      res.status(400).json({
+        error: 'REGISTER_CASH expenses require an open register session (session_id of a session with status OPEN).'
+      });
+      return;
+    }
+  }
+
   const expenseTx = db.transaction(() => {
     // 1. Insert expense record
     db.prepare(`
@@ -49,23 +64,20 @@ accountingRouter.post('/expenses', (req: Request, res: Response) => {
       now
     );
 
-    // 2. If paid from register cash and session is provided, auto-record CASH_OUT movement
-    if (payment_source === 'REGISTER_CASH' && session_id) {
-      const session: any = db.prepare('SELECT status FROM register_sessions WHERE id = ?').get(session_id);
-      if (session && session.status === 'OPEN') {
-        db.prepare(`
-          INSERT INTO register_cash_movements (id, session_id, date, type, amount, reason, created_at, expense_id)
-          VALUES (?, ?, ?, 'CASH_OUT', ?, ?, ?, ?)
-        `).run(
-          crypto.randomUUID(),
-          session_id,
-          date,
-          expenseAmount,
-          `Expense: ${category.trim()}${description ? ' - ' + description.trim() : ''}`,
-          now,
-          expenseId
-        );
-      }
+    // 2. Paid from register cash: auto-record CASH_OUT movement (session is OPEN, checked above)
+    if (payment_source === 'REGISTER_CASH' && openSession) {
+      db.prepare(`
+        INSERT INTO register_cash_movements (id, session_id, date, type, amount, reason, created_at, expense_id)
+        VALUES (?, ?, ?, 'CASH_OUT', ?, ?, ?, ?)
+      `).run(
+        crypto.randomUUID(),
+        openSession.id,
+        date,
+        expenseAmount,
+        `Expense: ${category.trim()}${description ? ' - ' + description.trim() : ''}`,
+        now,
+        expenseId
+      );
     }
   });
 

@@ -1148,6 +1148,7 @@ describe('Full Acceptance Test Plan — Al Jazira SHSP ERP', () => {
         category: 'Electricity',
         amount: 35.000,
         payment_source: 'REGISTER_CASH',
+        session_id: ses.body.id,
         description: 'Facture STEG atelier'
       });
 

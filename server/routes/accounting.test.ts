@@ -119,6 +119,36 @@ describe('Inventory Adjustments & Accounting Ledger Module — Real HTTP Integra
     expect(mov.expense_id).toBe(suppRes.body.id);
   });
 
+  it('rejects REGISTER_CASH expenses without an open session and records nothing', async () => {
+    const db = getDb();
+
+    // No session_id at all
+    const noSession = await request(app)
+      .post('/api/accounting/expenses')
+      .send({ category: 'Supplies', amount: 10.0, payment_source: 'REGISTER_CASH' });
+    expect(noSession.status).toBe(400);
+    expect(noSession.body.error).toMatch(/open register session/i);
+
+    // Unknown session
+    const unknown = await request(app)
+      .post('/api/accounting/expenses')
+      .send({ category: 'Supplies', amount: 10.0, payment_source: 'REGISTER_CASH', session_id: 'ses-nope' });
+    expect(unknown.status).toBe(400);
+
+    // Closed session
+    db.prepare("UPDATE register_sessions SET status = 'CLOSED' WHERE id = 'ses-exp-1'").run();
+    const closed = await request(app)
+      .post('/api/accounting/expenses')
+      .send({ category: 'Supplies', amount: 10.0, payment_source: 'REGISTER_CASH', session_id: 'ses-exp-1' });
+    expect(closed.status).toBe(400);
+
+    // Nothing recorded: no expense, no cash movement
+    const expenses: any[] = db.prepare('SELECT * FROM general_expenses').all();
+    expect(expenses).toHaveLength(0);
+    const movements: any[] = db.prepare('SELECT * FROM register_cash_movements').all();
+    expect(movements).toHaveLength(0);
+  });
+
   it('deletes general expense and its linked register CASH_OUT movement in one transaction', async () => {
     const db = getDb();
     // 1. Create legacy movement without expense_id
