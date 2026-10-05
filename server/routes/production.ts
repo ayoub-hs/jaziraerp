@@ -85,6 +85,17 @@ productionRouter.post('/batches', (req: Request, res: Response) => {
     return;
   }
 
+  // Target product's family must be manufactured with this exact formulation.
+  const family: any = db.prepare('SELECT * FROM product_families WHERE id = ?').get(product.family_id);
+  if (!family || family.type !== 'MANUFACTURED') {
+    res.status(400).json({ error: 'Target product must belong to a MANUFACTURED family to run a production batch.' });
+    return;
+  }
+  if (family.formulation_id !== formulation_id) {
+    res.status(400).json({ error: 'Chosen formulation does not match the target product family formulation.' });
+    return;
+  }
+
   const units = Number(units_produced);
   const batchRequirements = calculateBatchRequirements(db, formulation_id, units);
   const finalBatchNumber = batch_number ? String(batch_number).trim() : generateBatchNumber(db);
