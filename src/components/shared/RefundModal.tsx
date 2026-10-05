@@ -8,13 +8,15 @@ interface RefundModalProps {
   onClose: () => void;
   onRefundCompleted: () => void;
   initialSaleId?: string | null;
+  activeSessionId?: string | null;
 }
 
 export const RefundModal: React.FC<RefundModalProps> = ({
   isOpen,
   onClose,
   onRefundCompleted,
-  initialSaleId
+  initialSaleId,
+  activeSessionId
 }) => {
   const [searchReceipt, setSearchReceipt] = useState('');
   const [recentSales, setRecentSales] = useState<SaleSummary[]>([]);
@@ -34,6 +36,7 @@ export const RefundModal: React.FC<RefundModalProps> = ({
   // Register sessions for cash refunds
   const [openSessions, setOpenSessions] = useState<any[]>([]);
   const [selectedSessionId, setSelectedSessionId] = useState<string>('');
+  const [sessionTouched, setSessionTouched] = useState(false);
 
   useEffect(() => {
     if (isOpen) {
@@ -47,25 +50,38 @@ export const RefundModal: React.FC<RefundModalProps> = ({
       setError(null);
       setSuccess(null);
       setSearchReceipt('');
+      setSelectedSessionId('');
+      setSessionTouched(false);
 
       // Fetch open register sessions
       fetch('/api/register/open-sessions')
         .then(res => res.ok ? res.json() : [])
         .then((sessions: any[]) => {
           setOpenSessions(sessions || []);
-          if (sessions && sessions.length > 0) {
-            setSelectedSessionId(prev => {
-              if (prev && sessions.some(s => s.id === prev)) return prev;
-              const saleMatch = sessions.find(s => s.id === selectedSale?.session_id);
-              return saleMatch ? saleMatch.id : sessions[0].id;
-            });
-          } else {
-            setSelectedSessionId('');
-          }
         })
         .catch(() => setOpenSessions([]));
     }
-  }, [isOpen, initialSaleId, selectedSale?.session_id]);
+  }, [isOpen, initialSaleId]);
+
+  // Default session: POS flow (no initialSaleId) uses the operating counter's
+  // own open session; Ventes flow uses the original sale's session if open,
+  // otherwise requires an explicit choice with no preselection.
+  useEffect(() => {
+    if (!isOpen || openSessions.length === 0 || sessionTouched) return;
+    if (initialSaleId) {
+      if (!selectedSale) return; // wait for the sale to load
+      const saleSession = selectedSale.session_id;
+      setSelectedSessionId(
+        saleSession && openSessions.some(s => s.id === saleSession) ? saleSession : ''
+      );
+    } else if (activeSessionId && openSessions.some(s => s.id === activeSessionId)) {
+      setSelectedSessionId(activeSessionId);
+    } else if (openSessions.length === 1) {
+      setSelectedSessionId(openSessions[0].id);
+    } else {
+      setSelectedSessionId('');
+    }
+  }, [isOpen, initialSaleId, openSessions, selectedSale?.session_id, activeSessionId, sessionTouched]);
 
   const fetchRecentSales = async () => {
     try {
@@ -399,7 +415,10 @@ export const RefundModal: React.FC<RefundModalProps> = ({
                       </label>
                       <select
                         value={selectedSessionId}
-                        onChange={e => setSelectedSessionId(e.target.value)}
+                        onChange={e => {
+                          setSelectedSessionId(e.target.value);
+                          setSessionTouched(true);
+                        }}
                         className="w-full text-sm font-semibold px-3 py-2 border border-slate-300 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:outline-none bg-white"
                       >
                         {openSessions.map(s => (

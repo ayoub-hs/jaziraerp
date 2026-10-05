@@ -871,6 +871,7 @@ export const DesktopPos: React.FC<DesktopPosProps> = ({
         isOpen={isRefundOpen}
         onClose={() => setIsRefundOpen(false)}
         onRefundCompleted={onRefreshData}
+        activeSessionId={activeSession?.id || null}
       />
 
       <CameraScannerModal
