@@ -139,6 +139,7 @@ export const Backoffice: React.FC<BackofficeProps> = ({
 
   // Supplier Payment / Purchase state
   const [isPurchaseModalOpen, setIsPurchaseModalOpen] = useState(false);
+  const [purchaseDetailId, setPurchaseDetailId] = useState<string | null>(null);
 
   // Customer debt payment & top-up
   const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
@@ -2165,7 +2166,12 @@ export const Backoffice: React.FC<BackofficeProps> = ({
                   </thead>
                   <tbody className="divide-y divide-slate-100">
                     {filteredPurchases.map(p => (
-                      <tr key={p.id} className="hover:bg-slate-50">
+                      <tr
+                        key={p.id}
+                        className="hover:bg-slate-50 cursor-pointer"
+                        onClick={() => setPurchaseDetailId(p.id)}
+                        title="Voir le détail de l'achat"
+                      >
                         <td className="p-3 font-mono font-bold text-slate-900">{p.purchase_number}</td>
                         <td className="p-3 text-slate-500 font-mono text-[11px]">{formatDate(p.date)}</td>
                         <td className="p-3 font-bold text-slate-900">{p.supplier_name}</td>
@@ -2212,6 +2218,13 @@ export const Backoffice: React.FC<BackofficeProps> = ({
               materials={materials}
               products={products}
               initialSupplierId={selectedSupplier?.id}
+            />
+
+            {/* Purchase Detail Modal (row click) */}
+            <PurchaseDetailModal
+              isOpen={Boolean(purchaseDetailId)}
+              onClose={() => setPurchaseDetailId(null)}
+              purchaseId={purchaseDetailId}
             />
           </div>
         )}

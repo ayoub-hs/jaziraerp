@@ -5,6 +5,7 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import { allocateSupplierPayment } from '../services/debtService.js';
 import { recordMaterialPriceHistory } from './materials.js';
+import { resetTestDb, app, request, getDb } from '../../tests/testApp.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -283,5 +284,35 @@ describe('Suppliers, Purchases & Supplier Debt Ledger Module', () => {
     expect(purchaseRow.cash_paid).toBe(100.000);
     expect(purchaseRow.debt_amount).toBe(200.000);
     expect(purchaseRow.total_amount).toBe(300.000);
+  });
+
+  it('GET /api/purchases/:id returns supplier, dates, payment split and line items', async () => {
+    resetTestDb();
+    const supRes = await request(app).post('/api/suppliers').send({ name: 'Detail Supplier' });
+    const matRes = await request(app).post('/api/materials').send({
+      name: 'Detail Solvent', category: 'solvent', unit: 'L', stock_quantity: 0, latest_purchase_cost: 5
+    });
+
+    // CREDIT purchase: 20L @ 5 = 100 total (down payment 0, debt 100)
+    const poRes = await request(app).post('/api/purchases').send({
+      supplier_id: supRes.body.id,
+      payment_status: 'CREDIT',
+      items: [{ item_type: 'RAW_MATERIAL', material_id: matRes.body.id, quantity: 20, unit_cost: 5.000 }]
+    });
+    expect(poRes.status).toBe(201);
+
+    const detail = await request(app).get(`/api/purchases/${poRes.body.id}`);
+    expect(detail.status).toBe(200);
+    expect(detail.body.supplier_name).toBe('Detail Supplier');
+    expect(detail.body.date).toBeTruthy();
+    expect(detail.body.payment_status).toBe('CREDIT');
+    expect(detail.body.total_amount).toBe(100.000);
+    expect(detail.body.cash_paid).toBe(0);
+    expect(detail.body.debt_remaining).toBe(100.000);
+    expect(detail.body.debt_amount).toBe(100.000);
+    expect(detail.body.items).toHaveLength(1);
+    expect(detail.body.items[0].item_name).toBe('Detail Solvent');
+    expect(detail.body.items[0].total_cost).toBe(100.000);
+    resetTestDb();
   });
 });

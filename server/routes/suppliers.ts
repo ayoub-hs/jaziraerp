@@ -274,9 +274,22 @@ purchasesRouter.get('/', (req: Request, res: Response) => {
 purchasesRouter.get('/:id', (req: Request, res: Response) => {
   const db = getDb();
   const purchase: any = db.prepare(`
-    SELECT p.*, s.name as supplier_name
+    SELECT p.*, s.name as supplier_name,
+      sdt.remaining_amount as debt_remaining,
+      sdt.total_amount as debt_ticket_total,
+      CASE 
+        WHEN p.payment_status = 'PAID' THEN p.total_amount
+        WHEN sdt.id IS NOT NULL THEN ROUND(p.total_amount - sdt.remaining_amount, 3)
+        ELSE 0
+      END as cash_paid,
+      CASE
+        WHEN p.payment_status = 'PAID' THEN 0
+        WHEN sdt.id IS NOT NULL THEN sdt.remaining_amount
+        ELSE p.total_amount
+      END as debt_amount
     FROM purchases p
     JOIN suppliers s ON p.supplier_id = s.id
+    LEFT JOIN supplier_debt_tickets sdt ON sdt.purchase_id = p.id
     WHERE p.id = ?
   `).get(req.params.id);
 
