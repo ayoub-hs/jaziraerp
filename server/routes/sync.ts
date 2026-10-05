@@ -153,33 +153,139 @@ syncRouter.post('/flush', (req: Request, res: Response) => {
             }
           }
 
+        const failSale = (reason: string) => {
+          failed.push({ temp_client_id, action_type: 'SALE', reason });
+          return;
+        };
+
+        if (!Array.isArray(payload.items) || payload.items.length === 0) {
+          failSale('At least one line item is required');
+          return;
+        }
+
         const saleId = crypto.randomUUID();
         const receiptNumber = generateReceiptNumber(db);
         const date = payload.date || now;
 
+        // Unknown customer must fail loudly (never silently convert to walk-in:
+        // that would change wallet/credit semantics). Mirrors online 404.
         let customerRow: any = null;
         if (payload.customer_id) {
           customerRow = db.prepare('SELECT id, type, reseller_discount_percent FROM customers WHERE id = ?').get(payload.customer_id) || null;
+          if (!customerRow) {
+            failSale(`Customer not found: ${payload.customer_id}`);
+            return;
+          }
         }
 
-        // Process line items
+        // Session resolution (offline-lenient by design + acceptance tests:
+        // offline sales physically happened, so cash must stay recorded even
+        // with a stale/missing session id). Prefer the queued session when it
+        // is still OPEN, else fall back to the latest OPEN session, else null
+        // (legacy session-less insert). Online POST /api/sales stays strict.
+        let validSessionId: string | null = null;
+        if (payload.session_id) {
+          const sessRow: any = db.prepare('SELECT id, status FROM register_sessions WHERE id = ?').get(payload.session_id);
+          if (sessRow && sessRow.status === 'OPEN') {
+            validSessionId = payload.session_id;
+          } else {
+            const openSess: any = db.prepare("SELECT id FROM register_sessions WHERE status = 'OPEN' ORDER BY opened_at DESC LIMIT 1").get();
+            validSessionId = openSess?.id || null;
+          }
+        } else {
+          const openSess: any = db.prepare("SELECT id FROM register_sessions WHERE status = 'OPEN' ORDER BY opened_at DESC LIMIT 1").get();
+          validSessionId = openSess?.id || null;
+        }
+        const validCustomerId: string | null = customerRow ? payload.customer_id : null;
+
+        // Process line items (same rules as online POST /api/sales)
         let computedSubtotal = 0;
         const processedItems: any[] = [];
+        let itemsValid = true;
 
         for (const item of payload.items || []) {
-          const qty = Number(item.quantity) || 1;
-          const unitPrice = round3(Number(item.unit_price) || 0);
-          const lineTotal = round3(unitPrice * qty - (Number(item.discount_amount) || 0));
-          const packMultiplier = Number(item.pack_multiplier) || 1;
-          const isQuickAdd = item.is_quick_add ? 1 : 0;
-          const baseDeducted = isQuickAdd ? 0 : qty * packMultiplier;
+          const qty = Number(item.quantity);
+          if (!Number.isFinite(qty) || qty <= 0) {
+            failSale('Quantity must be greater than 0');
+            itemsValid = false;
+            break;
+          }
+          const unitPriceRaw = Number(item.unit_price);
+          if (!Number.isFinite(unitPriceRaw)) {
+            failSale('unit_price must be a finite number');
+            itemsValid = false;
+            break;
+          }
+          const unitPrice = round3(unitPriceRaw);
+          const discountRaw = Number(item.discount_amount) || 0;
+          if (!Number.isFinite(discountRaw) || discountRaw < 0) {
+            failSale('discount_amount must be a finite non-negative number');
+            itemsValid = false;
+            break;
+          }
+          const discountAmount = round3(discountRaw);
+          const lineTotal = round3(unitPrice * qty - discountAmount);
+          if (lineTotal < 0) {
+            failSale('Line total cannot be negative');
+            itemsValid = false;
+            break;
+          }
 
+          const isQuickAdd = item.is_quick_add ? 1 : 0;
+          let packMultiplier = 1;
+          let baseDeducted = 0;
           let catalogUnitPrice: number | null = null;
-          if (!isQuickAdd && item.product_id) {
-            const prodRow: any = db.prepare('SELECT * FROM products WHERE id = ?').get(item.product_id);
-            if (prodRow) {
-              catalogUnitPrice = computeExpectedCatalogPrice(db, prodRow, customerRow, item.pack_size_id, packMultiplier);
+
+          if (isQuickAdd) {
+            const resolvedQuickName = item.quick_add_name || item.description || item.name;
+            if (!resolvedQuickName || String(resolvedQuickName).trim().length === 0) {
+              failSale('Quick-add items must have a name');
+              itemsValid = false;
+              break;
             }
+            baseDeducted = 0;
+          } else {
+            if (!item.product_id) {
+              failSale('product_id is required for catalog items');
+              itemsValid = false;
+              break;
+            }
+            const prodRow: any = db.prepare('SELECT * FROM products WHERE id = ?').get(item.product_id);
+            if (!prodRow) {
+              failSale(`Product not found: ${item.product_id}`);
+              itemsValid = false;
+              break;
+            }
+            if (item.pack_size_id) {
+              const packSize: any = db.prepare('SELECT * FROM product_pack_sizes WHERE id = ?').get(item.pack_size_id);
+              if (!packSize) {
+                failSale(`Pack size not found: ${item.pack_size_id}`);
+                itemsValid = false;
+                break;
+              }
+              if (packSize.product_id !== item.product_id) {
+                failSale(`Pack size ${item.pack_size_id} does not belong to product ${item.product_id}`);
+                itemsValid = false;
+                break;
+              }
+              packMultiplier = packSize.multiplier;
+            } else {
+              const pm = Number(item.pack_multiplier);
+              packMultiplier = item.pack_multiplier === undefined || item.pack_multiplier === null || item.pack_multiplier === '' ? 1 : pm;
+              if (!Number.isFinite(packMultiplier) || packMultiplier < 1) {
+                failSale('pack_multiplier must be a finite number >= 1');
+                itemsValid = false;
+                break;
+              }
+            }
+            baseDeducted = qty * packMultiplier;
+            catalogUnitPrice = computeExpectedCatalogPrice(db, prodRow, customerRow, item.pack_size_id, packMultiplier);
+          }
+
+          if (item.loan_container && !validCustomerId) {
+            failSale('Loaning a container requires selecting a customer.');
+            itemsValid = false;
+            break;
           }
 
           const resolvedQuickName = item.quick_add_name || item.description || item.name || null;
@@ -195,10 +301,11 @@ syncRouter.post('/flush', (req: Request, res: Response) => {
             base_stock_deducted: baseDeducted,
             unit_price: unitPrice,
             catalog_unit_price: catalogUnitPrice,
-            discount_amount: Number(item.discount_amount) || 0,
+            discount_amount: discountAmount,
             line_total: lineTotal
           });
         }
+        if (!itemsValid) return;
 
         const rawDiscount = Number(payload.total_discount) || 0;
         const totalTTC = Math.max(0, round3(computedSubtotal - rawDiscount));
@@ -227,6 +334,13 @@ syncRouter.post('/flush', (req: Request, res: Response) => {
         const creditAmount = payment.credit_amount;
         const changeGiven = payment.change_given;
 
+        // Credit parity with online sales: unpaid balance requires a customer.
+        // Never silently drop the ticket (that would lose the debt record).
+        if (creditAmount > 0 && !validCustomerId) {
+          failSale('Credit sale (unpaid balance) requires selecting a customer');
+          return;
+        }
+
         // Deduct stock only for validated sales
         // (DOUBLE-SELLING RISK ACCEPTED: proceed into negative if needed)
         for (const item of processedItems) {
@@ -240,26 +354,8 @@ syncRouter.post('/flush', (req: Request, res: Response) => {
           }
         }
 
-        // Resolve session_id safely to prevent FK failure
-        let validSessionId: string | null = null;
-        if (payload.session_id) {
-          const sessRow = db.prepare('SELECT id FROM register_sessions WHERE id = ?').get(payload.session_id);
-          if (sessRow) {
-            validSessionId = payload.session_id;
-          } else {
-            const openSess: any = db.prepare("SELECT id FROM register_sessions WHERE status = 'OPEN' ORDER BY opened_at DESC LIMIT 1").get();
-            validSessionId = openSess?.id || null;
-          }
-        }
-
-        // Resolve customer_id safely
-        let validCustomerId: string | null = null;
-        if (payload.customer_id) {
-          const custRow = db.prepare('SELECT id FROM customers WHERE id = ?').get(payload.customer_id);
-          if (custRow) {
-            validCustomerId = payload.customer_id;
-          }
-        }
+        // Session and customer were resolved + validated above (OPEN session mandatory,
+        // unknown customer fails loudly). Reuse them here for the insert.
 
         // Insert sale
         db.prepare(`
@@ -316,20 +412,20 @@ syncRouter.post('/flush', (req: Request, res: Response) => {
         }
 
         // Wallet deduction
-        if (walletAmount > 0 && payload.customer_id) {
+        if (walletAmount > 0 && validCustomerId) {
           db.prepare(`
             UPDATE customers SET wallet_balance = wallet_balance - ?, updated_at = ? WHERE id = ?
-          `).run(walletAmount, now, payload.customer_id);
+          `).run(walletAmount, now, validCustomerId);
 
           db.prepare(`
             INSERT INTO customer_wallet_transactions (id, customer_id, date, type, amount, reference_id, notes, created_at)
             VALUES (?, ?, ?, 'SALE_PAYMENT', ?, ?, 'Offline sale sync payment', ?)
-          `).run(crypto.randomUUID(), payload.customer_id, date, walletAmount, saleId, now);
+          `).run(crypto.randomUUID(), validCustomerId, date, walletAmount, saleId, now);
         }
 
         // Credit debt ticket
         let createdTicketNumber = null;
-        if (creditAmount > 0 && payload.customer_id) {
+        if (creditAmount > 0 && validCustomerId) {
           createdTicketNumber = generateTicketNumber(db);
           db.prepare(`
             INSERT INTO customer_debt_tickets (
@@ -339,7 +435,7 @@ syncRouter.post('/flush', (req: Request, res: Response) => {
           `).run(
             crypto.randomUUID(),
             createdTicketNumber,
-            payload.customer_id,
+            validCustomerId,
             saleId,
             date,
             creditAmount,
@@ -350,7 +446,7 @@ syncRouter.post('/flush', (req: Request, res: Response) => {
         }
 
         // Process container loans for items with loan_container = true
-        if (payload.customer_id && Array.isArray(payload.items)) {
+        if (validCustomerId && Array.isArray(payload.items)) {
           for (const item of payload.items) {
             if (item.loan_container && item.product_id) {
               const prod: any = db.prepare(`
@@ -375,7 +471,7 @@ syncRouter.post('/flush', (req: Request, res: Response) => {
                   db.prepare(`
                     INSERT INTO container_transactions (id, date, customer_id, container_type_id, action, quantity, notes, created_at)
                     VALUES (?, ?, ?, ?, 'GIVE', ?, ?, ?)
-                  `).run(crypto.randomUUID(), date, payload.customer_id, containerTypeId, cQty, `Prêt consigne vente ${receiptNumber}`, now);
+                  `).run(crypto.randomUUID(), date, validCustomerId, containerTypeId, cQty, `Prêt consigne vente ${receiptNumber}`, now);
 
                   db.prepare(`
                     UPDATE container_types
@@ -388,7 +484,7 @@ syncRouter.post('/flush', (req: Request, res: Response) => {
                     VALUES (?, ?, ?, ?)
                     ON CONFLICT(customer_id, container_type_id)
                     DO UPDATE SET quantity_owed = quantity_owed + excluded.quantity_owed
-                  `).run(crypto.randomUUID(), payload.customer_id, containerTypeId, cQty);
+                  `).run(crypto.randomUUID(), validCustomerId, containerTypeId, cQty);
                 }
               }
             }
