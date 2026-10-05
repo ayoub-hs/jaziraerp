@@ -143,6 +143,36 @@ describe('Products & Sizing Model Module (HTTP Routes)', () => {
     expect(p2lCheck.body.stock_quantity).toBe(15);
   });
 
+  it('rejects non-integer multipliers and negative price overrides on pack sizes', async () => {
+    const famRes = await request(app)
+      .post('/api/products/families')
+      .send({ name: 'Pack Validation Fam', category: 'C', type: 'RESALE' });
+    const prodRes = await request(app)
+      .post('/api/products')
+      .send({ family_id: famRes.body.id, name: 'Pack Validation Prod', stock_quantity: 10 });
+    const productId = prodRes.body.id;
+
+    for (const bad of [{ multiplier: 1.5 }, { multiplier: 1 }, { multiplier: 0 }, { multiplier: 'six' }]) {
+      const res = await request(app)
+        .post(`/api/products/${productId}/pack-sizes`)
+        .send({ pack_label: 'Bad Pack', ...bad });
+      expect(res.status).toBe(400);
+    }
+
+    for (const badOverride of [-1, 'free']) {
+      const res = await request(app)
+        .post(`/api/products/${productId}/pack-sizes`)
+        .send({ pack_label: 'Bad Override', multiplier: 6, price_override: badOverride });
+      expect(res.status).toBe(400);
+    }
+
+    // Zero override stays allowed (free pack promo)
+    const zeroRes = await request(app)
+      .post(`/api/products/${productId}/pack-sizes`)
+      .send({ pack_label: 'Free Pack', multiplier: 6, price_override: 0 });
+    expect(zeroRes.status).toBe(201);
+  });
+
   it('shares piece stock across pack size multipliers (e.g. 6/12 pcs) via POST /api/products/:id/pack-sizes', async () => {
     // 1. Create family
     const famRes = await request(app)

@@ -462,9 +462,17 @@ productsRouter.put('/:id', (req: Request, res: Response) => {
 productsRouter.post('/:id/pack-sizes', (req: Request, res: Response) => {
   const { pack_label, multiplier, price_override = null, barcode = null } = req.body;
 
-  if (!pack_label || !multiplier || Number(multiplier) <= 1) {
-    res.status(400).json({ error: 'pack_label and multiplier (> 1) are required.' });
+  if (!pack_label || !Number.isInteger(Number(multiplier)) || Number(multiplier) < 2) {
+    res.status(400).json({ error: 'pack_label and an integer multiplier (≥ 2) are required.' });
     return;
+  }
+
+  if (price_override !== null && price_override !== undefined) {
+    const override = Number(price_override);
+    if (!Number.isFinite(override) || override < 0) {
+      res.status(400).json({ error: 'price_override must be a non-negative number.' });
+      return;
+    }
   }
 
   const db = getDb();
