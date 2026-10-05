@@ -49,4 +49,12 @@
 - ea24912 fix(dates): receipt, ticket and batch numbers use Africa/Tunis business day
 - 3e60991 fix(customers): log opening wallet as TOP_UP Solde initial
 - 66f0579 fix(packs): require integer multiplier >= 2 and non-negative price_override
+- 741e41f fix(sync): mirror online sale validation in offline SALE flush
+- 8758d2b fix(sales): atomic wallet deduct inside sale tx
+- 1dbf08c fix(receipt): include totals in offline payload and recompute fallback
+- 09f348c fix(sync): validate CASH_MOVEMENT flush like online movement
+- 725cf39 fix(db): retry sequential numbers on UNIQUE clash; one open session per counter
+- 5e04c40 fix(ui): quick-edit guard, counter-save guard, shared csv export
+- 2f7a988 fix(server): delete guards, overpay reject, atomic material create, refund/status validations
+- 564406f fix(ui): report error banner, quick-add rounding, purchase total guard
 - NOTE: server now binds 127.0.0.1 by default (HOST env overrides). LAN/VPN exposure previously needed HOST=0.0.0.0 plus a firewall rule; see README Deployment.
