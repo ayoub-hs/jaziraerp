@@ -4,6 +4,7 @@ import {
   getProductPackPrice,
   calculateCartTotals,
   validateSplitPayment,
+  buildPaymentPayload,
   parseSizeToLiters,
   calculateContainersNeeded
 } from './cart.js';
@@ -231,6 +232,45 @@ describe('Cart Utilities', () => {
       const res = validateSplitPayment(50.000, 10.000, 15.000, 25.000, customerWithWallet);
       expect(res.valid).toBe(true);
       expect(res.changeDue).toBe(0);
+    });
+  });
+
+  describe('buildPaymentPayload', () => {
+    it('caps applied cash at total when over-tendered (tender 50 on 30)', () => {
+      expect(buildPaymentPayload(30.0, 50.0, 0, 0)).toEqual({
+        cash_paid: 30.0,
+        cash_tendered: 50.0,
+        wallet_paid: 0,
+        credit_amount: 0
+      });
+    });
+
+    it('passes through exact tender unchanged', () => {
+      expect(buildPaymentPayload(30.0, 30.0, 0, 0)).toEqual({
+        cash_paid: 30.0,
+        cash_tendered: 30.0,
+        wallet_paid: 0,
+        credit_amount: 0
+      });
+    });
+
+    it('deducts wallet before applying cash, keeping tendered for change', () => {
+      // Total 30, wallet 10, tender 50 -> applied 20, change 30
+      expect(buildPaymentPayload(30.0, 50.0, 10.0, 0)).toEqual({
+        cash_paid: 20.0,
+        cash_tendered: 50.0,
+        wallet_paid: 10.0,
+        credit_amount: 0
+      });
+    });
+
+    it('applies zero cash for wallet+credit only sales', () => {
+      expect(buildPaymentPayload(30.0, 0, 10.0, 20.0)).toEqual({
+        cash_paid: 0,
+        cash_tendered: 0,
+        wallet_paid: 10.0,
+        credit_amount: 20.0
+      });
     });
   });
 

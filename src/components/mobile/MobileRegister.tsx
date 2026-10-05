@@ -1334,6 +1334,7 @@ export const MobileRegister: React.FC<MobileRegisterProps> = ({
             })),
             total_discount: tender.total_discount !== undefined ? tender.total_discount : saleDiscount,
             cash_paid: tender.cash_paid,
+            cash_tendered: tender.cash_tendered !== undefined ? tender.cash_tendered : tender.cash_paid,
             wallet_paid: tender.wallet_paid,
             credit_amount: tender.credit_amount
           };

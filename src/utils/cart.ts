@@ -117,6 +117,30 @@ export function calculateCartTotals(items: CartItem[], saleDiscount: number = 0)
 }
 
 /**
+ * Builds the sale payment payload separating applied cash from tendered cash.
+ * applied cash = totalTTC - wallet - credit (floored at 0, never more than tendered).
+ * cash_tendered is what the customer handed over; change = tendered - applied.
+ */
+export function buildPaymentPayload(
+  totalTTC: number,
+  cashTendered: number,
+  wallet: number = 0,
+  credit: number = 0
+): { cash_paid: number; cash_tendered: number; wallet_paid: number; credit_amount: number } {
+  const total = roundMoney(Math.max(0, totalTTC || 0));
+  const walletPaid = roundMoney(Math.max(0, wallet || 0));
+  const creditAmount = roundMoney(Math.max(0, credit || 0));
+  const tendered = roundMoney(Math.max(0, cashTendered || 0));
+  const applied = roundMoney(Math.max(0, total - walletPaid - creditAmount));
+  return {
+    cash_paid: roundMoney(Math.min(applied, tendered)),
+    cash_tendered: tendered,
+    wallet_paid: walletPaid,
+    credit_amount: creditAmount
+  };
+}
+
+/**
  * Validates split payment amounts against total due and customer limits.
  */
 export function validateSplitPayment(

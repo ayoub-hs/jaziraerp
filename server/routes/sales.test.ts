@@ -173,6 +173,32 @@ describe('POS Sales & Checkout Module — Real HTTP Integration Tests', () => {
     expect(creditRes.body.should_kick_drawer).toBe(false);
   });
 
+  it('accepts over-tendered cash via buildPaymentPayload output and only counts applied cash in register', async () => {
+    const { calculateSessionExpectedCash } = await import('../services/registerService.js');
+    const db = getDb();
+    const before = calculateSessionExpectedCash(db, 'ses-01');
+    expect(before.expected_cash).toBe(100.0);
+
+    // Exact output of buildPaymentPayload(30, 50, 0, 0): applied 30, tendered 50
+    const res = await request(app)
+      .post('/api/sales')
+      .send({
+        customer_id: 'cust-retail',
+        session_id: 'ses-01',
+        items: [{ product_id: 'prod-clean-1l', quantity: 10, unit_price: 3.0 }],
+        cash_paid: 30.0,
+        cash_tendered: 50.0,
+        wallet_paid: 0,
+        credit_amount: 0
+      });
+
+    expect(res.status).toBe(201);
+    expect(res.body.change_given).toBe(20.0);
+
+    const after = calculateSessionExpectedCash(getDb(), 'ses-01');
+    expect(after.expected_cash).toBe(130.0);
+  });
+
   it('calculates change due correctly on cash tender', async () => {
     const saleTotal = 3.000;
     const cashTendered = 10.000;

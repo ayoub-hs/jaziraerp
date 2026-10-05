@@ -13,7 +13,7 @@ import {
   Tag
 } from 'lucide-react';
 import type { Customer, CartItem, RegisterSession } from '../../types/index.js';
-import { calculateCartTotals, validateSplitPayment, calculateContainersNeeded } from '../../utils/cart.js';
+import { calculateCartTotals, validateSplitPayment, buildPaymentPayload, calculateContainersNeeded } from '../../utils/cart.js';
 import { formatMoney, roundMoney } from '../../utils/formatters.js';
 
 interface CheckoutModalProps {
@@ -26,6 +26,7 @@ interface CheckoutModalProps {
   onOpenSessionModal?: () => void;
   onCompleteSale: (tender: {
     cash_paid: number;
+    cash_tendered: number;
     wallet_paid: number;
     credit_amount: number;
     total_discount?: number;
@@ -141,10 +142,9 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
 
     setIsSubmitting(true);
     try {
+      const payload = buildPaymentPayload(totalTTC, cash, wallet, credit);
       const result = await onCompleteSale({
-        cash_paid: cash,
-        wallet_paid: wallet,
-        credit_amount: credit,
+        ...payload,
         total_discount: saleDiscount || 0
       });
       if (result) {
@@ -164,6 +164,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
 
     try {
       const targetId = completedSale.sale_id || completedSale.receipt_number;
+      const tender = buildPaymentPayload(totals.totalTTC, parseFloat(cashPaid) || 0, parseFloat(walletPaid) || 0, parseFloat(creditAmount) || 0);
       const salePayload = {
         receipt_number: completedSale.receipt_number,
         date: new Date().toISOString(),
@@ -172,7 +173,8 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
         tva_amount: totals.tvaAmount,
         total_ttc: totals.totalTTC,
         total_discount: saleDiscount || 0,
-        cash_paid: parseFloat(cashPaid) || 0,
+        cash_paid: tender.cash_paid,
+        cash_tendered: tender.cash_tendered,
         wallet_paid: parseFloat(walletPaid) || 0,
         credit_amount: parseFloat(creditAmount) || 0,
         change_given: changeDue || 0,
