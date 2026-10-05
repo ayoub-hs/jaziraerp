@@ -3,6 +3,7 @@ import crypto from 'crypto';
 import { getDb } from '../db/index.js';
 import { round3, addMoney, subtractMoney, multiplyMoney, calculateTaxBreakdown, calculateResellerPrice } from '../utils/money.js';
 import { calculateContainersNeeded } from '../utils/container.js';
+import { validateSalePayment } from '../utils/payments.js';
 
 export const salesRouter = Router();
 
@@ -231,7 +232,7 @@ salesRouter.post('/', (req: Request, res: Response) => {
     date = new Date().toISOString(),
     items = [],
     total_discount = 0,
-    cash_tendered = 0,
+    cash_tendered = undefined,
     cash_paid = 0,
     wallet_paid = 0,
     credit_amount = 0,
@@ -324,10 +325,16 @@ salesRouter.post('/', (req: Request, res: Response) => {
 
       if (item.pack_size_id) {
         const packSize: any = db.prepare('SELECT * FROM product_pack_sizes WHERE id = ?').get(item.pack_size_id);
-        if (packSize) {
-          packMultiplier = packSize.multiplier;
-          baseStockDeducted = qty * packMultiplier;
+        if (!packSize) {
+          res.status(400).json({ error: `Pack size not found: ${item.pack_size_id}` });
+          return;
         }
+        if (packSize.product_id !== item.product_id) {
+          res.status(400).json({ error: `Pack size ${item.pack_size_id} does not belong to product ${item.product_id}` });
+          return;
+        }
+        packMultiplier = packSize.multiplier;
+        baseStockDeducted = qty * packMultiplier;
       }
       catalogUnitPrice = computeExpectedCatalogPrice(db, product, customer, item.pack_size_id, packMultiplier);
     }
@@ -366,18 +373,25 @@ salesRouter.post('/', (req: Request, res: Response) => {
   const totalTTC = Math.max(0, round3(computedSubtotal - globalDiscount));
   const taxBreakdown = calculateTaxBreakdown(totalTTC, 0.19);
 
-  // 2. Validate Payment Breakdown
-  const cashAmount = round3(Number(cash_paid) || 0);
-  const walletAmount = round3(Number(wallet_paid) || 0);
-  const creditAmount = round3(Number(credit_amount) || 0);
-  const tenderedTotal = round3(cashAmount + walletAmount + creditAmount);
+  // 2. Validate Payment Breakdown (shared with offline sync flush)
+  const payment = validateSalePayment({
+    total_ttc: totalTTC,
+    subtotal: computedSubtotal,
+    total_discount: globalDiscount,
+    cash_paid,
+    cash_tendered,
+    wallet_paid,
+    credit_amount
+  });
 
-  if (tenderedTotal !== totalTTC) {
-    res.status(400).json({
-      error: `Payment total (${tenderedTotal} DT) does not equal sale total (${totalTTC} DT). Cash: ${cashAmount}, Wallet: ${walletAmount}, Credit: ${creditAmount}`
-    });
+  if (!payment.ok) {
+    res.status(400).json({ error: payment.error });
     return;
   }
+
+  const cashAmount = payment.cash_paid;
+  const walletAmount = payment.wallet_paid;
+  const creditAmount = payment.credit_amount;
 
   // 3. STRICT WALLET VALIDATION (Per User Instruction)
   if (walletAmount > 0) {
@@ -401,12 +415,8 @@ salesRouter.post('/', (req: Request, res: Response) => {
     return;
   }
 
-  // 5. Change Due and Cash Drawer Kick
-  const tenderedCash = round3(Number(cash_tendered) || 0);
-  let changeGiven = 0;
-  if (tenderedCash > cashAmount) {
-    changeGiven = round3(tenderedCash - cashAmount);
-  }
+  // 5. Change Due and Cash Drawer Kick (change computed server-side, never trusted)
+  const changeGiven = payment.change_given;
   const openCashDrawer = cashAmount > 0; // Drawer kicks ONLY if sale includes cash
 
   const saleId = crypto.randomUUID();

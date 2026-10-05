@@ -291,6 +291,101 @@ describe('Offline Storage & Sync Engine Module (HTTP Routes)', () => {
     expect(failedSale).toBeUndefined();
   });
 
+  it('routes invalid SALE payments to failed/needs_review with a reason and never accepts them', async () => {
+    const flushRes = await request(app)
+      .post('/api/sync/flush')
+      .send({
+        operations: [
+          {
+            temp_client_id: 'temp-sync-sum-mismatch',
+            action_type: 'SALE',
+            payload: {
+              cash_paid: 5, // total is 10 -> sum mismatch
+              cash_tendered: 5,
+              items: [{ quick_add_name: 'Mismatch Item', unit_price: 10, quantity: 1, is_quick_add: 1 }]
+            }
+          },
+          {
+            temp_client_id: 'temp-sync-under-tendered',
+            action_type: 'SALE',
+            payload: {
+              cash_paid: 10,
+              cash_tendered: 4, // tendered < paid
+              items: [{ quick_add_name: 'Under Tender Item', unit_price: 10, quantity: 1, is_quick_add: 1 }]
+            }
+          },
+          {
+            temp_client_id: 'temp-sync-negative',
+            action_type: 'SALE',
+            payload: {
+              cash_paid: 11,
+              wallet_paid: -1, // negative amount
+              cash_tendered: 11,
+              items: [{ quick_add_name: 'Negative Item', unit_price: 10, quantity: 1, is_quick_add: 1 }]
+            }
+          },
+          {
+            temp_client_id: 'temp-sync-bad-discount',
+            action_type: 'SALE',
+            payload: {
+              cash_paid: 0,
+              cash_tendered: 0,
+              total_discount: 50, // exceeds 10 subtotal
+              items: [{ quick_add_name: 'Discount Item', unit_price: 10, quantity: 1, is_quick_add: 1 }]
+            }
+          },
+          {
+            temp_client_id: 'temp-sync-nonfinite',
+            action_type: 'SALE',
+            payload: {
+              cash_paid: 'not-a-number',
+              cash_tendered: 10,
+              items: [{ quick_add_name: 'NaN Item', unit_price: 10, quantity: 1, is_quick_add: 1 }]
+            }
+          }
+        ]
+      });
+
+    expect(flushRes.status).toBe(200);
+    expect(flushRes.body.reconciled).toHaveLength(0);
+    expect(flushRes.body.failed).toHaveLength(5);
+    for (const f of flushRes.body.failed) {
+      expect(typeof f.reason).toBe('string');
+      expect(f.reason.length).toBeGreaterThan(0);
+    }
+
+    const db = getDb();
+    const count: any = db.prepare('SELECT COUNT(*) as c FROM sales').get();
+    expect(count.c).toBe(0);
+  });
+
+  it('computes change server-side on sync flush and ignores client change_given', async () => {
+    const flushRes = await request(app)
+      .post('/api/sync/flush')
+      .send({
+        operations: [
+          {
+            temp_client_id: 'temp-sync-change-01',
+            action_type: 'SALE',
+            payload: {
+              cash_paid: 10,
+              cash_tendered: 15,
+              change_given: 999, // must be ignored
+              items: [{ quick_add_name: 'Change Item', unit_price: 10, quantity: 1, is_quick_add: 1 }]
+            }
+          }
+        ]
+      });
+
+    expect(flushRes.status).toBe(200);
+    expect(flushRes.body.reconciled).toHaveLength(1);
+
+    const db = getDb();
+    const sale: any = db.prepare('SELECT cash_paid, change_given FROM sales WHERE synced_from_client_id = ?').get('temp-sync-change-01');
+    expect(sale.cash_paid).toBe(10);
+    expect(sale.change_given).toBe(5);
+  });
+
   it('inserts an inventory_adjustments record when PRICE_STOCK_EDIT changes stock_quantity', async () => {
     // 1. Create a product with initial stock 10
     const famRes = await request(app)

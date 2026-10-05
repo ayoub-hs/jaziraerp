@@ -669,6 +669,99 @@ describe('POS Sales & Checkout Module — Real HTTP Integration Tests', () => {
     expect(item.overridden).toBe(false);
   });
 
+  it('rejects mismatched pack_size_id that belongs to another product', async () => {
+    const res = await request(app)
+      .post('/api/sales')
+      .send({
+        customer_id: 'cust-retail',
+        session_id: 'ses-01',
+        items: [{ product_id: 'prod-vaisselle-bulk', pack_size_id: 'pack-12-clean', quantity: 1, unit_price: 1.8 }],
+        cash_paid: 1.8,
+        cash_tendered: 1.8
+      });
+
+    expect(res.status).toBe(400);
+    expect(res.body.error).toMatch(/does not belong/i);
+  });
+
+  it('rejects non-finite and negative payment amounts', async () => {
+    const badFinite = await request(app)
+      .post('/api/sales')
+      .send({
+        session_id: 'ses-01',
+        items: [{ product_id: 'prod-clean-1l', quantity: 1, unit_price: 3.0 }],
+        cash_paid: 'not-a-number',
+        cash_tendered: 3.0
+      });
+    expect(badFinite.status).toBe(400);
+    expect(badFinite.body.error).toMatch(/finite/i);
+
+    const negative = await request(app)
+      .post('/api/sales')
+      .send({
+        customer_id: 'cust-wallet',
+        session_id: 'ses-01',
+        items: [{ product_id: 'prod-clean-1l', quantity: 1, unit_price: 3.0 }],
+        cash_paid: 4.0,
+        wallet_paid: -1.0,
+        cash_tendered: 4.0
+      });
+    expect(negative.status).toBe(400);
+    expect(negative.body.error).toMatch(/non-negative/i);
+  });
+
+  it('rejects payment sum mismatch and under-tendered cash', async () => {
+    const mismatch = await request(app)
+      .post('/api/sales')
+      .send({
+        session_id: 'ses-01',
+        items: [{ product_id: 'prod-clean-1l', quantity: 10, unit_price: 3.0 }],
+        cash_paid: 5.0,
+        cash_tendered: 5.0
+      });
+    expect(mismatch.status).toBe(400);
+    expect(mismatch.body.error).toMatch(/does not equal/i);
+
+    const underTendered = await request(app)
+      .post('/api/sales')
+      .send({
+        session_id: 'ses-01',
+        items: [{ product_id: 'prod-clean-1l', quantity: 10, unit_price: 3.0 }],
+        cash_paid: 30.0,
+        cash_tendered: 20.0
+      });
+    expect(underTendered.status).toBe(400);
+    expect(underTendered.body.error).toMatch(/cash_tendered/i);
+  });
+
+  it('computes change server-side and ignores client-supplied change_given', async () => {
+    const res = await request(app)
+      .post('/api/sales')
+      .send({
+        session_id: 'ses-01',
+        items: [{ product_id: 'prod-clean-1l', quantity: 1, unit_price: 3.0 }],
+        cash_paid: 3.0,
+        cash_tendered: 10.0,
+        change_given: 999
+      });
+    expect(res.status).toBe(201);
+    expect(res.body.change_given).toBe(7.0);
+  });
+
+  it('rejects total_discount above the subtotal', async () => {
+    const res = await request(app)
+      .post('/api/sales')
+      .send({
+        session_id: 'ses-01',
+        items: [{ product_id: 'prod-clean-1l', quantity: 1, unit_price: 3.0 }],
+        total_discount: 10.0,
+        cash_paid: 0,
+        cash_tendered: 0
+      });
+    expect(res.status).toBe(400);
+    expect(res.body.error).toMatch(/total_discount/i);
+  });
+
   it('supports listing sales with search, date range, status, limit, and offset filters', async () => {
     const db = getDb();
 

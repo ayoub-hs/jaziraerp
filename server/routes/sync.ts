@@ -4,6 +4,7 @@ import { getDb } from '../db/index.js';
 import { round3, addMoney, calculateTaxBreakdown } from '../utils/money.js';
 import { calculateContainersNeeded } from '../utils/container.js';
 import { computeExpectedCatalogPrice } from './sales.js';
+import { validateSalePayment } from '../utils/payments.js';
 
 export const syncRouter = Router();
 
@@ -196,22 +197,47 @@ syncRouter.post('/flush', (req: Request, res: Response) => {
             discount_amount: Number(item.discount_amount) || 0,
             line_total: lineTotal
           });
+        }
 
-          // Deduct stock in SQLite (DOUBLE-SELLING RISK ACCEPTED: proceed into negative if needed)
-          if (baseDeducted > 0 && item.product_id) {
+        const rawDiscount = Number(payload.total_discount) || 0;
+        const totalTTC = Math.max(0, round3(computedSubtotal - rawDiscount));
+        const taxBreakdown = calculateTaxBreakdown(totalTTC, 0.19);
+
+        // Shared payment validation: invalid ops go to failed/needs_review, never silently accepted.
+        // change_given is computed server-side; any client-supplied value is ignored.
+        const payment = validateSalePayment({
+          total_ttc: totalTTC,
+          subtotal: computedSubtotal,
+          total_discount: rawDiscount,
+          cash_paid: payload.cash_paid,
+          cash_tendered: payload.cash_tendered,
+          wallet_paid: walletAmount,
+          credit_amount: payload.credit_amount
+        });
+        if (!payment.ok) {
+          failed.push({
+            temp_client_id,
+            action_type: 'SALE',
+            reason: payment.error
+          });
+          return;
+        }
+        const cashAmount = payment.cash_paid;
+        const creditAmount = payment.credit_amount;
+        const changeGiven = payment.change_given;
+
+        // Deduct stock only for validated sales
+        // (DOUBLE-SELLING RISK ACCEPTED: proceed into negative if needed)
+        for (const item of processedItems) {
+          if (item.base_stock_deducted > 0 && item.product_id) {
             db.prepare(`
               UPDATE products
               SET stock_quantity = stock_quantity - ?,
                   updated_at = ?
               WHERE id = ?
-            `).run(baseDeducted, now, item.product_id);
+            `).run(item.base_stock_deducted, now, item.product_id);
           }
         }
-
-        const totalTTC = Math.max(0, round3(computedSubtotal - (Number(payload.total_discount) || 0)));
-        const taxBreakdown = calculateTaxBreakdown(totalTTC, 0.19);
-        const cashAmount = round3(Number(payload.cash_paid) || 0);
-        const creditAmount = round3(Number(payload.credit_amount) || 0);
 
         // Resolve session_id safely to prevent FK failure
         let validSessionId: string | null = null;
@@ -256,7 +282,7 @@ syncRouter.post('/flush', (req: Request, res: Response) => {
           cashAmount,
           walletAmount,
           creditAmount,
-          Number(payload.change_given) || 0,
+          changeGiven,
           temp_client_id,
           now
         );
