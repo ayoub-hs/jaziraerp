@@ -83,12 +83,22 @@ app.all('/api/*', (req, res) => {
   res.status(404).json({ error: `Cannot ${req.method} ${req.path}` });
 });
 
-// Serve frontend static build if available
+// Serve frontend static build if available.
+// sw.js and index.html must never be cached: a stale copy would pin an old
+// offline shell or an old service worker after a new deploy.
 const distPath = path.join(__dirname, '../dist');
 if (fs.existsSync(distPath)) {
-  app.use(express.static(distPath));
+  app.use(express.static(distPath, {
+    setHeaders: (res, filePath) => {
+      const base = path.basename(filePath);
+      if (base === 'sw.js' || base === 'index.html' || base.endsWith('.webmanifest')) {
+        res.setHeader('Cache-Control', 'no-cache');
+      }
+    }
+  }));
   app.get('*', (req, res) => {
     if (!req.path.startsWith('/api')) {
+      res.setHeader('Cache-Control', 'no-cache');
       res.sendFile(path.join(distPath, 'index.html'));
     }
   });

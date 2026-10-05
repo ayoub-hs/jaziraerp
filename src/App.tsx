@@ -44,7 +44,18 @@ export default function App() {
   const [printReceiptSaleId, setPrintReceiptSaleId] = useState<string | null>(null);
   const [printInvoiceSaleId, setPrintInvoiceSaleId] = useState<string | null>(null);
   const [isLocked, setIsLocked] = useState<boolean>(authService.isLocked());
+  const [pwaUpdateReload, setPwaUpdateReload] = useState<(() => void) | null>(null);
   const prevSyncStateRef = useRef<SyncState>('ONLINE_SYNCED');
+
+  // PWA update banner: a new deploy is cached and waits until the user reloads.
+  useEffect(() => {
+    const onUpdate = (e: Event) => {
+      const reload = (e as CustomEvent<{ reload: () => void }>).detail.reload;
+      setPwaUpdateReload(() => reload);
+    };
+    window.addEventListener('pwa-update-available', onUpdate);
+    return () => window.removeEventListener('pwa-update-available', onUpdate);
+  }, []);
 
   // Subscribe to sync manager events & auth status
   useEffect(() => {
@@ -256,6 +267,19 @@ export default function App() {
 
   return (
     <div className="min-h-screen bg-slate-100 flex flex-col font-sans select-none antialiased">
+      {/* PWA update banner: new version cached, reload to apply */}
+      {pwaUpdateReload && (
+        <div className="bg-emerald-700 text-white text-xs font-semibold px-4 py-2 flex items-center justify-center gap-3 print:hidden">
+          <span>Une nouvelle version est disponible.</span>
+          <button
+            type="button"
+            onClick={() => pwaUpdateReload()}
+            className="bg-white text-emerald-800 font-bold px-3 py-1 rounded-lg"
+          >
+            Recharger
+          </button>
+        </div>
+      )}
       {/* Shared App Header */}
       <Header
         currentView={currentView}
