@@ -12,6 +12,7 @@ interface CreateProductModalProps {
   containerTypes: ContainerType[];
   familyToEdit?: ProductFamily | null;
   productToEdit?: Product | null;
+  onSwitchToEdit?: (product: Product) => void;
 }
 
 export const CreateProductModal: React.FC<CreateProductModalProps> = ({
@@ -22,7 +23,8 @@ export const CreateProductModal: React.FC<CreateProductModalProps> = ({
   formulations,
   containerTypes,
   familyToEdit,
-  productToEdit
+  productToEdit,
+  onSwitchToEdit
 }) => {
   // Mode: create a brand new product family + initial SKU, or add a new SKU to an existing family
   const [mode, setMode] = useState<'NEW_FAMILY' | 'EXISTING_FAMILY'>('NEW_FAMILY');
@@ -390,19 +392,45 @@ export const CreateProductModal: React.FC<CreateProductModalProps> = ({
       }
 
       const createdProd = await prodRes.json();
+      // Save pending packs one by one, tracking failures instead of dropping them.
+      const failedPacks: { label: string; reason: string }[] = [];
+      const savedPacks: PackSize[] = [];
       if (pendingPacks.length > 0) {
         for (const p of pendingPacks) {
-          await fetch(`/api/products/${createdProd.id}/pack-sizes`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              pack_label: p.pack_label,
-              multiplier: p.multiplier,
-              price_override: p.price_override,
-              barcode: p.barcode
-            })
-          }).catch(err => console.warn('Failed to save pack:', err));
+          try {
+            const packRes = await fetch(`/api/products/${createdProd.id}/pack-sizes`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                pack_label: p.pack_label,
+                multiplier: p.multiplier,
+                price_override: p.price_override,
+                barcode: p.barcode
+              })
+            });
+            const data = await packRes.json().catch(() => ({}));
+            if (!packRes.ok) {
+              failedPacks.push({ label: p.pack_label, reason: data.error || `Erreur ${packRes.status}` });
+            } else if (data?.id) {
+              savedPacks.push(data);
+            }
+          } catch (err: any) {
+            failedPacks.push({ label: p.pack_label, reason: err.message || 'Erreur réseau' });
+          }
         }
+      }
+
+      if (failedPacks.length > 0) {
+        // Keep the modal open in edit mode for the created product so the
+        // user can fix and retry the failed packs.
+        setExistingPacks(savedPacks);
+        setPendingPacks([]);
+        setPackError(
+          `Packs non enregistrés : ${failedPacks.map(f => `« ${f.label} » (${f.reason})`).join('; ')}`
+        );
+        onSuccess();
+        onSwitchToEdit?.(createdProd);
+        return;
       }
 
       // Reset form

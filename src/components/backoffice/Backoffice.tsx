@@ -2957,6 +2957,7 @@ export const Backoffice: React.FC<BackofficeProps> = ({
         containerTypes={containerTypes}
         familyToEdit={familyToEdit}
         productToEdit={productToEdit}
+        onSwitchToEdit={setProductToEdit}
       />
 
       {/* 2. Create Raw Material Modal */}
