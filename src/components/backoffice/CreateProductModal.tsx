@@ -183,8 +183,8 @@ export const CreateProductModal: React.FC<CreateProductModalProps> = ({
       return;
     }
     const override = newPackPriceOverride.trim() ? parseFloat(newPackPriceOverride) : null;
-    if (override !== null && (isNaN(override) || override < 0)) {
-      setPackError('Le prix spécifique doit être un montant valide');
+    if (override !== null && (isNaN(override) || override <= 0)) {
+      setPackError('Le prix spécifique doit être un montant strictement positif (vide = aucun)');
       return;
     }
 

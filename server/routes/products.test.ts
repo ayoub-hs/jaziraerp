@@ -159,18 +159,19 @@ describe('Products & Sizing Model Module (HTTP Routes)', () => {
       expect(res.status).toBe(400);
     }
 
-    for (const badOverride of [-1, 'free']) {
+    for (const badOverride of [-1, 0, 'free']) {
       const res = await request(app)
         .post(`/api/products/${productId}/pack-sizes`)
         .send({ pack_label: 'Bad Override', multiplier: 6, price_override: badOverride });
       expect(res.status).toBe(400);
     }
 
-    // Zero override stays allowed (free pack promo)
-    const zeroRes = await request(app)
+    // Blank/null override = no override, accepted
+    const blankRes = await request(app)
       .post(`/api/products/${productId}/pack-sizes`)
-      .send({ pack_label: 'Free Pack', multiplier: 6, price_override: 0 });
-    expect(zeroRes.status).toBe(201);
+      .send({ pack_label: 'No Override Pack', multiplier: 6, price_override: null });
+    expect(blankRes.status).toBe(201);
+    expect(blankRes.body.price_override).toBeNull();
   });
 
   it('shares piece stock across pack size multipliers (e.g. 6/12 pcs) via POST /api/products/:id/pack-sizes', async () => {

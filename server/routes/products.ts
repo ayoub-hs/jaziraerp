@@ -469,8 +469,8 @@ productsRouter.post('/:id/pack-sizes', (req: Request, res: Response) => {
 
   if (price_override !== null && price_override !== undefined) {
     const override = Number(price_override);
-    if (!Number.isFinite(override) || override < 0) {
-      res.status(400).json({ error: 'price_override must be a non-negative number.' });
+    if (!Number.isFinite(override) || override <= 0) {
+      res.status(400).json({ error: 'price_override must be a positive number (blank = no override).' });
       return;
     }
   }
