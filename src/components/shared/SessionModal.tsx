@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { X, Lock, Unlock, AlertTriangle, CheckCircle } from 'lucide-react';
 import type { RegisterSession } from '../../types/index.js';
 import { formatMoney, roundMoney } from '../../utils/formatters.js';
@@ -33,6 +33,8 @@ export const SessionModal: React.FC<SessionModalProps> = ({
   const [variance, setVariance] = useState<number>(0);
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [isSavingCounter, setIsSavingCounter] = useState(false);
+  const isSavingCounterRef = useRef(false);
 
   // Multi-session tracking for register switching and target closing
   const [openSessions, setOpenSessions] = useState<RegisterSession[]>([]);
@@ -276,9 +278,13 @@ export const SessionModal: React.FC<SessionModalProps> = ({
                   />
                   <button
                     type="button"
+                    disabled={isSavingCounter}
                     onClick={async () => {
+                      if (isSavingCounterRef.current) return;
                       const clean = newCounterName.trim();
                       if (!clean) return;
+                      isSavingCounterRef.current = true;
+                      setIsSavingCounter(true);
                       try {
                         const res = await fetch('/api/register/counters', {
                           method: 'POST',
@@ -296,11 +302,14 @@ export const SessionModal: React.FC<SessionModalProps> = ({
                         }
                       } catch (err: any) {
                         setError(err.message || 'Error adding counter');
+                      } finally {
+                        isSavingCounterRef.current = false;
+                        setIsSavingCounter(false);
                       }
                     }}
-                    className="px-3 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold transition-colors"
+                    className="px-3 py-2 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white rounded-xl text-xs font-bold transition-colors"
                   >
-                    Save
+                    {isSavingCounter ? 'Saving...' : 'Save'}
                   </button>
                   <button
                     type="button"

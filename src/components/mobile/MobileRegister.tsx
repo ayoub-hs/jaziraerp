@@ -92,6 +92,8 @@ export const MobileRegister: React.FC<MobileRegisterProps> = ({
   const [editWholesalePrice, setEditWholesalePrice] = useState('');
   const [editStock, setEditStock] = useState('');
   const [editSuccessMsg, setEditSuccessMsg] = useState<string | null>(null);
+  const [isSubmittingQuickEdit, setIsSubmittingQuickEdit] = useState(false);
+  const isSubmittingQuickEditRef = useRef(false);
 
   // Customer Tab State
   const [custSearch, setCustSearch] = useState('');
@@ -411,8 +413,8 @@ export const MobileRegister: React.FC<MobileRegisterProps> = ({
     );
     if (found) {
       setEditProduct(found);
-      setEditRetailPrice(found.retail_price.toFixed(3));
-      setEditWholesalePrice(found.wholesale_price.toFixed(3));
+      setEditRetailPrice(Number(found.retail_price || 0).toFixed(3));
+      setEditWholesalePrice(Number(found.wholesale_price || 0).toFixed(3));
       setEditStock(found.stock_quantity.toString());
       setEditSuccessMsg(null);
     } else {
@@ -421,7 +423,10 @@ export const MobileRegister: React.FC<MobileRegisterProps> = ({
   };
 
   const handleSaveQuickEdit = async () => {
-    if (!editProduct) return;
+    if (!editProduct || isSubmittingQuickEditRef.current) return;
+    isSubmittingQuickEditRef.current = true;
+    setIsSubmittingQuickEdit(true);
+    setEditSuccessMsg(null);
     try {
       const res = await fetch(`/api/products/${editProduct.id}`, {
         method: 'PUT',
@@ -435,9 +440,15 @@ export const MobileRegister: React.FC<MobileRegisterProps> = ({
       if (res.ok) {
         setEditSuccessMsg('Price & Stock updated successfully!');
         onRefreshData();
+      } else {
+        const data = await res.json().catch(() => ({}));
+        setEditSuccessMsg(data.error || `Erreur mise à jour (${res.status})`);
       }
-    } catch (err) {
-      console.warn('Quick edit save failed:', err);
+    } catch (err: any) {
+      setEditSuccessMsg(err.message || 'Quick edit save failed');
+    } finally {
+      isSubmittingQuickEditRef.current = false;
+      setIsSubmittingQuickEdit(false);
     }
   };
 
@@ -875,9 +886,10 @@ export const MobileRegister: React.FC<MobileRegisterProps> = ({
 
               <button
                 onClick={handleSaveQuickEdit}
-                className="w-full py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl shadow text-sm transition-colors"
+                disabled={isSubmittingQuickEdit}
+                className="w-full py-3 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white font-bold rounded-xl shadow text-sm transition-colors"
               >
-                Save & Update
+                {isSubmittingQuickEdit ? 'Saving...' : 'Save & Update'}
               </button>
             </div>
           )}

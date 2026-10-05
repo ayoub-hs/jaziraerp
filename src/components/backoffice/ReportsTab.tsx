@@ -14,24 +14,9 @@ import {
   ArrowUpRight
 } from 'lucide-react';
 import { formatMoney } from '../../utils/formatters.js';
+import { exportToCsv } from '../../utils/csv.js';
 
 type ReportType = 'SALES_CUSTOMER' | 'SALES_REGISTER' | 'DEBT_PAYMENTS' | 'INVENTORY_VALUATION';
-
-function exportToCsv(filename: string, headers: string[], rows: (string | number)[][]) {
-  const csvContent = [
-    headers.map(h => `"${h.replace(/"/g, '""')}"`).join(','),
-    ...rows.map(row => row.map(cell => `"${String(cell ?? '').replace(/"/g, '""')}"`).join(','))
-  ].join('\n');
-
-  const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-  const url = URL.createObjectURL(blob);
-  const link = document.createElement('a');
-  link.setAttribute('href', url);
-  link.setAttribute('download', `${filename}.csv`);
-  document.body.appendChild(link);
-  link.click();
-  document.body.removeChild(link);
-}
 
 export const ReportsTab: React.FC = () => {
   const [activeReport, setActiveReport] = useState<ReportType>('SALES_CUSTOMER');
