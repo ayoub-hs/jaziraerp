@@ -1,6 +1,6 @@
 import { Router, Request, Response } from 'express';
 import crypto from 'crypto';
-import { getDb } from '../db/index.js';
+import { getDb, isUniqueViolation } from '../db/index.js';
 import { round3 } from '../utils/money.js';
 import { calculateSessionExpectedCash } from '../services/registerService.js';
 
@@ -178,14 +178,36 @@ registerRouter.post('/open', (req: Request, res: Response) => {
   }
 
   const id = crypto.randomUUID();
-  const sessionNumber = generateSessionNumber(db);
   const now = new Date().toISOString();
   const floatCash = round3(Number(opening_cash) || 0);
 
-  db.prepare(`
-    INSERT INTO register_sessions (id, session_number, counter_name, opened_at, opening_cash, status, notes)
-    VALUES (?, ?, ?, ?, ?, 'OPEN', ?)
-  `).run(id, sessionNumber, counter_name, now, floatCash, notes);
+  // The partial unique index idx_one_open_session_per_counter makes the
+  // check-then-insert above atomic: a concurrent open for the same counter
+  // fails here and maps to the same 400 instead of a 500.
+  let sessionNumber = generateSessionNumber(db);
+  for (let attempt = 0; attempt < 3; attempt++) {
+    try {
+      db.prepare(`
+        INSERT INTO register_sessions (id, session_number, counter_name, opened_at, opening_cash, status, notes)
+        VALUES (?, ?, ?, ?, ?, 'OPEN', ?)
+      `).run(id, sessionNumber, counter_name, now, floatCash, notes);
+      break;
+    } catch (err: any) {
+      if (!isUniqueViolation(err)) throw err;
+      const clash: any = db.prepare(`
+        SELECT id FROM register_sessions WHERE counter_name = ? AND status = 'OPEN' AND id != ?
+      `).get(counter_name, id);
+      if (clash) {
+        res.status(400).json({
+          error: `Counter "${counter_name}" already has an open session (ID: ${clash.id}). Close it first.`
+        });
+        return;
+      }
+      // Session-number clash: regenerate and retry.
+      sessionNumber = generateSessionNumber(db);
+      if (attempt === 2) throw err;
+    }
+  }
 
   const created: any = db.prepare('SELECT * FROM register_sessions WHERE id = ?').get(id);
   res.status(201).json(created);

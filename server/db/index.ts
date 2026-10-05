@@ -60,6 +60,9 @@ export function getDb(customPath?: string): DatabaseType {
     db.exec('CREATE INDEX IF NOT EXISTS idx_customer_payments_date ON customer_payments(date)');
     db.exec('CREATE INDEX IF NOT EXISTS idx_supplier_payments_date ON supplier_payments(date)');
     db.exec('CREATE INDEX IF NOT EXISTS idx_refunds_date ON refunds(date)');
+    // One open session per counter, enforced at the DB level so concurrent
+    // POST /api/register/open calls cannot both succeed (check-then-insert race).
+    db.exec("CREATE UNIQUE INDEX IF NOT EXISTS idx_one_open_session_per_counter ON register_sessions(counter_name) WHERE status = 'OPEN'");
   } catch {}
 
   try {
@@ -86,6 +89,17 @@ export function closeDb(): void {
     dbInstance.close();
     dbInstance = null;
   }
+}
+
+/**
+ * True when err is a SQLite UNIQUE constraint violation (better-sqlite3).
+ * Used to retry sequential-number inserts (receipt/ticket/batch numbers are
+ * COUNT(*)+1 and can collide under concurrent duplicate submits).
+ */
+export function isUniqueViolation(err: any): boolean {
+  const code = String(err?.code || '');
+  const msg = String(err?.message || '');
+  return code === 'SQLITE_CONSTRAINT_UNIQUE' || msg.includes('UNIQUE constraint failed');
 }
 
 export function cleanupOldSettings(db: DatabaseType): void {

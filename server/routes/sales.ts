@@ -1,6 +1,6 @@
 import { Router, Request, Response } from 'express';
 import crypto from 'crypto';
-import { getDb } from '../db/index.js';
+import { getDb, isUniqueViolation } from '../db/index.js';
 import { round3, addMoney, subtractMoney, multiplyMoney, calculateTaxBreakdown, calculateResellerPrice } from '../utils/money.js';
 import { calculateContainersNeeded } from '../utils/container.js';
 import { businessDateKey, tunisDayRangeUTC, isFilterDay } from '../utils/businessDate.js';
@@ -441,7 +441,7 @@ salesRouter.post('/', (req: Request, res: Response) => {
   const openCashDrawer = cashAmount > 0; // Drawer kicks ONLY if sale includes cash
 
   const saleId = crypto.randomUUID();
-  const receiptNumber = generateReceiptNumber(db);
+  let receiptNumber = generateReceiptNumber(db);
   let createdTicket: any = null;
   const containerLoansCreated: any[] = [];
 
@@ -633,14 +633,27 @@ salesRouter.post('/', (req: Request, res: Response) => {
     }
   });
 
-  try {
-    saleTx();
-  } catch (err: any) {
-    if (err?.message?.startsWith('INSUFFICIENT_WALLET:')) {
-      res.status(400).json({ error: err.message.replace('INSUFFICIENT_WALLET: ', '') });
-      return;
+  // Receipt numbers are COUNT(*)+1: on a concurrent duplicate-submit clash,
+  // regenerate and retry instead of surfacing a 500.
+  let saleCommitted = false;
+  for (let attempt = 0; attempt < 3 && !saleCommitted; attempt++) {
+    try {
+      saleTx();
+      saleCommitted = true;
+    } catch (err: any) {
+      if (err?.message?.startsWith('INSUFFICIENT_WALLET:')) {
+        res.status(400).json({ error: err.message.replace('INSUFFICIENT_WALLET: ', '') });
+        return;
+      }
+      if (isUniqueViolation(err) && attempt < 2) {
+        receiptNumber = generateReceiptNumber(db);
+        // Tx aborted, but JS-side collectors may hold partial entries: reset.
+        createdTicket = null;
+        containerLoansCreated.length = 0;
+        continue;
+      }
+      throw err;
     }
-    throw err;
   }
 
   res.status(201).json({
@@ -913,7 +926,7 @@ export function processRefund(saleId: string, req: Request, res: Response) {
   }
 
   const refundId = crypto.randomUUID();
-  const refundNumber = generateRefundNumber(db);
+  let refundNumber = generateRefundNumber(db);
   let updatedTicketStatus: any = null;
   let newSaleStatus = 'PARTIALLY_REFUNDED';
 
@@ -1031,7 +1044,22 @@ export function processRefund(saleId: string, req: Request, res: Response) {
     `).run(newSaleStatus, sale.id);
   });
 
-  refundTx();
+  for (let attempt = 0; attempt < 3; attempt++) {
+    try {
+      refundTx();
+      break;
+    } catch (err: any) {
+      if (isUniqueViolation(err) && attempt < 2) {
+        // Tx aborted: reset tx-assigned outputs (processedRefundItems is only
+        // read inside the tx, so it stays intact for the retry).
+        refundNumber = generateRefundNumber(db);
+        updatedTicketStatus = null;
+        newSaleStatus = 'PARTIALLY_REFUNDED';
+        continue;
+      }
+      throw err;
+    }
+  }
 
   res.status(201).json({
     id: refundId,

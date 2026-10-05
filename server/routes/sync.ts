@@ -1,6 +1,6 @@
 import { Router, Request, Response } from 'express';
 import crypto from 'crypto';
-import { getDb } from '../db/index.js';
+import { getDb, isUniqueViolation } from '../db/index.js';
 import { round3, addMoney, calculateTaxBreakdown } from '../utils/money.js';
 import { calculateContainersNeeded } from '../utils/container.js';
 import { businessDateKey } from '../utils/businessDate.js';
@@ -113,7 +113,7 @@ syncRouter.post('/flush', (req: Request, res: Response) => {
   for (const op of operations) {
     const { temp_client_id, action_type, payload } = op;
 
-    try {
+    {
       const opTx = db.transaction(() => {
         if (action_type === 'SALE') {
           const clientId = temp_client_id || payload?.temp_client_id;
@@ -645,13 +645,23 @@ syncRouter.post('/flush', (req: Request, res: Response) => {
       }
     });
 
-    opTx();
-  } catch (err: any) {
-    failed.push({
-      temp_client_id,
-      action_type,
-      reason: err.message || 'OP_FAILED'
-    });
+    // Sequential numbers (receipt/ticket) are COUNT(*)+1: on a concurrent
+    // clash, the tx aborts before any push, so re-running regenerates numbers.
+    let flushed = false;
+    for (let attempt = 0; attempt < 3 && !flushed; attempt++) {
+      try {
+        opTx();
+        flushed = true;
+      } catch (err: any) {
+        if (isUniqueViolation(err) && attempt < 2) continue;
+        failed.push({
+          temp_client_id,
+          action_type,
+          reason: err.message || 'OP_FAILED'
+        });
+        break;
+      }
+    }
   }
 }
 

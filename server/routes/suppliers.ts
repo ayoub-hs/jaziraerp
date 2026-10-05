@@ -1,6 +1,6 @@
 import { Router, Request, Response } from 'express';
 import crypto from 'crypto';
-import { getDb } from '../db/index.js';
+import { getDb, isUniqueViolation } from '../db/index.js';
 import { round3, addMoney, multiplyMoney } from '../utils/money.js';
 import { recordMaterialPriceHistory } from './materials.js';
 import { allocateSupplierPayment } from '../services/debtService.js';
@@ -346,7 +346,7 @@ purchasesRouter.post('/', (req: Request, res: Response) => {
   }
 
   const purchaseId = crypto.randomUUID();
-  const purchaseNumber = generatePurchaseNumber(db);
+  let purchaseNumber = generatePurchaseNumber(db);
   const now = new Date().toISOString();
 
   let totalAmount = 0;
@@ -522,7 +522,19 @@ purchasesRouter.post('/', (req: Request, res: Response) => {
     }
   });
 
-  purchaseTx();
+  for (let attempt = 0; attempt < 3; attempt++) {
+    try {
+      purchaseTx();
+      break;
+    } catch (err: any) {
+      if (isUniqueViolation(err) && attempt < 2) {
+        purchaseNumber = generatePurchaseNumber(db);
+        createdTicket = null;
+        continue;
+      }
+      throw err;
+    }
+  }
 
   res.status(201).json({
     id: purchaseId,

@@ -1,6 +1,6 @@
 import { Router, Request, Response } from 'express';
 import crypto from 'crypto';
-import { getDb } from '../db/index.js';
+import { getDb, isUniqueViolation } from '../db/index.js';
 import { round3 } from '../utils/money.js';
 import { businessDateKey } from '../utils/businessDate.js';
 import { calculateBatchRequirements } from '../services/costingService.js';
@@ -99,7 +99,8 @@ productionRouter.post('/batches', (req: Request, res: Response) => {
 
   const units = Number(units_produced);
   const batchRequirements = calculateBatchRequirements(db, formulation_id, units);
-  const finalBatchNumber = batch_number ? String(batch_number).trim() : generateBatchNumber(db);
+  const autoNumber = !batch_number || String(batch_number).trim().length === 0;
+  let finalBatchNumber = autoNumber ? generateBatchNumber(db) : String(batch_number).trim();
   const batchId = crypto.randomUUID();
   const now = new Date().toISOString();
 
@@ -180,7 +181,22 @@ productionRouter.post('/batches', (req: Request, res: Response) => {
     );
   });
 
-  executeTx();
+  for (let attempt = 0; attempt < 3; attempt++) {
+    try {
+      executeTx();
+      break;
+    } catch (err: any) {
+      if (isUniqueViolation(err)) {
+        if (autoNumber && attempt < 2) {
+          finalBatchNumber = generateBatchNumber(db);
+          continue;
+        }
+        res.status(409).json({ error: `Batch number already exists: ${finalBatchNumber}` });
+        return;
+      }
+      throw err;
+    }
+  }
 
   const createdBatch: any = db.prepare(`
     SELECT pb.*, f.name as formulation_name, p.name as target_product_name, p.size_label, p.stock_quantity as new_stock_quantity
