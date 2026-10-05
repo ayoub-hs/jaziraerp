@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { X, Printer } from 'lucide-react';
 import type { SaleSummary } from '../../types/index.js';
 import { formatMoney, formatDateTime } from '../../utils/formatters.js';
+import { calculateCartTotals } from '../../utils/cart.js';
 import { webUsbPrinter } from '../../services/hardware/webusb.js';
 import { webBluetoothPrinter } from '../../services/hardware/webbluetooth.js';
 import { clientDb } from '../../db/clientDb.js';
@@ -38,15 +39,39 @@ export const ReceiptPrintModal: React.FC<ReceiptPrintModalProps> = ({
         const pending = await clientDb.pending_sync_queue.where('temp_client_id').equals(id).first();
         if (pending && pending.payload) {
           const p = pending.payload;
+          // New payloads carry totals (DesktopPos/MobileRegister include them).
+          // Fallback: recompute from queued items for payloads queued before
+          // totals were included, so the reprint never shows 0.000 DT.
+          let subtotalHT = Number(p.subtotal_ht) || 0;
+          let tvaAmount = Number(p.tva_amount) || 0;
+          let totalTTC = Number(p.total_ttc) || 0;
+          if ((!totalTTC || !subtotalHT) && Array.isArray(p.items) && p.items.length > 0) {
+            try {
+              const recomputed = calculateCartTotals(
+                p.items.map((it: any) => ({
+                  quantity: Number(it.quantity) || 0,
+                  unit_price: Number(it.unit_price) || 0,
+                  pack_multiplier: Number(it.pack_multiplier) || 1,
+                  discount_amount: Number(it.discount_amount) || 0
+                })) as any,
+                Number(p.total_discount) || 0
+              );
+              subtotalHT = recomputed.subtotalHT;
+              tvaAmount = recomputed.tvaAmount;
+              totalTTC = recomputed.totalTTC;
+            } catch {
+              // keep payload values on recompute failure
+            }
+          }
           setSale({
             id: p.temp_client_id || id,
             receipt_number: 'REC-OFFLINE-' + id.slice(5, 13).toUpperCase(),
             date: p.date || pending.created_at,
             customer_name: p.customer_name || 'Passager',
-            subtotal_ht: p.subtotal_ht || 0,
+            subtotal_ht: subtotalHT,
             tva_rate: 0.19,
-            tva_amount: p.tva_amount || 0,
-            total_ttc: p.total_ttc || 0,
+            tva_amount: tvaAmount,
+            total_ttc: totalTTC,
             total_discount: p.total_discount || 0,
             cash_paid: p.cash_paid || 0,
             wallet_paid: p.wallet_paid || 0,

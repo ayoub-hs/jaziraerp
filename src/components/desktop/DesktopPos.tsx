@@ -854,6 +854,9 @@ export const DesktopPos: React.FC<DesktopPosProps> = ({
               loan_container: Boolean(item.loan_container)
             })),
             total_discount: tender.total_discount !== undefined ? tender.total_discount : saleDiscount,
+            subtotal_ht: totals.subtotalHT,
+            tva_amount: totals.tvaAmount,
+            total_ttc: totals.totalTTC,
             cash_paid: tender.cash_paid,
             cash_tendered: tender.cash_tendered !== undefined ? tender.cash_tendered : tender.cash_paid,
             wallet_paid: tender.wallet_paid,
