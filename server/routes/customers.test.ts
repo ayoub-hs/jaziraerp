@@ -192,13 +192,81 @@ describe('Customers, Debt Tickets & Wallet Module', () => {
     // Statement ledger wallet balance (credits minus debits) equals customers.wallet_balance
     const statement = await request(app).get(`/api/customers/${res.body.id}/statement`);
     expect(statement.status).toBe(200);
-    const walletLines = statement.body.filter((l: any) => l.entry_type === 'WALLET');
+    const walletLines = statement.body.wallet.entries;
     const ledgerBalance = walletLines.reduce((sum: number, l: any) => sum + (l.credit || 0) - (l.debit || 0), 0);
     expect(Math.round(ledgerBalance * 1000) / 1000).toBe(res.body.wallet_balance);
 
     // No register cash movement was created
     const movements: any[] = getDb().prepare('SELECT * FROM register_cash_movements').all();
     expect(movements).toHaveLength(0);
+    resetTestDb();
+  });
+
+  it('splits the statement into debt and wallet ledgers matching total_debt and wallet_balance', async () => {
+    resetTestDb();
+    const db = getDb();
+
+    // Customer + open session + product for the wallet sale
+    const custRes = await request(app).post('/api/customers').send({ name: 'Ledger Client', type: 'RETAIL' });
+    const customerId = custRes.body.id;
+    await request(app).post('/api/register/open').send({ counter_name: 'Countertop', opening_cash: 100 });
+    const famRes = await request(app).post('/api/products/families').send({ name: 'Ledger Fam', category: 'C', type: 'RESALE' });
+    const prodRes = await request(app).post('/api/products').send({ family_id: famRes.body.id, name: 'Ledger Prod', stock_quantity: 100, retail_price: 60 });
+
+    // Debt ticket of 27
+    db.prepare(`
+      INSERT INTO customer_debt_tickets (id, ticket_number, customer_id, date, total_amount, remaining_amount, status, created_at, updated_at)
+      VALUES ('tkt-27', 'TKT-27', ?, '2026-09-07T10:00:00Z', 27.000, 27.000, 'UNPAID', '2026-09-07T10:00:00Z', '2026-09-07T10:00:00Z')
+    `).run(customerId);
+
+    // Payment of 37 = 27 applied to the ticket + 10 overpayment to wallet
+    const payRes = await request(app).post(`/api/customers/${customerId}/payments`).send({ amount: 37.000 });
+    expect(payRes.status).toBe(200);
+
+    // Top-up 100, then wallet sale of 54
+    expect((await request(app).post(`/api/customers/${customerId}/wallet/top-up`).send({ amount: 100.000 })).status).toBe(201);
+    const saleRes = await request(app).post('/api/sales').send({
+      customer_id: customerId,
+      items: [{ product_id: prodRes.body.id, quantity: 1, unit_price: 54.000 }],
+      wallet_paid: 54.000,
+      cash_paid: 0
+    });
+    expect(saleRes.status).toBe(201);
+
+    const statement = await request(app).get(`/api/customers/${customerId}/statement`);
+    expect(statement.status).toBe(200);
+
+    // Debt ledger: ticket 27 in, only 27 applied out -> 0
+    expect(statement.body.debt.final_balance).toBe(0);
+    const debtRefs = statement.body.debt.entries.map((e: any) => [e.entry_type, e.debit, e.credit]);
+    expect(debtRefs).toContainEqual(['TICKET', 27, 0]);
+    expect(debtRefs).toContainEqual(['PAYMENT', 0, 27]);
+    expect(statement.body.debt.entries.some((e: any) => e.entry_type === 'PAYMENT' && e.credit === 37)).toBe(false);
+
+    // Wallet ledger: 10 overpayment + 100 top-up in, 54 sale out -> 56
+    expect(statement.body.wallet.final_balance).toBe(56);
+    const walletRefs = statement.body.wallet.entries.map((e: any) => [e.reference, e.credit, e.debit]);
+    expect(walletRefs).toContainEqual(['OVERPAYMENT_DEPOSIT', 10, 0]);
+    expect(walletRefs).toContainEqual(['TOP_UP', 100, 0]);
+    expect(walletRefs).toContainEqual(['SALE_PAYMENT', 0, 54]);
+
+    // Final balances equal the customer record
+    const customer = await request(app).get(`/api/customers/${customerId}`);
+    expect(customer.body.total_debt).toBe(0);
+    expect(customer.body.wallet_balance).toBe(56);
+    expect(statement.body.debt.final_balance).toBe(customer.body.total_debt);
+    expect(statement.body.wallet.final_balance).toBe(customer.body.wallet_balance);
+    resetTestDb();
+  });
+
+  it('shows the opening-wallet Solde initial TOP_UP in the wallet ledger', async () => {
+    resetTestDb();
+    const res = await request(app).post('/api/customers').send({ name: 'Initial Ledger', type: 'RETAIL', wallet_balance: 20 });
+    const statement = await request(app).get(`/api/customers/${res.body.id}/statement`);
+    const initials = statement.body.wallet.entries.filter((e: any) => e.reference === 'TOP_UP' && e.status === 'Solde initial');
+    expect(initials).toHaveLength(1);
+    expect(initials[0].credit).toBe(20);
+    expect(statement.body.wallet.final_balance).toBe(20);
     resetTestDb();
   });
 });
