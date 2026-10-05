@@ -500,6 +500,41 @@ syncRouter.post('/flush', (req: Request, res: Response) => {
           status: 'SYNCED'
         });
       } else if (action_type === 'CASH_MOVEMENT') {
+        const failMovement = (reason: string) => {
+          failed.push({ temp_client_id, action_type: 'CASH_MOVEMENT', reason });
+          return;
+        };
+        // Same rules as online POST /api/register/movement: never trust type,
+        // amount, or session from the queued payload.
+        if (payload.type !== 'CASH_IN' && payload.type !== 'CASH_OUT') {
+          failMovement('type must be CASH_IN or CASH_OUT');
+          return;
+        }
+        const movAmountRaw = Number(payload.amount);
+        if (!Number.isFinite(movAmountRaw)) {
+          failMovement('amount must be a finite number');
+          return;
+        }
+        const movAmount = round3(movAmountRaw);
+        if (movAmount <= 0) {
+          failMovement('amount must be greater than zero');
+          return;
+        }
+        if (!payload.reason || String(payload.reason).trim().length === 0) {
+          failMovement('reason is required');
+          return;
+        }
+        const movSession: any = payload.session_id
+          ? db.prepare('SELECT id, status FROM register_sessions WHERE id = ?').get(payload.session_id)
+          : null;
+        if (!movSession) {
+          failMovement(`Session not found: ${payload.session_id}`);
+          return;
+        }
+        if (movSession.status !== 'OPEN') {
+          failMovement('Cannot log cash movements on a closed session');
+          return;
+        }
         const movId = crypto.randomUUID();
         db.prepare(`
           INSERT INTO register_cash_movements (id, session_id, date, type, amount, reason, created_at)
@@ -509,8 +544,8 @@ syncRouter.post('/flush', (req: Request, res: Response) => {
           payload.session_id,
           payload.date || now,
           payload.type,
-          round3(Number(payload.amount)),
-          payload.reason,
+          movAmount,
+          String(payload.reason).trim(),
           now
         );
 
