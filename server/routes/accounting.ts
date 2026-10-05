@@ -3,6 +3,7 @@ import crypto from 'crypto';
 import { getDb } from '../db/index.js';
 import { round3, addMoney, subtractMoney, multiplyMoney } from '../utils/money.js';
 import { getMaterialUnitCosts } from '../services/costingService.js';
+import { tunisDayRangeUTC, isFilterDay } from '../utils/businessDate.js';
 
 export const accountingRouter = Router();
 
@@ -139,18 +140,39 @@ accountingRouter.get('/cash-flow', (req: Request, res: Response) => {
   const db = getDb();
   const { start_date, end_date } = req.query;
 
+  // Business-day filters: compare against the Tunis local date via UTC range.
+  // Stored timestamps are full ISO instants and sort lexicographically.
   let dateFilter = '';
   const params: any[] = [];
 
   if (start_date && end_date) {
-    dateFilter = ` AND date(date) BETWEEN date(?) AND date(?)`;
-    params.push(String(start_date), String(end_date));
+    const s = String(start_date);
+    const e = String(end_date);
+    if (isFilterDay(s) && isFilterDay(e)) {
+      dateFilter = ` AND date >= ? AND date < ?`;
+      params.push(tunisDayRangeUTC(s).start, tunisDayRangeUTC(e).end);
+    } else {
+      dateFilter = ` AND date(date) BETWEEN date(?) AND date(?)`;
+      params.push(s, e);
+    }
   } else if (start_date) {
-    dateFilter = ` AND date(date) >= date(?)`;
-    params.push(String(start_date));
+    const s = String(start_date);
+    if (isFilterDay(s)) {
+      dateFilter = ` AND date >= ?`;
+      params.push(tunisDayRangeUTC(s).start);
+    } else {
+      dateFilter = ` AND date(date) >= date(?)`;
+      params.push(s);
+    }
   } else if (end_date) {
-    dateFilter = ` AND date(date) <= date(?)`;
-    params.push(String(end_date));
+    const e = String(end_date);
+    if (isFilterDay(e)) {
+      dateFilter = ` AND date < ?`;
+      params.push(tunisDayRangeUTC(e).end);
+    } else {
+      dateFilter = ` AND date(date) <= date(?)`;
+      params.push(e);
+    }
   }
 
   // --- MONEY IN ---

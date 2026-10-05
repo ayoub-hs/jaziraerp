@@ -71,6 +71,35 @@ describe('Reports API Endpoints', () => {
     expect(res.body.summary.total_credit).toBe(20.000);
   });
 
+  it('attributes late-night UTC sales to the next Tunis business day', async () => {
+    await request(app)
+      .post('/api/register/open')
+      .send({ counter_name: 'Countertop', opening_cash: 100 });
+
+    const mkSale = (date: string) =>
+      request(app).post('/api/sales').send({
+        date,
+        items: [{ is_quick_add: 1, quick_add_name: 'Night Item', quantity: 1, unit_price: 10.0 }],
+        cash_paid: 10.0,
+        cash_tendered: 10.0
+      });
+    expect((await mkSale('2026-01-15T23:30:00.000Z')).status).toBe(201);
+    expect((await mkSale('2026-01-15T22:30:00.000Z')).status).toBe(201);
+
+    const nextDay = await request(app).get(
+      '/api/reports/sales-by-customer?start_date=2026-01-16&end_date=2026-01-16'
+    );
+    expect(nextDay.status).toBe(200);
+    expect(nextDay.body.summary.total_sales_count).toBe(1);
+    expect(nextDay.body.summary.total_ttc).toBe(10.0);
+
+    const sameDay = await request(app).get(
+      '/api/reports/sales-by-register?start_date=2026-01-15&end_date=2026-01-15'
+    );
+    expect(sameDay.status).toBe(200);
+    expect(sameDay.body.summary.total_sales_count).toBe(1);
+  });
+
   it('generates Sales by Register report grouped by counter_name', async () => {
     // 1. Open session on Countertop
     const s1 = await request(app)

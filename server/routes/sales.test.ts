@@ -762,6 +762,29 @@ describe('POS Sales & Checkout Module — Real HTTP Integration Tests', () => {
     expect(res.body.error).toMatch(/total_discount/i);
   });
 
+  it('filters by Tunis business day: 23:30 UTC belongs to the next day', async () => {
+    const mkSale = (date: string) =>
+      request(app).post('/api/sales').send({
+        session_id: 'ses-01',
+        date,
+        items: [{ product_id: 'prod-clean-1l', quantity: 1, unit_price: 3.0 }],
+        cash_paid: 3.0,
+        cash_tendered: 3.0
+      });
+
+    expect((await mkSale('2026-01-15T23:30:00.000Z')).status).toBe(201); // 00:30 Tunis 01-16
+    expect((await mkSale('2026-01-15T22:30:00.000Z')).status).toBe(201); // 23:30 Tunis 01-15
+
+    const nextDay = await request(app).get('/api/sales?date=2026-01-16');
+    expect(nextDay.status).toBe(200);
+    expect(nextDay.body).toHaveLength(1);
+    expect(nextDay.body[0].date).toBe('2026-01-15T23:30:00.000Z');
+
+    const sameDay = await request(app).get('/api/sales?date=2026-01-15');
+    expect(sameDay.body).toHaveLength(1);
+    expect(sameDay.body[0].date).toBe('2026-01-15T22:30:00.000Z');
+  });
+
   it('supports listing sales with search, date range, status, limit, and offset filters', async () => {
     const db = getDb();
 

@@ -2,6 +2,7 @@ import { Router, Request, Response } from 'express';
 import { getDb } from '../db/index.js';
 import { round3 } from '../utils/money.js';
 import { getMaterialUnitCosts } from '../services/costingService.js';
+import { tunisDayRangeUTC, isFilterDay } from '../utils/businessDate.js';
 
 export const reportsRouter = Router();
 
@@ -16,14 +17,26 @@ reportsRouter.get('/sales-by-customer', (req: Request, res: Response) => {
   const params: any[] = [];
 
   if (start_date) {
-    whereClause += " AND s.date >= ?";
-    params.push(String(start_date));
+    const day = String(start_date);
+    if (isFilterDay(day)) {
+      whereClause += " AND s.date >= ?";
+      params.push(tunisDayRangeUTC(day).start);
+    } else {
+      whereClause += " AND s.date >= ?";
+      params.push(day);
+    }
   }
   if (end_date) {
-    // If end_date is date-only (10 chars), extend to end of day
-    const endStr = String(end_date).length === 10 ? `${end_date}T23:59:59.999Z` : String(end_date);
-    whereClause += " AND s.date <= ?";
-    params.push(endStr);
+    // Business-day filter: Tunis local end-of-day via UTC range.
+    const day = String(end_date);
+    if (isFilterDay(day)) {
+      whereClause += " AND s.date < ?";
+      params.push(tunisDayRangeUTC(day).end);
+    } else {
+      const endStr = day.length === 10 ? `${day}T23:59:59.999Z` : day;
+      whereClause += " AND s.date <= ?";
+      params.push(endStr);
+    }
   }
   if (customer_id) {
     if (customer_id === 'WALK_IN' || customer_id === 'walk-in') {
@@ -121,13 +134,25 @@ reportsRouter.get('/sales-by-register', (req: Request, res: Response) => {
   const params: any[] = [];
 
   if (start_date) {
-    whereClause += " AND s.date >= ?";
-    params.push(String(start_date));
+    const day = String(start_date);
+    if (isFilterDay(day)) {
+      whereClause += " AND s.date >= ?";
+      params.push(tunisDayRangeUTC(day).start);
+    } else {
+      whereClause += " AND s.date >= ?";
+      params.push(day);
+    }
   }
   if (end_date) {
-    const endStr = String(end_date).length === 10 ? `${end_date}T23:59:59.999Z` : String(end_date);
-    whereClause += " AND s.date <= ?";
-    params.push(endStr);
+    const day = String(end_date);
+    if (isFilterDay(day)) {
+      whereClause += " AND s.date < ?";
+      params.push(tunisDayRangeUTC(day).end);
+    } else {
+      const endStr = day.length === 10 ? `${day}T23:59:59.999Z` : day;
+      whereClause += " AND s.date <= ?";
+      params.push(endStr);
+    }
   }
   if (counter_name) {
     whereClause += " AND LOWER(COALESCE(rs.counter_name, 'Unassigned')) = LOWER(?)";
@@ -219,13 +244,25 @@ reportsRouter.get('/customer-debt-payments', (req: Request, res: Response) => {
   const params: any[] = [];
 
   if (start_date) {
-    whereClause += " AND cp.date >= ?";
-    params.push(String(start_date));
+    const day = String(start_date);
+    if (isFilterDay(day)) {
+      whereClause += " AND cp.date >= ?";
+      params.push(tunisDayRangeUTC(day).start);
+    } else {
+      whereClause += " AND cp.date >= ?";
+      params.push(day);
+    }
   }
   if (end_date) {
-    const endStr = String(end_date).length === 10 ? `${end_date}T23:59:59.999Z` : String(end_date);
-    whereClause += " AND cp.date <= ?";
-    params.push(endStr);
+    const day = String(end_date);
+    if (isFilterDay(day)) {
+      whereClause += " AND cp.date < ?";
+      params.push(tunisDayRangeUTC(day).end);
+    } else {
+      const endStr = day.length === 10 ? `${day}T23:59:59.999Z` : day;
+      whereClause += " AND cp.date <= ?";
+      params.push(endStr);
+    }
   }
   if (customer_id) {
     whereClause += " AND cp.customer_id = ?";

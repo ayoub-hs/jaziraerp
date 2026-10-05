@@ -243,6 +243,26 @@ describe('Inventory Adjustments & Accounting Ledger Module — Real HTTP Integra
     expect(cashFlowRes.body.net_cash_flow).toBe(25.000);
   });
 
+  it('attributes late-night UTC sales to the next Tunis business day in cash-flow', async () => {
+    const saleRes = await request(app)
+      .post('/api/sales')
+      .send({
+        session_id: 'ses-exp-1',
+        date: '2026-01-15T23:30:00.000Z', // 00:30 Tunis 01-16
+        items: [{ is_quick_add: true, quick_add_name: 'Night Detergent', quantity: 1, unit_price: 10.0 }],
+        cash_paid: 10.0,
+        cash_tendered: 10.0
+      });
+    expect(saleRes.status).toBe(201);
+
+    const nextDay = await request(app).get('/api/accounting/cash-flow?start_date=2026-01-16&end_date=2026-01-16');
+    expect(nextDay.status).toBe(200);
+    expect(nextDay.body.money_in.total_in).toBe(10.0);
+
+    const sameDay = await request(app).get('/api/accounting/cash-flow?start_date=2026-01-15&end_date=2026-01-15');
+    expect(sameDay.body.money_in.total_in).toBe(0);
+  });
+
   it('computes stock valuation at cost for raw materials and finished goods via GET /api/accounting/stock-valuation', async () => {
     // Current state:
     // Raw material: mat-labsa-acc: 100 kg @ 5.000 DT/kg = 500.000 DT

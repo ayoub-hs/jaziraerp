@@ -3,7 +3,7 @@ import crypto from 'crypto';
 import { getDb } from '../db/index.js';
 import { round3, addMoney, subtractMoney, multiplyMoney, calculateTaxBreakdown, calculateResellerPrice } from '../utils/money.js';
 import { calculateContainersNeeded } from '../utils/container.js';
-import { businessDateKey } from '../utils/businessDate.js';
+import { businessDateKey, tunisDayRangeUTC, isFilterDay } from '../utils/businessDate.js';
 import { validateSalePayment } from '../utils/payments.js';
 
 export const salesRouter = Router();
@@ -55,20 +55,40 @@ salesRouter.get('/', (req: Request, res: Response) => {
   }
 
   if (date) {
-    query += ` AND date(s.date) = date(?)`;
-    params.push(String(date));
+    // Business-day filter: compare against the Tunis local date via UTC range.
+    const day = String(date);
+    if (isFilterDay(day)) {
+      const range = tunisDayRangeUTC(day);
+      query += ` AND s.date >= ? AND s.date < ?`;
+      params.push(range.start, range.end);
+    } else {
+      query += ` AND date(s.date) = date(?)`;
+      params.push(day);
+    }
   }
 
   const startDate = from_date || start_date || from;
   if (startDate) {
-    query += ` AND date(s.date) >= date(?)`;
-    params.push(String(startDate));
+    const day = String(startDate);
+    if (isFilterDay(day)) {
+      query += ` AND s.date >= ?`;
+      params.push(tunisDayRangeUTC(day).start);
+    } else {
+      query += ` AND date(s.date) >= date(?)`;
+      params.push(day);
+    }
   }
 
   const endDate = to_date || end_date || to;
   if (endDate) {
-    query += ` AND date(s.date) <= date(?)`;
-    params.push(String(endDate));
+    const day = String(endDate);
+    if (isFilterDay(day)) {
+      query += ` AND s.date < ?`;
+      params.push(tunisDayRangeUTC(day).end);
+    } else {
+      query += ` AND date(s.date) <= date(?)`;
+      params.push(day);
+    }
   }
 
   if (status) {
