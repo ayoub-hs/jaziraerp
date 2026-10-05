@@ -2,12 +2,13 @@ import { Router, Request, Response } from 'express';
 import crypto from 'crypto';
 import { getDb } from '../db/index.js';
 import { round3 } from '../utils/money.js';
+import { businessDateKey } from '../utils/businessDate.js';
 import { calculateBatchRequirements } from '../services/costingService.js';
 
 export const productionRouter = Router();
 
 function generateBatchNumber(db: any): string {
-  const dateStr = new Date().toISOString().slice(0, 10).replace(/-/g, '');
+  const dateStr = businessDateKey();
   const prefix = `BAT-${dateStr}-`;
   const countRow: any = db.prepare(`
     SELECT COUNT(*) as cnt FROM production_batches WHERE batch_number LIKE ?

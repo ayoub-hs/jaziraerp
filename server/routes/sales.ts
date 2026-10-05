@@ -3,12 +3,13 @@ import crypto from 'crypto';
 import { getDb } from '../db/index.js';
 import { round3, addMoney, subtractMoney, multiplyMoney, calculateTaxBreakdown, calculateResellerPrice } from '../utils/money.js';
 import { calculateContainersNeeded } from '../utils/container.js';
+import { businessDateKey } from '../utils/businessDate.js';
 import { validateSalePayment } from '../utils/payments.js';
 
 export const salesRouter = Router();
 
 function generateReceiptNumber(db: any): string {
-  const dateStr = new Date().toISOString().slice(0, 10).replace(/-/g, '');
+  const dateStr = businessDateKey();
   const prefix = `REC-${dateStr}-`;
   const countRow: any = db.prepare(`
     SELECT COUNT(*) as cnt FROM sales WHERE receipt_number LIKE ?
@@ -18,7 +19,7 @@ function generateReceiptNumber(db: any): string {
 }
 
 function generateTicketNumber(db: any): string {
-  const dateStr = new Date().toISOString().slice(0, 10).replace(/-/g, '');
+  const dateStr = businessDateKey();
   const prefix = `TKT-${dateStr}-`;
   const countRow: any = db.prepare(`
     SELECT COUNT(*) as cnt FROM customer_debt_tickets WHERE ticket_number LIKE ?
@@ -650,7 +651,7 @@ salesRouter.post('/', (req: Request, res: Response) => {
 });
 
 function generateRefundNumber(db: any): string {
-  const dateStr = new Date().toISOString().slice(0, 10).replace(/-/g, '');
+  const dateStr = businessDateKey();
   const prefix = `REF-${dateStr}-`;
   const countRow: any = db.prepare(`
     SELECT COUNT(*) as cnt FROM refunds WHERE refund_number LIKE ?
