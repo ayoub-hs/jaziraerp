@@ -3,12 +3,15 @@
  * Guards against CSV formula injection: text cells starting with = + - @
  * are prefixed with an apostrophe (numeric values untouched).
  */
+/** Plain decimal amounts (e.g. "-308.000", "+10") are data, not formulas. */
+const PLAIN_NUMBER = /^[+-]?\d+([.,]\d+)?$/;
+
 export function escapeCsvCell(cell: string | number): string {
   if (typeof cell === 'number') {
     return `"${String(cell)}"`;
   }
   const text = String(cell ?? '');
-  const guarded = /^[=+\-@]/.test(text) ? `'${text}` : text;
+  const guarded = /^[=+\-@]/.test(text) && !PLAIN_NUMBER.test(text) ? `'${text}` : text;
   return `"${guarded.replace(/"/g, '""')}"`;
 }
 
