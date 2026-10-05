@@ -294,11 +294,14 @@ export function buildReceiptEscPosBuffer(sale: any, storeName?: string, customDb
   twoCol('TOTAL TTC:', formatMoneyDinars(sale?.total_ttc));
   push(0x1b, 0x45, 0x00); // Bold off
 
-  // Payments
+  // Payments (cash_tendered is not stored; re-derive received cash as applied + change)
   divider('-');
   if ((sale?.cash_paid || 0) > 0) twoCol('Especes:', formatMoneyDinars(sale.cash_paid));
   if ((sale?.wallet_paid || 0) > 0) twoCol('Portefeuille:', formatMoneyDinars(sale.wallet_paid));
   if ((sale?.credit_amount || 0) > 0) twoCol('Bon de Credit:', formatMoneyDinars(sale.credit_amount));
+  if ((sale?.cash_paid || 0) > 0 && (sale?.change_given || 0) > 0) {
+    twoCol('Recu:', formatMoneyDinars(Math.round(((Number(sale.cash_paid) || 0) + (Number(sale.change_given) || 0)) * 1000) / 1000));
+  }
   if ((sale?.change_given || 0) > 0) twoCol('Rendu:', formatMoneyDinars(sale.change_given));
 
   // Footer

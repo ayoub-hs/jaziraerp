@@ -132,6 +132,33 @@ describe('Hardware Router & USB Serial Cash Drawer (HTTP Routes)', () => {
     expect(text).toContain('5.000 DT');
   });
 
+  it('reprint shows received cash (applied + change) and change for over-tendered cash sales', () => {
+    const sale = {
+      receipt_number: 'REC-TENDER-01',
+      date: new Date().toISOString(),
+      customer_name: 'Client Passager',
+      items: [
+        {
+          catalog_product_name: 'Floor Cleaner 1L',
+          quantity: 10,
+          unit_price: 3.000,
+          line_total: 30.000
+        }
+      ],
+      subtotal_ht: 25.210,
+      tva_amount: 4.790,
+      total_ttc: 30.000,
+      cash_paid: 30.000,
+      change_given: 20.000
+    };
+    const buffer = buildReceiptEscPosBuffer(sale);
+    const text = buffer.toString('utf-8');
+    expect(text).toContain('Recu:');
+    expect(text).toContain('50.000 DT');
+    expect(text).toContain('Rendu:');
+    expect(text).toContain('20.000 DT');
+  });
+
   it('c) server text receipt builder: blank values omit lines, filled values appear', () => {
     const db = getDb();
     const sale = {

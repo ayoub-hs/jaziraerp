@@ -250,6 +250,12 @@ export const ReceiptPrintModal: React.FC<ReceiptPrintModalProps> = ({
                     <span>{formatMoney(sale.credit_amount)}</span>
                   </div>
                 )}
+                {(sale.change_given || 0) > 0 && (sale.cash_paid || 0) > 0 && (
+                  <div className="flex justify-between">
+                    <span>Espèces reçues:</span>
+                    <span>{formatMoney((sale.cash_paid || 0) + (sale.change_given || 0))}</span>
+                  </div>
+                )}
                 {(sale.change_given || 0) > 0 && (
                   <div className="flex justify-between text-emerald-700 font-bold">
                     <span>Rendu monnaie:</span>
