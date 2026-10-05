@@ -122,9 +122,26 @@ export class BackupService {
   }
 
   /**
+   * Core business tables a restore file must contain. Deliberately NOT the full
+   * schema: older backups missing newer tables/columns still restore — the app's
+   * normal schema init (CREATE TABLE IF NOT EXISTS + column migrations in
+   * server/db/index.ts, run on every getDb() incl. startup and post-restore
+   * reopen) recreates whatever is missing.
+   */
+  public static readonly CORE_RESTORE_TABLES = [
+    'settings',
+    'product_families',
+    'products',
+    'customers',
+    'register_sessions',
+    'sales',
+    'sale_items'
+  ];
+
+  /**
    * Table names the app expects, derived from server/db/schema.sql.
-   * The app has no version/migrations table: schema is applied with
-   * CREATE TABLE IF NOT EXISTS, so the full table list IS the expectation.
+   * Informational: validation only enforces CORE_RESTORE_TABLES so that older
+   * backups (missing newer tables/columns) still restore cleanly.
    */
   public getRequiredTables(): string[] {
     const schemaPath = path.join(process.cwd(), 'server/db/schema.sql');
@@ -171,7 +188,7 @@ export class BackupService {
       const existing = new Set(
         (checkDb.prepare("SELECT name FROM sqlite_master WHERE type='table'").all() as any[]).map(r => r.name)
       );
-      const missing = this.getRequiredTables().filter(t => !existing.has(t));
+      const missing = BackupService.CORE_RESTORE_TABLES.filter(t => !existing.has(t));
       if (missing.length > 0) {
         throw new Error(`Restore rejected: missing required table(s): ${missing.join(', ')}`);
       }
@@ -254,7 +271,10 @@ export class BackupService {
         try { fs.unlinkSync(`${dbPath}-shm`); } catch {}
       }
 
-      // Re-open DB
+      // Re-open DB. getDb() runs the normal schema init (CREATE TABLE IF NOT
+      // EXISTS + column migrations), so older backups missing newer tables or
+      // columns (e.g. register_cash_movements.expense_id) are migrated here —
+      // the same init also runs on every server startup.
       getDb();
 
       return { success: true, message: 'Database restored successfully' };

@@ -136,6 +136,23 @@ describe('Step 15: Backup Service & Snapshot Verification', () => {
     resetTestDb();
   });
 
+  it('restores an older backup missing a later-added column and migrates it', async () => {
+    resetTestDb();
+    // Simulate an older backup predating the catalog_unit_price migration.
+    getDb().exec('ALTER TABLE sale_items DROP COLUMN catalog_unit_price');
+    const before = getDb().prepare('PRAGMA table_info(sale_items)').all() as any[];
+    expect(before.some(c => c.name === 'catalog_unit_price')).toBe(false);
+
+    const backupMeta = await service.createBackup();
+    const res = await service.restoreBackup({ filename: backupMeta.filename });
+    expect(res.success).toBe(true);
+
+    // Post-restore reopen ran the normal schema init: column is back.
+    const after = getDb().prepare('PRAGMA table_info(sale_items)').all() as any[];
+    expect(after.some(c => c.name === 'catalog_unit_price')).toBe(true);
+    resetTestDb();
+  });
+
   it('restores a valid backup and leaves a pre-restore safety snapshot', async () => {
     resetTestDb();
     getDb().prepare(
