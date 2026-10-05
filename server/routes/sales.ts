@@ -515,14 +515,21 @@ salesRouter.post('/', (req: Request, res: Response) => {
       );
     }
 
-    // D. Deduct Wallet Balance if used
+    // D. Deduct Wallet Balance if used (atomic: re-checked INSIDE the tx so
+    // concurrent sales cannot both pass the pre-check and overdraw).
     if (walletAmount > 0 && customer_id) {
-      db.prepare(`
+      const deduct = db.prepare(`
         UPDATE customers
         SET wallet_balance = wallet_balance - ?,
             updated_at = ?
-        WHERE id = ?
-      `).run(walletAmount, now, customer_id);
+        WHERE id = ? AND wallet_balance >= ?
+      `).run(walletAmount, now, customer_id, walletAmount);
+
+      if (deduct.changes === 0) {
+        throw new Error(
+          `INSUFFICIENT_WALLET: Insufficient wallet balance. Requested: ${walletAmount.toFixed(3)} DT. Adjust wallet amount or pay difference with cash/credit.`
+        );
+      }
 
       db.prepare(`
         INSERT INTO customer_wallet_transactions (id, customer_id, date, type, amount, reference_id, notes, created_at)
@@ -626,7 +633,15 @@ salesRouter.post('/', (req: Request, res: Response) => {
     }
   });
 
-  saleTx();
+  try {
+    saleTx();
+  } catch (err: any) {
+    if (err?.message?.startsWith('INSUFFICIENT_WALLET:')) {
+      res.status(400).json({ error: err.message.replace('INSUFFICIENT_WALLET: ', '') });
+      return;
+    }
+    throw err;
+  }
 
   res.status(201).json({
     id: saleId,
