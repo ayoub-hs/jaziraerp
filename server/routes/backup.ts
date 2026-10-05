@@ -63,6 +63,10 @@ backupRouter.post('/restore', async (req: Request, res: Response) => {
     res.json(result);
   } catch (err: any) {
     console.error('[BackupRoute] Restore error:', err);
-    res.status(500).json({ error: err.message || 'Failed to restore backup' });
+    const msg = err.message || 'Failed to restore backup';
+    // Rejected files (bad SQLite, integrity/FK failure, missing core tables)
+    // are client errors; only snapshot/swap failures are server errors.
+    const status = /^(Restore rejected|Either filename)/.test(msg) ? 400 : 500;
+    res.status(status).json({ error: msg });
   }
 });

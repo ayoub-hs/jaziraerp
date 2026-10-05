@@ -181,28 +181,33 @@ materialsRouter.post('/', (req: Request, res: Response) => {
     ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `);
 
-  insert.run(
-    id,
-    name.trim(),
-    category.trim(),
-    unit.trim(),
-    stock,
-    latest_supplier_id,
-    cost,
-    threshold,
-    now,
-    now
-  );
+  // Insert + initial price history are one atomic unit: a history-write
+  // failure must not leave an orphan material behind.
+  const createTx = db.transaction(() => {
+    insert.run(
+      id,
+      name.trim(),
+      category.trim(),
+      unit.trim(),
+      stock,
+      latest_supplier_id,
+      cost,
+      threshold,
+      now,
+      now
+    );
 
-  // If initial cost or supplier provided, record in history
-  if (cost > 0 || latest_supplier_id) {
-    recordMaterialPriceHistory(db, {
-      materialId: id,
-      costPerUnit: cost,
-      supplierId: latest_supplier_id,
-      date: now
-    });
-  }
+    // If initial cost or supplier provided, record in history
+    if (cost > 0 || latest_supplier_id) {
+      recordMaterialPriceHistory(db, {
+        materialId: id,
+        costPerUnit: cost,
+        supplierId: latest_supplier_id,
+        date: now
+      });
+    }
+  });
+  createTx();
 
   const created = db.prepare(`
     SELECT m.*, s.name as latest_supplier_name

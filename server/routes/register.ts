@@ -292,7 +292,12 @@ registerRouter.post('/close', (req: Request, res: Response) => {
   }
 
   const cashAudit = calculateSessionExpectedCash(db, session_id);
-  const counted = round3(Number(counted_cash));
+  const countedRaw = Number(counted_cash);
+  if (!Number.isFinite(countedRaw) || countedRaw < 0) {
+    res.status(400).json({ error: 'counted_cash must be a finite non-negative number' });
+    return;
+  }
+  const counted = round3(countedRaw);
   const difference = round3(counted - cashAudit.expected_cash);
   const now = new Date().toISOString();
 

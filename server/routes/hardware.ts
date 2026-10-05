@@ -164,11 +164,10 @@ export function checkPrinterStatus(): {
 
 function formatMoneyDinars(val: any): string {
   if (val === undefined || val === null) return '0.000 DT';
-  const num = Number(val) || 0;
-  // Handle if passed in millimes (e.g. from dummy test 1000):
-  if (num >= 500 && Number.isInteger(num)) {
-    return `${(num / 1000).toFixed(3)} DT`;
-  }
+  const num = Number(val);
+  if (!Number.isFinite(num)) return '0.000 DT';
+  // All amounts in this ERP are dinars (3-decimal millimes). No millime
+  // heuristic: a plain 500 DT total must print as 500.000 DT, not 0.500 DT.
   return `${num.toFixed(3)} DT`;
 }
 

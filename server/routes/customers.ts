@@ -378,12 +378,14 @@ customersRouter.delete('/:id', (req: Request, res: Response) => {
     return;
   }
 
-  // Check references: sales, customer_debt_tickets, customer_container_loans
+  // Check references: sales, debt tickets, container loans, payments, wallet ledger
   const hasSales: any = db.prepare('SELECT COUNT(*) as count FROM sales WHERE customer_id = ?').get(req.params.id);
   const hasTickets: any = db.prepare('SELECT COUNT(*) as count FROM customer_debt_tickets WHERE customer_id = ?').get(req.params.id);
   const hasLoans: any = db.prepare('SELECT COUNT(*) as count FROM customer_container_loans WHERE customer_id = ?').get(req.params.id);
+  const hasPayments: any = db.prepare('SELECT COUNT(*) as count FROM customer_payments WHERE customer_id = ?').get(req.params.id);
+  const hasWalletTx: any = db.prepare('SELECT COUNT(*) as count FROM customer_wallet_transactions WHERE customer_id = ?').get(req.params.id);
 
-  const isReferenced = (hasSales?.count > 0) || (hasTickets?.count > 0) || (hasLoans?.count > 0);
+  const isReferenced = (hasSales?.count > 0) || (hasTickets?.count > 0) || (hasLoans?.count > 0) || (hasPayments?.count > 0) || (hasWalletTx?.count > 0);
 
   if (isReferenced) {
     db.prepare('UPDATE customers SET active = 0, updated_at = ? WHERE id = ?').run(new Date().toISOString(), req.params.id);

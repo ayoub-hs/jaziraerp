@@ -880,6 +880,13 @@ export function processRefund(saleId: string, req: Request, res: Response) {
     return;
   }
 
+  // Wallet refunds need a customer ledger: never silently drop the payout on
+  // walk-in sales (total_refunded would still be recorded).
+  if (walletPayout > 0 && !sale.customer_id) {
+    res.status(400).json({ error: 'Cannot refund to wallet: sale has no customer. Refund to cash instead.' });
+    return;
+  }
+
   // Cash refunds require an active open register session
   if (cashPayout > 0) {
     if (openSessions.length === 0) {

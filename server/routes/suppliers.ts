@@ -157,12 +157,13 @@ suppliersRouter.delete('/:id', (req: Request, res: Response) => {
     return;
   }
 
-  // Check references: purchases, supplier_debt_tickets, raw_materials
+  // Check references: purchases, supplier_debt_tickets, raw_materials, supplier_payments
   const hasPurchases: any = db.prepare('SELECT COUNT(*) as count FROM purchases WHERE supplier_id = ?').get(req.params.id);
   const hasTickets: any = db.prepare('SELECT COUNT(*) as count FROM supplier_debt_tickets WHERE supplier_id = ?').get(req.params.id);
   const hasMaterials: any = db.prepare('SELECT COUNT(*) as count FROM raw_materials WHERE latest_supplier_id = ?').get(req.params.id);
+  const hasPayments: any = db.prepare('SELECT COUNT(*) as count FROM supplier_payments WHERE supplier_id = ?').get(req.params.id);
 
-  const isReferenced = (hasPurchases?.count > 0) || (hasTickets?.count > 0) || (hasMaterials?.count > 0);
+  const isReferenced = (hasPurchases?.count > 0) || (hasTickets?.count > 0) || (hasMaterials?.count > 0) || (hasPayments?.count > 0);
 
   if (isReferenced) {
     db.prepare('UPDATE suppliers SET active = 0, updated_at = ? WHERE id = ?').run(new Date().toISOString(), req.params.id);
@@ -385,6 +386,16 @@ purchasesRouter.post('/', (req: Request, res: Response) => {
     : null;
 
   if (cashPaid !== null) {
+    if (!Number.isFinite(cashPaid) || cashPaid < 0) {
+      res.status(400).json({ error: 'cash_paid must be a finite non-negative number' });
+      return;
+    }
+    // Overpay is rejected loudly: change is handed back at the counter, never
+    // silently swallowed into the ticket ledger.
+    if (round3(cashPaid) > round3(totalAmount)) {
+      res.status(400).json({ error: `cash_paid (${round3(cashPaid).toFixed(3)} DT) exceeds purchase total (${round3(totalAmount).toFixed(3)} DT). Return the change instead.` });
+      return;
+    }
     if (cashPaid >= totalAmount) {
       payment_status = 'PAID';
     } else {
