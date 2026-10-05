@@ -249,6 +249,34 @@ describe('Offline Storage & Sync Engine Module (HTTP Routes)', () => {
     expect(badFlush.body.reconciled[0].temp_client_id).toBe('temp-sync-return-fix');
   });
 
+  it('excludes deactivated products and families from GET /api/sync/pull', async () => {
+    const famRes = await request(app)
+      .post('/api/products/families')
+      .send({ name: 'Pull Filter Fam', category: 'C', type: 'RESALE' });
+    const prodRes = await request(app)
+      .post('/api/products')
+      .send({ family_id: famRes.body.id, name: 'Pull Filter Prod', stock_quantity: 5, retail_price: 10 });
+    const fam2Res = await request(app)
+      .post('/api/products/families')
+      .send({ name: 'Pull Gone Fam', category: 'C', type: 'RESALE' });
+    const prod2Res = await request(app)
+      .post('/api/products')
+      .send({ family_id: fam2Res.body.id, name: 'Pull Gone Prod', stock_quantity: 5, retail_price: 10 });
+
+    // Deactivate one product and one whole family
+    expect((await request(app).put(`/api/products/${prod2Res.body.id}`).send({ active: 0 })).status).toBe(200);
+    expect((await request(app).put(`/api/products/families/${fam2Res.body.id}`).send({ active: 0 })).status).toBe(200);
+
+    const pull = await request(app).get('/api/sync/pull');
+    expect(pull.status).toBe(200);
+    const productIds = pull.body.products.map((p: any) => p.id);
+    expect(productIds).toContain(prodRes.body.id);
+    expect(productIds).not.toContain(prod2Res.body.id);
+    const familyIds = pull.body.families.map((f: any) => f.id);
+    expect(familyIds).toContain(famRes.body.id);
+    expect(familyIds).not.toContain(fam2Res.body.id);
+  });
+
   it('idempotently skips and reconciles duplicate SALE op with existing synced_from_client_id', async () => {
     const salePayload = {
       cash_paid: 10,
