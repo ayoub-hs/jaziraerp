@@ -1,12 +1,14 @@
 import { describe, it, expect } from 'vitest';
 import {
   getProductPriceForCustomer,
+  getProductPackPrice,
   calculateCartTotals,
   validateSplitPayment,
+  buildPaymentPayload,
   parseSizeToLiters,
   calculateContainersNeeded
 } from './cart.js';
-import type { Customer, Product, CartItem } from '../types/index.js';
+import type { Customer, Product, CartItem, PackSize } from '../types/index.js';
 
 describe('Cart Utilities', () => {
   const dummyProduct: Product = {
@@ -58,6 +60,78 @@ describe('Cart Utilities', () => {
         wallet_balance: 0
       };
       expect(getProductPriceForCustomer(dummyProduct, cust)).toBe(2.520);
+    });
+  });
+
+  describe('getProductPackPrice', () => {
+    const packSizeWithOverride: PackSize = {
+      id: 'pack-6',
+      product_id: 'prod-1',
+      pack_label: 'Carton 6x1L',
+      multiplier: 6,
+      price_override: 19.500
+    };
+
+    const packSizeWithoutOverride: PackSize = {
+      id: 'pack-12',
+      product_id: 'prod-1',
+      pack_label: 'Carton 12x1L',
+      multiplier: 12,
+      price_override: null
+    };
+
+    it('uses price_override for walk-in / null customer', () => {
+      // 6 * 3.500 = 21.000, but override is 19.500
+      expect(getProductPackPrice(dummyProduct, null, packSizeWithOverride, 6)).toBe(19.500);
+    });
+
+    it('uses price_override for RETAIL customer', () => {
+      const retailCustomer: Customer = {
+        id: 'c1',
+        name: 'Retail Joe',
+        type: 'RETAIL',
+        reseller_discount_percent: 0,
+        wallet_balance: 0
+      };
+      expect(getProductPackPrice(dummyProduct, retailCustomer, packSizeWithOverride, 6)).toBe(19.500);
+    });
+
+    it('ignores price_override and uses wholesale price * multiplier for WHOLESALE customer', () => {
+      const wholesaleCustomer: Customer = {
+        id: 'c2',
+        name: 'Supermarket Wholesale',
+        type: 'WHOLESALE',
+        reseller_discount_percent: 0,
+        wallet_balance: 0
+      };
+      // wholesale price 2.800 * 6 = 16.800
+      expect(getProductPackPrice(dummyProduct, wholesaleCustomer, packSizeWithOverride, 6)).toBe(16.800);
+    });
+
+    it('ignores price_override and applies discount to wholesale price for RESELLER customer', () => {
+      const resellerCustomer: Customer = {
+        id: 'c3',
+        name: 'Reseller Ahmed',
+        type: 'RESELLER',
+        reseller_discount_percent: 10, // 2.800 * 0.9 = 2.520
+        wallet_balance: 0
+      };
+      // 2.520 * 6 = 15.120
+      expect(getProductPackPrice(dummyProduct, resellerCustomer, packSizeWithOverride, 6)).toBe(15.120);
+    });
+
+    it('multiplies base price by pack multiplier when pack has no price override', () => {
+      // Retail: 3.500 * 12 = 42.000
+      expect(getProductPackPrice(dummyProduct, null, packSizeWithoutOverride, 12)).toBe(42.000);
+    });
+
+    it('multiplies base price when packMultiplier > 1 without packSize object', () => {
+      // Retail: 3.500 * 4 = 14.000
+      expect(getProductPackPrice(dummyProduct, null, null, 4)).toBe(14.000);
+    });
+
+    it('returns base price for single item (multiplier = 1, no packSize)', () => {
+      expect(getProductPackPrice(dummyProduct, null, null, 1)).toBe(3.500);
     });
   });
 
@@ -158,6 +232,45 @@ describe('Cart Utilities', () => {
       const res = validateSplitPayment(50.000, 10.000, 15.000, 25.000, customerWithWallet);
       expect(res.valid).toBe(true);
       expect(res.changeDue).toBe(0);
+    });
+  });
+
+  describe('buildPaymentPayload', () => {
+    it('caps applied cash at total when over-tendered (tender 50 on 30)', () => {
+      expect(buildPaymentPayload(30.0, 50.0, 0, 0)).toEqual({
+        cash_paid: 30.0,
+        cash_tendered: 50.0,
+        wallet_paid: 0,
+        credit_amount: 0
+      });
+    });
+
+    it('passes through exact tender unchanged', () => {
+      expect(buildPaymentPayload(30.0, 30.0, 0, 0)).toEqual({
+        cash_paid: 30.0,
+        cash_tendered: 30.0,
+        wallet_paid: 0,
+        credit_amount: 0
+      });
+    });
+
+    it('deducts wallet before applying cash, keeping tendered for change', () => {
+      // Total 30, wallet 10, tender 50 -> applied 20, change 30
+      expect(buildPaymentPayload(30.0, 50.0, 10.0, 0)).toEqual({
+        cash_paid: 20.0,
+        cash_tendered: 50.0,
+        wallet_paid: 10.0,
+        credit_amount: 0
+      });
+    });
+
+    it('applies zero cash for wallet+credit only sales', () => {
+      expect(buildPaymentPayload(30.0, 0, 10.0, 20.0)).toEqual({
+        cash_paid: 0,
+        cash_tendered: 0,
+        wallet_paid: 10.0,
+        credit_amount: 20.0
+      });
     });
   });
 

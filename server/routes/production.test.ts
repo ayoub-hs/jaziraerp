@@ -4,6 +4,7 @@ import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { calculateBatchRequirements } from '../services/costingService.js';
+import { resetTestDb, app, request } from '../../tests/testApp.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -166,5 +167,75 @@ describe('Production Batches Module', () => {
     const updatedBottle: any = db.prepare('SELECT stock_quantity FROM raw_materials WHERE id = ?').get('pkg-bot-1l');
     // Stock is now -100 (negative stock recorded)
     expect(updatedBottle.stock_quantity).toBe(-100);
+  });
+
+  it('rejects batches for RESALE families and mismatched formulations via HTTP', async () => {
+    resetTestDb();
+    const mat = await request(app).post('/api/materials').send({ name: 'M', category: 'c', unit: 'kg', stock_quantity: 100, latest_purchase_cost: 1 });
+    const formA = await request(app).post('/api/formulations').send({
+      name: 'Form A', base_yield_quantity: 10, base_yield_unit: 'pcs',
+      items: [{ material_id: mat.body.id, quantity_required: 1 }]
+    });
+    const formB = await request(app).post('/api/formulations').send({
+      name: 'Form B', base_yield_quantity: 10, base_yield_unit: 'pcs',
+      items: [{ material_id: mat.body.id, quantity_required: 1 }]
+    });
+    const famMfg = await request(app).post('/api/products/families').send({
+      name: 'Fam Mfg', category: 'C', type: 'MANUFACTURED', formulation_id: formA.body.id
+    });
+    const famResale = await request(app).post('/api/products/families').send({
+      name: 'Fam Resale', category: 'C', type: 'RESALE'
+    });
+    const prodMfg = await request(app).post('/api/products').send({ family_id: famMfg.body.id, name: 'P Mfg', stock_quantity: 0 });
+    const prodResale = await request(app).post('/api/products').send({ family_id: famResale.body.id, name: 'P Resale', stock_quantity: 0 });
+
+    // RESALE family target -> 400, nothing produced
+    const resaleRes = await request(app).post('/api/production/batches').send({
+      formulation_id: formA.body.id, target_product_id: prodResale.body.id, units_produced: 5
+    });
+    expect(resaleRes.status).toBe(400);
+    expect(resaleRes.body.error).toMatch(/MANUFACTURED/i);
+
+    // Mismatched formulation -> 400
+    const mismatchRes = await request(app).post('/api/production/batches').send({
+      formulation_id: formB.body.id, target_product_id: prodMfg.body.id, units_produced: 5
+    });
+    expect(mismatchRes.status).toBe(400);
+    expect(mismatchRes.body.error).toMatch(/does not match/i);
+
+    // Matching family + formulation -> 201
+    const okRes = await request(app).post('/api/production/batches').send({
+      formulation_id: formA.body.id, target_product_id: prodMfg.body.id, units_produced: 5
+    });
+    expect(okRes.status).toBe(201);
+    resetTestDb();
+  });
+
+  it('returns batch detail with output units, consumed materials and stored costs via HTTP', async () => {
+    resetTestDb();
+    const mat = await request(app).post('/api/materials').send({ name: 'MD', category: 'c', unit: 'kg', stock_quantity: 100, latest_purchase_cost: 2 });
+    const form = await request(app).post('/api/formulations').send({
+      name: 'Form D', base_yield_quantity: 10, base_yield_unit: 'pcs',
+      items: [{ material_id: mat.body.id, quantity_required: 3 }]
+    });
+    const fam = await request(app).post('/api/products/families').send({
+      name: 'Fam D', category: 'C', type: 'MANUFACTURED', formulation_id: form.body.id
+    });
+    const prod = await request(app).post('/api/products').send({ family_id: fam.body.id, name: 'Prod D', stock_quantity: 0 });
+    const batchRes = await request(app).post('/api/production/batches').send({
+      formulation_id: form.body.id, target_product_id: prod.body.id, units_produced: 20
+    });
+    expect(batchRes.status).toBe(201);
+
+    const detail = await request(app).get(`/api/production/batches/${batchRes.body.id}`);
+    expect(detail.status).toBe(200);
+    expect(detail.body.units_produced).toBe(20);
+    expect(detail.body.total_batch_cost).toBe(12.000); // 6kg @ 2
+    expect(detail.body.cost_per_unit).toBe(0.6);
+    expect(detail.body.materials_consumed).toHaveLength(1);
+    expect(detail.body.materials_consumed[0].quantity_consumed).toBe(6);
+    expect(detail.body.materials_consumed[0].unit_cost).toBe(2.000);
+    expect(detail.body.materials_consumed[0].total_cost).toBe(12.000);
+    resetTestDb();
   });
 });

@@ -34,6 +34,9 @@ export function getDb(customPath?: string): DatabaseType {
   const schemaSql = fs.readFileSync(schemaPath, 'utf8');
   db.exec(schemaSql);
 
+  // Clean up old placeholder settings
+  cleanupOldSettings(db);
+
   // Auto-migrate active columns for existing databases
   const ensureColumn = (table: string, column: string, def: string) => {
     try {
@@ -49,6 +52,15 @@ export function getDb(customPath?: string): DatabaseType {
   ensureColumn('customers', 'active', 'INTEGER NOT NULL DEFAULT 1');
   ensureColumn('suppliers', 'active', 'INTEGER NOT NULL DEFAULT 1');
   ensureColumn('container_types', 'active', 'INTEGER NOT NULL DEFAULT 1');
+  ensureColumn('sale_items', 'catalog_unit_price', 'REAL');
+  ensureColumn('register_cash_movements', 'expense_id', 'TEXT REFERENCES general_expenses(id) ON DELETE SET NULL');
+  try {
+    db.exec('CREATE INDEX IF NOT EXISTS idx_register_movements_expense ON register_cash_movements(expense_id)');
+    db.exec('CREATE INDEX IF NOT EXISTS idx_general_expenses_date ON general_expenses(date)');
+    db.exec('CREATE INDEX IF NOT EXISTS idx_customer_payments_date ON customer_payments(date)');
+    db.exec('CREATE INDEX IF NOT EXISTS idx_supplier_payments_date ON supplier_payments(date)');
+    db.exec('CREATE INDEX IF NOT EXISTS idx_refunds_date ON refunds(date)');
+  } catch {}
 
   try {
     const counterCount: any = db.prepare('SELECT COUNT(*) as count FROM counters').get();
@@ -76,4 +88,20 @@ export function closeDb(): void {
   }
 }
 
+export function cleanupOldSettings(db: DatabaseType): void {
+  try {
+    const oldPlaceholders = [
+      'Route de Gabès Km 3.5, Sfax, Tunisie',
+      '+216 74 000 000',
+      '1234567/A/M/000'
+    ];
+    const update = db.prepare("UPDATE settings SET value = '' WHERE value = ?");
+    for (const ph of oldPlaceholders) {
+      update.run(ph);
+    }
+    db.prepare("INSERT OR IGNORE INTO settings (key, value) VALUES ('shop_subtitle', '')").run();
+  } catch {}
+}
+
 export default getDb;
+

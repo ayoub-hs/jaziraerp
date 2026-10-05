@@ -216,12 +216,18 @@ describe('Backoffice Creation Modals & Flows Integration Tests', () => {
   });
 
   it('8. CreateExpenseModal flow: records general expense with category and note', async () => {
+    const ses = await request(app)
+      .post('/api/register/open')
+      .send({ opening_cash: 100.000 })
+      .expect(201);
     const expRes = await request(app)
       .post('/api/accounting/expenses')
       .send({
         amount: 85.5,
         category: 'Électricité & Eau (Utilities)',
         description: 'Facture STEG compteur magasin',
+        payment_source: 'REGISTER_CASH',
+        session_id: ses.body.id,
         date: new Date().toISOString().slice(0, 10)
       })
       .expect(201);

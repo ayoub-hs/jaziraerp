@@ -71,6 +71,35 @@ describe('Reports API Endpoints', () => {
     expect(res.body.summary.total_credit).toBe(20.000);
   });
 
+  it('attributes late-night UTC sales to the next Tunis business day', async () => {
+    await request(app)
+      .post('/api/register/open')
+      .send({ counter_name: 'Countertop', opening_cash: 100 });
+
+    const mkSale = (date: string) =>
+      request(app).post('/api/sales').send({
+        date,
+        items: [{ is_quick_add: 1, quick_add_name: 'Night Item', quantity: 1, unit_price: 10.0 }],
+        cash_paid: 10.0,
+        cash_tendered: 10.0
+      });
+    expect((await mkSale('2026-01-15T23:30:00.000Z')).status).toBe(201);
+    expect((await mkSale('2026-01-15T22:30:00.000Z')).status).toBe(201);
+
+    const nextDay = await request(app).get(
+      '/api/reports/sales-by-customer?start_date=2026-01-16&end_date=2026-01-16'
+    );
+    expect(nextDay.status).toBe(200);
+    expect(nextDay.body.summary.total_sales_count).toBe(1);
+    expect(nextDay.body.summary.total_ttc).toBe(10.0);
+
+    const sameDay = await request(app).get(
+      '/api/reports/sales-by-register?start_date=2026-01-15&end_date=2026-01-15'
+    );
+    expect(sameDay.status).toBe(200);
+    expect(sameDay.body.summary.total_sales_count).toBe(1);
+  });
+
   it('generates Sales by Register report grouped by counter_name', async () => {
     // 1. Open session on Countertop
     const s1 = await request(app)
@@ -192,5 +221,77 @@ describe('Reports API Endpoints', () => {
     expect(res.body.summary.material_cost_valuation).toBe(200.000);
     // Grand total = 320.000 DT
     expect(res.body.summary.grand_total_cost_valuation).toBe(320.000);
+  });
+
+  it('correctly nets out refunds in sales-by-customer and sales-by-register reports', async () => {
+    // 1. Open register
+    const regRes = await request(app)
+      .post('/api/register/open')
+      .send({ counter_name: 'Countertop', opening_cash: 100 });
+    const sessionId = regRes.body.id;
+
+    // 2. Create customer
+    const custRes = await request(app)
+      .post('/api/customers')
+      .send({ name: 'Net Report Test Client', phone: '99000111' });
+    const customerId = custRes.body.id;
+
+    // 3. Make sale: 100 DT split payment (60 cash, 40 credit)
+    const saleRes = await request(app)
+      .post('/api/sales')
+      .send({
+        session_id: sessionId,
+        customer_id: customerId,
+        date: '2026-09-08T10:00:00Z',
+        items: [{ is_quick_add: 1, quick_add_name: 'Industrial Cleaner 20L', quantity: 2, unit_price: 50.000 }],
+        subtotal_ht: 84.034,
+        tva_rate: 0.19,
+        tva_amount: 15.966,
+        total_ttc: 100.000,
+        cash_paid: 60.000,
+        credit_amount: 40.000
+      });
+    expect(saleRes.status).toBe(201);
+    const sale = saleRes.body.sale;
+
+    // 4. Perform refund of 1 item (50 DT): 30 cash refund, 20 credit reduction
+    const saleItemId = sale.items[0].id;
+    const refRes = await request(app)
+      .post(`/api/sales/${sale.id}/refund`)
+      .send({
+        items: [{ sale_item_id: saleItemId, quantity: 1 }],
+        cash_refunded: 30.000,
+        credit_reduced: 20.000,
+        reason: 'Customer returned 1 item'
+      });
+    expect(refRes.status).toBe(201);
+
+    // 5. Verify /api/reports/sales-by-customer
+    const custReport = await request(app).get(`/api/reports/sales-by-customer?customer_id=${customerId}`);
+    expect(custReport.status).toBe(200);
+    const row = custReport.body.customer_sales[0];
+    expect(row.gross_ttc).toBe(100.000);
+    expect(row.refunded_amount).toBe(50.000);
+    expect(row.net_ttc).toBe(50.000);
+    expect(row.total_ttc).toBe(50.000); // Netted
+    expect(row.cash_paid).toBe(30.000); // 60 - 30 = 30
+    expect(row.credit_amount).toBe(20.000); // 40 - 20 = 20
+
+    // Summary checks
+    expect(custReport.body.summary.total_gross_ttc).toBe(100.000);
+    expect(custReport.body.summary.total_refunded).toBe(50.000);
+    expect(custReport.body.summary.total_net_ttc).toBe(50.000);
+    expect(custReport.body.summary.total_cash).toBe(30.000);
+    expect(custReport.body.summary.total_credit).toBe(20.000);
+
+    // 6. Verify /api/reports/sales-by-register
+    const regReport = await request(app).get('/api/reports/sales-by-register?counter_name=Countertop');
+    expect(regReport.status).toBe(200);
+    const regRow = regReport.body.register_sales[0];
+    expect(regRow.gross_ttc).toBe(100.000);
+    expect(regRow.refunded_amount).toBe(50.000);
+    expect(regRow.net_ttc).toBe(50.000);
+    expect(regRow.cash_paid).toBe(30.000);
+    expect(regRow.credit_amount).toBe(20.000);
   });
 });

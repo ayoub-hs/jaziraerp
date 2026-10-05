@@ -1,7 +1,9 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { X, FileText, Printer } from 'lucide-react';
+import { X, FileText, Printer, AlertCircle } from 'lucide-react';
 import type { SaleSummary } from '../../types/index.js';
 import { formatMoney, formatDate } from '../../utils/formatters.js';
+import { calculateTaxBreakdown } from '../../utils/tax.js';
+import { getShopInfo } from '../../services/shopInfo.js';
 
 interface InvoicePrintModalProps {
   isOpen: boolean;
@@ -16,6 +18,7 @@ export const InvoicePrintModal: React.FC<InvoicePrintModalProps> = ({
 }) => {
   const [sale, setSale] = useState<SaleSummary | null>(null);
   const [loading, setLoading] = useState(false);
+  const shop = getShopInfo();
 
   useEffect(() => {
     if (isOpen && saleId) {
@@ -64,7 +67,13 @@ export const InvoicePrintModal: React.FC<InvoicePrintModalProps> = ({
         </div>
 
         {/* Invoice Page (A4 Aspect) */}
-        <div className="p-8 overflow-y-auto flex-1 bg-slate-100 flex justify-center print:p-0 print:bg-white print:overflow-visible">
+        <div className="p-8 overflow-y-auto flex-1 bg-slate-100 flex flex-col items-center print:p-0 print:bg-white print:overflow-visible">
+          {!shop.tax_id && !loading && (
+            <div className="w-full max-w-2xl print:hidden mb-4 p-3 rounded-xl bg-amber-50 border border-amber-200 text-amber-800 text-xs font-semibold flex items-center gap-2 shadow-sm">
+              <AlertCircle className="w-4 h-4 shrink-0 text-amber-600" />
+              <span>Matricule fiscal non renseigné — voir Paramètres</span>
+            </div>
+          )}
           {loading || !sale ? (
             <div className="py-16 text-center text-sm text-slate-500">Loading invoice document...</div>
           ) : (
@@ -74,13 +83,17 @@ export const InvoicePrintModal: React.FC<InvoicePrintModalProps> = ({
                 <div className="flex justify-between items-start border-b border-slate-200 pb-6 mb-6">
                   <div>
                     <h1 className="text-xl font-black text-slate-900 tracking-tight uppercase">
-                      Société Al Jazira SHSP
+                      {shop.shop_name}
                     </h1>
-                    <p className="text-slate-500 text-xs mt-0.5">Fabrication & Vente de Détergents et Produits d'Hygiène</p>
+                    {shop.shop_subtitle ? (
+                      <p className="text-slate-500 text-xs mt-0.5">{shop.shop_subtitle}</p>
+                    ) : null}
                     <div className="text-[11px] text-slate-600 mt-2 space-y-0.5">
-                      <div>Route de Gabès Km 3.5, Sfax, Tunisie</div>
-                      <div>Tél: +216 74 000 000 / +216 98 000 000</div>
-                      <div>Matricule Fiscal: <span className="font-semibold">1234567/A/M/000</span></div>
+                      {shop.shop_address ? <div>{shop.shop_address}</div> : null}
+                      {shop.shop_phone ? <div>Tél: {shop.shop_phone}</div> : null}
+                      {shop.tax_id ? (
+                        <div>Matricule Fiscal: <span className="font-semibold">{shop.tax_id}</span></div>
+                      ) : null}
                     </div>
                   </div>
 
@@ -124,7 +137,8 @@ export const InvoicePrintModal: React.FC<InvoicePrintModalProps> = ({
                     {sale.items?.map(item => {
                       const name = item.description || item.name || (item as any).catalog_product_name || (item as any).quick_add_name || 'Article';
                       const lineTTC = item.total_line ?? (item as any).line_total ?? (item.quantity * item.unit_price);
-                      const lineHT = Math.round((lineTTC / 1.19) * 1000) / 1000;
+                      const tax = calculateTaxBreakdown(lineTTC, 0.19);
+                      const lineHT = tax.subtotalHT;
                       const unitHT = Math.round((lineHT / (item.quantity || 1)) * 1000) / 1000;
                       return (
                         <tr key={item.id} className="text-[11px]">
@@ -177,14 +191,10 @@ export const InvoicePrintModal: React.FC<InvoicePrintModalProps> = ({
                         <span className="font-mono">-{formatMoney(sale.total_discount || 0)}</span>
                       </div>
                     )}
-                    <div className="flex justify-between text-slate-600">
-                      <span>Droit de Timbre:</span>
-                      <span className="font-mono">1.000 DT</span>
-                    </div>
                     <div className="flex justify-between text-sm font-black text-slate-900 pt-2 border-t-2 border-slate-800">
                       <span>NET À PAYER TTC:</span>
                       <span className="font-mono text-base text-blue-700">
-                        {formatMoney(sale.total_ttc + 1.000)}
+                        {formatMoney(sale.total_ttc)}
                       </span>
                     </div>
                   </div>

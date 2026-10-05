@@ -1,10 +1,13 @@
 import { clientDb, type PendingSyncItem } from '../db/clientDb.js';
+import { roundMoney } from '../utils/formatters.js';
 
 export type SyncState = 'ONLINE_SYNCED' | 'OFFLINE_PENDING' | 'SYNCING';
 
 export class SyncManager {
   private state: SyncState = 'ONLINE_SYNCED';
-  private listeners: Array<(state: SyncState, pendingCount: number) => void> = [];
+  private listeners: Array<(state: SyncState, pendingCount: number, reviewCount: number) => void> = [];
+  private isFlushing = false;
+  private flushPromise: Promise<{ processed: number }> | null = null;
 
   constructor() {
     if (typeof window !== 'undefined') {
@@ -13,7 +16,7 @@ export class SyncManager {
     }
   }
 
-  public subscribe(fn: (state: SyncState, pendingCount: number) => void): () => void {
+  public subscribe(fn: (state: SyncState, pendingCount: number, reviewCount: number) => void): () => void {
     this.listeners.push(fn);
     this.notify();
     return () => {
@@ -33,18 +36,52 @@ export class SyncManager {
     }
   }
 
+  public async getReviewCount(): Promise<number> {
+    try {
+      return await clientDb.pending_sync_queue.filter(i => Boolean(i.needs_review)).count();
+    } catch {
+      return 0;
+    }
+  }
+
+  public async getReviewItems(): Promise<PendingSyncItem[]> {
+    try {
+      return await clientDb.pending_sync_queue.filter(i => Boolean(i.needs_review)).toArray();
+    } catch {
+      return [];
+    }
+  }
+
+  public async retryReviewItems(): Promise<void> {
+    const items = await this.getReviewItems();
+    for (const item of items) {
+      if (item.queue_id) {
+        await clientDb.pending_sync_queue.update(item.queue_id, {
+          needs_review: false,
+          error: undefined
+        });
+      }
+    }
+    await this.flushSyncQueue();
+  }
+
   private async notify() {
     const count = await this.getPendingCount();
+    const reviewCount = await this.getReviewCount();
     for (const listener of this.listeners) {
-      listener(this.state, count);
+      listener(this.state, count, reviewCount);
     }
   }
 
   private async handleNetworkChange() {
     if (navigator.onLine) {
       const count = await this.getPendingCount();
-      if (count > 0) {
+      const reviewCount = await this.getReviewCount();
+      if (count > reviewCount) {
         await this.flushSyncQueue();
+      } else if (reviewCount > 0) {
+        this.state = 'OFFLINE_PENDING';
+        await this.notify();
       } else {
         this.state = 'ONLINE_SYNCED';
         await this.notify();
@@ -64,10 +101,11 @@ export class SyncManager {
       if (!res.ok) throw new Error(`HTTP error: ${res.status}`);
       const data = await res.json();
 
-      await clientDb.transaction('rw', [clientDb.products, clientDb.customers, clientDb.container_types], async () => {
+      await clientDb.transaction('rw', [clientDb.products, clientDb.customers, clientDb.container_types, clientDb.product_families], async () => {
         await clientDb.products.clear();
         await clientDb.customers.clear();
         await clientDb.container_types.clear();
+        await clientDb.product_families.clear();
 
         if (Array.isArray(data.products)) {
           await clientDb.products.bulkPut(data.products);
@@ -77,6 +115,10 @@ export class SyncManager {
         }
         if (Array.isArray(data.container_types)) {
           await clientDb.container_types.bulkPut(data.container_types);
+        }
+        const families = data.families || data.product_families;
+        if (Array.isArray(families)) {
+          await clientDb.product_families.bulkPut(families);
         }
       });
 
@@ -97,6 +139,24 @@ export class SyncManager {
    */
   public async queueOfflineSale(payload: any): Promise<string> {
     const tempClientId = 'temp_' + crypto.randomUUID();
+
+    // Check and deduct customer wallet balance if used
+    const walletPaid = Number(payload.wallet_paid) || 0;
+    if (walletPaid > 0) {
+      if (!payload.customer_id) {
+        throw new Error('Customer required for wallet payment');
+      }
+      const localCust = await clientDb.customers.get(payload.customer_id);
+      const currentBalance = localCust ? (Number(localCust.wallet_balance) || 0) : 0;
+      if (walletPaid > currentBalance) {
+        throw new Error(`Solde portefeuille insuffisant hors-ligne (Disponible: ${currentBalance.toFixed(3)} DT, Demandé: ${walletPaid.toFixed(3)} DT)`);
+      }
+      if (localCust) {
+        await clientDb.customers.update(payload.customer_id, {
+          wallet_balance: Math.max(0, roundMoney(currentBalance - walletPaid))
+        });
+      }
+    }
 
     // Optimistically deduct local stock in IndexedDB
     try {
@@ -128,7 +188,7 @@ export class SyncManager {
 
     // If online, attempt background flush
     if (typeof navigator !== 'undefined' && navigator.onLine) {
-      this.flushSyncQueue().catch(() => {});
+      this.flushSyncQueue().catch(err => console.error('[SyncManager] Background flush error:', err));
     }
 
     return tempClientId;
@@ -154,7 +214,7 @@ export class SyncManager {
     await this.notify();
 
     if (typeof navigator !== 'undefined' && navigator.onLine) {
-      this.flushSyncQueue().catch(() => {});
+      this.flushSyncQueue().catch(err => console.error('[SyncManager] Background flush error:', err));
     }
 
     return tempClientId;
@@ -163,46 +223,81 @@ export class SyncManager {
   /**
    * Flushes all queued offline actions to the server.
    */
-  public async flushSyncQueue(): Promise<{ processed: number }> {
-    const items = await clientDb.pending_sync_queue.toArray();
-    if (items.length === 0) {
-      this.state = 'ONLINE_SYNCED';
-      await this.notify();
-      return { processed: 0 };
+  public flushSyncQueue(): Promise<{ processed: number }> {
+    if (this.isFlushing && this.flushPromise) {
+      return this.flushPromise;
     }
 
-    this.state = 'SYNCING';
-    await this.notify();
+    this.isFlushing = true;
+    this.flushPromise = (async () => {
+      const items = await clientDb.pending_sync_queue.toArray();
+      const reviewCount = items.filter(i => Boolean(i.needs_review)).length;
+      const itemsToFlush = items.filter(i => !i.needs_review);
 
-    try {
-      const res = await fetch('/api/sync/flush', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ operations: items })
-      });
-
-      if (!res.ok) {
-        throw new Error(`Sync flush failed with status ${res.status}`);
+      if (itemsToFlush.length === 0) {
+        this.state = reviewCount > 0 ? 'OFFLINE_PENDING' : 'ONLINE_SYNCED';
+        await this.notify();
+        return { processed: 0 };
       }
 
-      const data = await res.json();
-
-      // Clear synced items from queue
-      const queueIds = items.map(i => i.queue_id!).filter(Boolean);
-      await clientDb.pending_sync_queue.bulkDelete(queueIds);
-
-      // Refresh master catalog
-      await this.pullMasterCatalog();
-
-      this.state = 'ONLINE_SYNCED';
+      this.state = 'SYNCING';
       await this.notify();
-      return { processed: data.processed_count || items.length };
-    } catch (err) {
-      console.warn('[SyncManager] Flush failed, keeping queue for next retry:', err);
-      this.state = 'OFFLINE_PENDING';
-      await this.notify();
-      throw err;
-    }
+
+      try {
+        const res = await fetch('/api/sync/flush', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ operations: itemsToFlush })
+        });
+
+        if (!res.ok) {
+          throw new Error(`Sync flush failed with status ${res.status}`);
+        }
+
+        const data = await res.json();
+
+        // Flag failed items for manual review in queue
+        if (Array.isArray(data.failed) && data.failed.length > 0) {
+          for (const f of data.failed) {
+            const item = itemsToFlush.find(i => i.temp_client_id === f.temp_client_id);
+            if (item && item.queue_id) {
+              await clientDb.pending_sync_queue.update(item.queue_id, {
+                error: f.reason || 'FAILED',
+                needs_review: true
+              });
+            }
+          }
+        }
+
+        // Delete only the queue items whose temp_client_id appears in the server's reconciled response
+        const reconciledClientIds = new Set((data.reconciled || []).map((r: any) => r.temp_client_id));
+        const queueIdsToDelete = itemsToFlush
+          .filter(i => reconciledClientIds.has(i.temp_client_id) && i.queue_id)
+          .map(i => i.queue_id!);
+
+        if (queueIdsToDelete.length > 0) {
+          await clientDb.pending_sync_queue.bulkDelete(queueIdsToDelete);
+        }
+
+        // Refresh master catalog
+        await this.pullMasterCatalog();
+
+        const remainingCount = await this.getPendingCount();
+        this.state = remainingCount > 0 ? 'OFFLINE_PENDING' : 'ONLINE_SYNCED';
+        await this.notify();
+        return { processed: data.processed_count ?? (data.reconciled ? data.reconciled.length : 0) };
+      } catch (err) {
+        console.warn('[SyncManager] Flush failed, keeping queue for next retry:', err);
+        this.state = 'OFFLINE_PENDING';
+        await this.notify();
+        throw err;
+      }
+    })().finally(() => {
+      this.isFlushing = false;
+      this.flushPromise = null;
+    });
+
+    return this.flushPromise;
   }
 }
 

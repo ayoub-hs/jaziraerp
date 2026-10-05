@@ -4,6 +4,7 @@ import fs from 'fs';
 import path from 'path';
 import os from 'os';
 import { BackupService } from '../services/backupService.js';
+import { resetTestDb, getDb } from '../../tests/testApp.js';
 
 describe('Step 15: Backup Service & Snapshot Verification', () => {
   let tempBackupDir: string;
@@ -101,4 +102,98 @@ describe('Step 15: Backup Service & Snapshot Verification', () => {
     const fakeData = Buffer.from('this is not a sqlite database').toString('base64');
     await expect(service.restoreBackup({ fileData: fakeData })).rejects.toThrow();
   });
+
+  it('rejects a corrupt file and keeps the live DB untouched', async () => {
+    resetTestDb();
+    getDb().prepare(
+      "INSERT INTO customers (id, name, type, created_at, updated_at) VALUES ('cust-live', 'Live Customer', 'RETAIL', '2026-09-07', '2026-09-07')"
+    ).run();
+
+    const corrupt = Buffer.from([0x00, 0x01, 0x02, 0x03, 0xff, 0xfe, 0x00, 0x53, 0x51, 0x4c, 0x69, 0x74, 0x65]).toString('base64');
+    await expect(service.restoreBackup({ fileData: corrupt })).rejects.toThrow(/integrity|readable|SQLite/i);
+
+    // Live DB still intact
+    const row: any = getDb().prepare('SELECT name FROM customers WHERE id = ?').get('cust-live');
+    expect(row?.name).toBe('Live Customer');
+    resetTestDb();
+  });
+
+  it('rejects a foreign SQLite file with wrong tables and keeps the live DB', async () => {
+    resetTestDb();
+    const foreignPath = path.join(tempBackupDir, 'foreign.sqlite');
+    const foreign = new Database(foreignPath);
+    foreign.exec('CREATE TABLE unrelated (id INTEGER PRIMARY KEY, note TEXT)');
+    foreign.exec("INSERT INTO unrelated (note) VALUES ('not our schema')");
+    foreign.close();
+
+    const fileData = fs.readFileSync(foreignPath).toString('base64');
+    await expect(service.restoreBackup({ fileData })).rejects.toThrow(/missing required table/i);
+
+    // No snapshot swap happened: live DB still has full schema, no 'unrelated' table
+    const tables = (getDb().prepare("SELECT name FROM sqlite_master WHERE type='table'").all() as any[]).map(t => t.name);
+    expect(tables).not.toContain('unrelated');
+    expect(tables).toContain('sales');
+    resetTestDb();
+  });
+
+  it('restores an older backup missing a later-added column and migrates it', async () => {
+    resetTestDb();
+    // Simulate an older backup predating the catalog_unit_price migration.
+    getDb().exec('ALTER TABLE sale_items DROP COLUMN catalog_unit_price');
+    const before = getDb().prepare('PRAGMA table_info(sale_items)').all() as any[];
+    expect(before.some(c => c.name === 'catalog_unit_price')).toBe(false);
+
+    const backupMeta = await service.createBackup();
+    const res = await service.restoreBackup({ filename: backupMeta.filename });
+    expect(res.success).toBe(true);
+
+    // Post-restore reopen ran the normal schema init: column is back.
+    const after = getDb().prepare('PRAGMA table_info(sale_items)').all() as any[];
+    expect(after.some(c => c.name === 'catalog_unit_price')).toBe(true);
+    resetTestDb();
+  });
+
+  it('restores a valid backup and leaves a pre-restore safety snapshot', async () => {
+    resetTestDb();
+    getDb().prepare(
+      "INSERT INTO customers (id, name, type, created_at, updated_at) VALUES ('cust-marker', 'Marker', 'RETAIL', '2026-09-07', '2026-09-07')"
+    ).run();
+    const backupMeta = await service.createBackup();
+    getDb().prepare('DELETE FROM customers WHERE id = ?').run('cust-marker');
+
+    const res = await service.restoreBackup({ filename: backupMeta.filename });
+    expect(res.success).toBe(true);
+
+    const row: any = getDb().prepare('SELECT name FROM customers WHERE id = ?').get('cust-marker');
+    expect(row?.name).toBe('Marker');
+
+    const snapshots = fs.readdirSync(tempBackupDir).filter(f => f.startsWith('pre-restore-') && f.endsWith('.sqlite'));
+    expect(snapshots.length).toBe(1);
+    resetTestDb();
+  });
+
+  it('runs initial backup at startup if no backup exists or newest is older than 24h', async () => {
+    // 1. No backup exists -> runs initial backup
+    expect(service.listBackups().length).toBe(0);
+    const ranInitial = await service.checkAndRunInitialBackup();
+    expect(ranInitial).toBe(true);
+    expect(service.listBackups().length).toBe(1);
+
+    // 2. Newest backup is fresh (< 24h) -> does not run backup
+    const ranFresh = await service.checkAndRunInitialBackup();
+    expect(ranFresh).toBe(false);
+    expect(service.listBackups().length).toBe(1);
+
+    // 3. Newest backup is older than 24h -> runs backup
+    const current = service.listBackups()[0];
+    const olderFile = 'backup-2026-10-01_10-00-00.sqlite';
+    fs.renameSync(path.join(tempBackupDir, current.filename), path.join(tempBackupDir, olderFile));
+    const olderDate = new Date(Date.now() - 25 * 60 * 60 * 1000);
+    fs.utimesSync(path.join(tempBackupDir, olderFile), olderDate, olderDate);
+
+    const ranStale = await service.checkAndRunInitialBackup();
+    expect(ranStale).toBe(true);
+    expect(service.listBackups().length).toBe(2);
+  });
 });
+

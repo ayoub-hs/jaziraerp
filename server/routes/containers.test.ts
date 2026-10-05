@@ -111,6 +111,33 @@ describe('Returnable Containers Module — Real HTTP Integration Tests', () => {
     expect(loan.quantity_owed).toBe(2);
   });
 
+  it('rejects RETURN quantity above the customer owed count unless correction=true', async () => {
+    const db = getDb();
+
+    // Customer owes 2 of ct-10l
+    await request(app)
+      .post('/api/containers/transactions')
+      .send({ customer_id: 'cust-cont-1', container_type_id: 'ct-10l', action: 'GIVE', quantity: 2 })
+      .expect(201);
+
+    // Return 5 of 2 owed -> 400, nothing changes
+    const res = await request(app)
+      .post('/api/containers/transactions')
+      .send({ customer_id: 'cust-cont-1', container_type_id: 'ct-10l', action: 'RETURN', quantity: 5 });
+    expect(res.status).toBe(400);
+    expect(res.body.error).toMatch(/owed count/i);
+
+    const loan: any = db.prepare('SELECT quantity_owed FROM customer_container_loans WHERE customer_id = ? AND container_type_id = ?').get('cust-cont-1', 'ct-10l');
+    expect(loan.quantity_owed).toBe(2);
+
+    // Same return with correction=true -> accepted
+    const corrected = await request(app)
+      .post('/api/containers/transactions')
+      .send({ customer_id: 'cust-cont-1', container_type_id: 'ct-10l', action: 'RETURN', quantity: 5, correction: true });
+    expect(corrected.status).toBe(201);
+    expect(corrected.body.customer_quantity_owed).toBe(0);
+  });
+
   it('tracks multiple container types independently per customer via real endpoints', async () => {
     // Customer takes 4 of 10L and 2 of 20L
     await request(app)

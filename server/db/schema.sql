@@ -8,6 +8,13 @@ CREATE TABLE IF NOT EXISTS settings (
     value TEXT NOT NULL
 );
 
+INSERT OR IGNORE INTO settings (key, value) VALUES 
+    ('shop_name', 'Société Al Jazira SHSP'),
+    ('shop_subtitle', ''),
+    ('shop_address', ''),
+    ('shop_phone', ''),
+    ('tax_id', '');
+
 -- 2. Raw Materials & Packaging
 CREATE TABLE IF NOT EXISTS raw_materials (
     id TEXT PRIMARY KEY,
@@ -135,7 +142,7 @@ CREATE TABLE IF NOT EXISTS customers (
     address TEXT,
     type TEXT NOT NULL CHECK (type IN ('RETAIL', 'WHOLESALE', 'RESELLER')),
     reseller_discount_percent REAL NOT NULL DEFAULT 0,
-    wallet_balance REAL NOT NULL DEFAULT 0, -- in TND (3 decimals)
+    wallet_balance REAL NOT NULL DEFAULT 0 CHECK (wallet_balance >= 0), -- in TND (3 decimals)
     active INTEGER NOT NULL DEFAULT 1,
     created_at TEXT NOT NULL,
     updated_at TEXT NOT NULL
@@ -148,7 +155,7 @@ CREATE TABLE IF NOT EXISTS customer_debt_tickets (
     sale_id TEXT REFERENCES sales(id) ON DELETE SET NULL,
     date TEXT NOT NULL,
     total_amount REAL NOT NULL,
-    remaining_amount REAL NOT NULL,
+    remaining_amount REAL NOT NULL CHECK (remaining_amount >= 0),
     status TEXT NOT NULL CHECK (status IN ('UNPAID', 'PARTIALLY_PAID', 'PAID')),
     created_at TEXT NOT NULL,
     updated_at TEXT NOT NULL
@@ -212,7 +219,8 @@ CREATE TABLE IF NOT EXISTS purchase_items (
     product_id TEXT REFERENCES products(id),
     quantity REAL NOT NULL,
     unit_cost REAL NOT NULL,
-    total_cost REAL NOT NULL
+    total_cost REAL NOT NULL,
+    CHECK ((item_type = 'RAW_MATERIAL' AND material_id IS NOT NULL) OR (item_type = 'RESALE_PRODUCT' AND product_id IS NOT NULL))
 );
 
 -- Supplier Debt Ledger (mirrors customer_debt_tickets / customer_payments)
@@ -223,7 +231,7 @@ CREATE TABLE IF NOT EXISTS supplier_debt_tickets (
     purchase_id TEXT REFERENCES purchases(id) ON DELETE SET NULL,
     date TEXT NOT NULL,
     total_amount REAL NOT NULL,
-    remaining_amount REAL NOT NULL,
+    remaining_amount REAL NOT NULL CHECK (remaining_amount >= 0),
     status TEXT NOT NULL CHECK (status IN ('UNPAID', 'PARTIALLY_PAID', 'PAID')),
     created_at TEXT NOT NULL,
     updated_at TEXT NOT NULL
@@ -305,6 +313,7 @@ CREATE TABLE IF NOT EXISTS register_sessions (
 CREATE TABLE IF NOT EXISTS register_cash_movements (
     id TEXT PRIMARY KEY,
     session_id TEXT NOT NULL REFERENCES register_sessions(id) ON DELETE CASCADE,
+    expense_id TEXT REFERENCES general_expenses(id) ON DELETE SET NULL,
     date TEXT NOT NULL,
     type TEXT NOT NULL CHECK (type IN ('CASH_IN', 'CASH_OUT')),
     amount REAL NOT NULL,
@@ -345,8 +354,10 @@ CREATE TABLE IF NOT EXISTS sale_items (
     quantity_refunded REAL NOT NULL DEFAULT 0,
     base_stock_deducted REAL NOT NULL,
     unit_price REAL NOT NULL,
+    catalog_unit_price REAL,
     discount_amount REAL NOT NULL DEFAULT 0,
-    line_total REAL NOT NULL
+    line_total REAL NOT NULL,
+    CHECK (is_quick_add = 1 OR product_id IS NOT NULL)
 );
 
 CREATE TABLE IF NOT EXISTS refunds (
@@ -380,7 +391,8 @@ CREATE TABLE IF NOT EXISTS inventory_adjustments (
     product_id TEXT REFERENCES products(id),
     quantity_delta REAL NOT NULL,
     reason TEXT NOT NULL,
-    created_at TEXT NOT NULL
+    created_at TEXT NOT NULL,
+    CHECK ((item_type = 'RAW_MATERIAL' AND material_id IS NOT NULL) OR (item_type = 'PRODUCT' AND product_id IS NOT NULL))
 );
 
 -- 12. Accounting & Cashflow Ledger
@@ -411,3 +423,8 @@ CREATE INDEX IF NOT EXISTS idx_purchases_supplier ON purchases(supplier_id);
 CREATE INDEX IF NOT EXISTS idx_purchases_date ON purchases(date);
 CREATE INDEX IF NOT EXISTS idx_batches_product ON production_batches(target_product_id);
 CREATE INDEX IF NOT EXISTS idx_register_movements_session ON register_cash_movements(session_id);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_sales_synced_client_id ON sales(synced_from_client_id) WHERE synced_from_client_id IS NOT NULL;
+CREATE INDEX IF NOT EXISTS idx_general_expenses_date ON general_expenses(date);
+CREATE INDEX IF NOT EXISTS idx_customer_payments_date ON customer_payments(date);
+CREATE INDEX IF NOT EXISTS idx_supplier_payments_date ON supplier_payments(date);
+CREATE INDEX IF NOT EXISTS idx_refunds_date ON refunds(date);

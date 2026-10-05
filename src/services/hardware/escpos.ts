@@ -1,5 +1,6 @@
 import type { SaleSummary } from '../../types/index.js';
 import { formatMoney, formatDateTime } from '../../utils/formatters.js';
+import { getShopInfo } from '../shopInfo.js';
 
 export const ESC = 0x1b;
 export const GS = 0x1d;
@@ -111,34 +112,56 @@ export class EscPosBuilder {
   }
 }
 
+export interface EscPosShopInfo {
+  name?: string;
+  subtitle?: string;
+  address?: string;
+  phone?: string;
+  taxId?: string;
+}
+
 /**
  * Builds full 58mm thermal receipt binary payload formatted for ESC/POS printers.
  */
 export function buildReceiptEscPos(
   sale: SaleSummary,
-  shopInfo = {
-    name: 'SOCIETE AL JAZIRA',
-    subtitle: 'SHSP - Detergents & Hygiene',
-    address: 'Route de Gabes Km 3.5, Sfax',
-    phone: '+216 74 000 000',
-    taxId: 'MF: 1234567/A/M/000'
-  }
+  shopInfo?: EscPosShopInfo
 ): Uint8Array {
+  const currentShop = getShopInfo();
+  const info = {
+    name: shopInfo?.name !== undefined ? shopInfo.name : currentShop.shop_name,
+    subtitle: shopInfo?.subtitle !== undefined ? shopInfo.subtitle : currentShop.shop_subtitle,
+    address: shopInfo?.address !== undefined ? shopInfo.address : currentShop.shop_address,
+    phone: shopInfo?.phone !== undefined ? shopInfo.phone : currentShop.shop_phone,
+    taxId: shopInfo?.taxId !== undefined ? shopInfo.taxId : currentShop.tax_id
+  };
+
   const builder = new EscPosBuilder();
 
   // Shop Header
-  builder
-    .alignCenter()
-    .bold(true)
-    .doubleHeight(true)
-    .line(shopInfo.name)
-    .doubleHeight(false)
-    .bold(false)
-    .line(shopInfo.subtitle)
-    .line(shopInfo.address)
-    .line(shopInfo.phone)
-    .line(shopInfo.taxId)
-    .divider('=');
+  builder.alignCenter();
+  if (info.name && info.name.trim()) {
+    builder
+      .bold(true)
+      .doubleHeight(true)
+      .line(info.name.trim())
+      .doubleHeight(false)
+      .bold(false);
+  }
+  if (info.subtitle && info.subtitle.trim()) {
+    builder.line(info.subtitle.trim());
+  }
+  if (info.address && info.address.trim()) {
+    builder.line(info.address.trim());
+  }
+  if (info.phone && info.phone.trim()) {
+    builder.line(info.phone.trim());
+  }
+  if (info.taxId && info.taxId.trim()) {
+    const taxLine = info.taxId.trim().startsWith('MF:') ? info.taxId.trim() : `MF: ${info.taxId.trim()}`;
+    builder.line(taxLine);
+  }
+  builder.divider('=');
 
   // Receipt Info
   builder

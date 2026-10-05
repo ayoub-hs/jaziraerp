@@ -143,6 +143,37 @@ describe('Products & Sizing Model Module (HTTP Routes)', () => {
     expect(p2lCheck.body.stock_quantity).toBe(15);
   });
 
+  it('rejects non-integer multipliers and negative price overrides on pack sizes', async () => {
+    const famRes = await request(app)
+      .post('/api/products/families')
+      .send({ name: 'Pack Validation Fam', category: 'C', type: 'RESALE' });
+    const prodRes = await request(app)
+      .post('/api/products')
+      .send({ family_id: famRes.body.id, name: 'Pack Validation Prod', stock_quantity: 10 });
+    const productId = prodRes.body.id;
+
+    for (const bad of [{ multiplier: 1.5 }, { multiplier: 1 }, { multiplier: 0 }, { multiplier: 'six' }]) {
+      const res = await request(app)
+        .post(`/api/products/${productId}/pack-sizes`)
+        .send({ pack_label: 'Bad Pack', ...bad });
+      expect(res.status).toBe(400);
+    }
+
+    for (const badOverride of [-1, 0, 'free']) {
+      const res = await request(app)
+        .post(`/api/products/${productId}/pack-sizes`)
+        .send({ pack_label: 'Bad Override', multiplier: 6, price_override: badOverride });
+      expect(res.status).toBe(400);
+    }
+
+    // Blank/null override = no override, accepted
+    const blankRes = await request(app)
+      .post(`/api/products/${productId}/pack-sizes`)
+      .send({ pack_label: 'No Override Pack', multiplier: 6, price_override: null });
+    expect(blankRes.status).toBe(201);
+    expect(blankRes.body.price_override).toBeNull();
+  });
+
   it('shares piece stock across pack size multipliers (e.g. 6/12 pcs) via POST /api/products/:id/pack-sizes', async () => {
     // 1. Create family
     const famRes = await request(app)
@@ -325,5 +356,77 @@ describe('Products & Sizing Model Module (HTTP Routes)', () => {
       });
     expect(updateRes.status).toBe(200);
     expect(updateRes.body.cost_reference).toBe(4.5);
+  });
+
+  it('supports active toggle on products and families, with ?active filtering and 409 delete text', async () => {
+    // 1. Create family
+    const famRes = await request(app)
+      .post('/api/products/families')
+      .send({
+        name: 'Active Test Family',
+        category: 'Test Category',
+        type: 'RESALE'
+      });
+    expect(famRes.status).toBe(201);
+    const familyId = famRes.body.id;
+
+    // 2. Create product SKU
+    const prodRes = await request(app)
+      .post('/api/products')
+      .send({
+        family_id: familyId,
+        name: 'Active Test SKU',
+        cost_reference: 2.0,
+        retail_price: 3.5,
+        wholesale_price: 3.0,
+        stock_quantity: 10
+      });
+    expect(prodRes.status).toBe(201);
+    const productId = prodRes.body.id;
+
+    // Default lists should include them
+    const famsBefore = await request(app).get('/api/products/families');
+    expect(famsBefore.body.some((f: any) => f.id === familyId)).toBe(true);
+    const prodsBefore = await request(app).get('/api/products');
+    expect(prodsBefore.body.some((p: any) => p.id === productId)).toBe(true);
+
+    // 3. Deactivate product SKU via PUT
+    const deactivateProdRes = await request(app)
+      .put(`/api/products/${productId}`)
+      .send({ active: 0 });
+    expect(deactivateProdRes.status).toBe(200);
+    expect(deactivateProdRes.body.active).toBe(0);
+
+    // Product should disappear from default list (?active=1)
+    const prodsActiveOnly = await request(app).get('/api/products');
+    expect(prodsActiveOnly.body.some((p: any) => p.id === productId)).toBe(false);
+
+    // Product should appear in ?active=0 and ?active=all
+    const prodsInactiveOnly = await request(app).get('/api/products?active=0');
+    expect(prodsInactiveOnly.body.some((p: any) => p.id === productId)).toBe(true);
+    const prodsAll = await request(app).get('/api/products?active=all');
+    expect(prodsAll.body.some((p: any) => p.id === productId)).toBe(true);
+
+    // 4. Deactivate family via PUT
+    const deactivateFamRes = await request(app)
+      .put(`/api/products/families/${familyId}`)
+      .send({ active: 0 });
+    expect(deactivateFamRes.status).toBe(200);
+    expect(deactivateFamRes.body.active).toBe(0);
+
+    // Family should disappear from default list (?active=1)
+    const famsActiveOnly = await request(app).get('/api/products/families');
+    expect(famsActiveOnly.body.some((f: any) => f.id === familyId)).toBe(false);
+
+    // Family should appear in ?active=0 and ?active=all
+    const famsInactiveOnly = await request(app).get('/api/products/families?active=0');
+    expect(famsInactiveOnly.body.some((f: any) => f.id === familyId)).toBe(true);
+    const famsAll = await request(app).get('/api/products/families?active=all');
+    expect(famsAll.body.some((f: any) => f.id === familyId)).toBe(true);
+
+    // 5. Attempting to delete family with existing SKU returns 409
+    const delFamRes = await request(app).delete(`/api/products/families/${familyId}`);
+    expect(delFamRes.status).toBe(409);
+    expect(delFamRes.body.error).toContain('Please deactivate the family or its SKUs instead');
   });
 });

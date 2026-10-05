@@ -91,6 +91,12 @@ authRouter.post('/setup', (req: Request, res: Response) => {
   }
 
   const db = getDb();
+  const configuredRow: any = db.prepare("SELECT value FROM settings WHERE key = 'is_auth_configured'").get();
+  if (configuredRow && configuredRow.value === 'true') {
+    res.status(400).json({ error: 'Authentication is already configured. Cannot overwrite credentials.' });
+    return;
+  }
+
   const salt = getInstallSalt(db);
   const pinHash = hashSecret(String(pin), salt);
   const masterHash = hashSecret(String(effectivePassword), salt);
@@ -113,8 +119,7 @@ authRouter.post('/setup', (req: Request, res: Response) => {
   res.json({
     success: true,
     configured: true,
-    message: 'Authentication configured successfully',
-    pin_hash: pinHash
+    message: 'Authentication configured successfully'
   });
 });
 
@@ -166,7 +171,6 @@ authRouter.post('/unlock', (req: Request, res: Response) => {
     unlocked: true,
     locked: false,
     message: 'Unlocked successfully',
-    pin_hash: pinHashRow.value,
     shop_name: shopNameRow?.value || 'Société Al Jazira SHSP'
   });
 });

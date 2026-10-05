@@ -223,4 +223,176 @@ describe('Returns & Line-Item Partial Refunds Module — Real HTTP Integration T
     expect(listRes.body).toHaveLength(1);
     expect(listRes.body[0].wallet_refunded).toBe(10.000);
   });
+
+  it('guarantees exact remaining amount is refunded on the last unit of a line without rounding loss', async () => {
+    // 3 items @ 5.000 with 5.000 discount -> line_total = 10.000 DT (3.333333... DT effective each)
+    const saleRes = await request(app)
+      .post('/api/sales')
+      .send({
+        items: [{ is_quick_add: 1, quick_add_name: '3-for-10 Special', quantity: 3, unit_price: 5.000, discount_amount: 5.000 }],
+        subtotal_ht: 8.403,
+        tva_rate: 0.19,
+        tva_amount: 1.597,
+        total_ttc: 10.000,
+        cash_paid: 10.000
+      });
+
+    expect(saleRes.status).toBe(201);
+    const saleId = saleRes.body.sale.id;
+    const db = getDb();
+    const item: any = db.prepare('SELECT id FROM sale_items WHERE sale_id = ?').get(saleId);
+
+    // Refund unit 1: effectiveUnitPrice = 10 / 3 = 3.333 DT
+    const r1 = await request(app)
+      .post(`/api/sales/${saleId}/refund`)
+      .send({
+        items: [{ sale_item_id: item.id, quantity: 1 }],
+        cash_refunded: 3.333
+      });
+    expect(r1.status).toBe(201);
+    expect(r1.body.total_refunded).toBe(3.333);
+
+    // Refund unit 2: effectiveUnitPrice = 10 / 3 = 3.333 DT
+    const r2 = await request(app)
+      .post(`/api/sales/${saleId}/refund`)
+      .send({
+        items: [{ sale_item_id: item.id, quantity: 1 }],
+        cash_refunded: 3.333
+      });
+    expect(r2.status).toBe(201);
+    expect(r2.body.total_refunded).toBe(3.333);
+
+    // Refund unit 3 (last remaining unit): 10.000 - (3.333 + 3.333) = 3.334 DT
+    const r3 = await request(app)
+      .post(`/api/sales/${saleId}/refund`)
+      .send({
+        items: [{ sale_item_id: item.id, quantity: 1 }],
+        cash_refunded: 3.334
+      });
+    expect(r3.status).toBe(201);
+    expect(r3.body.total_refunded).toBe(3.334);
+    expect(r3.body.sale_status).toBe('FULLY_REFUNDED');
+
+    // Total of all 3 refunds equals 10.000 DT exactly
+    const sumRefunds: any = db.prepare('SELECT SUM(total_refunded) as sum FROM refunds WHERE sale_id = ?').get(saleId);
+    expect(sumRefunds.sum).toBe(10.000);
+  });
+
+  it('rejects cash refund with 400 when register session is closed, but links to open session and updates expected cash when open', async () => {
+    const db = getDb();
+
+    // 1. Create a cash sale
+    const saleRes = await request(app)
+      .post('/api/sales')
+      .send({
+        customer_id: 'cust-refund-test',
+        items: [{ product_id: 'prod-bleach', quantity: 2, unit_price: 2.000 }],
+        cash_paid: 4.000,
+        cash_tendered: 4.000
+      });
+    expect(saleRes.status).toBe(201);
+    const saleId = saleRes.body.id;
+    const bleachItem: any = db.prepare('SELECT id FROM sale_items WHERE sale_id = ?').get(saleId);
+
+    // 2. Close the open session
+    db.prepare("UPDATE register_sessions SET status = 'CLOSED' WHERE id = 'ses-refund-test'").run();
+
+    // 3. Attempt cash refund with closed register -> 400
+    const closedRes = await request(app)
+      .post(`/api/sales/${saleId}/refund`)
+      .send({
+        items: [{ sale_item_id: bleachItem.id, quantity: 1 }],
+        cash_refunded: 2.000
+      });
+    expect(closedRes.status).toBe(400);
+    expect(closedRes.body.error).toContain('La caisse est fermée');
+
+    // 4. Reopen register session
+    db.prepare("UPDATE register_sessions SET status = 'OPEN' WHERE id = 'ses-refund-test'").run();
+
+    // 5. Attempt cash refund again -> succeeds (201) and links to open session
+    const openRes = await request(app)
+      .post(`/api/sales/${saleId}/refund`)
+      .send({
+        items: [{ sale_item_id: bleachItem.id, quantity: 1 }],
+        cash_refunded: 2.000
+      });
+    expect(openRes.status).toBe(201);
+
+    const refundRow: any = db.prepare('SELECT session_id FROM refunds WHERE id = ?').get(openRes.body.id);
+    expect(refundRow.session_id).toBe('ses-refund-test');
+  });
+
+  it('supports two open register sessions and accurately tracks expected_cash on the chosen session', async () => {
+    const db = getDb();
+
+    // 1. Session 1 is already seeded ('ses-refund-test', opening_cash 100.000).
+    // Let's create Session 2 ('ses-mobile', opening_cash 50.000).
+    db.prepare(`
+      INSERT INTO register_sessions (id, session_number, counter_name, opened_at, opening_cash, status)
+      VALUES ('ses-mobile', 'SES-MOB-01', 'Mobile Counter', '2026-09-07 09:00:00', 50.000, 'OPEN')
+    `).run();
+
+    // 2. Make a sale on Session 1 for 40.000 DT cash (2x Degreaser @ 20.000 DT)
+    const saleRes = await request(app)
+      .post('/api/sales')
+      .send({
+        customer_id: 'cust-refund-test',
+        session_id: 'ses-refund-test',
+        items: [{ product_id: 'prod-degreaser', quantity: 2, unit_price: 20.000 }],
+        cash_paid: 40.000,
+        cash_tendered: 40.000
+      });
+    expect(saleRes.status).toBe(201);
+    const saleId = saleRes.body.id;
+    const degreaserItem: any = db.prepare('SELECT id FROM sale_items WHERE sale_id = ?').get(saleId);
+
+    // Initial expected_cash check:
+    // Session 1: 100 opening + 40 cash sales = 140.000 DT
+    // Session 2: 50 opening + 0 cash sales = 50.000 DT
+    const status1Before = await request(app).get('/api/register/sessions/ses-refund-test');
+    expect(status1Before.body.live_cash_breakdown.expected_cash).toBe(140.000);
+
+    const status2Before = await request(app).get('/api/register/sessions/ses-mobile');
+    expect(status2Before.body.live_cash_breakdown.expected_cash).toBe(50.000);
+
+    // 3. Process cash refund of 1 unit (20.000 DT) specifically from Session 2 (ses-mobile)
+    const refundMobileRes = await request(app)
+      .post(`/api/sales/${saleId}/refund`)
+      .send({
+        session_id: 'ses-mobile',
+        items: [{ sale_item_id: degreaserItem.id, quantity: 1 }],
+        cash_refunded: 20.000,
+        reason: 'Refunded from mobile counter'
+      });
+    expect(refundMobileRes.status).toBe(201);
+
+    // 4. Assert expected_cash after refunding on Session 2:
+    // Session 1 expected_cash: still 140.000 DT (untouched!)
+    // Session 2 expected_cash: 50 opening - 20 cash refund = 30.000 DT
+    const status1After = await request(app).get('/api/register/sessions/ses-refund-test');
+    expect(status1After.body.live_cash_breakdown.expected_cash).toBe(140.000);
+
+    const status2After = await request(app).get('/api/register/sessions/ses-mobile');
+    expect(status2After.body.live_cash_breakdown.expected_cash).toBe(30.000);
+
+    // 5. Ambiguity test: if no session_id is provided, server defaults to sale's session (ses-refund-test)
+    // Refund the remaining 1 unit (20.000 DT) without specifying session_id
+    const refundDefaultRes = await request(app)
+      .post(`/api/sales/${saleId}/refund`)
+      .send({
+        items: [{ sale_item_id: degreaserItem.id, quantity: 1 }],
+        cash_refunded: 20.000
+      });
+    expect(refundDefaultRes.status).toBe(201);
+
+    // Session 1 expected_cash: 140 - 20 = 120.000 DT
+    // Session 2 expected_cash: still 30.000 DT
+    const status1Final = await request(app).get('/api/register/sessions/ses-refund-test');
+    expect(status1Final.body.live_cash_breakdown.expected_cash).toBe(120.000);
+
+    const status2Final = await request(app).get('/api/register/sessions/ses-mobile');
+    expect(status2Final.body.live_cash_breakdown.expected_cash).toBe(30.000);
+  });
 });
+

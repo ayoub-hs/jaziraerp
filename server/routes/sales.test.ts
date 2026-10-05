@@ -173,6 +173,32 @@ describe('POS Sales & Checkout Module — Real HTTP Integration Tests', () => {
     expect(creditRes.body.should_kick_drawer).toBe(false);
   });
 
+  it('accepts over-tendered cash via buildPaymentPayload output and only counts applied cash in register', async () => {
+    const { calculateSessionExpectedCash } = await import('../services/registerService.js');
+    const db = getDb();
+    const before = calculateSessionExpectedCash(db, 'ses-01');
+    expect(before.expected_cash).toBe(100.0);
+
+    // Exact output of buildPaymentPayload(30, 50, 0, 0): applied 30, tendered 50
+    const res = await request(app)
+      .post('/api/sales')
+      .send({
+        customer_id: 'cust-retail',
+        session_id: 'ses-01',
+        items: [{ product_id: 'prod-clean-1l', quantity: 10, unit_price: 3.0 }],
+        cash_paid: 30.0,
+        cash_tendered: 50.0,
+        wallet_paid: 0,
+        credit_amount: 0
+      });
+
+    expect(res.status).toBe(201);
+    expect(res.body.change_given).toBe(20.0);
+
+    const after = calculateSessionExpectedCash(getDb(), 'ses-01');
+    expect(after.expected_cash).toBe(130.0);
+  });
+
   it('calculates change due correctly on cash tender', async () => {
     const saleTotal = 3.000;
     const cashTendered = 10.000;
@@ -561,4 +587,247 @@ describe('POS Sales & Checkout Module — Real HTTP Integration Tests', () => {
     expect(res.status).toBe(400);
     expect(res.body.error).toContain('caisse est fermée');
   });
+
+  it('computes catalog_unit_price and flags overridden price when operator deviates from catalog price', async () => {
+    // prod-clean-1l has retail_price: 3.000. Operator sells at 3.500 (overridden)
+    const res = await request(app)
+      .post('/api/sales')
+      .send({
+        session_id: 'ses-01',
+        items: [
+          {
+            product_id: 'prod-clean-1l',
+            quantity: 1,
+            unit_price: 3.500
+          }
+        ],
+        cash_paid: 3.500
+      });
+
+    expect(res.status).toBe(201);
+    const saleId = res.body.id;
+
+    const detailRes = await request(app).get(`/api/sales/${saleId}`);
+    expect(detailRes.status).toBe(200);
+    const item = detailRes.body.items[0];
+    expect(item.unit_price).toBe(3.500);
+    expect(item.catalog_unit_price).toBe(3.000);
+    expect(item.overridden).toBe(true);
+  });
+
+  it('computes catalog_unit_price and sets overridden: false when unit_price matches catalog price', async () => {
+    // prod-clean-1l has retail_price: 3.000. Operator sells at 3.000 (standard)
+    const res = await request(app)
+      .post('/api/sales')
+      .send({
+        session_id: 'ses-01',
+        items: [
+          {
+            product_id: 'prod-clean-1l',
+            quantity: 2,
+            unit_price: 3.000
+          }
+        ],
+        cash_paid: 6.000
+      });
+
+    expect(res.status).toBe(201);
+    const saleId = res.body.id;
+
+    const detailRes = await request(app).get(`/api/sales/${saleId}`);
+    expect(detailRes.status).toBe(200);
+    const item = detailRes.body.items[0];
+    expect(item.unit_price).toBe(3.000);
+    expect(item.catalog_unit_price).toBe(3.000);
+    expect(item.overridden).toBe(false);
+  });
+
+  it('legacy sale_items with NULL catalog_unit_price display as overridden: false', async () => {
+    const db = getDb();
+    const legacySaleId = 'sale-legacy-test';
+    const legacyItemId = 'item-legacy-test';
+
+    db.prepare(`
+      INSERT INTO sales (
+        id, receipt_number, session_id, date, subtotal_ht, tva_rate, tva_amount,
+        total_ttc, total_discount, cash_paid, wallet_paid, credit_amount, change_given,
+        status, created_at
+      ) VALUES (?, 'REC-LEGACY', 'ses-01', '2026-09-01', 2.521, 0.19, 0.479, 3.000, 0, 3.000, 0, 0, 0, 'COMPLETED', '2026-09-01')
+    `).run(legacySaleId);
+
+    db.prepare(`
+      INSERT INTO sale_items (
+        id, sale_id, product_id, is_quick_add, pack_multiplier, quantity,
+        quantity_refunded, base_stock_deducted, unit_price, catalog_unit_price, discount_amount, line_total
+      ) VALUES (?, ?, 'prod-clean-1l', 0, 1, 1, 0, 1, 4.000, NULL, 0, 4.000)
+    `).run(legacyItemId, legacySaleId);
+
+    const detailRes = await request(app).get(`/api/sales/${legacySaleId}`);
+    expect(detailRes.status).toBe(200);
+    const item = detailRes.body.items[0];
+    expect(item.catalog_unit_price).toBeNull();
+    expect(item.overridden).toBe(false);
+  });
+
+  it('rejects mismatched pack_size_id that belongs to another product', async () => {
+    const res = await request(app)
+      .post('/api/sales')
+      .send({
+        customer_id: 'cust-retail',
+        session_id: 'ses-01',
+        items: [{ product_id: 'prod-vaisselle-bulk', pack_size_id: 'pack-12-clean', quantity: 1, unit_price: 1.8 }],
+        cash_paid: 1.8,
+        cash_tendered: 1.8
+      });
+
+    expect(res.status).toBe(400);
+    expect(res.body.error).toMatch(/does not belong/i);
+  });
+
+  it('rejects non-finite and negative payment amounts', async () => {
+    const badFinite = await request(app)
+      .post('/api/sales')
+      .send({
+        session_id: 'ses-01',
+        items: [{ product_id: 'prod-clean-1l', quantity: 1, unit_price: 3.0 }],
+        cash_paid: 'not-a-number',
+        cash_tendered: 3.0
+      });
+    expect(badFinite.status).toBe(400);
+    expect(badFinite.body.error).toMatch(/finite/i);
+
+    const negative = await request(app)
+      .post('/api/sales')
+      .send({
+        customer_id: 'cust-wallet',
+        session_id: 'ses-01',
+        items: [{ product_id: 'prod-clean-1l', quantity: 1, unit_price: 3.0 }],
+        cash_paid: 4.0,
+        wallet_paid: -1.0,
+        cash_tendered: 4.0
+      });
+    expect(negative.status).toBe(400);
+    expect(negative.body.error).toMatch(/non-negative/i);
+  });
+
+  it('rejects payment sum mismatch and under-tendered cash', async () => {
+    const mismatch = await request(app)
+      .post('/api/sales')
+      .send({
+        session_id: 'ses-01',
+        items: [{ product_id: 'prod-clean-1l', quantity: 10, unit_price: 3.0 }],
+        cash_paid: 5.0,
+        cash_tendered: 5.0
+      });
+    expect(mismatch.status).toBe(400);
+    expect(mismatch.body.error).toMatch(/does not equal/i);
+
+    const underTendered = await request(app)
+      .post('/api/sales')
+      .send({
+        session_id: 'ses-01',
+        items: [{ product_id: 'prod-clean-1l', quantity: 10, unit_price: 3.0 }],
+        cash_paid: 30.0,
+        cash_tendered: 20.0
+      });
+    expect(underTendered.status).toBe(400);
+    expect(underTendered.body.error).toMatch(/cash_tendered/i);
+  });
+
+  it('computes change server-side and ignores client-supplied change_given', async () => {
+    const res = await request(app)
+      .post('/api/sales')
+      .send({
+        session_id: 'ses-01',
+        items: [{ product_id: 'prod-clean-1l', quantity: 1, unit_price: 3.0 }],
+        cash_paid: 3.0,
+        cash_tendered: 10.0,
+        change_given: 999
+      });
+    expect(res.status).toBe(201);
+    expect(res.body.change_given).toBe(7.0);
+  });
+
+  it('rejects total_discount above the subtotal', async () => {
+    const res = await request(app)
+      .post('/api/sales')
+      .send({
+        session_id: 'ses-01',
+        items: [{ product_id: 'prod-clean-1l', quantity: 1, unit_price: 3.0 }],
+        total_discount: 10.0,
+        cash_paid: 0,
+        cash_tendered: 0
+      });
+    expect(res.status).toBe(400);
+    expect(res.body.error).toMatch(/total_discount/i);
+  });
+
+  it('filters by Tunis business day: 23:30 UTC belongs to the next day', async () => {
+    const mkSale = (date: string) =>
+      request(app).post('/api/sales').send({
+        session_id: 'ses-01',
+        date,
+        items: [{ product_id: 'prod-clean-1l', quantity: 1, unit_price: 3.0 }],
+        cash_paid: 3.0,
+        cash_tendered: 3.0
+      });
+
+    expect((await mkSale('2026-01-15T23:30:00.000Z')).status).toBe(201); // 00:30 Tunis 01-16
+    expect((await mkSale('2026-01-15T22:30:00.000Z')).status).toBe(201); // 23:30 Tunis 01-15
+
+    const nextDay = await request(app).get('/api/sales?date=2026-01-16');
+    expect(nextDay.status).toBe(200);
+    expect(nextDay.body).toHaveLength(1);
+    expect(nextDay.body[0].date).toBe('2026-01-15T23:30:00.000Z');
+
+    const sameDay = await request(app).get('/api/sales?date=2026-01-15');
+    expect(sameDay.body).toHaveLength(1);
+    expect(sameDay.body[0].date).toBe('2026-01-15T22:30:00.000Z');
+  });
+
+  it('supports listing sales with search, date range, status, limit, and offset filters', async () => {
+    const db = getDb();
+
+    // Create 3 sales on different dates and statuses
+    db.prepare(`
+      INSERT INTO sales (
+        id, receipt_number, session_id, customer_id, date, subtotal_ht, tva_rate, tva_amount,
+        total_ttc, total_discount, cash_paid, wallet_paid, credit_amount, change_given,
+        status, created_at
+      ) VALUES
+        ('sale-filter-1', 'REC-ALPHA-01', 'ses-01', 'cust-retail', '2026-09-10 10:00:00', 10, 0.19, 1.9, 11.9, 0, 11.9, 0, 0, 0, 'COMPLETED', '2026-09-10 10:00:00'),
+        ('sale-filter-2', 'REC-BETA-02', 'ses-01', 'cust-wallet', '2026-09-15 12:00:00', 20, 0.19, 3.8, 23.8, 0, 0, 20.0, 3.8, 0, 'PARTIALLY_REFUNDED', '2026-09-15 12:00:00'),
+        ('sale-filter-3', 'REC-GAMMA-03', 'ses-01', 'cust-reseller', '2026-09-20 14:00:00', 30, 0.19, 5.7, 35.7, 0, 35.7, 0, 0, 0, 'FULLY_REFUNDED', '2026-09-20 14:00:00')
+    `).run();
+
+    // 1. Search by receipt number
+    const resSearchRec = await request(app).get('/api/sales?search=ALPHA');
+    expect(resSearchRec.status).toBe(200);
+    expect(resSearchRec.body.length).toBe(1);
+    expect(resSearchRec.body[0].receipt_number).toBe('REC-ALPHA-01');
+
+    // 2. Search by customer name
+    const resSearchCust = await request(app).get('/api/sales?search=Wallet Customer');
+    expect(resSearchCust.status).toBe(200);
+    expect(resSearchCust.body.length).toBe(1);
+    expect(resSearchCust.body[0].receipt_number).toBe('REC-BETA-02');
+
+    // 3. Date range filter
+    const resDateRange = await request(app).get('/api/sales?from_date=2026-09-12&to_date=2026-09-18');
+    expect(resDateRange.status).toBe(200);
+    expect(resDateRange.body.length).toBe(1);
+    expect(resDateRange.body[0].receipt_number).toBe('REC-BETA-02');
+
+    // 4. Status filter
+    const resStatus = await request(app).get('/api/sales?status=FULLY_REFUNDED');
+    expect(resStatus.status).toBe(200);
+    expect(resStatus.body.length).toBe(1);
+    expect(resStatus.body[0].receipt_number).toBe('REC-GAMMA-03');
+
+    // 5. Pagination: limit and offset
+    const resPaginated = await request(app).get('/api/sales?limit=2&offset=1');
+    expect(resPaginated.status).toBe(200);
+    expect(resPaginated.body.length).toBe(2);
+  });
 });
+

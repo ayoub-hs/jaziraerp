@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { X, Receipt, AlertCircle } from 'lucide-react';
 
 interface CreateExpenseModalProps {
@@ -35,6 +35,25 @@ export const CreateExpenseModal: React.FC<CreateExpenseModalProps> = ({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  // Open register sessions for REGISTER_CASH (same pattern as RefundModal)
+  const [openSessions, setOpenSessions] = useState<any[]>([]);
+  const [selectedSessionId, setSelectedSessionId] = useState<string>('');
+
+  useEffect(() => {
+    if (!isOpen) return;
+    fetch('/api/register/open-sessions')
+      .then(res => (res.ok ? res.json() : []))
+      .then((sessions: any[]) => {
+        setOpenSessions(sessions || []);
+        setSelectedSessionId(prev => {
+          if (prev && sessions.some(s => s.id === prev)) return prev;
+          if (activeSessionId && sessions.some(s => s.id === activeSessionId)) return activeSessionId;
+          return sessions.length > 0 ? sessions[0].id : '';
+        });
+      })
+      .catch(() => setOpenSessions([]));
+  }, [isOpen, activeSessionId]);
+
   if (!isOpen) return null;
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -51,6 +70,12 @@ export const CreateExpenseModal: React.FC<CreateExpenseModalProps> = ({
       ? customCategory.trim()
       : category;
 
+    const sessionId = paymentSource === 'REGISTER_CASH' ? selectedSessionId || null : null;
+    if (paymentSource === 'REGISTER_CASH' && !sessionId) {
+      setError('Aucune session de caisse ouverte. Ouvrez une caisse pour payer depuis le tiroir.');
+      return;
+    }
+
     setIsSubmitting(true);
     try {
       const res = await fetch('/api/accounting/expenses', {
@@ -60,7 +85,7 @@ export const CreateExpenseModal: React.FC<CreateExpenseModalProps> = ({
           category: finalCategory,
           amount: expenseAmount,
           payment_source: paymentSource,
-          session_id: paymentSource === 'REGISTER_CASH' ? activeSessionId || null : null,
+          session_id: sessionId,
           description: description.trim() || null
         })
       });
@@ -168,11 +193,33 @@ export const CreateExpenseModal: React.FC<CreateExpenseModalProps> = ({
           </div>
 
           {paymentSource === 'REGISTER_CASH' && (
-            <div className="p-2.5 bg-amber-50 rounded-xl border border-amber-200 text-amber-800 text-[11px] leading-relaxed">
-              <strong>Notice:</strong> Paying from the register drawer will automatically record a{' '}
-              <span className="font-mono font-bold">CASH_OUT</span> movement linked to session{' '}
-              <span className="font-mono font-bold">{activeSessionId ? activeSessionId.slice(0, 8) : 'Active'}</span>.
-            </div>
+            openSessions.length === 0 ? (
+              <div className="p-2.5 bg-rose-50 rounded-xl border border-rose-200 text-rose-800 text-[11px] leading-relaxed flex items-center gap-2">
+                <AlertCircle className="w-4 h-4 shrink-0" />
+                <span>La caisse est fermée. Une session de caisse ouverte est obligatoire pour payer depuis le tiroir.</span>
+              </div>
+            ) : openSessions.length === 1 ? (
+              <div className="p-2.5 bg-amber-50 rounded-xl border border-amber-200 text-amber-800 text-[11px] leading-relaxed">
+                <strong>Notice:</strong> Paying from the register drawer will automatically record a{' '}
+                <span className="font-mono font-bold">CASH_OUT</span> movement linked to session{' '}
+                <span className="font-mono font-bold">{openSessions[0].counter_name} ({openSessions[0].session_number})</span>.
+              </div>
+            ) : (
+              <div>
+                <label className="block font-bold text-slate-700 mb-1">Caisse débitée (session ouverte) *</label>
+                <select
+                  value={selectedSessionId}
+                  onChange={e => setSelectedSessionId(e.target.value)}
+                  className="w-full font-semibold px-3 py-2 border border-slate-300 rounded-xl focus:ring-2 focus:ring-rose-500 outline-none bg-white"
+                >
+                  {openSessions.map(s => (
+                    <option key={s.id} value={s.id}>
+                      {s.counter_name} — Session {s.session_number}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )
           )}
 
           <div>

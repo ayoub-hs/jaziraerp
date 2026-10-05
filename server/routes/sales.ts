@@ -3,11 +3,13 @@ import crypto from 'crypto';
 import { getDb } from '../db/index.js';
 import { round3, addMoney, subtractMoney, multiplyMoney, calculateTaxBreakdown, calculateResellerPrice } from '../utils/money.js';
 import { calculateContainersNeeded } from '../utils/container.js';
+import { businessDateKey, tunisDayRangeUTC, isFilterDay } from '../utils/businessDate.js';
+import { validateSalePayment } from '../utils/payments.js';
 
 export const salesRouter = Router();
 
 function generateReceiptNumber(db: any): string {
-  const dateStr = new Date().toISOString().slice(0, 10).replace(/-/g, '');
+  const dateStr = businessDateKey();
   const prefix = `REC-${dateStr}-`;
   const countRow: any = db.prepare(`
     SELECT COUNT(*) as cnt FROM sales WHERE receipt_number LIKE ?
@@ -17,7 +19,7 @@ function generateReceiptNumber(db: any): string {
 }
 
 function generateTicketNumber(db: any): string {
-  const dateStr = new Date().toISOString().slice(0, 10).replace(/-/g, '');
+  const dateStr = businessDateKey();
   const prefix = `TKT-${dateStr}-`;
   const countRow: any = db.prepare(`
     SELECT COUNT(*) as cnt FROM customer_debt_tickets WHERE ticket_number LIKE ?
@@ -29,11 +31,11 @@ function generateTicketNumber(db: any): string {
 // GET /api/sales - list sales
 salesRouter.get('/', (req: Request, res: Response) => {
   const db = getDb();
-  const { session_id, customer_id, date, status } = req.query;
+  const { session_id, customer_id, date, status, search, from, to, from_date, to_date, start_date, end_date } = req.query;
 
   let query = `
     SELECT s.*, c.name as customer_name, c.type as customer_type,
-      rs.session_number,
+      rs.session_number, rs.counter_name,
       (SELECT COUNT(*) FROM sale_items si WHERE si.sale_id = s.id) as item_count
     FROM sales s
     LEFT JOIN customers c ON s.customer_id = c.id
@@ -53,8 +55,40 @@ salesRouter.get('/', (req: Request, res: Response) => {
   }
 
   if (date) {
-    query += ` AND date(s.date) = date(?)`;
-    params.push(String(date));
+    // Business-day filter: compare against the Tunis local date via UTC range.
+    const day = String(date);
+    if (isFilterDay(day)) {
+      const range = tunisDayRangeUTC(day);
+      query += ` AND s.date >= ? AND s.date < ?`;
+      params.push(range.start, range.end);
+    } else {
+      query += ` AND date(s.date) = date(?)`;
+      params.push(day);
+    }
+  }
+
+  const startDate = from_date || start_date || from;
+  if (startDate) {
+    const day = String(startDate);
+    if (isFilterDay(day)) {
+      query += ` AND s.date >= ?`;
+      params.push(tunisDayRangeUTC(day).start);
+    } else {
+      query += ` AND date(s.date) >= date(?)`;
+      params.push(day);
+    }
+  }
+
+  const endDate = to_date || end_date || to;
+  if (endDate) {
+    const day = String(endDate);
+    if (isFilterDay(day)) {
+      query += ` AND s.date < ?`;
+      params.push(tunisDayRangeUTC(day).end);
+    } else {
+      query += ` AND date(s.date) <= date(?)`;
+      params.push(day);
+    }
   }
 
   if (status) {
@@ -62,12 +96,22 @@ salesRouter.get('/', (req: Request, res: Response) => {
     params.push(String(status));
   }
 
+  if (search) {
+    query += ` AND (s.receipt_number LIKE ? OR c.name LIKE ?)`;
+    params.push(`%${search}%`, `%${search}%`);
+  }
+
   query += ` ORDER BY s.date DESC, s.created_at DESC`;
 
-  if (req.query.limit) {
-    const lim = parseInt(String(req.query.limit), 10);
-    if (!isNaN(lim) && lim > 0) {
-      query += ` LIMIT ${lim}`;
+  const limitParam = req.query.limit !== undefined ? parseInt(String(req.query.limit), 10) : 25;
+  if (!isNaN(limitParam) && limitParam > 0) {
+    query += ` LIMIT ${limitParam}`;
+  }
+
+  if (req.query.offset) {
+    const offsetParam = parseInt(String(req.query.offset), 10);
+    if (!isNaN(offsetParam) && offsetParam >= 0) {
+      query += ` OFFSET ${offsetParam}`;
     }
   }
 
@@ -101,22 +145,31 @@ salesRouter.get('/:id', (req: Request, res: Response) => {
     WHERE si.sale_id = ?
   `).all(sale.id);
 
-  const mappedItems = items.map((si: any) => ({
-    ...si,
-    name: si.is_quick_add ? si.quick_add_name : (si.catalog_product_name || 'Article'),
-    description: si.is_quick_add ? si.quick_add_name : (si.catalog_product_name || 'Article'),
-    total_line: si.line_total
-  }));
+  const mappedItems = items.map((si: any) => {
+    const isOverridden = (si.catalog_unit_price !== null && si.catalog_unit_price !== undefined)
+      ? round3(Number(si.unit_price)) !== round3(Number(si.catalog_unit_price))
+      : false;
+    return {
+      ...si,
+      catalog_unit_price: si.catalog_unit_price ?? null,
+      overridden: isOverridden,
+      name: si.is_quick_add ? si.quick_add_name : (si.catalog_product_name || 'Article'),
+      description: si.is_quick_add ? si.quick_add_name : (si.catalog_product_name || 'Article'),
+      total_line: si.line_total
+    };
+  });
 
   // Shop header details
   const shopNameRow: any = db.prepare("SELECT value FROM settings WHERE key = 'shop_name'").get();
+  const shopSubtitleRow: any = db.prepare("SELECT value FROM settings WHERE key = 'shop_subtitle'").get();
   const shopAddressRow: any = db.prepare("SELECT value FROM settings WHERE key = 'shop_address'").get();
   const shopPhoneRow: any = db.prepare("SELECT value FROM settings WHERE key = 'shop_phone'").get();
-  const shopTaxRow: any = db.prepare("SELECT value FROM settings WHERE key = 'shop_tax_id'").get();
+  const shopTaxRow: any = db.prepare("SELECT value FROM settings WHERE key = 'tax_id'").get();
 
   const receiptFormat = {
-    shop_name: shopNameRow?.value || 'Al Jazira SHSP',
-    shop_address: shopAddressRow?.value || 'Tunis, Tunisia',
+    shop_name: shopNameRow?.value || 'Société Al Jazira SHSP',
+    shop_subtitle: shopSubtitleRow?.value || '',
+    shop_address: shopAddressRow?.value || '',
     shop_phone: shopPhoneRow?.value || '',
     shop_tax_id: shopTaxRow?.value || '',
     receipt_number: sale.receipt_number,
@@ -129,6 +182,8 @@ salesRouter.get('/:id', (req: Request, res: Response) => {
       pack_label: i.pack_label,
       quantity: i.quantity,
       unit_price: i.unit_price,
+      catalog_unit_price: i.catalog_unit_price ?? null,
+      overridden: i.overridden,
       discount_amount: i.discount_amount || 0,
       line_total: i.line_total,
       total_line: i.line_total
@@ -151,6 +206,44 @@ salesRouter.get('/:id', (req: Request, res: Response) => {
   });
 });
 
+export function computeExpectedCatalogPrice(
+  db: any,
+  product: any,
+  customer: any,
+  packSizeId?: string | null,
+  packMultiplier?: number | null
+): number | null {
+  if (!product) return null;
+
+  let basePrice = Number(product.retail_price) || 0;
+  if (customer) {
+    if (customer.type === 'WHOLESALE') {
+      basePrice = Number(product.wholesale_price) || 0;
+    } else if (customer.type === 'RESELLER') {
+      const discount = Math.max(0, Math.min(100, Number(customer.reseller_discount_percent) || 0));
+      basePrice = (Number(product.wholesale_price) || 0) * ((100 - discount) / 100);
+    }
+  }
+
+  let finalPrice = basePrice;
+  if (packSizeId) {
+    const packSize: any = db.prepare('SELECT * FROM product_pack_sizes WHERE id = ?').get(packSizeId);
+    if (packSize) {
+      if (packSize.price_override !== null && packSize.price_override !== undefined && (!customer || customer.type === 'RETAIL')) {
+        finalPrice = Number(packSize.price_override);
+      } else {
+        finalPrice = basePrice * (Number(packSize.multiplier) || 1);
+      }
+    } else if (packMultiplier && packMultiplier > 1) {
+      finalPrice = basePrice * packMultiplier;
+    }
+  } else if (packMultiplier && packMultiplier > 1) {
+    finalPrice = basePrice * packMultiplier;
+  }
+
+  return round3(finalPrice);
+}
+
 // POST /api/sales - process POS checkout with split tender, wallet validation, and drawer kick
 salesRouter.post('/', (req: Request, res: Response) => {
   const {
@@ -160,7 +253,7 @@ salesRouter.post('/', (req: Request, res: Response) => {
     date = new Date().toISOString(),
     items = [],
     total_discount = 0,
-    cash_tendered = 0,
+    cash_tendered = undefined,
     cash_paid = 0,
     wallet_paid = 0,
     credit_amount = 0,
@@ -231,6 +324,7 @@ salesRouter.post('/', (req: Request, res: Response) => {
 
     let baseStockDeducted = qty;
     let packMultiplier = 1;
+    let catalogUnitPrice: number | null = null;
 
     const resolvedQuickAddName = item.quick_add_name || item.description || item.name;
     if (item.is_quick_add) {
@@ -252,11 +346,18 @@ salesRouter.post('/', (req: Request, res: Response) => {
 
       if (item.pack_size_id) {
         const packSize: any = db.prepare('SELECT * FROM product_pack_sizes WHERE id = ?').get(item.pack_size_id);
-        if (packSize) {
-          packMultiplier = packSize.multiplier;
-          baseStockDeducted = qty * packMultiplier;
+        if (!packSize) {
+          res.status(400).json({ error: `Pack size not found: ${item.pack_size_id}` });
+          return;
         }
+        if (packSize.product_id !== item.product_id) {
+          res.status(400).json({ error: `Pack size ${item.pack_size_id} does not belong to product ${item.product_id}` });
+          return;
+        }
+        packMultiplier = packSize.multiplier;
+        baseStockDeducted = qty * packMultiplier;
       }
+      catalogUnitPrice = computeExpectedCatalogPrice(db, product, customer, item.pack_size_id, packMultiplier);
     }
 
     const loanContainer = Boolean(item.loan_container);
@@ -264,6 +365,10 @@ salesRouter.post('/', (req: Request, res: Response) => {
       res.status(400).json({ error: 'Loaning a container requires selecting a customer.' });
       return;
     }
+
+    const isOverridden = (catalogUnitPrice !== null && catalogUnitPrice !== undefined)
+      ? round3(unitPrice) !== round3(catalogUnitPrice)
+      : false;
 
     computedSubtotal = addMoney(computedSubtotal, lineTotal);
     processedItems.push({
@@ -277,6 +382,8 @@ salesRouter.post('/', (req: Request, res: Response) => {
       quantity_refunded: 0,
       base_stock_deducted: baseStockDeducted,
       unit_price: unitPrice,
+      catalog_unit_price: catalogUnitPrice,
+      overridden: isOverridden,
       discount_amount: discountAmount,
       line_total: lineTotal,
       loan_container: loanContainer
@@ -287,18 +394,25 @@ salesRouter.post('/', (req: Request, res: Response) => {
   const totalTTC = Math.max(0, round3(computedSubtotal - globalDiscount));
   const taxBreakdown = calculateTaxBreakdown(totalTTC, 0.19);
 
-  // 2. Validate Payment Breakdown
-  const cashAmount = round3(Number(cash_paid) || 0);
-  const walletAmount = round3(Number(wallet_paid) || 0);
-  const creditAmount = round3(Number(credit_amount) || 0);
-  const tenderedTotal = round3(cashAmount + walletAmount + creditAmount);
+  // 2. Validate Payment Breakdown (shared with offline sync flush)
+  const payment = validateSalePayment({
+    total_ttc: totalTTC,
+    subtotal: computedSubtotal,
+    total_discount: globalDiscount,
+    cash_paid,
+    cash_tendered,
+    wallet_paid,
+    credit_amount
+  });
 
-  if (tenderedTotal !== totalTTC) {
-    res.status(400).json({
-      error: `Payment total (${tenderedTotal} DT) does not equal sale total (${totalTTC} DT). Cash: ${cashAmount}, Wallet: ${walletAmount}, Credit: ${creditAmount}`
-    });
+  if (!payment.ok) {
+    res.status(400).json({ error: payment.error });
     return;
   }
+
+  const cashAmount = payment.cash_paid;
+  const walletAmount = payment.wallet_paid;
+  const creditAmount = payment.credit_amount;
 
   // 3. STRICT WALLET VALIDATION (Per User Instruction)
   if (walletAmount > 0) {
@@ -322,12 +436,8 @@ salesRouter.post('/', (req: Request, res: Response) => {
     return;
   }
 
-  // 5. Change Due and Cash Drawer Kick
-  const tenderedCash = round3(Number(cash_tendered) || 0);
-  let changeGiven = 0;
-  if (tenderedCash > cashAmount) {
-    changeGiven = round3(tenderedCash - cashAmount);
-  }
+  // 5. Change Due and Cash Drawer Kick (change computed server-side, never trusted)
+  const changeGiven = payment.change_given;
   const openCashDrawer = cashAmount > 0; // Drawer kicks ONLY if sale includes cash
 
   const saleId = crypto.randomUUID();
@@ -382,8 +492,8 @@ salesRouter.post('/', (req: Request, res: Response) => {
       INSERT INTO sale_items (
         id, sale_id, product_id, is_quick_add, quick_add_name,
         pack_size_id, pack_multiplier, quantity, quantity_refunded,
-        base_stock_deducted, unit_price, discount_amount, line_total
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        base_stock_deducted, unit_price, catalog_unit_price, discount_amount, line_total
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `);
 
     for (const item of processedItems) {
@@ -399,6 +509,7 @@ salesRouter.post('/', (req: Request, res: Response) => {
         0,
         item.base_stock_deducted,
         item.unit_price,
+        item.catalog_unit_price,
         item.discount_amount,
         item.line_total
       );
@@ -560,7 +671,7 @@ salesRouter.post('/', (req: Request, res: Response) => {
 });
 
 function generateRefundNumber(db: any): string {
-  const dateStr = new Date().toISOString().slice(0, 10).replace(/-/g, '');
+  const dateStr = businessDateKey();
   const prefix = `REF-${dateStr}-`;
   const countRow: any = db.prepare(`
     SELECT COUNT(*) as cnt FROM refunds WHERE refund_number LIKE ?
@@ -610,14 +721,8 @@ export function processRefund(saleId: string, req: Request, res: Response) {
     date = new Date().toISOString()
   } = req.body;
 
-  const session_id = directSessionId || register_session_id || null;
-
-  if (!Array.isArray(items) || items.length === 0) {
-    res.status(400).json({ error: 'At least one line item must be refunded' });
-    return;
-  }
-
   const db = getDb();
+
   const sale: any = db.prepare('SELECT * FROM sales WHERE id = ? OR receipt_number = ?').get(saleId, saleId);
   if (!sale) {
     res.status(404).json({ error: 'Sale not found' });
@@ -627,6 +732,32 @@ export function processRefund(saleId: string, req: Request, res: Response) {
   if (sale.status === 'FULLY_REFUNDED') {
     res.status(400).json({ error: 'Sale is already fully refunded' });
     return;
+  }
+
+  if (!Array.isArray(items) || items.length === 0) {
+    res.status(400).json({ error: 'At least one line item must be refunded' });
+    return;
+  }
+
+  // Register session resolution
+  const openSessions: any[] = db.prepare("SELECT * FROM register_sessions WHERE status = 'OPEN' ORDER BY opened_at DESC").all();
+  let session: any = null;
+  const rawSessionId = directSessionId || register_session_id || null;
+
+  if (rawSessionId) {
+    session = db.prepare('SELECT * FROM register_sessions WHERE id = ?').get(rawSessionId);
+    if (!session) {
+      res.status(400).json({ error: `Session de caisse introuvable: ${rawSessionId}` });
+      return;
+    }
+  } else if (openSessions.length === 1) {
+    session = openSessions[0];
+  } else if (openSessions.length > 1) {
+    // If original sale session is currently open, default to it
+    const saleSession = openSessions.find(s => s.id === sale.session_id);
+    if (saleSession) {
+      session = saleSession;
+    }
   }
 
   const now = new Date().toISOString();
@@ -655,9 +786,24 @@ export function processRefund(saleId: string, req: Request, res: Response) {
       return;
     }
 
-    // Effective unit price for this line item
-    const effectiveUnitPrice = saleItem.line_total / saleItem.quantity;
-    const amountRefunded = round3(effectiveUnitPrice * qtyToRefund);
+    // For the last remaining quantity of a line, amountRefunded = line_total - already_refunded; otherwise effective unit price
+    let amountRefunded: number;
+    if (qtyToRefund === availableToRefund) {
+      const alreadyRefundedRow: any = db.prepare(`
+        SELECT COALESCE(SUM(amount_refunded), 0) as already_refunded
+        FROM refund_items
+        WHERE sale_item_id = ?
+      `).get(saleItem.id);
+      const alreadyRefundedDb = round3(alreadyRefundedRow?.already_refunded || 0);
+      const processedForThisLine = processedRefundItems
+        .filter(p => p.sale_item.id === saleItem.id)
+        .reduce((sum, p) => sum + p.amount_refunded, 0);
+      const alreadyRefunded = round3(alreadyRefundedDb + processedForThisLine);
+      amountRefunded = round3(saleItem.line_total - alreadyRefunded);
+    } else {
+      const effectiveUnitPrice = saleItem.line_total / saleItem.quantity;
+      amountRefunded = round3(effectiveUnitPrice * qtyToRefund);
+    }
 
     totalRefunded = addMoney(totalRefunded, amountRefunded);
     processedRefundItems.push({
@@ -706,6 +852,28 @@ export function processRefund(saleId: string, req: Request, res: Response) {
     return;
   }
 
+  // Cash refunds require an active open register session
+  if (cashPayout > 0) {
+    if (openSessions.length === 0) {
+      res.status(400).json({
+        error: 'La caisse est fermée. Une session de caisse ouverte est obligatoire pour effectuer un remboursement en espèces. (An active open register session is required for cash refunds).'
+      });
+      return;
+    }
+    if (!session) {
+      res.status(400).json({
+        error: 'Plusieurs sessions de caisse sont ouvertes. Veuillez sélectionner la caisse effectuant le remboursement en espèces. (Multiple sessions are open; please specify session_id).'
+      });
+      return;
+    }
+    if (session.status !== 'OPEN') {
+      res.status(400).json({
+        error: `La session de caisse sélectionnée (${session.session_number}) est fermée.`
+      });
+      return;
+    }
+  }
+
   // 3. TARGETED CREDIT REDUCTION: Must reduce the specific ticket tied to THIS sale_id
   let targetTicket: any = null;
   if (creditReduction > 0) {
@@ -752,7 +920,7 @@ export function processRefund(saleId: string, req: Request, res: Response) {
       walletPayout,
       creditReduction,
       reason,
-      session_id || null,
+      session ? session.id : null,
       now
     );
 

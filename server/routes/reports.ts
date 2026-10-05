@@ -1,6 +1,8 @@
 import { Router, Request, Response } from 'express';
 import { getDb } from '../db/index.js';
 import { round3 } from '../utils/money.js';
+import { getMaterialUnitCosts } from '../services/costingService.js';
+import { tunisDayRangeUTC, isFilterDay } from '../utils/businessDate.js';
 
 export const reportsRouter = Router();
 
@@ -15,14 +17,26 @@ reportsRouter.get('/sales-by-customer', (req: Request, res: Response) => {
   const params: any[] = [];
 
   if (start_date) {
-    whereClause += " AND s.date >= ?";
-    params.push(String(start_date));
+    const day = String(start_date);
+    if (isFilterDay(day)) {
+      whereClause += " AND s.date >= ?";
+      params.push(tunisDayRangeUTC(day).start);
+    } else {
+      whereClause += " AND s.date >= ?";
+      params.push(day);
+    }
   }
   if (end_date) {
-    // If end_date is date-only (10 chars), extend to end of day
-    const endStr = String(end_date).length === 10 ? `${end_date}T23:59:59.999Z` : String(end_date);
-    whereClause += " AND s.date <= ?";
-    params.push(endStr);
+    // Business-day filter: Tunis local end-of-day via UTC range.
+    const day = String(end_date);
+    if (isFilterDay(day)) {
+      whereClause += " AND s.date < ?";
+      params.push(tunisDayRangeUTC(day).end);
+    } else {
+      const endStr = day.length === 10 ? `${day}T23:59:59.999Z` : day;
+      whereClause += " AND s.date <= ?";
+      params.push(endStr);
+    }
   }
   if (customer_id) {
     if (customer_id === 'WALK_IN' || customer_id === 'walk-in') {
@@ -41,28 +55,51 @@ reportsRouter.get('/sales-by-customer', (req: Request, res: Response) => {
       COUNT(s.id) as sale_count,
       ROUND(SUM(s.subtotal_ht), 3) as total_ht,
       ROUND(SUM(s.tva_amount), 3) as total_tva,
-      ROUND(SUM(s.total_ttc), 3) as total_ttc,
-      ROUND(SUM(s.cash_paid), 3) as cash_paid,
-      ROUND(SUM(s.wallet_paid), 3) as wallet_paid,
-      ROUND(SUM(s.credit_amount), 3) as credit_amount
+      ROUND(SUM(s.total_ttc), 3) as gross_ttc,
+      ROUND(SUM(COALESCE(r.total_refunded, 0)), 3) as refunded_amount,
+      ROUND(SUM(s.total_ttc) - SUM(COALESCE(r.total_refunded, 0)), 3) as net_ttc,
+      ROUND(SUM(s.total_ttc) - SUM(COALESCE(r.total_refunded, 0)), 3) as total_ttc,
+      ROUND(SUM(s.cash_paid), 3) as gross_cash,
+      ROUND(SUM(COALESCE(r.cash_refunded, 0)), 3) as cash_refunded,
+      ROUND(SUM(s.cash_paid) - SUM(COALESCE(r.cash_refunded, 0)), 3) as cash_paid,
+      ROUND(SUM(s.wallet_paid), 3) as gross_wallet,
+      ROUND(SUM(COALESCE(r.wallet_refunded, 0)), 3) as wallet_refunded,
+      ROUND(SUM(s.wallet_paid) - SUM(COALESCE(r.wallet_refunded, 0)), 3) as wallet_paid,
+      ROUND(SUM(s.credit_amount), 3) as gross_credit,
+      ROUND(SUM(COALESCE(r.credit_reduced, 0)), 3) as credit_reduced,
+      ROUND(SUM(s.credit_amount) - SUM(COALESCE(r.credit_reduced, 0)), 3) as credit_amount
     FROM sales s
+    LEFT JOIN (
+      SELECT 
+        sale_id,
+        SUM(total_refunded) as total_refunded,
+        SUM(cash_refunded) as cash_refunded,
+        SUM(wallet_refunded) as wallet_refunded,
+        SUM(credit_reduced) as credit_reduced
+      FROM refunds
+      GROUP BY sale_id
+    ) r ON s.id = r.sale_id
     LEFT JOIN customers c ON s.customer_id = c.id
     ${whereClause}
     GROUP BY COALESCE(s.customer_id, 'WALK_IN')
-    ORDER BY total_ttc DESC
+    ORDER BY net_ttc DESC
   `;
 
   const rows: any[] = db.prepare(query).all(...params);
 
   // Summary totals
-  let grandTtc = 0;
+  let grandGrossTtc = 0;
+  let grandRefunded = 0;
+  let grandNetTtc = 0;
   let grandCash = 0;
   let grandWallet = 0;
   let grandCredit = 0;
   let grandCount = 0;
 
   for (const r of rows) {
-    grandTtc += r.total_ttc || 0;
+    grandGrossTtc += r.gross_ttc || 0;
+    grandRefunded += r.refunded_amount || 0;
+    grandNetTtc += r.net_ttc || 0;
     grandCash += r.cash_paid || 0;
     grandWallet += r.wallet_paid || 0;
     grandCredit += r.credit_amount || 0;
@@ -75,7 +112,10 @@ reportsRouter.get('/sales-by-customer', (req: Request, res: Response) => {
     customer_sales: rows,
     summary: {
       total_sales_count: grandCount,
-      total_ttc: round3(grandTtc),
+      total_gross_ttc: round3(grandGrossTtc),
+      total_refunded: round3(grandRefunded),
+      total_net_ttc: round3(grandNetTtc),
+      total_ttc: round3(grandNetTtc),
       total_cash: round3(grandCash),
       total_wallet: round3(grandWallet),
       total_credit: round3(grandCredit)
@@ -94,13 +134,25 @@ reportsRouter.get('/sales-by-register', (req: Request, res: Response) => {
   const params: any[] = [];
 
   if (start_date) {
-    whereClause += " AND s.date >= ?";
-    params.push(String(start_date));
+    const day = String(start_date);
+    if (isFilterDay(day)) {
+      whereClause += " AND s.date >= ?";
+      params.push(tunisDayRangeUTC(day).start);
+    } else {
+      whereClause += " AND s.date >= ?";
+      params.push(day);
+    }
   }
   if (end_date) {
-    const endStr = String(end_date).length === 10 ? `${end_date}T23:59:59.999Z` : String(end_date);
-    whereClause += " AND s.date <= ?";
-    params.push(endStr);
+    const day = String(end_date);
+    if (isFilterDay(day)) {
+      whereClause += " AND s.date < ?";
+      params.push(tunisDayRangeUTC(day).end);
+    } else {
+      const endStr = day.length === 10 ? `${day}T23:59:59.999Z` : day;
+      whereClause += " AND s.date <= ?";
+      params.push(endStr);
+    }
   }
   if (counter_name) {
     whereClause += " AND LOWER(COALESCE(rs.counter_name, 'Unassigned')) = LOWER(?)";
@@ -114,27 +166,50 @@ reportsRouter.get('/sales-by-register', (req: Request, res: Response) => {
       COUNT(s.id) as sale_count,
       ROUND(SUM(s.subtotal_ht), 3) as total_ht,
       ROUND(SUM(s.tva_amount), 3) as total_tva,
-      ROUND(SUM(s.total_ttc), 3) as total_ttc,
-      ROUND(SUM(s.cash_paid), 3) as cash_paid,
-      ROUND(SUM(s.wallet_paid), 3) as wallet_paid,
-      ROUND(SUM(s.credit_amount), 3) as credit_amount
+      ROUND(SUM(s.total_ttc), 3) as gross_ttc,
+      ROUND(SUM(COALESCE(r.total_refunded, 0)), 3) as refunded_amount,
+      ROUND(SUM(s.total_ttc) - SUM(COALESCE(r.total_refunded, 0)), 3) as net_ttc,
+      ROUND(SUM(s.total_ttc) - SUM(COALESCE(r.total_refunded, 0)), 3) as total_ttc,
+      ROUND(SUM(s.cash_paid), 3) as gross_cash,
+      ROUND(SUM(COALESCE(r.cash_refunded, 0)), 3) as cash_refunded,
+      ROUND(SUM(s.cash_paid) - SUM(COALESCE(r.cash_refunded, 0)), 3) as cash_paid,
+      ROUND(SUM(s.wallet_paid), 3) as gross_wallet,
+      ROUND(SUM(COALESCE(r.wallet_refunded, 0)), 3) as wallet_refunded,
+      ROUND(SUM(s.wallet_paid) - SUM(COALESCE(r.wallet_refunded, 0)), 3) as wallet_paid,
+      ROUND(SUM(s.credit_amount), 3) as gross_credit,
+      ROUND(SUM(COALESCE(r.credit_reduced, 0)), 3) as credit_reduced,
+      ROUND(SUM(s.credit_amount) - SUM(COALESCE(r.credit_reduced, 0)), 3) as credit_amount
     FROM sales s
+    LEFT JOIN (
+      SELECT 
+        sale_id,
+        SUM(total_refunded) as total_refunded,
+        SUM(cash_refunded) as cash_refunded,
+        SUM(wallet_refunded) as wallet_refunded,
+        SUM(credit_reduced) as credit_reduced
+      FROM refunds
+      GROUP BY sale_id
+    ) r ON s.id = r.sale_id
     LEFT JOIN register_sessions rs ON s.session_id = rs.id
     ${whereClause}
     GROUP BY COALESCE(rs.counter_name, 'Countertop')
-    ORDER BY total_ttc DESC
+    ORDER BY net_ttc DESC
   `;
 
   const rows: any[] = db.prepare(query).all(...params);
 
-  let grandTtc = 0;
+  let grandGrossTtc = 0;
+  let grandRefunded = 0;
+  let grandNetTtc = 0;
   let grandCash = 0;
   let grandWallet = 0;
   let grandCredit = 0;
   let grandCount = 0;
 
   for (const r of rows) {
-    grandTtc += r.total_ttc || 0;
+    grandGrossTtc += r.gross_ttc || 0;
+    grandRefunded += r.refunded_amount || 0;
+    grandNetTtc += r.net_ttc || 0;
     grandCash += r.cash_paid || 0;
     grandWallet += r.wallet_paid || 0;
     grandCredit += r.credit_amount || 0;
@@ -147,7 +222,10 @@ reportsRouter.get('/sales-by-register', (req: Request, res: Response) => {
     register_sales: rows,
     summary: {
       total_sales_count: grandCount,
-      total_ttc: round3(grandTtc),
+      total_gross_ttc: round3(grandGrossTtc),
+      total_refunded: round3(grandRefunded),
+      total_net_ttc: round3(grandNetTtc),
+      total_ttc: round3(grandNetTtc),
       total_cash: round3(grandCash),
       total_wallet: round3(grandWallet),
       total_credit: round3(grandCredit)
@@ -166,13 +244,25 @@ reportsRouter.get('/customer-debt-payments', (req: Request, res: Response) => {
   const params: any[] = [];
 
   if (start_date) {
-    whereClause += " AND cp.date >= ?";
-    params.push(String(start_date));
+    const day = String(start_date);
+    if (isFilterDay(day)) {
+      whereClause += " AND cp.date >= ?";
+      params.push(tunisDayRangeUTC(day).start);
+    } else {
+      whereClause += " AND cp.date >= ?";
+      params.push(day);
+    }
   }
   if (end_date) {
-    const endStr = String(end_date).length === 10 ? `${end_date}T23:59:59.999Z` : String(end_date);
-    whereClause += " AND cp.date <= ?";
-    params.push(endStr);
+    const day = String(end_date);
+    if (isFilterDay(day)) {
+      whereClause += " AND cp.date < ?";
+      params.push(tunisDayRangeUTC(day).end);
+    } else {
+      const endStr = day.length === 10 ? `${day}T23:59:59.999Z` : day;
+      whereClause += " AND cp.date <= ?";
+      params.push(endStr);
+    }
   }
   if (customer_id) {
     whereClause += " AND cp.customer_id = ?";
@@ -261,19 +351,30 @@ reportsRouter.get('/inventory-valuation', (req: Request, res: Response) => {
   }
 
   if (type === 'ALL' || type === 'MATERIALS') {
-    materials = db.prepare(`
+    const unitCosts = getMaterialUnitCosts(db);
+    const rawMaterials: any[] = db.prepare(`
       SELECT 
         id,
         name,
         category,
         unit,
         stock_quantity,
-        ROUND(latest_purchase_cost, 3) as unit_cost,
-        ROUND(stock_quantity * latest_purchase_cost, 3) as line_cost_valuation
+        ROUND(latest_purchase_cost, 3) as latest_purchase_cost
       FROM raw_materials
       WHERE (active = 1 OR active IS NULL)
       ORDER BY category ASC, name ASC
     `).all();
+
+    materials = rawMaterials.map((m: any) => {
+      const unitCost = unitCosts.get(m.id) ?? round3(Number(m.latest_purchase_cost) || 0);
+      const lineCostValuation = round3(m.stock_quantity * unitCost);
+      return {
+        ...m,
+        unit_cost: unitCost,
+        current_cost_per_unit: unitCost,
+        line_cost_valuation: lineCostValuation
+      };
+    });
   }
 
   let productCostValuation = 0;

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { 
   Package, 
   FlaskConical, 
@@ -61,6 +61,11 @@ import { CreatePurchaseModal } from './CreatePurchaseModal.js';
 import { ConfirmDeleteModal } from './ConfirmDeleteModal.js';
 import { ManageCategoriesModal } from './ManageCategoriesModal.js';
 import { ReportsTab } from './ReportsTab.js';
+import { ShopSettingsPanel } from './ShopSettingsPanel.js';
+import { SalesHistoryTab } from './SalesHistoryTab.js';
+import { CustomerStatementModal } from './CustomerStatementModal.js';
+import { PurchaseDetailModal } from './PurchaseDetailModal.js';
+import { BatchDetailModal } from './BatchDetailModal.js';
 
 interface BackofficeProps {
   products: Product[];
@@ -69,9 +74,12 @@ interface BackofficeProps {
   containerTypes: ContainerType[];
   onRefreshData: () => void;
   activeSession?: RegisterSession | null;
+  onPrintReceipt?: (saleId: string) => void;
+  onPrintInvoice?: (saleId: string) => void;
 }
 
 type BackofficeTab = 
+  | 'SALES'
   | 'CATALOG' 
   | 'MATERIALS' 
   | 'PRODUCTION' 
@@ -81,7 +89,8 @@ type BackofficeTab =
   | 'SESSIONS' 
   | 'ACCOUNTING'
   | 'REPORTS'
-  | 'BACKUPS';
+  | 'BACKUPS'
+  | 'SETTINGS';
 
 export const Backoffice: React.FC<BackofficeProps> = ({
   products,
@@ -89,7 +98,9 @@ export const Backoffice: React.FC<BackofficeProps> = ({
   customers,
   containerTypes,
   onRefreshData,
-  activeSession
+  activeSession,
+  onPrintReceipt,
+  onPrintInvoice
 }) => {
   const [activeTab, setActiveTab] = useState<BackofficeTab>('CATALOG');
 
@@ -129,6 +140,7 @@ export const Backoffice: React.FC<BackofficeProps> = ({
 
   // Supplier Payment / Purchase state
   const [isPurchaseModalOpen, setIsPurchaseModalOpen] = useState(false);
+  const [purchaseDetailId, setPurchaseDetailId] = useState<string | null>(null);
 
   // Customer debt payment & top-up
   const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
@@ -136,12 +148,24 @@ export const Backoffice: React.FC<BackofficeProps> = ({
   const [debtPayAmount, setDebtPayAmount] = useState('');
   const [walletTopUpAmount, setWalletTopUpAmount] = useState('');
   const [actionNotice, setActionNotice] = useState<string | null>(null);
+  const [isPayingCustomerDebt, setIsPayingCustomerDebt] = useState(false);
+  const isPayingCustomerDebtRef = useRef(false);
+  const [isToppingUpWallet, setIsToppingUpWallet] = useState(false);
+  const isToppingUpWalletRef = useRef(false);
+  const [isCustomerStatementOpen, setIsCustomerStatementOpen] = useState(false);
 
   // Supplier ledger drill-down & debt payment
   const [selectedSupplier, setSelectedSupplier] = useState<Supplier | null>(null);
   const [supplierTickets, setSupplierTickets] = useState<SupplierDebtTicket[]>([]);
   const [supplierDebtPayAmount, setSupplierDebtPayAmount] = useState('');
   const [supplierActionNotice, setSupplierActionNotice] = useState<string | null>(null);
+  const [isPayingSupplierDebt, setIsPayingSupplierDebt] = useState(false);
+  const isPayingSupplierDebtRef = useRef(false);
+  const [selectedPurchaseId, setSelectedPurchaseId] = useState<string | null>(null);
+
+  // Batch Wizard state
+  const [isExecutingBatch, setIsExecutingBatch] = useState(false);
+  const isExecutingBatchRef = useRef(false);
 
   // Edit states for CRUD modals (Section C)
   const [materialToEdit, setMaterialToEdit] = useState<RawMaterial | null>(null);
@@ -155,11 +179,49 @@ export const Backoffice: React.FC<BackofficeProps> = ({
 
   // History / Audit states (Section D)
   const [productionBatches, setProductionBatches] = useState<any[]>([]);
+  const [batchDetailId, setBatchDetailId] = useState<string | null>(null);
   const [purchasesHistory, setPurchasesHistory] = useState<any[]>([]);
   const [expensesHistory, setExpensesHistory] = useState<any[]>([]);
   const [inventoryAdjustments, setInventoryAdjustments] = useState<any[]>([]);
   const [selectedSessionDetail, setSelectedSessionDetail] = useState<any | null>(null);
   const [isSessionDetailOpen, setIsSessionDetailOpen] = useState(false);
+
+  // Inactive Catalog toggle
+  const [showInactiveCatalog, setShowInactiveCatalog] = useState(false);
+  const [allProducts, setAllProducts] = useState<Product[] | null>(null);
+  const [allFamilies, setAllFamilies] = useState<ProductFamily[] | null>(null);
+
+  const fetchCatalogAll = async () => {
+    try {
+      const [pRes, fRes] = await Promise.all([
+        fetch('/api/products?active=all'),
+        fetch('/api/products/families?active=all')
+      ]);
+      if (pRes.ok) setAllProducts(await pRes.json());
+      if (fRes.ok) setAllFamilies(await fRes.json());
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
+  useEffect(() => {
+    if (showInactiveCatalog) {
+      fetchCatalogAll();
+    } else {
+      setAllProducts(null);
+      setAllFamilies(null);
+    }
+  }, [showInactiveCatalog]);
+
+  // Search & Low Stock Filter States (Item 4)
+  const [catalogSearch, setCatalogSearch] = useState('');
+  const [catalogLowStockOnly, setCatalogLowStockOnly] = useState(false);
+  const [materialsSearch, setMaterialsSearch] = useState('');
+  const [materialsLowStockOnly, setMaterialsLowStockOnly] = useState(false);
+  const [customersSearch, setCustomersSearch] = useState('');
+  const [customersOverdueOnly, setCustomersOverdueOnly] = useState(false);
+  const [suppliersSearch, setSuppliersSearch] = useState('');
+  const [purchasesSearch, setPurchasesSearch] = useState('');
   const [loadingSessionDetail, setLoadingSessionDetail] = useState(false);
 
   // Persistent Counters Management
@@ -205,6 +267,9 @@ export const Backoffice: React.FC<BackofficeProps> = ({
   const loadBackofficeData = async () => {
     try {
       if (activeTab === 'MATERIALS' || activeTab === 'PRODUCTION' || activeTab === 'CATALOG') {
+        if (showInactiveCatalog) {
+          fetchCatalogAll();
+        }
         const [matRes, formRes, supRes, adjRes] = await Promise.all([
           fetch('/api/materials'),
           fetch('/api/formulations'),
@@ -299,10 +364,14 @@ export const Backoffice: React.FC<BackofficeProps> = ({
   };
 
   const handlePaySupplierDebt = async () => {
+    if (isPayingSupplierDebtRef.current) return;
     if (!selectedSupplier) return;
     const amount = parseFloat(supplierDebtPayAmount);
     if (isNaN(amount) || amount <= 0) return;
 
+    isPayingSupplierDebtRef.current = true;
+    setIsPayingSupplierDebt(true);
+    setSupplierActionNotice(null);
     try {
       const res = await fetch(`/api/suppliers/${selectedSupplier.id}/debt/repay`, {
         method: 'POST',
@@ -321,9 +390,16 @@ export const Backoffice: React.FC<BackofficeProps> = ({
           if (updated) setSelectedSupplier(updated);
         }
         onRefreshData();
+      } else {
+        const data = await res.json().catch(() => ({}));
+        setSupplierActionNotice(`Error: ${data.error || `Payment failed (${res.status})`}`);
       }
-    } catch (err) {
+    } catch (err: any) {
       console.warn('Supplier debt payment failed:', err);
+      setSupplierActionNotice(`Error: ${err.message || 'Payment failed'}`);
+    } finally {
+      isPayingSupplierDebtRef.current = false;
+      setIsPayingSupplierDebt(false);
     }
   };
 
@@ -340,10 +416,14 @@ export const Backoffice: React.FC<BackofficeProps> = ({
   };
 
   const handlePayCustomerDebt = async () => {
+    if (isPayingCustomerDebtRef.current) return;
     if (!selectedCustomer) return;
     const amount = parseFloat(debtPayAmount);
     if (isNaN(amount) || amount <= 0) return;
 
+    isPayingCustomerDebtRef.current = true;
+    setIsPayingCustomerDebt(true);
+    setActionNotice(null);
     try {
       const res = await fetch(`/api/customers/${selectedCustomer.id}/payments`, {
         method: 'POST',
@@ -355,17 +435,28 @@ export const Backoffice: React.FC<BackofficeProps> = ({
         setDebtPayAmount('');
         handleSelectCustomerForTickets(selectedCustomer);
         onRefreshData();
+      } else {
+        const data = await res.json().catch(() => ({}));
+        setActionNotice(`Error: ${data.error || `Payment failed (${res.status})`}`);
       }
-    } catch (err) {
+    } catch (err: any) {
       console.warn('Payment failed:', err);
+      setActionNotice(`Error: ${err.message || 'Payment failed'}`);
+    } finally {
+      isPayingCustomerDebtRef.current = false;
+      setIsPayingCustomerDebt(false);
     }
   };
 
   const handleTopUpWallet = async () => {
+    if (isToppingUpWalletRef.current) return;
     if (!selectedCustomer) return;
     const amount = parseFloat(walletTopUpAmount);
     if (isNaN(amount) || amount <= 0) return;
 
+    isToppingUpWalletRef.current = true;
+    setIsToppingUpWallet(true);
+    setActionNotice(null);
     try {
       const res = await fetch(`/api/customers/${selectedCustomer.id}/wallet/top-up`, {
         method: 'POST',
@@ -376,16 +467,26 @@ export const Backoffice: React.FC<BackofficeProps> = ({
         setActionNotice(`Wallet topped up with ${formatMoney(amount)}.`);
         setWalletTopUpAmount('');
         onRefreshData();
+      } else {
+        const data = await res.json().catch(() => ({}));
+        setActionNotice(`Error: ${data.error || `Top up failed (${res.status})`}`);
       }
-    } catch (err) {
+    } catch (err: any) {
       console.warn('Topup failed:', err);
+      setActionNotice(`Error: ${err.message || 'Top up failed'}`);
+    } finally {
+      isToppingUpWalletRef.current = false;
+      setIsToppingUpWallet(false);
     }
   };
 
   const handleRunBatchWizard = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (isExecutingBatchRef.current) return;
     if (!selectedFormulationId || !targetProductId) return;
 
+    isExecutingBatchRef.current = true;
+    setIsExecutingBatch(true);
     try {
       const res = await fetch('/api/production/batches', {
         method: 'POST',
@@ -402,9 +503,16 @@ export const Backoffice: React.FC<BackofficeProps> = ({
         setBatchResult(data);
         onRefreshData();
         loadBackofficeData();
+      } else {
+        const data = await res.json().catch(() => ({}));
+        setBatchResult({ error: data.error || `Batch wizard failed (${res.status})` });
       }
-    } catch (err) {
+    } catch (err: any) {
       console.warn('Batch wizard failed:', err);
+      setBatchResult({ error: err.message || 'Batch wizard failed' });
+    } finally {
+      isExecutingBatchRef.current = false;
+      setIsExecutingBatch(false);
     }
   };
 
@@ -440,10 +548,13 @@ export const Backoffice: React.FC<BackofficeProps> = ({
     confirmDelete({
       title: 'Delete Product SKU',
       itemName: prod.name,
-      message: `Are you sure you want to delete "${prod.name}"? If referenced by past sales or batches, it will be safely deactivated/archived.`,
+      message: `Are you sure you want to delete "${prod.name}"? If referenced by past sales, batches, purchases, or inventory adjustments, deletion will be rejected.`,
       onConfirm: async () => {
         const res = await fetch(`/api/products/${prod.id}`, { method: 'DELETE' });
         if (!res.ok) {
+          if (res.status === 409) {
+            throw new Error('Impossible de supprimer: déjà référencé. Désactivez-le plutôt.');
+          }
           const data = await res.json().catch(() => ({}));
           throw new Error(data.error || 'Failed to delete product SKU');
         }
@@ -461,6 +572,9 @@ export const Backoffice: React.FC<BackofficeProps> = ({
       onConfirm: async () => {
         const res = await fetch(`/api/products/families/${fam.id}`, { method: 'DELETE' });
         if (!res.ok) {
+          if (res.status === 409) {
+            throw new Error('Impossible de supprimer: déjà référencé. Désactivez-le plutôt.');
+          }
           const data = await res.json().catch(() => ({}));
           throw new Error(data.error || 'Failed to delete product family');
         }
@@ -474,7 +588,7 @@ export const Backoffice: React.FC<BackofficeProps> = ({
     confirmDelete({
       title: 'Delete Raw Material',
       itemName: mat.name,
-      message: `Are you sure you want to delete "${mat.name}"? If used in formulations, batches, or purchases, it will be safely deactivated.`,
+      message: `Are you sure you want to delete "${mat.name}"? If used in formulations, batches, purchases, or inventory adjustments, deletion will be rejected.`,
       onConfirm: async () => {
         const res = await fetch(`/api/materials/${mat.id}`, { method: 'DELETE' });
         if (!res.ok) {
@@ -612,6 +726,67 @@ export const Backoffice: React.FC<BackofficeProps> = ({
     }
   };
 
+  const displayedFamilies: ProductFamily[] = (showInactiveCatalog && allFamilies) ? allFamilies : families;
+  const displayedProducts: Product[] = (showInactiveCatalog && allProducts) ? allProducts : products;
+
+  // Filtered lists and counts (Item 4)
+  const catalogLowStockCount = displayedProducts.filter(p => p.stock_quantity <= p.low_stock_threshold).length;
+  const filteredProducts = displayedProducts.filter(p => {
+    if (catalogLowStockOnly && p.stock_quantity > p.low_stock_threshold) return false;
+    if (catalogSearch.trim()) {
+      const q = catalogSearch.toLowerCase().trim();
+      const matchName = p.name?.toLowerCase().includes(q);
+      const matchBarcode = p.barcode?.toLowerCase().includes(q);
+      const matchCat = p.category?.toLowerCase().includes(q);
+      if (!matchName && !matchBarcode && !matchCat) return false;
+    }
+    return true;
+  });
+
+  const materialsLowStockCount = materials.filter(m => m.stock_quantity <= (m.low_stock_threshold || 0)).length;
+  const filteredMaterials = materials.filter(m => {
+    if (materialsLowStockOnly && m.stock_quantity > (m.low_stock_threshold || 0)) return false;
+    if (materialsSearch.trim()) {
+      const q = materialsSearch.toLowerCase().trim();
+      const cat = (m.category || m.type || '').toLowerCase();
+      const matchName = m.name?.toLowerCase().includes(q);
+      const matchCat = cat.includes(q);
+      if (!matchName && !matchCat) return false;
+    }
+    return true;
+  });
+
+  const overdueCustomersCount = customers.filter(c => !!c.has_overdue_tickets).length;
+  const filteredCustomers = customers.filter(c => {
+    if (customersOverdueOnly && !c.has_overdue_tickets) return false;
+    if (customersSearch.trim()) {
+      const q = customersSearch.toLowerCase().trim();
+      const matchName = c.name?.toLowerCase().includes(q);
+      const matchPhone = c.phone?.toLowerCase().includes(q);
+      if (!matchName && !matchPhone) return false;
+    }
+    return true;
+  });
+
+  const filteredSuppliers = suppliers.filter(s => {
+    if (suppliersSearch.trim()) {
+      const q = suppliersSearch.toLowerCase().trim();
+      if (!s.name?.toLowerCase().includes(q)) return false;
+    }
+    return true;
+  });
+
+  const filteredPurchases = purchasesHistory.filter(p => {
+    if (purchasesSearch.trim()) {
+      const q = purchasesSearch.toLowerCase().trim();
+      const matchSupplier = p.supplier_name?.toLowerCase().includes(q);
+      const matchNumber = p.purchase_number?.toLowerCase().includes(q);
+      const matchInv = (p as any).supplier_invoice_number?.toLowerCase().includes(q);
+      if (!matchSupplier && !matchNumber && !matchInv) return false;
+    }
+    return true;
+  });
+
   return (
     <div className="flex-1 flex flex-col md:flex-row bg-slate-100 overflow-hidden">
       {/* Sidebar Navigation */}
@@ -622,6 +797,15 @@ export const Backoffice: React.FC<BackofficeProps> = ({
           </span>
         </div>
         <nav className="flex md:flex-col p-1.5 gap-1 text-xs font-semibold">
+          <button
+            onClick={() => setActiveTab('SALES')}
+            className={`flex items-center gap-2 px-3 py-2 rounded-lg transition-colors whitespace-nowrap ${
+              activeTab === 'SALES' ? 'bg-emerald-600 text-white shadow-sm' : 'hover:bg-slate-800'
+            }`}
+          >
+            <Receipt className="w-4 h-4" />
+            <span>Ventes</span>
+          </button>
           <button
             onClick={() => setActiveTab('CATALOG')}
             className={`flex items-center gap-2 px-3 py-2 rounded-lg transition-colors whitespace-nowrap ${
@@ -712,11 +896,28 @@ export const Backoffice: React.FC<BackofficeProps> = ({
             <Database className="w-4 h-4" />
             <span>Database Backups</span>
           </button>
+          <button
+            onClick={() => setActiveTab('SETTINGS')}
+            className={`flex items-center gap-2 px-3 py-2 rounded-lg transition-colors whitespace-nowrap ${
+              activeTab === 'SETTINGS' ? 'bg-emerald-600 text-white shadow-sm' : 'hover:bg-slate-800'
+            }`}
+          >
+            <Settings className="w-4 h-4" />
+            <span>Settings</span>
+          </button>
         </nav>
       </aside>
 
       {/* Main Content Pane */}
       <main className="flex-1 p-4 md:p-6 overflow-y-auto">
+        {/* 0. SALES TAB */}
+        {activeTab === 'SALES' && (
+          <SalesHistoryTab
+            onPrintReceipt={onPrintReceipt || (() => {})}
+            onPrintInvoice={onPrintInvoice || (() => {})}
+          />
+        )}
+
         {/* 1. CATALOG TAB */}
         {activeTab === 'CATALOG' && (
           <div className="space-y-4">
@@ -765,20 +966,78 @@ export const Backoffice: React.FC<BackofficeProps> = ({
               </div>
             </div>
 
+            {/* Filter Bar (Search, Low Stock, Inactive) */}
+            <div className="flex flex-wrap items-center justify-between gap-3 bg-white p-3 rounded-2xl border border-slate-200">
+              <div className="relative flex-1 min-w-[220px] max-w-sm">
+                <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                <input
+                  type="text"
+                  placeholder="Rechercher produit, code-barres, catégorie..."
+                  value={catalogSearch}
+                  onChange={e => setCatalogSearch(e.target.value)}
+                  className="w-full pl-9 pr-8 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white"
+                />
+                {catalogSearch && (
+                  <button
+                    type="button"
+                    onClick={() => setCatalogSearch('')}
+                    className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 p-0.5"
+                  >
+                    <X className="w-3.5 h-3.5" />
+                  </button>
+                )}
+              </div>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => setCatalogLowStockOnly(prev => !prev)}
+                  className={`flex items-center gap-1.5 text-xs font-bold px-3 py-2 rounded-xl transition-colors border ${
+                    catalogLowStockOnly
+                      ? 'bg-amber-600 text-white border-amber-600 shadow-xs'
+                      : 'bg-white hover:bg-slate-50 text-slate-700 border-slate-300'
+                  }`}
+                >
+                  <AlertTriangle className="w-3.5 h-3.5" />
+                  <span>Stock bas ({catalogLowStockCount})</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setShowInactiveCatalog(prev => !prev)}
+                  className={`flex items-center gap-1.5 text-xs font-bold px-3 py-2 rounded-xl transition-colors border ${
+                    showInactiveCatalog
+                      ? 'bg-slate-800 text-white border-slate-800 shadow-xs'
+                      : 'bg-white hover:bg-slate-50 text-slate-700 border-slate-300'
+                  }`}
+                >
+                  <Eye className="w-4 h-4" />
+                  <span>Afficher inactifs</span>
+                </button>
+              </div>
+            </div>
+
             {/* Product Families Section */}
-            {families.length > 0 && (
+            {displayedFamilies.length > 0 && (
               <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-4 space-y-3">
                 <div className="flex justify-between items-center">
                   <h3 className="text-xs font-bold text-slate-700 uppercase tracking-wider">
-                    Product Families ({families.length})
+                    Product Families ({displayedFamilies.length})
                   </h3>
                   <span className="text-[11px] text-slate-500">Click &quot;Edit&quot; to modify family category, manufacturing type, or recipe</span>
                 </div>
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-                  {families.map(f => (
-                    <div key={f.id} className="p-3 bg-slate-50 border border-slate-200/80 rounded-xl flex items-center justify-between">
+                  {displayedFamilies.map(f => (
+                    <div key={f.id} className={`p-3 border rounded-xl flex items-center justify-between ${
+                      f.active === 0 ? 'bg-slate-100/70 border-slate-300 opacity-75' : 'bg-slate-50 border-slate-200/80'
+                    }`}>
                       <div>
-                        <div className="font-bold text-xs text-slate-900">{f.name}</div>
+                        <div className="font-bold text-xs text-slate-900 flex items-center gap-1.5">
+                          <span>{f.name}</span>
+                          {f.active === 0 && (
+                            <span className="px-1.5 py-0.5 rounded text-[9px] font-bold bg-slate-200 text-slate-600 uppercase">
+                              Inactif
+                            </span>
+                          )}
+                        </div>
                         <div className="text-[10px] text-slate-500">
                           {f.category} • <span className={f.type === 'MANUFACTURED' ? 'text-emerald-700 font-semibold' : 'text-blue-700 font-semibold'}>{f.type}</span>
                         </div>
@@ -810,7 +1069,8 @@ export const Backoffice: React.FC<BackofficeProps> = ({
             )}
 
             <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
-              <table className="w-full text-left border-collapse text-xs">
+              <div className="overflow-x-auto">
+                <table className="w-full text-left border-collapse text-xs min-w-[750px]">
                 <thead>
                   <tr className="bg-slate-50 border-b border-slate-200 font-bold text-slate-600 uppercase text-[10px]">
                     <th className="p-3">Product Name</th>
@@ -825,9 +1085,18 @@ export const Backoffice: React.FC<BackofficeProps> = ({
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
-                  {products.map(p => (
-                    <tr key={p.id} className="hover:bg-slate-50">
-                      <td className="p-3 font-bold text-slate-900">{p.name}</td>
+                  {filteredProducts.map(p => (
+                    <tr key={p.id} className={p.active === 0 ? "bg-slate-100/70 opacity-75 hover:bg-slate-100" : "hover:bg-slate-50"}>
+                      <td className="p-3 font-bold text-slate-900">
+                        <div className="flex items-center gap-1.5">
+                          <span>{p.name}</span>
+                          {p.active === 0 && (
+                            <span className="px-1.5 py-0.5 rounded text-[9px] font-bold bg-slate-200 text-slate-600 uppercase">
+                              Inactif
+                            </span>
+                          )}
+                        </div>
+                      </td>
                       <td className="p-3 text-slate-500">{p.category}</td>
                       <td className="p-3">
                         <span className="bg-slate-100 text-slate-700 px-1.5 py-0.5 rounded font-semibold text-[10px]">
@@ -867,16 +1136,30 @@ export const Backoffice: React.FC<BackofficeProps> = ({
                       </td>
                     </tr>
                   ))}
-                  {products.length === 0 && (
+                  {products.length === 0 ? (
                     <tr>
                       <td colSpan={9} className="p-8 text-center text-slate-400">
                         No products in catalog yet. Click &quot;+ New Product / SKU&quot; above to create one.
                       </td>
                     </tr>
-                  )}
-                </tbody>
-              </table>
+                  ) : filteredProducts.length === 0 ? (
+                    <tr>
+                      <td colSpan={9} className="p-8 text-center text-slate-400">
+                        Aucun résultat pour cette recherche
+                      </td>
+                    </tr>
+                  ) : null}
+                  </tbody>
+                </table>
+              </div>
             </div>
+
+            {/* Batch Detail Modal (row click) */}
+            <BatchDetailModal
+              isOpen={Boolean(batchDetailId)}
+              onClose={() => setBatchDetailId(null)}
+              batchId={batchDetailId}
+            />
           </div>
         )}
 
@@ -920,8 +1203,46 @@ export const Backoffice: React.FC<BackofficeProps> = ({
               </div>
             </div>
 
+            {/* Filter Bar (Search, Low Stock) */}
+            <div className="flex flex-wrap items-center justify-between gap-3 bg-white p-3 rounded-2xl border border-slate-200">
+              <div className="relative flex-1 min-w-[220px] max-w-sm">
+                <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                <input
+                  type="text"
+                  placeholder="Rechercher matière première, catégorie..."
+                  value={materialsSearch}
+                  onChange={e => setMaterialsSearch(e.target.value)}
+                  className="w-full pl-9 pr-8 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white"
+                />
+                {materialsSearch && (
+                  <button
+                    type="button"
+                    onClick={() => setMaterialsSearch('')}
+                    className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 p-0.5"
+                  >
+                    <X className="w-3.5 h-3.5" />
+                  </button>
+                )}
+              </div>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => setMaterialsLowStockOnly(prev => !prev)}
+                  className={`flex items-center gap-1.5 text-xs font-bold px-3 py-2 rounded-xl transition-colors border ${
+                    materialsLowStockOnly
+                      ? 'bg-amber-600 text-white border-amber-600 shadow-xs'
+                      : 'bg-white hover:bg-slate-50 text-slate-700 border-slate-300'
+                  }`}
+                >
+                  <AlertTriangle className="w-3.5 h-3.5" />
+                  <span>Stock bas ({materialsLowStockCount})</span>
+                </button>
+              </div>
+            </div>
+
             <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
-              <table className="w-full text-left border-collapse text-xs">
+              <div className="overflow-x-auto">
+                <table className="w-full text-left border-collapse text-xs min-w-[700px]">
                 <thead>
                   <tr className="bg-slate-50 border-b border-slate-200 font-bold text-slate-600 uppercase text-[10px]">
                     <th className="p-3">Material Name</th>
@@ -934,9 +1255,9 @@ export const Backoffice: React.FC<BackofficeProps> = ({
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
-                  {materials.map(m => {
+                  {filteredMaterials.map(m => {
                     const cat = m.category || m.type || 'General';
-                    const cost = m.latest_purchase_cost ?? m.current_cost_per_unit ?? 0;
+                    const cost = m.current_cost_per_unit ?? m.latest_purchase_cost ?? 0;
                     return (
                       <tr key={m.id} className="hover:bg-slate-50">
                         <td className="p-3 font-bold text-slate-900">{m.name}</td>
@@ -984,15 +1305,22 @@ export const Backoffice: React.FC<BackofficeProps> = ({
                       </tr>
                     );
                   })}
-                  {materials.length === 0 && (
+                  {materials.length === 0 ? (
                     <tr>
                       <td colSpan={7} className="p-8 text-center text-slate-400">
                         No raw materials recorded yet. Click &quot;+ New Material&quot; above to create one.
                       </td>
                     </tr>
-                  )}
+                  ) : filteredMaterials.length === 0 ? (
+                    <tr>
+                      <td colSpan={7} className="p-8 text-center text-slate-400">
+                        Aucun résultat pour cette recherche
+                      </td>
+                    </tr>
+                  ) : null}
                 </tbody>
               </table>
+              </div>
             </div>
 
             {/* Inventory Adjustments Audit Log */}
@@ -1089,7 +1417,10 @@ export const Backoffice: React.FC<BackofficeProps> = ({
                     </label>
                     <select
                       value={selectedFormulationId}
-                      onChange={e => setSelectedFormulationId(e.target.value)}
+                      onChange={e => {
+                        setSelectedFormulationId(e.target.value);
+                        setTargetProductId('');
+                      }}
                       required
                       className="w-full text-xs font-semibold px-3 py-2 border border-slate-300 rounded-xl"
                     >
@@ -1144,22 +1475,41 @@ export const Backoffice: React.FC<BackofficeProps> = ({
                       className="w-full text-xs font-semibold px-3 py-2 border border-slate-300 rounded-xl"
                     >
                       <option value="">Choose target SKU to restock...</option>
-                      {products
-                        .filter(p => p.product_type === 'MANUFACTURED' || !p.product_type)
-                        .map(p => (
-                          <option key={p.id} value={p.id}>
-                            {p.name} ({p.size_label || 'Piece'}) — Current Stock: {p.stock_quantity}
-                          </option>
-                        ))}
+                      {(() => {
+                        const familyById = new Map((families || []).map(f => [f.id, f]));
+                        return products
+                          .filter(p => {
+                            const fam = familyById.get(p.family_id);
+                            const isMfg = fam ? fam.type === 'MANUFACTURED' : (p.product_type === 'MANUFACTURED' || !p.product_type);
+                            if (!isMfg) return false;
+                            if (selectedFormulationId && fam) return fam.formulation_id === selectedFormulationId;
+                            return true;
+                          })
+                          .map(p => (
+                            <option key={p.id} value={p.id}>
+                              {p.name} ({p.size_label || 'Piece'}) — Current Stock: {p.stock_quantity}
+                            </option>
+                          ));
+                      })()}
                     </select>
+                    {selectedFormulationId &&
+                      !products.some(p => {
+                        const fam = (families || []).find(f => f.id === p.family_id);
+                        return fam && fam.type === 'MANUFACTURED' && fam.formulation_id === selectedFormulationId;
+                      }) && (
+                        <p className="text-[11px] text-amber-700 font-semibold mt-1">
+                          Aucun produit lié à cette formule — liez la formule à une famille.
+                        </p>
+                      )}
                   </div>
 
                   <button
                     type="submit"
-                    className="w-full py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl shadow text-xs transition-colors flex items-center justify-center gap-1.5"
+                    disabled={isExecutingBatch}
+                    className="w-full py-3 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white font-bold rounded-xl shadow text-xs transition-colors flex items-center justify-center gap-1.5"
                   >
                     <FlaskConical className="w-4 h-4" />
-                    Execute Production Batch
+                    {isExecutingBatch ? 'Executing Batch...' : 'Execute Production Batch'}
                   </button>
                 </form>
               </div>
@@ -1167,6 +1517,12 @@ export const Backoffice: React.FC<BackofficeProps> = ({
               {/* Batch Execution Results */}
               <div className="bg-slate-50 p-5 rounded-2xl border border-slate-200 flex flex-col justify-center">
                 {batchResult ? (
+                  batchResult.error ? (
+                    <div className="p-3 bg-rose-50 border border-rose-200 text-rose-800 rounded-xl text-xs flex items-center gap-2">
+                      <AlertTriangle className="w-4 h-4 shrink-0" />
+                      <span>{batchResult.error}</span>
+                    </div>
+                  ) : (
                   <div className="space-y-3">
                     <div className="flex items-center gap-2 text-emerald-700 font-bold text-sm">
                       <Check className="w-5 h-5" />
@@ -1189,7 +1545,7 @@ export const Backoffice: React.FC<BackofficeProps> = ({
                       </div>
                     )}
                   </div>
-                ) : (
+                )) : (
                   <div className="text-center text-slate-400 text-xs py-12">
                     Fill the form on the left to execute a production run.
                   </div>
@@ -1260,7 +1616,12 @@ export const Backoffice: React.FC<BackofficeProps> = ({
                   </thead>
                   <tbody className="divide-y divide-slate-100">
                     {productionBatches.map(b => (
-                      <tr key={b.id} className="hover:bg-slate-50">
+                      <tr
+                        key={b.id}
+                        className="hover:bg-slate-50 cursor-pointer"
+                        onClick={() => setBatchDetailId(b.id)}
+                        title="Voir le détail du lot"
+                      >
                         <td className="p-3 font-mono font-bold text-slate-900">{b.batch_number}</td>
                         <td className="p-3 text-slate-500 text-[11px]">{formatDateTime(b.date || b.created_at)}</td>
                         <td className="p-3 font-semibold text-slate-800">{b.formulation_name}</td>
@@ -1317,7 +1678,41 @@ export const Backoffice: React.FC<BackofficeProps> = ({
                 <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wide px-1">
                   Customer Directory
                 </h3>
-                {customers.map(c => (
+                <div className="flex items-center gap-2 mb-2">
+                  <div className="relative flex-1">
+                    <Search className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-1/2 -translate-y-1/2" />
+                    <input
+                      type="text"
+                      placeholder="Rechercher client, tél..."
+                      value={customersSearch}
+                      onChange={e => setCustomersSearch(e.target.value)}
+                      className="w-full pl-8 pr-7 py-1.5 bg-slate-50 border border-slate-200 rounded-xl text-xs outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white"
+                    />
+                    {customersSearch && (
+                      <button
+                        type="button"
+                        onClick={() => setCustomersSearch('')}
+                        className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                      >
+                        <X className="w-3 h-3" />
+                      </button>
+                    )}
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setCustomersOverdueOnly(prev => !prev)}
+                    className={`flex items-center gap-1 text-[11px] font-bold px-2.5 py-1.5 rounded-xl transition-colors border shrink-0 ${
+                      customersOverdueOnly
+                        ? 'bg-rose-600 text-white border-rose-600 shadow-xs'
+                        : 'bg-white hover:bg-rose-50 text-rose-700 border-rose-200'
+                    }`}
+                    title="Afficher uniquement les clients avec dettes en retard"
+                  >
+                    <AlertTriangle className="w-3.5 h-3.5" />
+                    <span>En retard ({overdueCustomersCount})</span>
+                  </button>
+                </div>
+                {filteredCustomers.map(c => (
                   <div
                     key={c.id}
                     onClick={() => handleSelectCustomerForTickets(c)}
@@ -1330,9 +1725,16 @@ export const Backoffice: React.FC<BackofficeProps> = ({
                     <div className="flex justify-between items-start">
                       <div>
                         <h4 className="font-bold text-xs text-slate-900">{c.name}</h4>
-                        <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-slate-100 text-slate-700">
-                          {c.type}
-                        </span>
+                        <div className="flex items-center gap-1.5 mt-0.5">
+                          <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-slate-100 text-slate-700">
+                            {c.type}
+                          </span>
+                          {c.has_overdue_tickets && (
+                            <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-rose-100 text-rose-700 uppercase">
+                              En retard
+                            </span>
+                          )}
+                        </div>
                       </div>
                       <div className="flex items-center gap-1">
                         <button
@@ -1362,12 +1764,17 @@ export const Backoffice: React.FC<BackofficeProps> = ({
                     </div>
                     <div className="flex justify-between items-center mt-2 text-[11px]">
                       <span className="text-slate-500">Wallet: {formatMoney(c.wallet_balance)}</span>
-                      <span className={`font-bold font-mono ${c.total_debt ? 'text-amber-700' : 'text-slate-400'}`}>
+                      <span className={`font-bold font-mono ${c.has_overdue_tickets ? 'text-rose-700 font-black' : c.total_debt ? 'text-amber-700' : 'text-slate-400'}`}>
                         Debt: {formatMoney(c.total_debt)}
                       </span>
                     </div>
                   </div>
                 ))}
+                {filteredCustomers.length === 0 && (
+                  <div className="p-6 text-center text-slate-400 text-xs">
+                    Aucun résultat pour cette recherche
+                  </div>
+                )}
               </div>
 
               {/* Customer Detail & Actions */}
@@ -1376,7 +1783,18 @@ export const Backoffice: React.FC<BackofficeProps> = ({
                   <>
                     <div className="flex justify-between items-center border-b border-slate-200 pb-3">
                       <div>
-                        <h3 className="text-base font-black text-slate-900">{selectedCustomer.name}</h3>
+                        <div className="flex items-center gap-2">
+                          <h3 className="text-base font-black text-slate-900">{selectedCustomer.name}</h3>
+                          <button
+                            type="button"
+                            onClick={() => setIsCustomerStatementOpen(true)}
+                            className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 text-xs font-bold transition-colors cursor-pointer"
+                            title="Consulter le relevé de compte complet (grand livre et historique des dettes/portefeuille)"
+                          >
+                            <FileText className="w-3.5 h-3.5" />
+                            <span>Relevé</span>
+                          </button>
+                        </div>
                         <p className="text-xs text-slate-500">{selectedCustomer.phone || 'No phone'} • {selectedCustomer.address || 'No address'}</p>
                       </div>
                       <div className="text-right">
@@ -1405,10 +1823,12 @@ export const Backoffice: React.FC<BackofficeProps> = ({
                             className="w-full text-xs font-bold font-mono px-2 py-1.5 border border-slate-300 rounded-lg"
                           />
                           <button
+                            type="button"
+                            disabled={isPayingCustomerDebt}
                             onClick={handlePayCustomerDebt}
-                            className="bg-amber-600 hover:bg-amber-700 text-white font-bold px-3 py-1.5 rounded-lg text-xs shrink-0"
+                            className="bg-amber-600 hover:bg-amber-700 disabled:opacity-50 text-white font-bold px-3 py-1.5 rounded-lg text-xs shrink-0 transition-colors"
                           >
-                            Pay
+                            {isPayingCustomerDebt ? 'Paying...' : 'Pay'}
                           </button>
                         </div>
                       </div>
@@ -1429,10 +1849,12 @@ export const Backoffice: React.FC<BackofficeProps> = ({
                             className="w-full text-xs font-bold font-mono px-2 py-1.5 border border-slate-300 rounded-lg"
                           />
                           <button
+                            type="button"
+                            disabled={isToppingUpWallet}
                             onClick={handleTopUpWallet}
-                            className="bg-purple-600 hover:bg-purple-700 text-white font-bold px-3 py-1.5 rounded-lg text-xs shrink-0"
+                            className="bg-purple-600 hover:bg-purple-700 disabled:opacity-50 text-white font-bold px-3 py-1.5 rounded-lg text-xs shrink-0 transition-colors"
                           >
-                            Top Up
+                            {isToppingUpWallet ? 'Top Up...' : 'Top Up'}
                           </button>
                         </div>
                       </div>
@@ -1443,8 +1865,8 @@ export const Backoffice: React.FC<BackofficeProps> = ({
                       <h4 className="text-xs font-bold text-slate-700 uppercase tracking-wide">
                         Open Debt Tickets
                       </h4>
-                      <div className="border border-slate-200 rounded-xl overflow-hidden max-h-48 overflow-y-auto">
-                        <table className="w-full text-left border-collapse text-xs">
+                      <div className="border border-slate-200 rounded-xl max-h-48 overflow-y-auto overflow-x-auto">
+                        <table className="w-full text-left border-collapse text-xs min-w-[500px]">
                           <thead>
                             <tr className="bg-slate-50 font-bold text-slate-600 uppercase text-[10px]">
                               <th className="p-2">Ticket #</th>
@@ -1533,7 +1955,26 @@ export const Backoffice: React.FC<BackofficeProps> = ({
                 <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wide px-1">
                   Supplier Directory
                 </h3>
-                {suppliers.map(s => (
+                <div className="relative mb-2">
+                  <Search className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-1/2 -translate-y-1/2" />
+                  <input
+                    type="text"
+                    placeholder="Rechercher fournisseur..."
+                    value={suppliersSearch}
+                    onChange={e => setSuppliersSearch(e.target.value)}
+                    className="w-full pl-8 pr-7 py-1.5 bg-slate-50 border border-slate-200 rounded-xl text-xs outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white"
+                  />
+                  {suppliersSearch && (
+                    <button
+                      type="button"
+                      onClick={() => setSuppliersSearch('')}
+                      className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                    >
+                      <X className="w-3 h-3" />
+                    </button>
+                  )}
+                </div>
+                {filteredSuppliers.map(s => (
                   <div
                     key={s.id}
                     onClick={() => handleSelectSupplierForTickets(s)}
@@ -1586,11 +2027,15 @@ export const Backoffice: React.FC<BackofficeProps> = ({
                     </div>
                   </div>
                 ))}
-                {suppliers.length === 0 && (
+                {suppliers.length === 0 ? (
                   <div className="p-4 text-center text-slate-400 text-xs">
                     No suppliers yet. Click &quot;+ New Supplier&quot; above to create one.
                   </div>
-                )}
+                ) : filteredSuppliers.length === 0 ? (
+                  <div className="p-6 text-center text-slate-400 text-xs">
+                    Aucun résultat pour cette recherche
+                  </div>
+                ) : null}
               </div>
 
               {/* Supplier Detail & Debt Ledger */}
@@ -1626,10 +2071,12 @@ export const Backoffice: React.FC<BackofficeProps> = ({
                           className="w-full text-xs font-bold font-mono px-3 py-2 border border-slate-300 rounded-lg"
                         />
                         <button
+                          type="button"
+                          disabled={isPayingSupplierDebt}
                           onClick={handlePaySupplierDebt}
-                          className="bg-rose-600 hover:bg-rose-700 text-white font-bold px-4 py-2 rounded-lg text-xs shrink-0 transition-colors shadow-sm"
+                          className="bg-rose-600 hover:bg-rose-700 disabled:opacity-50 text-white font-bold px-4 py-2 rounded-lg text-xs shrink-0 transition-colors shadow-sm"
                         >
-                          Pay Supplier
+                          {isPayingSupplierDebt ? 'Paying...' : 'Pay Supplier'}
                         </button>
                       </div>
                     </div>
@@ -1639,8 +2086,8 @@ export const Backoffice: React.FC<BackofficeProps> = ({
                       <h4 className="text-xs font-bold text-slate-700 uppercase tracking-wide">
                         Open Supplier Debt Tickets
                       </h4>
-                      <div className="border border-slate-200 rounded-xl overflow-hidden max-h-48 overflow-y-auto">
-                        <table className="w-full text-left border-collapse text-xs">
+                      <div className="border border-slate-200 rounded-xl max-h-48 overflow-y-auto overflow-x-auto">
+                        <table className="w-full text-left border-collapse text-xs min-w-[500px]">
                           <thead>
                             <tr className="bg-slate-50 font-bold text-slate-600 uppercase text-[10px]">
                               <th className="p-2">Ticket #</th>
@@ -1690,12 +2137,31 @@ export const Backoffice: React.FC<BackofficeProps> = ({
 
             {/* Purchase History Table */}
             <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
-              <div className="px-5 py-3.5 border-b border-slate-200 bg-slate-50 flex items-center justify-between">
+              <div className="px-5 py-3.5 border-b border-slate-200 bg-slate-50 flex flex-wrap items-center justify-between gap-3">
                 <div className="flex items-center gap-2">
                   <Truck className="w-4 h-4 text-emerald-600" />
                   <h3 className="font-bold text-xs text-slate-800 uppercase tracking-wider">
-                    Purchase Intake History ({purchasesHistory.length})
+                    Purchase Intake History ({filteredPurchases.length})
                   </h3>
+                </div>
+                <div className="relative w-64">
+                  <Search className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-1/2 -translate-y-1/2" />
+                  <input
+                    type="text"
+                    placeholder="Rechercher fournisseur, n°..."
+                    value={purchasesSearch}
+                    onChange={e => setPurchasesSearch(e.target.value)}
+                    className="w-full pl-8 pr-7 py-1.5 bg-white border border-slate-200 rounded-xl text-xs outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                  {purchasesSearch && (
+                    <button
+                      type="button"
+                      onClick={() => setPurchasesSearch('')}
+                      className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                    >
+                      <X className="w-3 h-3" />
+                    </button>
+                  )}
                 </div>
               </div>
               <div className="overflow-x-auto max-h-72 overflow-y-auto">
@@ -1713,8 +2179,13 @@ export const Backoffice: React.FC<BackofficeProps> = ({
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100">
-                    {purchasesHistory.map(p => (
-                      <tr key={p.id} className="hover:bg-slate-50">
+                    {filteredPurchases.map(p => (
+                      <tr
+                        key={p.id}
+                        className="hover:bg-slate-50 cursor-pointer"
+                        onClick={() => setPurchaseDetailId(p.id)}
+                        title="Voir le détail de l'achat"
+                      >
                         <td className="p-3 font-mono font-bold text-slate-900">{p.purchase_number}</td>
                         <td className="p-3 text-slate-500 font-mono text-[11px]">{formatDate(p.date)}</td>
                         <td className="p-3 font-bold text-slate-900">{p.supplier_name}</td>
@@ -1731,13 +2202,19 @@ export const Backoffice: React.FC<BackofficeProps> = ({
                         </td>
                       </tr>
                     ))}
-                    {purchasesHistory.length === 0 && (
+                    {purchasesHistory.length === 0 ? (
                       <tr>
                         <td colSpan={8} className="p-8 text-center text-slate-400">
                           No purchases recorded yet. Click &quot;+ New Purchase&quot; above to log an invoice.
                         </td>
                       </tr>
-                    )}
+                    ) : filteredPurchases.length === 0 ? (
+                      <tr>
+                        <td colSpan={8} className="p-8 text-center text-slate-400">
+                          Aucun résultat pour cette recherche
+                        </td>
+                      </tr>
+                    ) : null}
                   </tbody>
                 </table>
               </div>
@@ -1755,6 +2232,13 @@ export const Backoffice: React.FC<BackofficeProps> = ({
               materials={materials}
               products={products}
               initialSupplierId={selectedSupplier?.id}
+            />
+
+            {/* Purchase Detail Modal (row click) */}
+            <PurchaseDetailModal
+              isOpen={Boolean(purchaseDetailId)}
+              onClose={() => setPurchaseDetailId(null)}
+              purchaseId={purchaseDetailId}
             />
           </div>
         )}
@@ -1993,7 +2477,8 @@ export const Backoffice: React.FC<BackofficeProps> = ({
               </button>
             </div>
             <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
-              <table className="w-full text-left border-collapse text-xs">
+              <div className="overflow-x-auto">
+                <table className="w-full text-left border-collapse text-xs min-w-[850px]">
                 <thead>
                   <tr className="bg-slate-50 border-b border-slate-200 font-bold text-slate-600 uppercase text-[10px]">
                     <th className="p-3">Session #</th>
@@ -2054,6 +2539,7 @@ export const Backoffice: React.FC<BackofficeProps> = ({
                   )}
                 </tbody>
               </table>
+              </div>
             </div>
 
             {/* Session Drill-down Modal */}
@@ -2119,8 +2605,8 @@ export const Backoffice: React.FC<BackofficeProps> = ({
                           <div className="px-4 py-2.5 bg-slate-50 border-b border-slate-200 font-bold text-xs text-slate-700 uppercase tracking-wide">
                             Session Sales Receipts ({selectedSessionDetail.sales?.length || 0})
                           </div>
-                          <div className="max-h-56 overflow-y-auto">
-                            <table className="w-full text-left text-xs border-collapse">
+                          <div className="max-h-56 overflow-y-auto overflow-x-auto">
+                            <table className="w-full text-left text-xs border-collapse min-w-[550px]">
                               <thead>
                                 <tr className="bg-slate-50 text-slate-500 font-bold text-[10px] uppercase border-b border-slate-200">
                                   <th className="p-2.5">Receipt #</th>
@@ -2166,32 +2652,34 @@ export const Backoffice: React.FC<BackofficeProps> = ({
                             <div className="px-4 py-2 bg-slate-50 border-b border-slate-200 font-bold text-xs text-slate-700 uppercase tracking-wide">
                               Cash Movements ({selectedSessionDetail.movements.length})
                             </div>
-                            <table className="w-full text-left text-xs border-collapse">
-                              <thead>
-                                <tr className="bg-slate-50 text-slate-500 font-bold text-[10px] uppercase border-b border-slate-200">
-                                  <th className="p-2">Type</th>
-                                  <th className="p-2 text-right">Amount</th>
-                                  <th className="p-2">Reason</th>
-                                  <th className="p-2">Time</th>
-                                </tr>
-                              </thead>
-                              <tbody className="divide-y divide-slate-100">
-                                {selectedSessionDetail.movements.map((m: any) => (
-                                  <tr key={m.id}>
-                                    <td className="p-2 font-bold">
-                                      <span className={`px-1.5 py-0.5 rounded text-[10px] ${
-                                        m.type === 'CASH_IN' ? 'bg-emerald-100 text-emerald-800' : 'bg-rose-100 text-rose-800'
-                                      }`}>
-                                        {m.type}
-                                      </span>
-                                    </td>
-                                    <td className="p-2 text-right font-mono font-bold">{formatMoney(m.amount)}</td>
-                                    <td className="p-2 text-slate-600">{m.reason}</td>
-                                    <td className="p-2 text-slate-500 text-[11px]">{formatDateTime(m.created_at || m.date)}</td>
+                            <div className="overflow-x-auto">
+                              <table className="w-full text-left text-xs border-collapse min-w-[400px]">
+                                <thead>
+                                  <tr className="bg-slate-50 text-slate-500 font-bold text-[10px] uppercase border-b border-slate-200">
+                                    <th className="p-2">Type</th>
+                                    <th className="p-2 text-right">Amount</th>
+                                    <th className="p-2">Reason</th>
+                                    <th className="p-2">Time</th>
                                   </tr>
-                                ))}
-                              </tbody>
-                            </table>
+                                </thead>
+                                <tbody className="divide-y divide-slate-100">
+                                  {selectedSessionDetail.movements.map((m: any) => (
+                                    <tr key={m.id}>
+                                      <td className="p-2 font-bold">
+                                        <span className={`px-1.5 py-0.5 rounded text-[10px] ${
+                                          m.type === 'CASH_IN' ? 'bg-emerald-100 text-emerald-800' : 'bg-rose-100 text-rose-800'
+                                        }`}>
+                                          {m.type}
+                                        </span>
+                                      </td>
+                                      <td className="p-2 text-right font-mono font-bold">{formatMoney(m.amount)}</td>
+                                      <td className="p-2 text-slate-600">{m.reason}</td>
+                                      <td className="p-2 text-slate-500 text-[11px]">{formatDateTime(m.created_at || m.date)}</td>
+                                    </tr>
+                                  ))}
+                                </tbody>
+                              </table>
+                            </div>
                           </div>
                         )}
                       </>
@@ -2421,7 +2909,7 @@ export const Backoffice: React.FC<BackofficeProps> = ({
                 </button>
               </div>
               <div className="overflow-x-auto max-h-72 overflow-y-auto">
-                <table className="w-full text-left text-xs border-collapse">
+                <table className="w-full text-left text-xs border-collapse min-w-[600px]">
                   <thead>
                     <tr className="bg-slate-50 border-b border-slate-200 text-slate-500 font-bold text-[10px] uppercase">
                       <th className="p-3">Date</th>
@@ -2474,6 +2962,9 @@ export const Backoffice: React.FC<BackofficeProps> = ({
 
         {/* 10. BACKUPS TAB */}
         {activeTab === 'BACKUPS' && <BackupManager />}
+
+        {/* 11. SETTINGS TAB */}
+        {activeTab === 'SETTINGS' && <ShopSettingsPanel />}
       </main>
 
       {/* 1. Create Product / SKU Modal */}
@@ -2493,6 +2984,7 @@ export const Backoffice: React.FC<BackofficeProps> = ({
         containerTypes={containerTypes}
         familyToEdit={familyToEdit}
         productToEdit={productToEdit}
+        onSwitchToEdit={setProductToEdit}
       />
 
       {/* 2. Create Raw Material Modal */}
@@ -2638,6 +3130,13 @@ export const Backoffice: React.FC<BackofficeProps> = ({
           onRefreshData();
           loadBackofficeData();
         }}
+      />
+
+      {/* Customer Statement & Ledger Modal */}
+      <CustomerStatementModal
+        isOpen={isCustomerStatementOpen}
+        onClose={() => setIsCustomerStatementOpen(false)}
+        customer={selectedCustomer}
       />
     </div>
   );

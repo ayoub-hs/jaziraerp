@@ -116,6 +116,78 @@ describe('Inventory Adjustments & Accounting Ledger Module — Real HTTP Integra
     expect(mov).toBeDefined();
     expect(mov.amount).toBe(15.000);
     expect(mov.type).toBe('CASH_OUT');
+    expect(mov.expense_id).toBe(suppRes.body.id);
+  });
+
+  it('rejects REGISTER_CASH expenses without an open session and records nothing', async () => {
+    const db = getDb();
+
+    // No session_id at all
+    const noSession = await request(app)
+      .post('/api/accounting/expenses')
+      .send({ category: 'Supplies', amount: 10.0, payment_source: 'REGISTER_CASH' });
+    expect(noSession.status).toBe(400);
+    expect(noSession.body.error).toMatch(/open register session/i);
+
+    // Unknown session
+    const unknown = await request(app)
+      .post('/api/accounting/expenses')
+      .send({ category: 'Supplies', amount: 10.0, payment_source: 'REGISTER_CASH', session_id: 'ses-nope' });
+    expect(unknown.status).toBe(400);
+
+    // Closed session
+    db.prepare("UPDATE register_sessions SET status = 'CLOSED' WHERE id = 'ses-exp-1'").run();
+    const closed = await request(app)
+      .post('/api/accounting/expenses')
+      .send({ category: 'Supplies', amount: 10.0, payment_source: 'REGISTER_CASH', session_id: 'ses-exp-1' });
+    expect(closed.status).toBe(400);
+
+    // Nothing recorded: no expense, no cash movement
+    const expenses: any[] = db.prepare('SELECT * FROM general_expenses').all();
+    expect(expenses).toHaveLength(0);
+    const movements: any[] = db.prepare('SELECT * FROM register_cash_movements').all();
+    expect(movements).toHaveLength(0);
+  });
+
+  it('deletes general expense and its linked register CASH_OUT movement in one transaction', async () => {
+    const db = getDb();
+    // 1. Create legacy movement without expense_id
+    db.prepare(`
+      INSERT INTO register_cash_movements (id, session_id, date, type, amount, reason, created_at, expense_id)
+      VALUES ('legacy-mov', 'ses-exp-1', '2026-09-07', 'CASH_OUT', 5.000, 'Legacy drawer payout', '2026-09-07', NULL)
+    `).run();
+
+    // 2. Create expense linked to register cash
+    const expRes = await request(app)
+      .post('/api/accounting/expenses')
+      .send({
+        category: 'Cleaning',
+        amount: 20.000,
+        payment_source: 'REGISTER_CASH',
+        session_id: 'ses-exp-1',
+        description: 'Brooms & mop'
+      });
+    expect(expRes.status).toBe(201);
+    const expId = expRes.body.id;
+
+    // Verify linked movement exists
+    const linkedMov: any = db.prepare('SELECT * FROM register_cash_movements WHERE expense_id = ?').get(expId);
+    expect(linkedMov).toBeDefined();
+    expect(linkedMov.amount).toBe(20.000);
+
+    // 3. Delete expense
+    const delRes = await request(app).delete(`/api/accounting/expenses/${expId}`);
+    expect(delRes.status).toBe(200);
+
+    // Verify both expense and linked movement are deleted
+    const deletedExp = db.prepare('SELECT * FROM general_expenses WHERE id = ?').get(expId);
+    expect(deletedExp).toBeUndefined();
+    const deletedMov = db.prepare('SELECT * FROM register_cash_movements WHERE expense_id = ?').get(expId);
+    expect(deletedMov).toBeUndefined();
+
+    // Verify legacy movement is untouched
+    const legacyMov = db.prepare('SELECT * FROM register_cash_movements WHERE id = ?').get('legacy-mov');
+    expect(legacyMov).toBeDefined();
   });
 
   it('reconciles cash-flow ledger: money in (sales, debt payments) vs money out (purchases, expenses, refunds)', async () => {
@@ -169,6 +241,26 @@ describe('Inventory Adjustments & Accounting Ledger Module — Real HTTP Integra
     expect(cashFlowRes.body.money_in.total_in).toBe(100.000);
     expect(cashFlowRes.body.money_out.total_out).toBe(75.000);
     expect(cashFlowRes.body.net_cash_flow).toBe(25.000);
+  });
+
+  it('attributes late-night UTC sales to the next Tunis business day in cash-flow', async () => {
+    const saleRes = await request(app)
+      .post('/api/sales')
+      .send({
+        session_id: 'ses-exp-1',
+        date: '2026-01-15T23:30:00.000Z', // 00:30 Tunis 01-16
+        items: [{ is_quick_add: true, quick_add_name: 'Night Detergent', quantity: 1, unit_price: 10.0 }],
+        cash_paid: 10.0,
+        cash_tendered: 10.0
+      });
+    expect(saleRes.status).toBe(201);
+
+    const nextDay = await request(app).get('/api/accounting/cash-flow?start_date=2026-01-16&end_date=2026-01-16');
+    expect(nextDay.status).toBe(200);
+    expect(nextDay.body.money_in.total_in).toBe(10.0);
+
+    const sameDay = await request(app).get('/api/accounting/cash-flow?start_date=2026-01-15&end_date=2026-01-15');
+    expect(sameDay.body.money_in.total_in).toBe(0);
   });
 
   it('computes stock valuation at cost for raw materials and finished goods via GET /api/accounting/stock-valuation', async () => {

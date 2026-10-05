@@ -12,18 +12,21 @@ interface LockScreenModalProps {
 export const LockScreenModal: React.FC<LockScreenModalProps> = ({
   isLocked,
   onUnlocked,
-  shopName = 'Société Al Jazira SHSP'
+  shopName
 }) => {
+  const effectiveShopName = shopName || authService.getShopName();
   const [pin, setPin] = useState<string>('');
   const [error, setError] = useState<string | null>(null);
   const [isVerifying, setIsVerifying] = useState(false);
   const [isMasterMode, setIsMasterMode] = useState(false);
   const [masterPassword, setMasterPassword] = useState('');
+  const [isConfigured, setIsConfigured] = useState<boolean>(authService.isConfigured());
   const [isSetupOpen, setIsSetupOpen] = useState(false);
 
   useEffect(() => {
     if (isLocked) {
       authService.syncStatus().then(st => {
+        setIsConfigured(st.configured);
         if (!st.configured) {
           setIsSetupOpen(true);
         }
@@ -121,6 +124,28 @@ export const LockScreenModal: React.FC<LockScreenModalProps> = ({
 
   if (!isLocked) return null;
 
+  // When credentials are not configured yet, or setup modal is explicitly opened:
+  // Render ONLY AuthCredentialsModal so it is not superimposed on top of the PIN unlock pad.
+  if (isSetupOpen || !isConfigured) {
+    return (
+      <AuthCredentialsModal
+        isOpen={true}
+        mode="SETUP"
+        onClose={() => {
+          setIsSetupOpen(false);
+          if (!isConfigured) {
+            onUnlocked();
+          }
+        }}
+        onSuccess={() => {
+          setIsSetupOpen(false);
+          setIsConfigured(true);
+          onUnlocked();
+        }}
+      />
+    );
+  }
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/95 backdrop-blur-xl p-4 select-none animate-fadeIn">
       <div className="bg-slate-900 border border-slate-800 rounded-3xl shadow-2xl max-w-sm w-full p-6 flex flex-col items-center text-center">
@@ -129,7 +154,7 @@ export const LockScreenModal: React.FC<LockScreenModalProps> = ({
           <Lock className="w-7 h-7 text-emerald-400" />
         </div>
 
-        <h2 className="text-lg font-black text-white">{shopName}</h2>
+        <h2 className="text-lg font-black text-white">{effectiveShopName}</h2>
         <p className="text-xs text-slate-400 mt-0.5">
           {isMasterMode ? 'Master Password Unlock' : 'Enter 4-Digit Counter PIN'}
         </p>
@@ -261,31 +286,11 @@ export const LockScreenModal: React.FC<LockScreenModalProps> = ({
           </form>
         )}
 
-        {/* Setup / Reset link */}
-        <button
-          type="button"
-          onClick={() => setIsSetupOpen(true)}
-          className="mt-3 text-[11px] text-emerald-400 hover:text-emerald-300 font-semibold transition-colors flex items-center justify-center gap-1"
-        >
-          <Shield className="w-3.5 h-3.5" />
-          First Time? Configure Master Password & PIN
-        </button>
-
         {/* Offline indicator note */}
-        <div className="mt-2 text-[10px] text-slate-500">
+        <div className="mt-3 text-[10px] text-slate-500">
           Single-User Secure Unlock • Works 100% Offline
         </div>
       </div>
-
-      <AuthCredentialsModal
-        isOpen={isSetupOpen}
-        mode="SETUP"
-        onClose={() => setIsSetupOpen(false)}
-        onSuccess={() => {
-          setIsSetupOpen(false);
-          onUnlocked();
-        }}
-      />
     </div>
   );
 };

@@ -1,0 +1,52 @@
+- d4abfb7 fix: preserve cart items on checkout cancel and reset on sale done
+- 208794d fix: prevent double submit with ref guard and state, show error notices
+- 5acb9f0 fix: filter needs_review items from sync flush and expose review badge in header
+- 02c5169 fix: apply pack size price override for retail customers in cart
+- f20f083 fix: align invoice print total with sale total by removing uncollected fiscal stamp
+- edb01d8 fix: render setup modal exclusively without pin unlock pad underneath
+- a04f94a fix: auto-select refundable item and disable submit when fully refunded in refund modal
+- 74eb0d0 fix: share lazy module-level audio context across audio utils and scanner modal
+- 29114c4 fix: do not retry serial port request on user cancellation
+- cee003f fix: hide initial wallet balance field when editing customer
+- f2c2d7d fix: guard against null and undefined amounts in reports csv export
+- 962f0e3 fix: add 1-second cooldown to drawer kick and printer test in header
+- e438744 fix(db): add schema CHECK constraints for items and balances
+- 071da7b test: add empty database get routes and full lifecycle tests
+- bdffb63 fix(sync): store and fallback to local product families in clientDb
+- aa28162 chore(deps): apply npm audit fix
+- a7e5d1d test: assert sales reports, cash flow, and inventory valuation with hand-computed arithmetic in emptyDb test
+- b3f7fe6 feat(costing): implement quantity-weighted material unit cost helper
+- 25aab33 feat(costing): switch server consumers to quantity-weighted material unit cost
+- dc7864a feat(ui): display and calculate formulation with current_cost_per_unit first
+- 19a5a67 test: weighted-average material unit cost
+- ca8809a feat(test): isolate test DATABASE_PATH in vite env
+- 84e9d3e feat(test): add non-test database guard to resetTestDb
+- b8d8f69 chore: remove tracked empty sqlite databases and ignore db files under server
+- 243ebfb feat(settings): clean placeholder settings, fix tax_id key in sales receipt format
+- bce4367 feat(settings): add GET and PUT /api/settings/shop route and refresh lock screen name
+- 395a17b feat(settings): add ShopSettingsPanel and mount in Backoffice tabs
+- bd10ae1 feat(settings): add offline-safe shopInfo service and fetch on start
+- 9ad7ffd feat(settings): use getShopInfo in thermal receipts, invoices, and ESC/POS builders with blank omission
+- 6327938 test: add tests for settings routes, blank-omission formatting, and legacy cleanup
+- a70fa96 feat(backoffice): add Sales history tab with filters, receipt reprint, A4 invoice, and refunds
+- b1a3e38 feat(backoffice): add pack sizes repeater UI to CreateProductModal with multiplier, price override, and delete guard
+- 15fba3d feat(backoffice): add product/family active toggle, inactive view in catalog, and 409 delete text
+- 2ace580 feat(backoffice): add client-side search and low-stock filters with empty states across backoffice lists
+- eb995eb feat(backoffice): add customer overdue badge and overdue debt filter toggle
+- c5889a1 feat(backoffice): make all tables horizontally scrollable on mobile with min-width wrappers
+- b66a204 feat(backoffice): add default markup settings and price suggestion in CreateProductModal
+- 563b4d6 fix(sales): require open register session for cash refunds and link to active session
+- 969f0e0 fix(checkout): separate applied cash from tendered cash via buildPaymentPayload
+- f4d6c7e fix(sync): shared sale payment validation with failed/needs_review routing
+- b7e643a fix(receipt): reprint shows received cash (applied + change) with change
+- 4fe14d3 feat(pwa): offline shell with hand-written SW, manifest, update banner
+- 8d94daf fix(backup): validate restore file, snapshot, atomic swap; default HOST to 127.0.0.1
+- f77251b fix(restore): core-table validation with post-restore migration; lock receipt received/change parity
+- fd1cbc6 fix(expenses): REGISTER_CASH requires open session; modal offers open sessions
+- 085039c fix(containers): reject RETURN above owed count unless correction=true
+- 2102558 fix(production): require manufactured family with matching formulation for batches
+- b0bef4b fix(production): wizard only offers SKUs linked to the chosen formulation
+- ea24912 fix(dates): receipt, ticket and batch numbers use Africa/Tunis business day
+- 3e60991 fix(customers): log opening wallet as TOP_UP Solde initial
+- 66f0579 fix(packs): require integer multiplier >= 2 and non-negative price_override
+- NOTE: server now binds 127.0.0.1 by default (HOST env overrides). LAN/VPN exposure previously needed HOST=0.0.0.0 plus a firewall rule; see README Deployment.

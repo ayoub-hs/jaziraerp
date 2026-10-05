@@ -3,11 +3,14 @@ import crypto from 'crypto';
 import { getDb } from '../db/index.js';
 import { round3, addMoney, calculateTaxBreakdown } from '../utils/money.js';
 import { calculateContainersNeeded } from '../utils/container.js';
+import { businessDateKey } from '../utils/businessDate.js';
+import { computeExpectedCatalogPrice } from './sales.js';
+import { validateSalePayment } from '../utils/payments.js';
 
 export const syncRouter = Router();
 
 function generateReceiptNumber(db: any): string {
-  const dateStr = new Date().toISOString().slice(0, 10).replace(/-/g, '');
+  const dateStr = businessDateKey();
   const prefix = `REC-${dateStr}-`;
   const countRow: any = db.prepare(`
     SELECT COUNT(*) as cnt FROM sales WHERE receipt_number LIKE ?
@@ -17,7 +20,7 @@ function generateReceiptNumber(db: any): string {
 }
 
 function generateTicketNumber(db: any): string {
-  const dateStr = new Date().toISOString().slice(0, 10).replace(/-/g, '');
+  const dateStr = businessDateKey();
   const prefix = `TKT-${dateStr}-`;
   const countRow: any = db.prepare(`
     SELECT COUNT(*) as cnt FROM customer_debt_tickets WHERE ticket_number LIKE ?
@@ -39,12 +42,24 @@ syncRouter.get('/pull', (req: Request, res: Response) => {
     ORDER BY pf.name ASC, p.name ASC
   `).all();
 
-  const enrichedProducts = products.map((prod) => {
-    const packSizes = db.prepare(`
-      SELECT * FROM product_pack_sizes WHERE product_id = ? ORDER BY multiplier ASC
-    `).all(prod.id);
-    return { ...prod, pack_sizes: packSizes };
-  });
+  const allPackSizes: any[] = db.prepare(`
+    SELECT * FROM product_pack_sizes ORDER BY multiplier ASC
+  `).all();
+
+  const packSizesByProduct = new Map<string, any[]>();
+  for (const ps of allPackSizes) {
+    let list = packSizesByProduct.get(ps.product_id);
+    if (!list) {
+      list = [];
+      packSizesByProduct.set(ps.product_id, list);
+    }
+    list.push(ps);
+  }
+
+  const enrichedProducts = products.map((prod) => ({
+    ...prod,
+    pack_sizes: packSizesByProduct.get(prod.id) || []
+  }));
 
   const customers: any[] = db.prepare('SELECT * FROM customers ORDER BY name ASC').all();
   const enrichedCustomers = customers.map((c) => {
@@ -69,12 +84,14 @@ syncRouter.get('/pull', (req: Request, res: Response) => {
   `).all();
 
   const openSessions = db.prepare("SELECT * FROM register_sessions WHERE status = 'OPEN'").all();
+  const families = db.prepare("SELECT * FROM product_families WHERE active = 1 ORDER BY name ASC").all();
 
   res.json({
     products: enrichedProducts,
     customers: enrichedCustomers,
     container_types: containerTypes,
     open_sessions: openSessions,
+    families: families,
     server_time: new Date().toISOString()
   });
 });
@@ -91,15 +108,59 @@ syncRouter.post('/flush', (req: Request, res: Response) => {
   const db = getDb();
   const now = new Date().toISOString();
   const reconciled: any[] = [];
+  const failed: any[] = [];
 
-  const syncTx = db.transaction(() => {
-    for (const op of operations) {
-      const { temp_client_id, action_type, payload } = op;
+  for (const op of operations) {
+    const { temp_client_id, action_type, payload } = op;
 
-      if (action_type === 'SALE') {
+    try {
+      const opTx = db.transaction(() => {
+        if (action_type === 'SALE') {
+          const clientId = temp_client_id || payload?.temp_client_id;
+          if (clientId) {
+            const existingSale: any = db.prepare('SELECT id, receipt_number FROM sales WHERE synced_from_client_id = ?').get(clientId);
+            if (existingSale) {
+              reconciled.push({
+                temp_client_id: clientId,
+                action_type: 'SALE',
+                server_id: existingSale.id,
+                receipt_number: existingSale.receipt_number,
+                status: 'SYNCED'
+              });
+              return;
+            }
+          }
+
+          const walletAmount = round3(Number(payload.wallet_paid) || 0);
+          if (walletAmount > 0) {
+            if (!payload.customer_id) {
+              failed.push({
+                temp_client_id,
+                action_type: 'SALE',
+                reason: 'INSUFFICIENT_WALLET'
+              });
+              return;
+            }
+            const customer: any = db.prepare('SELECT wallet_balance FROM customers WHERE id = ?').get(payload.customer_id);
+            const currentBalance = round3(customer?.wallet_balance || 0);
+            if (!customer || currentBalance < walletAmount) {
+              failed.push({
+                temp_client_id,
+                action_type: 'SALE',
+                reason: 'INSUFFICIENT_WALLET'
+              });
+              return;
+            }
+          }
+
         const saleId = crypto.randomUUID();
         const receiptNumber = generateReceiptNumber(db);
         const date = payload.date || now;
+
+        let customerRow: any = null;
+        if (payload.customer_id) {
+          customerRow = db.prepare('SELECT id, type, reseller_discount_percent FROM customers WHERE id = ?').get(payload.customer_id) || null;
+        }
 
         // Process line items
         let computedSubtotal = 0;
@@ -113,6 +174,14 @@ syncRouter.post('/flush', (req: Request, res: Response) => {
           const isQuickAdd = item.is_quick_add ? 1 : 0;
           const baseDeducted = isQuickAdd ? 0 : qty * packMultiplier;
 
+          let catalogUnitPrice: number | null = null;
+          if (!isQuickAdd && item.product_id) {
+            const prodRow: any = db.prepare('SELECT * FROM products WHERE id = ?').get(item.product_id);
+            if (prodRow) {
+              catalogUnitPrice = computeExpectedCatalogPrice(db, prodRow, customerRow, item.pack_size_id, packMultiplier);
+            }
+          }
+
           const resolvedQuickName = item.quick_add_name || item.description || item.name || null;
           computedSubtotal = addMoney(computedSubtotal, lineTotal);
           processedItems.push({
@@ -125,26 +194,51 @@ syncRouter.post('/flush', (req: Request, res: Response) => {
             quantity: qty,
             base_stock_deducted: baseDeducted,
             unit_price: unitPrice,
+            catalog_unit_price: catalogUnitPrice,
             discount_amount: Number(item.discount_amount) || 0,
             line_total: lineTotal
           });
+        }
 
-          // Deduct stock in SQLite (DOUBLE-SELLING RISK ACCEPTED: proceed into negative if needed)
-          if (baseDeducted > 0 && item.product_id) {
+        const rawDiscount = Number(payload.total_discount) || 0;
+        const totalTTC = Math.max(0, round3(computedSubtotal - rawDiscount));
+        const taxBreakdown = calculateTaxBreakdown(totalTTC, 0.19);
+
+        // Shared payment validation: invalid ops go to failed/needs_review, never silently accepted.
+        // change_given is computed server-side; any client-supplied value is ignored.
+        const payment = validateSalePayment({
+          total_ttc: totalTTC,
+          subtotal: computedSubtotal,
+          total_discount: rawDiscount,
+          cash_paid: payload.cash_paid,
+          cash_tendered: payload.cash_tendered,
+          wallet_paid: walletAmount,
+          credit_amount: payload.credit_amount
+        });
+        if (!payment.ok) {
+          failed.push({
+            temp_client_id,
+            action_type: 'SALE',
+            reason: payment.error
+          });
+          return;
+        }
+        const cashAmount = payment.cash_paid;
+        const creditAmount = payment.credit_amount;
+        const changeGiven = payment.change_given;
+
+        // Deduct stock only for validated sales
+        // (DOUBLE-SELLING RISK ACCEPTED: proceed into negative if needed)
+        for (const item of processedItems) {
+          if (item.base_stock_deducted > 0 && item.product_id) {
             db.prepare(`
               UPDATE products
               SET stock_quantity = stock_quantity - ?,
                   updated_at = ?
               WHERE id = ?
-            `).run(baseDeducted, now, item.product_id);
+            `).run(item.base_stock_deducted, now, item.product_id);
           }
         }
-
-        const totalTTC = Math.max(0, round3(computedSubtotal - (Number(payload.total_discount) || 0)));
-        const taxBreakdown = calculateTaxBreakdown(totalTTC, 0.19);
-        const cashAmount = round3(Number(payload.cash_paid) || 0);
-        const walletAmount = round3(Number(payload.wallet_paid) || 0);
-        const creditAmount = round3(Number(payload.credit_amount) || 0);
 
         // Resolve session_id safely to prevent FK failure
         let validSessionId: string | null = null;
@@ -189,7 +283,7 @@ syncRouter.post('/flush', (req: Request, res: Response) => {
           cashAmount,
           walletAmount,
           creditAmount,
-          Number(payload.change_given) || 0,
+          changeGiven,
           temp_client_id,
           now
         );
@@ -199,8 +293,8 @@ syncRouter.post('/flush', (req: Request, res: Response) => {
           INSERT INTO sale_items (
             id, sale_id, product_id, is_quick_add, quick_add_name,
             pack_size_id, pack_multiplier, quantity, quantity_refunded,
-            base_stock_deducted, unit_price, discount_amount, line_total
-          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 0, ?, ?, ?, ?)
+            base_stock_deducted, unit_price, catalog_unit_price, discount_amount, line_total
+          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 0, ?, ?, ?, ?, ?)
         `);
 
         for (const item of processedItems) {
@@ -215,6 +309,7 @@ syncRouter.post('/flush', (req: Request, res: Response) => {
             item.quantity,
             item.base_stock_deducted,
             item.unit_price,
+            item.catalog_unit_price,
             item.discount_amount,
             item.line_total
           );
@@ -223,7 +318,7 @@ syncRouter.post('/flush', (req: Request, res: Response) => {
         // Wallet deduction
         if (walletAmount > 0 && payload.customer_id) {
           db.prepare(`
-            UPDATE customers SET wallet_balance = MAX(0, wallet_balance - ?), updated_at = ? WHERE id = ?
+            UPDATE customers SET wallet_balance = wallet_balance - ?, updated_at = ? WHERE id = ?
           `).run(walletAmount, now, payload.customer_id);
 
           db.prepare(`
@@ -331,8 +426,24 @@ syncRouter.post('/flush', (req: Request, res: Response) => {
         });
       } else if (action_type === 'CONTAINER_TRANSACTION') {
         const txId = crypto.randomUUID();
-        const { customer_id, container_type_id, action, quantity, notes } = payload;
+        const { customer_id, container_type_id, action, quantity, notes, correction } = payload;
         const qty = parseInt(quantity, 10);
+
+        // RETURN above the customer's owed count is rejected unless correction=true.
+        if (action === 'RETURN' && !correction) {
+          const loanRow: any = db.prepare(
+            'SELECT quantity_owed FROM customer_container_loans WHERE customer_id = ? AND container_type_id = ?'
+          ).get(customer_id, container_type_id);
+          const owed = loanRow ? Number(loanRow.quantity_owed) || 0 : 0;
+          if (qty > owed) {
+            failed.push({
+              temp_client_id,
+              action_type: 'CONTAINER_TRANSACTION',
+              reason: `Return quantity (${qty}) exceeds customer's owed count (${owed})`
+            });
+            return;
+          }
+        }
 
         db.prepare(`
           INSERT INTO container_transactions (id, date, customer_id, container_type_id, action, quantity, notes, created_at)
@@ -365,6 +476,9 @@ syncRouter.post('/flush', (req: Request, res: Response) => {
         });
       } else if (action_type === 'PRICE_STOCK_EDIT') {
         const { product_id, retail_price, wholesale_price, stock_quantity } = payload;
+        const currentProd: any = db.prepare('SELECT stock_quantity FROM products WHERE id = ?').get(product_id);
+        const oldQty = currentProd ? Number(currentProd.stock_quantity) : 0;
+
         db.prepare(`
           UPDATE products
           SET retail_price = COALESCE(?, retail_price),
@@ -380,6 +494,17 @@ syncRouter.post('/flush', (req: Request, res: Response) => {
           product_id
         );
 
+        if (stock_quantity !== undefined && currentProd) {
+          const newQty = Number(stock_quantity);
+          const delta = round3(newQty - oldQty);
+          if (delta !== 0) {
+            db.prepare(`
+              INSERT INTO inventory_adjustments (id, date, item_type, material_id, product_id, quantity_delta, reason, created_at)
+              VALUES (?, ?, 'PRODUCT', NULL, ?, ?, 'SYNC_PRICE_STOCK_EDIT', ?)
+            `).run(crypto.randomUUID(), payload.date || now, product_id, delta, now);
+          }
+        }
+
         reconciled.push({
           temp_client_id,
           action_type: 'PRICE_STOCK_EDIT',
@@ -387,14 +512,22 @@ syncRouter.post('/flush', (req: Request, res: Response) => {
           status: 'SYNCED'
         });
       }
-    }
-  });
+    });
 
-  syncTx();
+    opTx();
+  } catch (err: any) {
+    failed.push({
+      temp_client_id,
+      action_type,
+      reason: err.message || 'OP_FAILED'
+    });
+  }
+}
 
-  res.json({
-    success: true,
-    processed_count: operations.length,
-    reconciled
-  });
+res.json({
+  success: true,
+  processed_count: reconciled.length,
+  reconciled,
+  failed
+});
 });

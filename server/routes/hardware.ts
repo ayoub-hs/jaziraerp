@@ -1,8 +1,9 @@
 import { Router, Request, Response } from 'express';
 import fs from 'fs';
-import { execSync, spawnSync } from 'child_process';
+import { execFileSync, spawnSync } from 'child_process';
 import path from 'path';
 import { getDb } from '../db/index.js';
+import { getShopSettingsFromDb } from './settings.js';
 
 export const hardwareRouter = Router();
 
@@ -23,7 +24,9 @@ export function findSerialPort(): string | null {
  * Triggers the solenoid kick pulse on a serial port
  */
 export function kickSerialDrawer(portPath?: string): { success: boolean; port: string; error?: string } {
-  const targetPort = portPath || findSerialPort() || '/dev/ttyUSB0';
+  const isValidPort = typeof portPath === 'string' && /^\/dev\/(ttyUSB|ttyACM|ttyS)\d+$/.test(portPath.trim());
+  const validatedPort = isValidPort ? portPath.trim() : null;
+  const targetPort = validatedPort || findSerialPort() || '/dev/ttyUSB0';
 
   if (!fs.existsSync(targetPort)) {
     return {
@@ -34,11 +37,11 @@ export function kickSerialDrawer(portPath?: string): { success: boolean; port: s
   }
 
   try {
-    // Open in non-blocking write mode and transmit pulses
+    // Open in non-blocking write mode without truncation and transmit pulses
     // Standard ESC/POS kick: 1B 70 00 19 FA
     // Standalone USB trigger box triggers (BT-100U / Maken): 0x01, 0x07, 0x00
     const pulse = Buffer.from([0x1b, 0x70, 0x00, 0x19, 0xfa, 0x01, 0x07, 0x00]);
-    const fd = fs.openSync(targetPort, 'w');
+    const fd = fs.openSync(targetPort, fs.constants.O_WRONLY | fs.constants.O_NOCTTY);
     fs.writeSync(fd, pulse);
     fs.closeSync(fd);
 
@@ -65,7 +68,7 @@ hardwareRouter.get('/drawer/status', (req: Request, res: Response) => {
 
   if (port) {
     try {
-      const udevOut = execSync(`udevadm info -q property -n ${port} 2>/dev/null || true`).toString();
+      const udevOut = execFileSync('udevadm', ['info', '-q', 'property', '-n', port]).toString();
       const modelMatch = udevOut.match(/ID_MODEL_FROM_DATABASE=(.+)/) || udevOut.match(/ID_MODEL=(.+)/);
       if (modelMatch && modelMatch[1]) {
         usbDeviceName = modelMatch[1].trim();
@@ -177,8 +180,25 @@ function cleanAscii(str: string): string {
 /**
  * Builds 58mm ESC/POS byte buffer matching Kotlin DesktopReceiptPrinter.kt
  */
-export function buildReceiptEscPosBuffer(sale: any, storeName = 'SOCIETE AL JAZIRA'): Buffer {
+export function buildReceiptEscPosBuffer(sale: any, storeName?: string, customDb?: any): Buffer {
   const bytes: number[] = [];
+
+  const db = customDb || getDb();
+  let shopSettings;
+  try {
+    shopSettings = getShopSettingsFromDb(db);
+  } catch {
+    shopSettings = {
+      shop_name: 'Société Al Jazira SHSP',
+      shop_subtitle: '',
+      shop_address: '',
+      shop_phone: '',
+      tax_id: ''
+    };
+  }
+  const effectiveName = storeName && storeName !== 'SOCIETE AL JAZIRA'
+    ? storeName
+    : (shopSettings.shop_name || 'Société Al Jazira SHSP');
 
   const push = (...b: number[]) => bytes.push(...b);
   const text = (str: string) => {
@@ -210,13 +230,25 @@ export function buildReceiptEscPosBuffer(sale: any, storeName = 'SOCIETE AL JAZI
 
   // Store header
   push(0x1b, 0x61, 0x01); // Center
-  push(0x1b, 0x45, 0x01); // Bold on
-  line(storeName.slice(0, 32));
-  push(0x1b, 0x45, 0x00); // Bold off
-  line('SHSP - Detergents & Hygiene');
-  line('Route de Gabes Km 3.5, Sfax');
-  line('Tel: +216 74 000 000');
-  line('MF: 1234567/A/M/000');
+  if (effectiveName && effectiveName.trim()) {
+    push(0x1b, 0x45, 0x01); // Bold on
+    line(cleanAscii(effectiveName.trim()).slice(0, 32));
+    push(0x1b, 0x45, 0x00); // Bold off
+  }
+  if (shopSettings.shop_subtitle && shopSettings.shop_subtitle.trim()) {
+    line(cleanAscii(shopSettings.shop_subtitle.trim()).slice(0, 32));
+  }
+  if (shopSettings.shop_address && shopSettings.shop_address.trim()) {
+    line(cleanAscii(shopSettings.shop_address.trim()).slice(0, 32));
+  }
+  if (shopSettings.shop_phone && shopSettings.shop_phone.trim()) {
+    line(cleanAscii(`Tel: ${shopSettings.shop_phone.trim()}`).slice(0, 32));
+  }
+  if (shopSettings.tax_id && shopSettings.tax_id.trim()) {
+    const rawTax = shopSettings.tax_id.trim();
+    const taxLine = rawTax.startsWith('MF:') ? rawTax : `MF: ${rawTax}`;
+    line(cleanAscii(taxLine).slice(0, 32));
+  }
   divider('=');
 
   // Metadata
@@ -262,11 +294,14 @@ export function buildReceiptEscPosBuffer(sale: any, storeName = 'SOCIETE AL JAZI
   twoCol('TOTAL TTC:', formatMoneyDinars(sale?.total_ttc));
   push(0x1b, 0x45, 0x00); // Bold off
 
-  // Payments
+  // Payments (cash_tendered is not stored; re-derive received cash as applied + change)
   divider('-');
   if ((sale?.cash_paid || 0) > 0) twoCol('Especes:', formatMoneyDinars(sale.cash_paid));
   if ((sale?.wallet_paid || 0) > 0) twoCol('Portefeuille:', formatMoneyDinars(sale.wallet_paid));
   if ((sale?.credit_amount || 0) > 0) twoCol('Bon de Credit:', formatMoneyDinars(sale.credit_amount));
+  if ((sale?.cash_paid || 0) > 0 && (sale?.change_given || 0) > 0) {
+    twoCol('Recu:', formatMoneyDinars(Math.round(((Number(sale.cash_paid) || 0) + (Number(sale.change_given) || 0)) * 1000) / 1000));
+  }
   if ((sale?.change_given || 0) > 0) twoCol('Rendu:', formatMoneyDinars(sale.change_given));
 
   // Footer

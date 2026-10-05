@@ -57,7 +57,7 @@ describe('ESC/POS Thermal & Drawer Kick Hardware Service', () => {
     const decoder = new TextDecoder();
     const textOutput = decoder.decode(receiptBytes);
 
-    expect(textOutput).toContain('SOCIETE AL JAZIRA');
+    expect(textOutput).toContain('Société Al Jazira SHSP');
     expect(textOutput).toContain('REC-20260907-0001');
     expect(textOutput).toContain('Dish Soap Lemon 1L');
     expect(textOutput).toContain('TOTAL TTC:');
@@ -118,5 +118,48 @@ describe('ESC/POS Thermal & Drawer Kick Hardware Service', () => {
     expect(textOutput).toContain('17.000 DT');
     expect(textOutput).toContain('Rendu:');
     expect(textOutput).toContain('3.000 DT');
+  });
+
+  it('b) escpos buildReceiptEscPos: blank address/phone/tax ID produce no lines for them; filled values appear', () => {
+    const sale: any = {
+      receipt_number: 'REC-TEST-B',
+      date: '2026-10-04T10:00:00Z',
+      customer_name: 'Client Test',
+      total_ttc: 5.000,
+      cash_paid: 5.000,
+      items: [
+        { description: 'Article 1', quantity: 1, unit_price: 5.000, line_total: 5.000 }
+      ]
+    };
+
+    // 1. Blank address, phone, tax ID
+    const blankBytes = buildReceiptEscPos(sale, {
+      name: 'Boutique SHSP',
+      subtitle: '',
+      address: '',
+      phone: '',
+      taxId: ''
+    });
+    const blankText = new TextDecoder().decode(blankBytes);
+    expect(blankText).toContain('Boutique SHSP');
+    expect(blankText).not.toContain('Route de Gabes');
+    expect(blankText).not.toContain('Tel:');
+    expect(blankText).not.toContain('Tél:');
+    expect(blankText).not.toContain('MF:');
+
+    // 2. Filled values appear
+    const filledBytes = buildReceiptEscPos(sale, {
+      name: 'Boutique SHSP',
+      subtitle: 'Produits Pro',
+      address: 'Avenue Habib Bourguiba',
+      phone: '+216 71 222 333',
+      taxId: '1234567/Z/A/000'
+    });
+    const filledText = new TextDecoder().decode(filledBytes);
+    expect(filledText).toContain('Boutique SHSP');
+    expect(filledText).toContain('Produits Pro');
+    expect(filledText).toContain('Avenue Habib Bourguiba');
+    expect(filledText).toContain('+216 71 222 333');
+    expect(filledText).toContain('MF: 1234567/Z/A/000');
   });
 });

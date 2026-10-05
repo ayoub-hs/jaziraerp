@@ -120,10 +120,22 @@ customersRouter.post('/', (req: Request, res: Response) => {
   const discount = Math.max(0, Math.min(100, Number(reseller_discount_percent) || 0));
   const wallet = round3(Number(wallet_balance) || 0);
 
-  db.prepare(`
-    INSERT INTO customers (id, name, phone, address, type, reseller_discount_percent, wallet_balance, created_at, updated_at)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-  `).run(id, name.trim(), phone, address, type, discount, wallet, now, now);
+  const createTx = db.transaction(() => {
+    db.prepare(`
+      INSERT INTO customers (id, name, phone, address, type, reseller_discount_percent, wallet_balance, created_at, updated_at)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `).run(id, name.trim(), phone, address, type, discount, wallet, now, now);
+
+    // Opening wallet balance is store credit, not register cash: log it as
+    // TOP_UP "Solde initial" so the statement ledger reconciles. No cash movement.
+    if (wallet > 0) {
+      db.prepare(`
+        INSERT INTO customer_wallet_transactions (id, customer_id, date, type, amount, reference_id, notes, created_at)
+        VALUES (?, ?, ?, 'TOP_UP', ?, NULL, 'Solde initial', ?)
+      `).run(crypto.randomUUID(), id, now, wallet, now);
+    }
+  });
+  createTx();
 
   const created = db.prepare('SELECT * FROM customers WHERE id = ?').get(id);
   res.status(201).json(created);
@@ -275,25 +287,58 @@ const handleWalletTopUp = (req: Request, res: Response) => {
 customersRouter.post('/:id/wallet/top-up', handleWalletTopUp);
 customersRouter.post('/:id/wallet-topup', handleWalletTopUp);
 
-// GET /api/customers/:id/statement - transaction ledger history
+// GET /api/customers/:id/statement - two ledgers with running balances:
+// debt (tickets in, payment allocations applied to tickets out; final = total_debt)
+// wallet (top-ups/overpayments/refund credits in, wallet sales out; final = wallet_balance)
 customersRouter.get('/:id/statement', (req: Request, res: Response) => {
   const db = getDb();
+  const customer: any = db.prepare('SELECT id, wallet_balance FROM customers WHERE id = ?').get(req.params.id);
+  if (!customer) {
+    res.status(404).json({ error: 'Customer not found' });
+    return;
+  }
 
-  // Fetch tickets
+  const byDateAsc = (a: any, b: any) => {
+    const timeA = new Date(a.date || a.created_at).getTime();
+    const timeB = new Date(b.date || b.created_at).getTime();
+    if (timeA !== timeB) return timeA - timeB;
+    return new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
+  };
+  const withRunning = (entries: any[]) => {
+    let balance = 0;
+    return entries.sort(byDateAsc).map(e => {
+      balance = round3(balance + (e.debit || 0) - (e.credit || 0));
+      return { ...e, running_balance: balance };
+    });
+  };
+
+  // --- Debt ledger: tickets debit, only the allocated part of payments credits ---
   const tickets: any[] = db.prepare(`
-    SELECT id, 'TICKET' as entry_type, ticket_number as reference, date, total_amount as debit, 0 as credit, status, created_at
+    SELECT id, 'TICKET' as entry_type, ticket_number as reference, date,
+      total_amount as debit, 0 as credit, status, created_at
     FROM customer_debt_tickets
     WHERE customer_id = ?
   `).all(req.params.id);
 
-  // Fetch payments
-  const payments: any[] = db.prepare(`
-    SELECT id, 'PAYMENT' as entry_type, payment_method as reference, date, 0 as debit, amount as credit, notes as status, created_at
-    FROM customer_payments
-    WHERE customer_id = ?
+  const allocations: any[] = db.prepare(`
+    SELECT cpa.id, 'PAYMENT' as entry_type,
+      cp.payment_method || ' → ' || cdt.ticket_number as reference,
+      cp.date, 0 as debit, cpa.amount_allocated as credit,
+      'Applied to ' || cdt.ticket_number as status, cp.created_at
+    FROM customer_payment_allocations cpa
+    JOIN customer_payments cp ON cp.id = cpa.payment_id
+    JOIN customer_debt_tickets cdt ON cdt.id = cpa.ticket_id
+    WHERE cp.customer_id = ?
   `).all(req.params.id);
 
-  // Fetch wallet txs
+  const debtEntries = withRunning([...tickets, ...allocations]);
+  const debtTotal: any = db.prepare(`
+    SELECT COALESCE(SUM(remaining_amount), 0) as total_debt
+    FROM customer_debt_tickets
+    WHERE customer_id = ? AND status IN ('UNPAID', 'PARTIALLY_PAID')
+  `).get(req.params.id);
+
+  // --- Wallet ledger: top-ups/overpayments/refund credits in, wallet sales out ---
   const walletTxs: any[] = db.prepare(`
     SELECT id, 'WALLET' as entry_type, type as reference, date,
       CASE WHEN type IN ('TOP_UP', 'OVERPAYMENT_DEPOSIT', 'REFUND_CREDIT') THEN amount ELSE 0 END as credit,
@@ -303,11 +348,25 @@ customersRouter.get('/:id/statement', (req: Request, res: Response) => {
     WHERE customer_id = ?
   `).all(req.params.id);
 
-  const combined = [...tickets, ...payments, ...walletTxs].sort((a, b) => {
-    return new Date(b.date).getTime() - new Date(a.date).getTime();
+  // Wallet display convention is balance = in - out; reuse debit/credit columns
+  // with running computed as credit - debit.
+  let walletBalance = 0;
+  const walletEntries = walletTxs.sort(byDateAsc).map(e => {
+    walletBalance = round3(walletBalance + (e.credit || 0) - (e.debit || 0));
+    return { ...e, running_balance: walletBalance };
   });
 
-  res.json(combined);
+  res.json({
+    customer_id: req.params.id,
+    debt: {
+      entries: debtEntries,
+      final_balance: round3(debtTotal?.total_debt || 0)
+    },
+    wallet: {
+      entries: walletEntries,
+      final_balance: round3(customer.wallet_balance || 0)
+    }
+  });
 });
 
 // DELETE /api/customers/:id - delete or soft-delete customer

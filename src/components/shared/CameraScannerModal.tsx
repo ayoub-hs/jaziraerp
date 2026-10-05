@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { X, Camera, Flashlight, AlertCircle } from 'lucide-react';
+import { playBeep } from '../../utils/audio.js';
 
 interface CameraScannerModalProps {
   isOpen: boolean;
@@ -33,27 +34,6 @@ export const CameraScannerModal: React.FC<CameraScannerModalProps> = ({
       stopCamera();
     };
   }, [isOpen]);
-
-  const playBeep = () => {
-    try {
-      const audioCtx = new (window.AudioContext || (window as any).webkitAudioContext)();
-      const osc = audioCtx.createOscillator();
-      const gain = audioCtx.createGain();
-
-      osc.type = 'sine';
-      osc.frequency.setValueAtTime(1800, audioCtx.currentTime); // 1800Hz crisp scanner beep
-      gain.gain.setValueAtTime(0.15, audioCtx.currentTime);
-      gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.1);
-
-      osc.connect(gain);
-      gain.connect(audioCtx.destination);
-
-      osc.start();
-      osc.stop(audioCtx.currentTime + 0.1);
-    } catch {
-      // AudioContext unavailable or blocked by autoplay policy
-    }
-  };
 
   const startCamera = async () => {
     setError(null);

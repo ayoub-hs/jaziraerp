@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { 
   ShoppingCart, 
   Search, 
@@ -26,9 +26,10 @@ import type {
   Customer, 
   CartItem, 
   RegisterSession,
-  ContainerType 
+  ContainerType,
+  PackSize
 } from '../../types/index.js';
-import { calculateCartTotals, getProductPriceForCustomer, calculateContainersNeeded } from '../../utils/cart.js';
+import { calculateCartTotals, getProductPriceForCustomer, getProductPackPrice, calculateContainersNeeded } from '../../utils/cart.js';
 import { formatMoney, roundMoney } from '../../utils/formatters.js';
 import { playBeep, playErrorBeep, vibrateError } from '../../utils/audio.js';
 import { CheckoutModal } from '../shared/CheckoutModal.js';
@@ -98,12 +99,16 @@ export const MobileRegister: React.FC<MobileRegisterProps> = ({
   const [paymentAmount, setPaymentAmount] = useState('');
   const [paymentMsg, setPaymentMsg] = useState<string | null>(null);
   const [isSubmittingPayment, setIsSubmittingPayment] = useState(false);
+  const isSubmittingPaymentRef = useRef(false);
 
   // Container give/return in customer view
   const [isContainerModalOpen, setIsContainerModalOpen] = useState(false);
   const [containerAction, setContainerAction] = useState<'GIVE' | 'RETURN'>('GIVE');
   const [selectedContainerTypeId, setSelectedContainerTypeId] = useState<string>('');
   const [containerQty, setContainerQty] = useState('1');
+  const [isSubmittingContainer, setIsSubmittingContainer] = useState(false);
+  const [containerError, setContainerError] = useState<string | null>(null);
+  const isSubmittingContainerRef = useRef(false);
 
   // Camera & Scanner State
   const [isCameraOpen, setIsCameraOpen] = useState(false);
@@ -130,10 +135,12 @@ export const MobileRegister: React.FC<MobileRegisterProps> = ({
         if (item.is_quick_add || !item.product_id) return item;
         const prod = products.find(p => p.id === item.product_id);
         if (!prod) return item;
-        const effectivePrice = getProductPriceForCustomer(prod, selectedCustomer);
+        const packSize = item.selected_pack_size_id
+          ? prod.pack_sizes?.find(s => s.id === item.selected_pack_size_id)
+          : prod.pack_sizes?.find(s => s.multiplier === item.pack_multiplier);
         return {
           ...item,
-          unit_price: roundMoney(effectivePrice * (item.pack_multiplier || 1))
+          unit_price: getProductPackPrice(prod, selectedCustomer, packSize, item.pack_multiplier || 1)
         };
       })
     );
@@ -154,7 +161,9 @@ export const MobileRegister: React.FC<MobileRegisterProps> = ({
 
     if (activeTab === 'REGISTER') {
       let matchedProduct: Product | undefined;
+      let matchedPackSize: PackSize | undefined;
       let packMultiplier = 1;
+      let packLabel: string | undefined;
 
       for (const p of products) {
         if (p.barcode && p.barcode.toLowerCase() === cleanCode.toLowerCase()) {
@@ -164,17 +173,19 @@ export const MobileRegister: React.FC<MobileRegisterProps> = ({
         const ps = p.pack_sizes?.find(s => s.barcode && s.barcode.toLowerCase() === cleanCode.toLowerCase());
         if (ps) {
           matchedProduct = p;
+          matchedPackSize = ps;
           packMultiplier = ps.multiplier;
+          packLabel = ps.pack_label;
           break;
         }
       }
 
       if (matchedProduct) {
         playBeep();
-        addProductToCart(matchedProduct, packMultiplier);
+        addProductToCart(matchedProduct, packMultiplier, packLabel, matchedPackSize);
         setScanAlert({
           type: 'success',
-          message: `Ajouté : ${matchedProduct.name}${packMultiplier > 1 ? ` (Pack x${packMultiplier})` : ''}`
+          message: `Ajouté : ${matchedProduct.name}${packMultiplier > 1 ? ` (${packLabel || `Pack x${packMultiplier}`})` : ''}`
         });
       } else {
         playErrorBeep();
@@ -196,10 +207,26 @@ export const MobileRegister: React.FC<MobileRegisterProps> = ({
     handleBarcodeScanned(code);
   };
 
-  const addProductToCart = (product: Product, packMultiplier = 1) => {
-    const effectivePrice = getProductPriceForCustomer(product, selectedCustomer);
+  const addProductToCart = (
+    product: Product,
+    packMultiplier = 1,
+    packLabel?: string,
+    packSize?: PackSize | null
+  ) => {
+    const resolvedPackSize =
+      packSize ??
+      (packMultiplier > 1
+        ? product.pack_sizes?.find(s => s.multiplier === packMultiplier && (!packLabel || s.pack_label === packLabel))
+        : undefined);
+    const unitPrice = getProductPackPrice(product, selectedCustomer, resolvedPackSize, packMultiplier);
+
     setCart(prev => {
-      const idx = prev.findIndex(i => i.product_id === product.id && i.pack_multiplier === packMultiplier);
+      const idx = prev.findIndex(
+        i =>
+          i.product_id === product.id &&
+          i.pack_multiplier === packMultiplier &&
+          i.selected_pack_size_id === resolvedPackSize?.id
+      );
       if (idx >= 0) {
         const copy = [...prev];
         copy[idx] = { ...copy[idx], quantity: copy[idx].quantity + 1 };
@@ -214,9 +241,11 @@ export const MobileRegister: React.FC<MobileRegisterProps> = ({
           name: product.name,
           size_label: product.size_label,
           barcode: product.barcode,
-          unit_price: roundMoney(effectivePrice * packMultiplier),
+          unit_price: unitPrice,
           quantity: 1,
           pack_multiplier: packMultiplier,
+          pack_label: packLabel || resolvedPackSize?.pack_label,
+          selected_pack_size_id: resolvedPackSize?.id,
           discount_amount: 0,
           container_type_id: product.container_type_id || null,
           container_capacity_liters: container?.capacity_liters ?? null,
@@ -413,9 +442,11 @@ export const MobileRegister: React.FC<MobileRegisterProps> = ({
   };
 
   const handleRecordCustomerPayment = async (customer: Customer) => {
+    if (isSubmittingPaymentRef.current) return;
     const val = parseFloat(paymentAmount);
     if (isNaN(val) || val <= 0) return;
 
+    isSubmittingPaymentRef.current = true;
     setIsSubmittingPayment(true);
     setPaymentMsg(null);
     try {
@@ -429,19 +460,27 @@ export const MobileRegister: React.FC<MobileRegisterProps> = ({
         setPaymentMsg(`Payment of ${formatMoney(val)} recorded via FIFO debt tickets.`);
         setPaymentAmount('');
         onRefreshData();
+      } else {
+        const data = await res.json().catch(() => ({}));
+        setPaymentMsg(data.error || `Erreur paiement (${res.status})`);
       }
     } catch (err: any) {
-      setPaymentMsg('Error processing payment');
+      setPaymentMsg(err.message || 'Error processing payment');
     } finally {
+      isSubmittingPaymentRef.current = false;
       setIsSubmittingPayment(false);
     }
   };
 
   const handleContainerTransaction = async () => {
+    if (isSubmittingContainerRef.current) return;
     if (!selectedCustDetails || !selectedContainerTypeId) return;
     const qty = parseInt(containerQty);
     if (isNaN(qty) || qty <= 0) return;
 
+    isSubmittingContainerRef.current = true;
+    setIsSubmittingContainer(true);
+    setContainerError(null);
     try {
       const res = await fetch('/api/containers/transactions', {
         method: 'POST',
@@ -455,10 +494,17 @@ export const MobileRegister: React.FC<MobileRegisterProps> = ({
       });
       if (res.ok) {
         setIsContainerModalOpen(false);
+        setContainerQty('1');
         onRefreshData();
+      } else {
+        const data = await res.json().catch(() => ({}));
+        setContainerError(data.error || `Erreur contenant (${res.status})`);
       }
-    } catch (err) {
-      console.warn('Container error:', err);
+    } catch (err: any) {
+      setContainerError(err.message || 'Container error');
+    } finally {
+      isSubmittingContainerRef.current = false;
+      setIsSubmittingContainer(false);
     }
   };
 
@@ -897,9 +943,9 @@ export const MobileRegister: React.FC<MobileRegisterProps> = ({
                         <button
                           disabled={isSubmittingPayment}
                           onClick={() => handleRecordCustomerPayment(customer)}
-                          className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-3 py-1.5 rounded-lg text-xs shrink-0"
+                          className="bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white font-bold px-3 py-1.5 rounded-lg text-xs shrink-0 transition-colors"
                         >
-                          Payer (FIFO)
+                          {isSubmittingPayment && selectedCustDetails?.id === customer.id ? 'Paiement...' : 'Payer (FIFO)'}
                         </button>
                       </div>
 
@@ -1228,18 +1274,30 @@ export const MobileRegister: React.FC<MobileRegisterProps> = ({
               />
             </div>
 
+            {containerError && (
+              <div className="p-2.5 bg-rose-50 border border-rose-200 text-rose-700 rounded-xl text-xs font-semibold">
+                {containerError}
+              </div>
+            )}
+
             <div className="flex gap-2 pt-2">
               <button
-                onClick={() => setIsContainerModalOpen(false)}
-                className="flex-1 py-2 bg-slate-100 font-bold rounded-xl text-xs text-slate-700"
+                type="button"
+                onClick={() => {
+                  setIsContainerModalOpen(false);
+                  setContainerError(null);
+                }}
+                className="flex-1 py-2 bg-slate-100 font-bold rounded-xl text-xs text-slate-700 hover:bg-slate-200 transition-colors"
               >
                 Cancel
               </button>
               <button
+                type="button"
+                disabled={isSubmittingContainer}
                 onClick={handleContainerTransaction}
-                className="flex-1 py-2 bg-emerald-600 font-bold rounded-xl text-xs text-white"
+                className="flex-1 py-2 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 font-bold rounded-xl text-xs text-white transition-colors"
               >
-                Save
+                {isSubmittingContainer ? 'Enregistrement...' : 'Save'}
               </button>
             </div>
           </div>
@@ -1251,8 +1309,8 @@ export const MobileRegister: React.FC<MobileRegisterProps> = ({
         isOpen={isCheckoutOpen}
         activeSession={activeSession}
         onOpenSessionModal={onOpenSessionModal}
-        onClose={() => {
-          setIsCheckoutOpen(false);
+        onClose={() => setIsCheckoutOpen(false)}
+        onSaleDone={() => {
           setCart([]);
           setSaleDiscount(0);
         }}
@@ -1264,6 +1322,7 @@ export const MobileRegister: React.FC<MobileRegisterProps> = ({
             customer_id: selectedCustomer?.id || null,
             items: cart.map(item => ({
               product_id: item.product_id || null,
+              pack_size_id: item.selected_pack_size_id || null,
               description: item.name,
               quantity: item.quantity,
               unit_price: item.unit_price,
@@ -1275,6 +1334,7 @@ export const MobileRegister: React.FC<MobileRegisterProps> = ({
             })),
             total_discount: tender.total_discount !== undefined ? tender.total_discount : saleDiscount,
             cash_paid: tender.cash_paid,
+            cash_tendered: tender.cash_tendered !== undefined ? tender.cash_tendered : tender.cash_paid,
             wallet_paid: tender.wallet_paid,
             credit_amount: tender.credit_amount
           };

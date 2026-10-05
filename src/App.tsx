@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import type { 
   Product, 
   ProductFamily, 
@@ -21,12 +21,14 @@ import { webUsbPrinter } from './services/hardware/webusb.js';
 import { webBluetoothPrinter } from './services/hardware/webbluetooth.js';
 import { webSerialDrawer } from './services/hardware/webserial.js';
 import { authService } from './services/authService.js';
+import { fetchShopInfo } from './services/shopInfo.js';
 
 export default function App() {
   const [currentView, setCurrentView] = useState<'DESKTOP_POS' | 'MOBILE_REGISTER' | 'BACKOFFICE'>('DESKTOP_POS');
   const [activeSession, setActiveSession] = useState<RegisterSession | null>(null);
   const [syncState, setSyncState] = useState<SyncState>('ONLINE_SYNCED');
   const [pendingSyncCount, setPendingSyncCount] = useState<number>(0);
+  const [reviewSyncCount, setReviewSyncCount] = useState<number>(0);
 
   // Core Data
   const [products, setProducts] = useState<Product[]>([]);
@@ -42,12 +44,29 @@ export default function App() {
   const [printReceiptSaleId, setPrintReceiptSaleId] = useState<string | null>(null);
   const [printInvoiceSaleId, setPrintInvoiceSaleId] = useState<string | null>(null);
   const [isLocked, setIsLocked] = useState<boolean>(authService.isLocked());
+  const [pwaUpdateReload, setPwaUpdateReload] = useState<(() => void) | null>(null);
+  const prevSyncStateRef = useRef<SyncState>('ONLINE_SYNCED');
+
+  // PWA update banner: a new deploy is cached and waits until the user reloads.
+  useEffect(() => {
+    const onUpdate = (e: Event) => {
+      const reload = (e as CustomEvent<{ reload: () => void }>).detail.reload;
+      setPwaUpdateReload(() => reload);
+    };
+    window.addEventListener('pwa-update-available', onUpdate);
+    return () => window.removeEventListener('pwa-update-available', onUpdate);
+  }, []);
 
   // Subscribe to sync manager events & auth status
   useEffect(() => {
-    const unsubscribe = syncManager.subscribe((state, count) => {
+    const unsubscribe = syncManager.subscribe((state, count, reviewCount) => {
       setSyncState(state);
       setPendingSyncCount(count);
+      setReviewSyncCount(reviewCount);
+      if (state === 'ONLINE_SYNCED' && prevSyncStateRef.current !== 'ONLINE_SYNCED') {
+        loadAllData();
+      }
+      prevSyncStateRef.current = state;
     });
     const unsubAuth = authService.subscribeLockState(setIsLocked);
     authService.syncStatus();
@@ -61,6 +80,7 @@ export default function App() {
   // Initial load
   useEffect(() => {
     loadAllData();
+    fetchShopInfo();
   }, []);
 
   // Responsive default view detection (if mobile screen on load, default to MOBILE_REGISTER)
@@ -124,8 +144,10 @@ export default function App() {
       const localProducts = await clientDb.products.toArray();
       const localCustomers = await clientDb.customers.toArray();
       const localContainers = await clientDb.container_types.toArray();
+      const localFamilies = await clientDb.product_families.toArray();
 
       if (localProducts.length > 0) setProducts(localProducts as any);
+      if (localFamilies.length > 0) setFamilies(localFamilies as any);
       if (localCustomers.length > 0) setCustomers(localCustomers as any);
       if (localContainers.length > 0) setContainerTypes(localContainers as any);
     }
@@ -176,27 +198,15 @@ export default function App() {
     };
 
     if (navigator.onLine) {
+      let res: Response;
       try {
-        const res = await fetch('/api/sales', {
+        res = await fetch('/api/sales', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(fullPayload)
         });
-
-        if (!res.ok) {
-          const errData = await res.json();
-          throw new Error(errData.error || 'Sale failed');
-        }
-
-        const data = await res.json();
-        triggerDrawerIfCash(Number(fullPayload.cash_paid || 0), currentView);
-        return {
-          sale_id: data.sale_id || data.id,
-          receipt_number: data.receipt_number
-        };
-      } catch (err: any) {
-        console.warn('Online sale failed, falling back to offline outbox queue:', err);
-        // Fallback to offline queue
+      } catch (networkErr: any) {
+        console.warn('Network error during sale, falling back to offline outbox queue:', networkErr);
         const tempId = await syncManager.queueOfflineSale(fullPayload);
         triggerDrawerIfCash(Number(fullPayload.cash_paid || 0), currentView);
         return {
@@ -204,6 +214,24 @@ export default function App() {
           receipt_number: 'REC-OFFLINE-' + tempId.slice(5, 13).toUpperCase()
         };
       }
+
+      if (!res.ok) {
+        let errorMsg = 'Sale failed';
+        try {
+          const errData = await res.json();
+          errorMsg = errData.error || errorMsg;
+        } catch {
+          errorMsg = `Server error (${res.status})`;
+        }
+        throw new Error(errorMsg);
+      }
+
+      const data = await res.json();
+      triggerDrawerIfCash(Number(fullPayload.cash_paid || 0), currentView);
+      return {
+        sale_id: data.sale_id || data.id,
+        receipt_number: data.receipt_number
+      };
     } else {
       // Offline mode: queue in IndexedDB
       const tempId = await syncManager.queueOfflineSale(fullPayload);
@@ -239,6 +267,19 @@ export default function App() {
 
   return (
     <div className="min-h-screen bg-slate-100 flex flex-col font-sans select-none antialiased">
+      {/* PWA update banner: new version cached, reload to apply */}
+      {pwaUpdateReload && (
+        <div className="bg-emerald-700 text-white text-xs font-semibold px-4 py-2 flex items-center justify-center gap-3 print:hidden">
+          <span>Une nouvelle version est disponible.</span>
+          <button
+            type="button"
+            onClick={() => pwaUpdateReload()}
+            className="bg-white text-emerald-800 font-bold px-3 py-1 rounded-lg"
+          >
+            Recharger
+          </button>
+        </div>
+      )}
       {/* Shared App Header */}
       <Header
         currentView={currentView}
@@ -248,6 +289,7 @@ export default function App() {
         onSelectSession={sess => setActiveSession(sess)}
         syncState={syncState}
         pendingSyncCount={pendingSyncCount}
+        reviewSyncCount={reviewSyncCount}
         onManualSync={handleManualSync}
         onPopDrawer={handlePopDrawer}
         onOpenCashMovement={() => setIsCashMovementOpen(true)}
@@ -309,6 +351,8 @@ export default function App() {
             containerTypes={containerTypes}
             activeSession={activeSession}
             onRefreshData={loadAllData}
+            onPrintReceipt={saleId => setPrintReceiptSaleId(saleId)}
+            onPrintInvoice={saleId => setPrintInvoiceSaleId(saleId)}
           />
         )}
       </div>

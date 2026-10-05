@@ -22,9 +22,78 @@ export interface FormulationCostResult {
 }
 
 /**
+ * Returns a Map of materialId -> unitCost for all raw materials.
+ * The unit cost is the quantity-weighted average cost of the material's purchases
+ * in the specified calendar year (default: current year).
+ * If there are no purchases in the target year (or total quantity === 0),
+ * it falls back to raw_materials.latest_purchase_cost.
+ */
+export function getMaterialUnitCosts(
+  db: any,
+  targetYear: number = new Date().getFullYear()
+): Map<string, number> {
+  const query = `
+    SELECT 
+      rm.id as material_id,
+      rm.latest_purchase_cost,
+      purchases_this_year.total_cost,
+      purchases_this_year.total_quantity
+    FROM raw_materials rm
+    LEFT JOIN (
+      SELECT 
+        pi.material_id,
+        SUM(pi.total_cost) as total_cost,
+        SUM(pi.quantity) as total_quantity
+      FROM purchase_items pi
+      JOIN purchases p ON pi.purchase_id = p.id
+      WHERE pi.item_type = 'RAW_MATERIAL'
+        AND pi.material_id IS NOT NULL
+        AND SUBSTR(p.date, 1, 4) = ?
+      GROUP BY pi.material_id
+    ) purchases_this_year ON rm.id = purchases_this_year.material_id
+  `;
+
+  const rows: any[] = db.prepare(query).all(String(targetYear));
+  const costMap = new Map<string, number>();
+
+  for (const row of rows) {
+    const qty = Number(row.total_quantity) || 0;
+    const cost = Number(row.total_cost) || 0;
+
+    if (qty > 0) {
+      costMap.set(row.material_id, divideMoney(cost, qty));
+    } else {
+      costMap.set(row.material_id, round3(Number(row.latest_purchase_cost) || 0));
+    }
+  }
+
+  return costMap;
+}
+
+/**
+ * Returns the unit cost for a single material (thin wrapper around getMaterialUnitCosts).
+ */
+export function getMaterialUnitCost(
+  db: any,
+  materialId: string,
+  targetYear: number = new Date().getFullYear()
+): number {
+  const costs = getMaterialUnitCosts(db, targetYear);
+  if (costs.has(materialId)) {
+    return costs.get(materialId)!;
+  }
+  const rm: any = db.prepare('SELECT latest_purchase_cost FROM raw_materials WHERE id = ?').get(materialId);
+  return round3(Number(rm?.latest_purchase_cost) || 0);
+}
+
+/**
  * Calculates current formulation cost based on the latest purchase cost of all ingredients and packaging.
  */
-export function calculateFormulationCost(db: any, formulationId: string): FormulationCostResult {
+export function calculateFormulationCost(
+  db: any,
+  formulationId: string,
+  targetYear?: number
+): FormulationCostResult {
   const formulation: any = db.prepare(`
     SELECT * FROM formulations WHERE id = ?
   `).get(formulationId);
@@ -36,17 +105,19 @@ export function calculateFormulationCost(db: any, formulationId: string): Formul
   const items: any[] = db.prepare(`
     SELECT fi.id, fi.material_id, fi.quantity_required,
            rm.name as material_name, rm.category as material_category,
-           rm.unit as material_unit, rm.latest_purchase_cost as unit_cost
+           rm.unit as material_unit
     FROM formulation_items fi
     JOIN raw_materials rm ON fi.material_id = rm.id
     WHERE fi.formulation_id = ?
     ORDER BY rm.category ASC, rm.name ASC
   `).all(formulationId);
 
+  const unitCosts = getMaterialUnitCosts(db, targetYear);
+
   let totalCost = 0;
   const costedItems: FormulationItemCost[] = items.map((item) => {
-    const unitCost = round3(item.unit_cost || 0);
-    const itemTotal = multiplyMoney(unitCost, item.quantity_required);
+    const unitCost = unitCosts.get(item.material_id) ?? 0;
+    const itemTotal = round3(item.quantity_required * unitCost);
     totalCost = addMoney(totalCost, itemTotal);
 
     return {
@@ -92,7 +163,8 @@ export interface ScaledBatchIngredient {
 export function calculateBatchRequirements(
   db: any,
   formulationId: string,
-  targetOutputUnits: number
+  targetOutputUnits: number,
+  targetYear?: number
 ): {
   targetOutputUnits: number;
   scalingFactor: number;
@@ -100,7 +172,7 @@ export function calculateBatchRequirements(
   costPerUnit: number;
   ingredients: ScaledBatchIngredient[];
 } {
-  const formulationCost = calculateFormulationCost(db, formulationId);
+  const formulationCost = calculateFormulationCost(db, formulationId, targetYear);
   const baseYield = formulationCost.base_yield_quantity;
   const scalingFactor = targetOutputUnits / baseYield;
 
@@ -110,7 +182,7 @@ export function calculateBatchRequirements(
     const currentStock = rawMaterial ? rawMaterial.stock_quantity : 0;
 
     const scaledQty = round3(item.quantity_required * scalingFactor);
-    const scaledItemTotal = multiplyMoney(item.unit_cost, scaledQty);
+    const scaledItemTotal = round3(scaledQty * item.unit_cost);
     totalBatchCost = addMoney(totalBatchCost, scaledItemTotal);
 
     return {

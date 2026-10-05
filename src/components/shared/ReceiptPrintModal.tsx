@@ -5,6 +5,7 @@ import { formatMoney, formatDateTime } from '../../utils/formatters.js';
 import { webUsbPrinter } from '../../services/hardware/webusb.js';
 import { webBluetoothPrinter } from '../../services/hardware/webbluetooth.js';
 import { clientDb } from '../../db/clientDb.js';
+import { getShopInfo } from '../../services/shopInfo.js';
 
 interface ReceiptPrintModalProps {
   isOpen: boolean;
@@ -20,6 +21,7 @@ export const ReceiptPrintModal: React.FC<ReceiptPrintModalProps> = ({
   const [sale, setSale] = useState<SaleSummary | null>(null);
   const [loading, setLoading] = useState(false);
   const printRef = useRef<HTMLDivElement>(null);
+  const shop = getShopInfo();
 
   useEffect(() => {
     if (isOpen && saleId) {
@@ -152,11 +154,11 @@ export const ReceiptPrintModal: React.FC<ReceiptPrintModalProps> = ({
             >
               {/* Shop Header */}
               <div className="text-center pb-2 border-b border-dashed border-black">
-                <div className="font-bold text-sm uppercase">Société Al Jazira</div>
-                <div className="text-[10px]">SHSP - Détergents & Hygiène</div>
-                <div className="text-[10px]">Route de Gabès, Sfax, Tunisie</div>
-                <div className="text-[10px]">Tél: +216 74 000 000</div>
-                <div className="text-[9px] text-slate-600">MF: 1234567/A/M/000</div>
+                {shop.shop_name ? <div className="font-bold text-sm uppercase">{shop.shop_name}</div> : null}
+                {shop.shop_subtitle ? <div className="text-[10px]">{shop.shop_subtitle}</div> : null}
+                {shop.shop_address ? <div className="text-[10px]">{shop.shop_address}</div> : null}
+                {shop.shop_phone ? <div className="text-[10px]">Tél: {shop.shop_phone}</div> : null}
+                {shop.tax_id ? <div className="text-[9px] text-slate-600">MF: {shop.tax_id}</div> : null}
               </div>
 
               {/* Receipt Metadata */}
@@ -246,6 +248,12 @@ export const ReceiptPrintModal: React.FC<ReceiptPrintModalProps> = ({
                   <div className="flex justify-between text-amber-900 font-bold">
                     <span>Bon de Crédit:</span>
                     <span>{formatMoney(sale.credit_amount)}</span>
+                  </div>
+                )}
+                {(sale.change_given || 0) > 0 && (sale.cash_paid || 0) > 0 && (
+                  <div className="flex justify-between">
+                    <span>Espèces reçues:</span>
+                    <span>{formatMoney((sale.cash_paid || 0) + (sale.change_given || 0))}</span>
                   </div>
                 )}
                 {(sale.change_given || 0) > 0 && (

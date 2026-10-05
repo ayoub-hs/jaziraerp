@@ -274,9 +274,22 @@ purchasesRouter.get('/', (req: Request, res: Response) => {
 purchasesRouter.get('/:id', (req: Request, res: Response) => {
   const db = getDb();
   const purchase: any = db.prepare(`
-    SELECT p.*, s.name as supplier_name
+    SELECT p.*, s.name as supplier_name,
+      sdt.remaining_amount as debt_remaining,
+      sdt.total_amount as debt_ticket_total,
+      CASE 
+        WHEN p.payment_status = 'PAID' THEN p.total_amount
+        WHEN sdt.id IS NOT NULL THEN ROUND(p.total_amount - sdt.remaining_amount, 3)
+        ELSE 0
+      END as cash_paid,
+      CASE
+        WHEN p.payment_status = 'PAID' THEN 0
+        WHEN sdt.id IS NOT NULL THEN sdt.remaining_amount
+        ELSE p.total_amount
+      END as debt_amount
     FROM purchases p
     JOIN suppliers s ON p.supplier_id = s.id
+    LEFT JOIN supplier_debt_tickets sdt ON sdt.purchase_id = p.id
     WHERE p.id = ?
   `).get(req.params.id);
 
@@ -452,10 +465,9 @@ purchasesRouter.post('/', (req: Request, res: Response) => {
     if (payment_status === 'CREDIT') {
       const ticketId = crypto.randomUUID();
       const ticketNumber = generateSupplierTicketNumber(db);
-      const remainingAmount = cashPaid !== null
-        ? round3(Math.max(0, totalAmount - cashPaid))
-        : totalAmount;
-      const initialStatus = remainingAmount < totalAmount ? 'PARTIALLY_PAID' : 'UNPAID';
+      const initialPaid = (cashPaid !== null && cashPaid > 0) ? round3(Math.min(totalAmount, cashPaid)) : 0;
+      const remainingAmount = round3(Math.max(0, totalAmount - initialPaid));
+      const initialStatus = remainingAmount === 0 ? 'PAID' : (initialPaid > 0 ? 'PARTIALLY_PAID' : 'UNPAID');
 
       db.prepare(`
         INSERT INTO supplier_debt_tickets (
@@ -474,6 +486,31 @@ purchasesRouter.post('/', (req: Request, res: Response) => {
         now,
         now
       );
+
+      if (initialPaid > 0) {
+        const paymentId = crypto.randomUUID();
+        db.prepare(`
+          INSERT INTO supplier_payments (id, supplier_id, date, amount, payment_method, notes, created_at)
+          VALUES (?, ?, ?, ?, 'Cash', ?, ?)
+        `).run(
+          paymentId,
+          supplier_id,
+          date,
+          initialPaid,
+          `Initial cash paid for purchase ${purchaseNumber}`,
+          now
+        );
+
+        db.prepare(`
+          INSERT INTO supplier_payment_allocations (id, payment_id, ticket_id, amount_allocated)
+          VALUES (?, ?, ?, ?)
+        `).run(
+          crypto.randomUUID(),
+          paymentId,
+          ticketId,
+          initialPaid
+        );
+      }
 
       createdTicket = {
         id: ticketId,

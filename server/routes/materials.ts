@@ -2,6 +2,7 @@ import { Router, Request, Response } from 'express';
 import crypto from 'crypto';
 import { getDb } from '../db/index.js';
 import { round3 } from '../utils/money.js';
+import { getMaterialUnitCosts, getMaterialUnitCost } from '../services/costingService.js';
 
 export const materialsRouter = Router();
 
@@ -108,7 +109,12 @@ materialsRouter.get('/', (req: Request, res: Response) => {
   query += ` ORDER BY m.name ASC`;
 
   const rows = db.prepare(query).all(...params);
-  res.json(rows);
+  const unitCosts = getMaterialUnitCosts(db);
+  const enriched = rows.map((m: any) => ({
+    ...m,
+    current_cost_per_unit: unitCosts.get(m.id) ?? round3(Number(m.latest_purchase_cost) || 0)
+  }));
+  res.json(enriched);
 });
 
 // GET /api/materials/:id - get single material with recent history
@@ -135,7 +141,13 @@ materialsRouter.get('/:id', (req: Request, res: Response) => {
     ORDER BY h.date DESC
   `).all(req.params.id);
 
-  res.json({ ...material, price_history: history });
+  const unitCost = getMaterialUnitCost(db, req.params.id);
+
+  res.json({
+    ...material,
+    current_cost_per_unit: unitCost,
+    price_history: history
+  });
 });
 
 // POST /api/materials - create raw material or packaging
@@ -278,18 +290,19 @@ materialsRouter.delete('/:id', (req: Request, res: Response) => {
     return;
   }
 
-  // Check references: formulation_items, production_batch_materials_consumed, purchase_items
+  // Check references: formulation_items, production_batch_materials_consumed, purchase_items, inventory_adjustments
   const hasFormulas: any = db.prepare('SELECT COUNT(*) as count FROM formulation_items WHERE material_id = ?').get(req.params.id);
   const hasBatches: any = db.prepare('SELECT COUNT(*) as count FROM production_batch_materials_consumed WHERE material_id = ?').get(req.params.id);
   const hasPurchases: any = db.prepare('SELECT COUNT(*) as count FROM purchase_items WHERE material_id = ?').get(req.params.id);
+  const hasAdjustments: any = db.prepare('SELECT COUNT(*) as count FROM inventory_adjustments WHERE material_id = ?').get(req.params.id);
 
-  const isReferenced = (hasFormulas?.count > 0) || (hasBatches?.count > 0) || (hasPurchases?.count > 0);
+  const isReferenced = (hasFormulas?.count > 0) || (hasBatches?.count > 0) || (hasPurchases?.count > 0) || (hasAdjustments?.count > 0);
 
   if (isReferenced) {
-    db.prepare('UPDATE raw_materials SET active = 0, updated_at = ? WHERE id = ?').run(new Date().toISOString(), req.params.id);
-    res.json({ success: true, soft_deleted: true, id: req.params.id, message: 'Material deactivated' });
-  } else {
-    db.prepare('DELETE FROM raw_materials WHERE id = ?').run(req.params.id);
-    res.json({ success: true, soft_deleted: false, id: req.params.id, message: 'Material deleted permanently' });
+    res.status(409).json({ error: 'Cannot delete raw material referenced in formulations, production batches, purchases, or inventory adjustments' });
+    return;
   }
+
+  db.prepare('DELETE FROM raw_materials WHERE id = ?').run(req.params.id);
+  res.json({ success: true, soft_deleted: false, id: req.params.id, message: 'Material deleted permanently' });
 });

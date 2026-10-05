@@ -107,7 +107,7 @@ export const CreateFormulationModal: React.FC<CreateFormulationModalProps> = ({
     items.forEach(item => {
       const mat = materials.find(m => m.id === item.material_id);
       const qty = parseFloat(item.quantity_required) || 0;
-      const unitCost = mat?.latest_purchase_cost ?? mat?.current_cost_per_unit ?? 0;
+      const unitCost = mat?.current_cost_per_unit ?? mat?.latest_purchase_cost ?? 0;
       totalCost += qty * unitCost;
     });
 
@@ -139,7 +139,7 @@ export const CreateFormulationModal: React.FC<CreateFormulationModalProps> = ({
         const ingredients = items.map(i => {
           const mat = materials.find(m => m.id === i.material_id);
           const req = (parseFloat(i.quantity_required) || 0) * factor;
-          const unitCost = mat?.latest_purchase_cost ?? mat?.current_cost_per_unit ?? 0;
+          const unitCost = mat?.current_cost_per_unit ?? mat?.latest_purchase_cost ?? 0;
           const cost = req * unitCost;
           totalCost += cost;
           const curStock = mat?.stock_quantity ?? 0;
@@ -377,7 +377,7 @@ export const CreateFormulationModal: React.FC<CreateFormulationModalProps> = ({
                   {items.map((item, index) => {
                     const mat = materials.find(m => m.id === item.material_id);
                     const qty = parseFloat(item.quantity_required) || 0;
-                    const unitCost = mat?.latest_purchase_cost ?? mat?.current_cost_per_unit ?? 0;
+                    const unitCost = mat?.current_cost_per_unit ?? mat?.latest_purchase_cost ?? 0;
                     const subtotal = qty * unitCost;
 
                     return (

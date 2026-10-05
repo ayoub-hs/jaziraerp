@@ -28,6 +28,7 @@ export const ContainerTransactionModal: React.FC<ContainerTransactionModalProps>
   const [containerTypeId, setContainerTypeId] = useState<string>(initialContainerTypeId || '');
   const [quantity, setQuantity] = useState<number>(1);
   const [notes, setNotes] = useState<string>('');
+  const [correction, setCorrection] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -74,6 +75,7 @@ export const ContainerTransactionModal: React.FC<ContainerTransactionModalProps>
           container_type_id: containerTypeId,
           action,
           quantity: Math.floor(quantity),
+          correction: action === 'RETURN' ? correction : undefined,
           notes: notes.trim() || undefined
         })
       });
@@ -233,6 +235,18 @@ export const ContainerTransactionModal: React.FC<ContainerTransactionModalProps>
               className="w-full text-xs px-3 py-2 border border-slate-300 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:outline-none bg-white"
             />
           </div>
+
+          {action === 'RETURN' && (
+            <label className="flex items-center gap-2 text-xs font-semibold text-slate-600 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={correction}
+                onChange={e => setCorrection(e.target.checked)}
+                className="w-4 h-4 accent-emerald-600"
+              />
+              Correction (autoriser un retour supérieur au dû client)
+            </label>
+          )}
 
           {/* Actions */}
           <div className="pt-3 border-t border-slate-100 flex items-center justify-end gap-2">

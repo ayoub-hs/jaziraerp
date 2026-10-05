@@ -2,10 +2,26 @@
  * Web Audio API & Haptic utilities for barcode scanning and validation feedback.
  */
 
+let sharedAudioCtx: AudioContext | null = null;
+
+export function getAudioContext(): AudioContext | null {
+  if (typeof window === 'undefined') return null;
+  const AudioCtxClass = window.AudioContext || (window as any).webkitAudioContext;
+  if (!AudioCtxClass) return null;
+  if (!sharedAudioCtx) {
+    sharedAudioCtx = new AudioCtxClass();
+  }
+  if (sharedAudioCtx.state === 'suspended') {
+    sharedAudioCtx.resume().catch(() => {});
+  }
+  return sharedAudioCtx;
+}
+
 // Crisp high-frequency beep for successful barcode scan
 export function playBeep() {
   try {
-    const audioCtx = new (window.AudioContext || (window as any).webkitAudioContext)();
+    const audioCtx = getAudioContext();
+    if (!audioCtx) return;
     const osc = audioCtx.createOscillator();
     const gain = audioCtx.createGain();
 
@@ -27,7 +43,8 @@ export function playBeep() {
 // Low double-buzz for unrecognized / missing barcode
 export function playErrorBeep() {
   try {
-    const audioCtx = new (window.AudioContext || (window as any).webkitAudioContext)();
+    const audioCtx = getAudioContext();
+    if (!audioCtx) return;
     const osc = audioCtx.createOscillator();
     const gain = audioCtx.createGain();
 

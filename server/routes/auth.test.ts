@@ -77,7 +77,7 @@ describe('Auth Router — Real HTTP Integration Tests & scrypt Hardening', () =>
 
     expect(res.status).toBe(200);
     expect(res.body.success).toBe(true);
-    expect(res.body.pin_hash).toBeDefined();
+    expect(res.body.pin_hash).toBeUndefined();
 
     // Verify database state
     const db = getDb();
@@ -93,6 +93,19 @@ describe('Auth Router — Real HTTP Integration Tests & scrypt Hardening', () =>
     const statusRes = await request(app).get('/api/auth/status');
     expect(statusRes.body.configured).toBe(true);
     expect(statusRes.body.locked).toBe(false);
+
+    // Attempting setup again returns 400 and preserves existing credentials
+    const duplicateSetup = await request(app)
+      .post('/api/auth/setup')
+      .send({
+        pin: '9999',
+        password: 'hackerPassword123'
+      });
+    expect(duplicateSetup.status).toBe(400);
+    expect(duplicateSetup.body.error).toMatch(/already configured/i);
+
+    const pinRowAfter: any = db.prepare(`SELECT value FROM settings WHERE key = 'pin_hash'`).get();
+    expect(pinRowAfter.value).toBe(pinRow.value);
   });
 
   it('POST /api/auth/lock and POST /api/auth/unlock manage session lock state', async () => {

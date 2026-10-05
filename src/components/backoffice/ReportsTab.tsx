@@ -110,16 +110,18 @@ export const ReportsTab: React.FC = () => {
         c.customer_name,
         c.customer_phone || '—',
         c.sale_count,
-        c.total_ht.toFixed(3),
-        c.total_tva.toFixed(3),
-        c.total_ttc.toFixed(3),
-        c.cash_paid.toFixed(3),
-        c.wallet_paid.toFixed(3),
-        c.credit_amount.toFixed(3)
+        Number(c.total_ht || 0).toFixed(3),
+        Number(c.total_tva || 0).toFixed(3),
+        Number(c.gross_ttc ?? c.total_ttc ?? 0).toFixed(3),
+        Number(c.refunded_amount || 0).toFixed(3),
+        Number(c.net_ttc ?? c.total_ttc ?? 0).toFixed(3),
+        Number(c.cash_paid || 0).toFixed(3),
+        Number(c.wallet_paid || 0).toFixed(3),
+        Number(c.credit_amount || 0).toFixed(3)
       ]);
       exportToCsv(
         `sales_by_customer_${startDate}_to_${endDate}`,
-        ['Customer', 'Phone', 'Sales Count', 'Total HT (DT)', 'TVA (DT)', 'Total TTC (DT)', 'Cash (DT)', 'Wallet (DT)', 'Credit (DT)'],
+        ['Customer', 'Phone', 'Sales Count', 'Total HT (DT)', 'TVA (DT)', 'Gross TTC (DT)', 'Refunded (DT)', 'Net TTC (DT)', 'Cash (DT)', 'Wallet (DT)', 'Credit (DT)'],
         rows
       );
     } else if (activeReport === 'SALES_REGISTER') {
@@ -127,16 +129,18 @@ export const ReportsTab: React.FC = () => {
         r.counter_name,
         r.session_count,
         r.sale_count,
-        r.total_ht.toFixed(3),
-        r.total_tva.toFixed(3),
-        r.total_ttc.toFixed(3),
-        r.cash_paid.toFixed(3),
-        r.wallet_paid.toFixed(3),
-        r.credit_amount.toFixed(3)
+        Number(r.total_ht || 0).toFixed(3),
+        Number(r.total_tva || 0).toFixed(3),
+        Number(r.gross_ttc ?? r.total_ttc ?? 0).toFixed(3),
+        Number(r.refunded_amount || 0).toFixed(3),
+        Number(r.net_ttc ?? r.total_ttc ?? 0).toFixed(3),
+        Number(r.cash_paid || 0).toFixed(3),
+        Number(r.wallet_paid || 0).toFixed(3),
+        Number(r.credit_amount || 0).toFixed(3)
       ]);
       exportToCsv(
         `sales_by_register_${startDate}_to_${endDate}`,
-        ['Register / Counter', 'Sessions Count', 'Sales Count', 'Total HT (DT)', 'TVA (DT)', 'Total TTC (DT)', 'Cash (DT)', 'Wallet (DT)', 'Credit (DT)'],
+        ['Register / Counter', 'Sessions Count', 'Sales Count', 'Total HT (DT)', 'TVA (DT)', 'Gross TTC (DT)', 'Refunded (DT)', 'Net TTC (DT)', 'Cash (DT)', 'Wallet (DT)', 'Credit (DT)'],
         rows
       );
     } else if (activeReport === 'DEBT_PAYMENTS') {
@@ -144,7 +148,7 @@ export const ReportsTab: React.FC = () => {
         new Date(p.date).toLocaleString(),
         p.customer_name,
         p.customer_phone || '—',
-        p.amount.toFixed(3),
+        Number(p.amount || 0).toFixed(3),
         p.payment_method,
         p.notes || '—'
       ]);
@@ -159,18 +163,18 @@ export const ReportsTab: React.FC = () => {
         p.category,
         'Finished Product / SKU',
         p.stock_quantity,
-        p.unit_cost.toFixed(3),
-        p.line_cost_valuation.toFixed(3),
-        p.retail_price.toFixed(3),
-        p.line_retail_valuation.toFixed(3)
+        Number(p.unit_cost || 0).toFixed(3),
+        Number(p.line_cost_valuation || 0).toFixed(3),
+        Number(p.retail_price || 0).toFixed(3),
+        Number(p.line_retail_valuation || 0).toFixed(3)
       ]);
       const materialRows = (inventoryValuationData?.materials || []).map((m: any) => [
         m.name,
         m.category,
         `Raw Material (${m.unit})`,
         m.stock_quantity,
-        m.unit_cost.toFixed(3),
-        m.line_cost_valuation.toFixed(3),
+        Number(m.unit_cost || 0).toFixed(3),
+        Number(m.line_cost_valuation || 0).toFixed(3),
         '—',
         '—'
       ]);
@@ -436,7 +440,9 @@ export const ReportsTab: React.FC = () => {
                   <th className="p-3 text-center">Sales Count</th>
                   <th className="p-3 text-right">Subtotal HT</th>
                   <th className="p-3 text-right">TVA</th>
-                  <th className="p-3 text-right font-bold text-slate-900">Total TTC</th>
+                  <th className="p-3 text-right">Gross TTC</th>
+                  <th className="p-3 text-right text-red-600">Refunded</th>
+                  <th className="p-3 text-right font-bold text-slate-900">Net TTC</th>
                   <th className="p-3 text-right text-emerald-700">Cash Paid</th>
                   <th className="p-3 text-right text-purple-700">Wallet Paid</th>
                   <th className="p-3 text-right text-amber-700">Credit (Due)</th>
@@ -452,7 +458,9 @@ export const ReportsTab: React.FC = () => {
                       <td className="p-3 text-center font-mono font-bold">{c.sale_count}</td>
                       <td className="p-3 text-right font-mono">{formatMoney(c.total_ht)}</td>
                       <td className="p-3 text-right font-mono text-slate-500">{formatMoney(c.total_tva)}</td>
-                      <td className="p-3 text-right font-mono font-bold text-slate-900">{formatMoney(c.total_ttc)}</td>
+                      <td className="p-3 text-right font-mono">{formatMoney(c.gross_ttc ?? c.total_ttc)}</td>
+                      <td className="p-3 text-right font-mono text-red-600">{formatMoney(c.refunded_amount || 0)}</td>
+                      <td className="p-3 text-right font-mono font-bold text-slate-900">{formatMoney(c.net_ttc ?? c.total_ttc)}</td>
                       <td className="p-3 text-right font-mono font-bold text-emerald-700">{formatMoney(c.cash_paid)}</td>
                       <td className="p-3 text-right font-mono text-purple-700">{formatMoney(c.wallet_paid)}</td>
                       <td className="p-3 text-right font-mono font-bold text-amber-700">
@@ -462,7 +470,7 @@ export const ReportsTab: React.FC = () => {
                   ))}
                 {(!salesByCustomerData?.customer_sales || salesByCustomerData.customer_sales.length === 0) && (
                   <tr>
-                    <td colSpan={9} className="p-8 text-center text-slate-400">
+                    <td colSpan={11} className="p-8 text-center text-slate-400">
                       No sales found for the selected date range.
                     </td>
                   </tr>
@@ -483,7 +491,9 @@ export const ReportsTab: React.FC = () => {
                   <th className="p-3 text-center">Sales Count</th>
                   <th className="p-3 text-right">Subtotal HT</th>
                   <th className="p-3 text-right">TVA</th>
-                  <th className="p-3 text-right font-bold text-slate-900">Total Volume TTC</th>
+                  <th className="p-3 text-right">Gross TTC</th>
+                  <th className="p-3 text-right text-red-600">Refunded</th>
+                  <th className="p-3 text-right font-bold text-slate-900">Net Volume TTC</th>
                   <th className="p-3 text-right text-emerald-700">Cash Inflow</th>
                   <th className="p-3 text-right text-purple-700">Wallet Paid</th>
                   <th className="p-3 text-right text-amber-700">Credit Granted</th>
@@ -499,7 +509,9 @@ export const ReportsTab: React.FC = () => {
                       <td className="p-3 text-center font-mono font-bold text-slate-800">{r.sale_count}</td>
                       <td className="p-3 text-right font-mono">{formatMoney(r.total_ht)}</td>
                       <td className="p-3 text-right font-mono text-slate-500">{formatMoney(r.total_tva)}</td>
-                      <td className="p-3 text-right font-mono font-bold text-slate-900">{formatMoney(r.total_ttc)}</td>
+                      <td className="p-3 text-right font-mono">{formatMoney(r.gross_ttc ?? r.total_ttc)}</td>
+                      <td className="p-3 text-right font-mono text-red-600">{formatMoney(r.refunded_amount || 0)}</td>
+                      <td className="p-3 text-right font-mono font-bold text-slate-900">{formatMoney(r.net_ttc ?? r.total_ttc)}</td>
                       <td className="p-3 text-right font-mono font-bold text-emerald-700">{formatMoney(r.cash_paid)}</td>
                       <td className="p-3 text-right font-mono text-purple-700">{formatMoney(r.wallet_paid)}</td>
                       <td className="p-3 text-right font-mono font-bold text-amber-700">{formatMoney(r.credit_amount)}</td>
@@ -507,7 +519,7 @@ export const ReportsTab: React.FC = () => {
                   ))}
                 {(!salesByRegisterData?.register_sales || salesByRegisterData.register_sales.length === 0) && (
                   <tr>
-                    <td colSpan={9} className="p-8 text-center text-slate-400">
+                    <td colSpan={11} className="p-8 text-center text-slate-400">
                       No register sales found for the selected date range.
                     </td>
                   </tr>

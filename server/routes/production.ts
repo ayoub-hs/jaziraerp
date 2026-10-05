@@ -2,12 +2,13 @@ import { Router, Request, Response } from 'express';
 import crypto from 'crypto';
 import { getDb } from '../db/index.js';
 import { round3 } from '../utils/money.js';
+import { businessDateKey } from '../utils/businessDate.js';
 import { calculateBatchRequirements } from '../services/costingService.js';
 
 export const productionRouter = Router();
 
 function generateBatchNumber(db: any): string {
-  const dateStr = new Date().toISOString().slice(0, 10).replace(/-/g, '');
+  const dateStr = businessDateKey();
   const prefix = `BAT-${dateStr}-`;
   const countRow: any = db.prepare(`
     SELECT COUNT(*) as cnt FROM production_batches WHERE batch_number LIKE ?
@@ -82,6 +83,17 @@ productionRouter.post('/batches', (req: Request, res: Response) => {
   const product: any = db.prepare('SELECT * FROM products WHERE id = ?').get(target_product_id);
   if (!product) {
     res.status(404).json({ error: 'Target product SKU not found' });
+    return;
+  }
+
+  // Target product's family must be manufactured with this exact formulation.
+  const family: any = db.prepare('SELECT * FROM product_families WHERE id = ?').get(product.family_id);
+  if (!family || family.type !== 'MANUFACTURED') {
+    res.status(400).json({ error: 'Target product must belong to a MANUFACTURED family to run a production batch.' });
+    return;
+  }
+  if (family.formulation_id !== formulation_id) {
+    res.status(400).json({ error: 'Chosen formulation does not match the target product family formulation.' });
     return;
   }
 

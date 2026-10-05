@@ -21,8 +21,8 @@ import { backupRouter } from './routes/backup.js';
 import { hardwareRouter } from './routes/hardware.js';
 import { categoriesRouter } from './routes/categories.js';
 import { reportsRouter } from './routes/reports.js';
+import { settingsRouter } from './routes/settings.js';
 import { backupService } from './services/backupService.js';
-import { seedDatabase } from './db/seed.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -30,13 +30,24 @@ const __dirname = path.dirname(__filename);
 export const app = express();
 const PORT = process.env.PORT || 3000;
 
-app.use(cors());
+const allowedOrigins = process.env.ALLOWED_ORIGINS
+  ? process.env.ALLOWED_ORIGINS.split(',').map(o => o.trim()).filter(Boolean)
+  : [];
+
+app.use(cors({
+  origin: (origin, callback) => {
+    if (!origin || allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      callback(null, false);
+    }
+  }
+}));
 app.use(express.json({ limit: '10mb' }));
 
-// Initialize SQLite database schema & seed initial data
+// Initialize SQLite database schema
 getDb();
 if (process.env.NODE_ENV !== 'test') {
-  seedDatabase();
   backupService.startDailySchedule();
 }
 
@@ -60,6 +71,7 @@ app.use('/api/sync', syncRouter);
 app.use('/api/hardware', hardwareRouter);
 app.use('/api/categories', categoriesRouter);
 app.use('/api/reports', reportsRouter);
+app.use('/api/settings', settingsRouter);
 
 // Health check endpoint
 app.get('/api/health', (req, res) => {
@@ -71,12 +83,22 @@ app.all('/api/*', (req, res) => {
   res.status(404).json({ error: `Cannot ${req.method} ${req.path}` });
 });
 
-// Serve frontend static build if available
+// Serve frontend static build if available.
+// sw.js and index.html must never be cached: a stale copy would pin an old
+// offline shell or an old service worker after a new deploy.
 const distPath = path.join(__dirname, '../dist');
 if (fs.existsSync(distPath)) {
-  app.use(express.static(distPath));
+  app.use(express.static(distPath, {
+    setHeaders: (res, filePath) => {
+      const base = path.basename(filePath);
+      if (base === 'sw.js' || base === 'index.html' || base.endsWith('.webmanifest')) {
+        res.setHeader('Cache-Control', 'no-cache');
+      }
+    }
+  }));
   app.get('*', (req, res) => {
     if (!req.path.startsWith('/api')) {
+      res.setHeader('Cache-Control', 'no-cache');
       res.sendFile(path.join(distPath, 'index.html'));
     }
   });
@@ -90,11 +112,12 @@ app.use((err: any, req: express.Request, res: express.Response, next: express.Ne
   });
 });
 
-// Start server if executed directly
-const HOST = process.env.HOST || '0.0.0.0';
+// Start server if executed directly (default: loopback only;
+// set HOST=0.0.0.0 plus a firewall rule to expose on LAN/VPN).
+const HOST = process.env.HOST || '127.0.0.1';
 if (process.env.NODE_ENV !== 'test') {
   app.listen(Number(PORT), HOST, () => {
-    console.log(`[Al Jazira ERP] Server running on http://${HOST}:${PORT} (accessible from local network)`);
+    console.log(`[Al Jazira ERP] Server running on http://${HOST}:${PORT} (bound to ${HOST})`);
   });
 }
 

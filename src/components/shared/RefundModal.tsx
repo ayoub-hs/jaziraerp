@@ -7,12 +7,16 @@ interface RefundModalProps {
   isOpen: boolean;
   onClose: () => void;
   onRefundCompleted: () => void;
+  initialSaleId?: string | null;
+  activeSessionId?: string | null;
 }
 
 export const RefundModal: React.FC<RefundModalProps> = ({
   isOpen,
   onClose,
-  onRefundCompleted
+  onRefundCompleted,
+  initialSaleId,
+  activeSessionId
 }) => {
   const [searchReceipt, setSearchReceipt] = useState('');
   const [recentSales, setRecentSales] = useState<SaleSummary[]>([]);
@@ -29,16 +33,55 @@ export const RefundModal: React.FC<RefundModalProps> = ({
   const [reason, setReason] = useState<string>('Customer returned goods');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  // Register sessions for cash refunds
+  const [openSessions, setOpenSessions] = useState<any[]>([]);
+  const [selectedSessionId, setSelectedSessionId] = useState<string>('');
+  const [sessionTouched, setSessionTouched] = useState(false);
+
   useEffect(() => {
     if (isOpen) {
-      fetchRecentSales();
-      setSelectedSale(null);
-      setSaleRefunds([]);
+      if (initialSaleId) {
+        handleSelectSale({ id: initialSaleId } as any);
+      } else {
+        fetchRecentSales();
+        setSelectedSale(null);
+        setSaleRefunds([]);
+      }
       setError(null);
       setSuccess(null);
       setSearchReceipt('');
+      setSelectedSessionId('');
+      setSessionTouched(false);
+
+      // Fetch open register sessions
+      fetch('/api/register/open-sessions')
+        .then(res => res.ok ? res.json() : [])
+        .then((sessions: any[]) => {
+          setOpenSessions(sessions || []);
+        })
+        .catch(() => setOpenSessions([]));
     }
-  }, [isOpen]);
+  }, [isOpen, initialSaleId]);
+
+  // Default session: POS flow (no initialSaleId) uses the operating counter's
+  // own open session; Ventes flow uses the original sale's session if open,
+  // otherwise requires an explicit choice with no preselection.
+  useEffect(() => {
+    if (!isOpen || openSessions.length === 0 || sessionTouched) return;
+    if (initialSaleId) {
+      if (!selectedSale) return; // wait for the sale to load
+      const saleSession = selectedSale.session_id;
+      setSelectedSessionId(
+        saleSession && openSessions.some(s => s.id === saleSession) ? saleSession : ''
+      );
+    } else if (activeSessionId && openSessions.some(s => s.id === activeSessionId)) {
+      setSelectedSessionId(activeSessionId);
+    } else if (openSessions.length === 1) {
+      setSelectedSessionId(openSessions[0].id);
+    } else {
+      setSelectedSessionId('');
+    }
+  }, [isOpen, initialSaleId, openSessions, selectedSale?.session_id, activeSessionId, sessionTouched]);
 
   const fetchRecentSales = async () => {
     try {
@@ -65,10 +108,20 @@ export const RefundModal: React.FC<RefundModalProps> = ({
       if (res.ok) {
         const fullSale = await res.json();
         setSelectedSale(fullSale);
+        setError(null);
         if (fullSale.items && fullSale.items.length > 0) {
-          setSelectedItemId(fullSale.items[0].id);
-          const maxAvail = (fullSale.items[0].quantity || 0) - (fullSale.items[0].refunded_quantity || 0);
-          setRefundQuantity(Math.max(1, maxAvail).toString());
+          const refundableItem = fullSale.items.find(
+            (i: any) => (i.quantity || 0) - (i.refunded_quantity || 0) > 0
+          );
+          if (refundableItem) {
+            setSelectedItemId(refundableItem.id);
+            const remaining = (refundableItem.quantity || 0) - (refundableItem.refunded_quantity || 0);
+            setRefundQuantity(remaining.toString());
+          } else {
+            setSelectedItemId(fullSale.items[0].id);
+            setRefundQuantity('');
+            setError('All items in this sale have already been fully refunded.');
+          }
         }
         // Auto default to CREDIT_REDUCTION if original sale was credit-heavy
         if (fullSale.credit_amount > 0) {
@@ -120,6 +173,7 @@ export const RefundModal: React.FC<RefundModalProps> = ({
         body: JSON.stringify({
           refund_method: refundMethod,
           reason,
+          session_id: refundMethod === 'CASH' ? selectedSessionId || undefined : undefined,
           items: [
             {
               sale_item_id: selectedItemId,
@@ -147,6 +201,11 @@ export const RefundModal: React.FC<RefundModalProps> = ({
   };
 
   if (!isOpen) return null;
+
+  const currentItem = selectedSale?.items?.find(i => i.id === selectedItemId);
+  const currentRemaining = currentItem ? (currentItem.quantity || 0) - (currentItem.refunded_quantity || 0) : 0;
+  const isCashWithNoSession = refundMethod === 'CASH' && openSessions.length === 0;
+  const isSubmitDisabled = isSubmitting || currentRemaining <= 0 || !refundQuantity || parseFloat(refundQuantity) <= 0 || isCashWithNoSession;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
@@ -281,8 +340,14 @@ export const RefundModal: React.FC<RefundModalProps> = ({
                     setSelectedItemId(e.target.value);
                     const item = selectedSale.items?.find(i => i.id === e.target.value);
                     if (item) {
-                      const maxAvail = (item.quantity || 0) - (item.refunded_quantity || 0);
-                      setRefundQuantity(Math.max(1, maxAvail).toString());
+                      const remaining = (item.quantity || 0) - (item.refunded_quantity || 0);
+                      if (remaining > 0) {
+                        setRefundQuantity(remaining.toString());
+                        setError(null);
+                      } else {
+                        setRefundQuantity('');
+                        setError('This item has already been fully refunded.');
+                      }
                     }
                   }}
                   className="w-full text-sm font-semibold px-3 py-2 border border-slate-300 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:outline-none"
@@ -330,6 +395,46 @@ export const RefundModal: React.FC<RefundModalProps> = ({
                 </div>
               </div>
 
+              {/* Cash Refund Register Session Selector */}
+              {refundMethod === 'CASH' && (
+                <div>
+                  {openSessions.length === 0 ? (
+                    <div className="p-3 bg-rose-50 border border-rose-200 rounded-xl flex items-center gap-2 text-rose-800 text-xs font-semibold">
+                      <AlertCircle className="w-4 h-4 shrink-0 text-rose-600" />
+                      <span>La caisse est fermée. Une session de caisse ouverte est obligatoire pour effectuer un remboursement en espèces.</span>
+                    </div>
+                  ) : openSessions.length === 1 ? (
+                    <div className="p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs flex items-center justify-between">
+                      <span className="font-semibold text-slate-600">Caisse de remboursement (espèces) :</span>
+                      <span className="font-bold text-slate-900 font-mono">{openSessions[0].counter_name} ({openSessions[0].session_number})</span>
+                    </div>
+                  ) : (
+                    <div>
+                      <label className="block text-xs font-bold text-slate-700 mb-1">
+                        Caisse effectuant le remboursement en espèces *
+                      </label>
+                      <select
+                        value={selectedSessionId}
+                        onChange={e => {
+                          setSelectedSessionId(e.target.value);
+                          setSessionTouched(true);
+                        }}
+                        className="w-full text-sm font-semibold px-3 py-2 border border-slate-300 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:outline-none bg-white"
+                      >
+                        {openSessions.map(s => (
+                          <option key={s.id} value={s.id}>
+                            {s.counter_name} — Session {s.session_number} ({formatMoney(s.opening_cash)})
+                          </option>
+                        ))}
+                      </select>
+                      <p className="text-[11px] text-slate-400 mt-1">
+                        Plusieurs caisses sont ouvertes. Choisissez la session de caisse qui décaisse le montant.
+                      </p>
+                    </div>
+                  )}
+                </div>
+              )}
+
               {/* Return Reason */}
               <div>
                 <label className="block text-xs font-bold text-slate-700 mb-1">
@@ -360,8 +465,8 @@ export const RefundModal: React.FC<RefundModalProps> = ({
                 </button>
                 <button
                   type="submit"
-                  disabled={isSubmitting}
-                  className="flex-1 py-2.5 bg-amber-600 hover:bg-amber-700 text-white font-bold rounded-xl text-sm shadow transition-colors"
+                  disabled={isSubmitDisabled}
+                  className="flex-1 py-2.5 bg-amber-600 hover:bg-amber-700 disabled:opacity-50 text-white font-bold rounded-xl text-sm shadow transition-colors"
                 >
                   {isSubmitting ? 'Refunding...' : 'Confirm Refund & Restock'}
                 </button>

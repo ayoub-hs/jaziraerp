@@ -935,6 +935,45 @@ describe('Full Acceptance Test Plan — Al Jazira SHSP ERP', () => {
       expect(tickets[1].remaining_amount).toBe(500);
       expect(tickets[1].status).toBe('PARTIALLY_PAID');
     });
+
+    it('purchase marked CREDIT with cashPaid > 0 inserts supplier_payments and allocates to new ticket', async () => {
+      const sup = await request(app).post('/api/suppliers').send({ name: 'Partial Credit Supplier' });
+      const supplierId = sup.body.id;
+      const mat = await request(app).post('/api/materials').send({ name: 'Mat Partial', category: 'chem', unit: 'kg', stock_quantity: 10 });
+
+      const purchaseRes = await request(app).post('/api/purchases').send({
+        supplier_id: supplierId,
+        purchase_number: 'PO-PARTIAL-01',
+        payment_status: 'CREDIT',
+        cash_paid: 300.000,
+        items: [{ item_type: 'RAW_MATERIAL', material_id: mat.body.id, quantity: 100, unit_cost: 10.000, total_cost: 1000.000 }]
+      });
+      expect(purchaseRes.status).toBe(201);
+
+      const db = getDb();
+      // Check debt ticket
+      const ticket: any = db.prepare('SELECT * FROM supplier_debt_tickets WHERE purchase_id = ?').get(purchaseRes.body.id);
+      expect(ticket).toBeDefined();
+      expect(ticket.total_amount).toBe(1000.000);
+      expect(ticket.remaining_amount).toBe(700.000);
+      expect(ticket.status).toBe('PARTIALLY_PAID');
+
+      // Check supplier_payments
+      const payment: any = db.prepare('SELECT * FROM supplier_payments WHERE supplier_id = ?').get(supplierId);
+      expect(payment).toBeDefined();
+      expect(payment.amount).toBe(300.000);
+
+      // Check allocation
+      const allocation: any = db.prepare('SELECT * FROM supplier_payment_allocations WHERE payment_id = ?').get(payment.id);
+      expect(allocation).toBeDefined();
+      expect(allocation.ticket_id).toBe(ticket.id);
+      expect(allocation.amount_allocated).toBe(300.000);
+
+      // Attempting to repay more than the remaining 700 DT should return 400
+      const overpayRes = await request(app).post(`/api/suppliers/${supplierId}/debt/repay`).send({ amount: 800.000 });
+      expect(overpayRes.status).toBe(400);
+      expect(overpayRes.body.error).toContain('exceeds supplier total outstanding debt');
+    });
   });
 
   // ==========================================
@@ -1109,6 +1148,7 @@ describe('Full Acceptance Test Plan — Al Jazira SHSP ERP', () => {
         category: 'Electricity',
         amount: 35.000,
         payment_source: 'REGISTER_CASH',
+        session_id: ses.body.id,
         description: 'Facture STEG atelier'
       });
 
@@ -1186,7 +1226,7 @@ describe('Full Acceptance Test Plan — Al Jazira SHSP ERP', () => {
       expect(Array.from(pulse)).toEqual([0x1b, 0x70, 0x00, 0x19, 0xfa]);
 
       // Real HTTP call to drawer kick endpoint
-      const kickRes = await request(app).post('/api/hardware/drawer/kick').send({ port: '/dev/ttyNONEXISTENT' });
+      const kickRes = await request(app).post('/api/hardware/drawer/kick').send({ port: '/dev/ttyUSB99' });
       expect(kickRes.status).toBe(500);
       expect(kickRes.body.success).toBe(false);
       expect(kickRes.body.error).toContain('not found');

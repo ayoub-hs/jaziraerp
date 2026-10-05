@@ -1,5 +1,6 @@
 import path from 'path';
 import fs from 'fs';
+import os from 'os';
 import { fileURLToPath } from 'url';
 import type { Database as DatabaseType } from 'better-sqlite3';
 import { getDb } from '../server/db/index.js';
@@ -15,6 +16,10 @@ const __dirname = path.dirname(__filename);
  */
 export function resetTestDb(): DatabaseType {
   const db = getDb();
+  const dbName = db.name;
+  if (dbName !== ':memory:' && !dbName.startsWith(os.tmpdir())) {
+    throw new Error(`Refusing to reset a non-test database: ${dbName}`);
+  }
   db.pragma('foreign_keys = OFF');
 
   const tables = db.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%'").all() as { name: string }[];

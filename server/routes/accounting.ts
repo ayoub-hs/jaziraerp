@@ -2,6 +2,8 @@ import { Router, Request, Response } from 'express';
 import crypto from 'crypto';
 import { getDb } from '../db/index.js';
 import { round3, addMoney, subtractMoney, multiplyMoney } from '../utils/money.js';
+import { getMaterialUnitCosts } from '../services/costingService.js';
+import { tunisDayRangeUTC, isFilterDay } from '../utils/businessDate.js';
 
 export const accountingRouter = Router();
 
@@ -32,6 +34,21 @@ accountingRouter.post('/expenses', (req: Request, res: Response) => {
   const expenseAmount = round3(Number(amount));
   const now = new Date().toISOString();
 
+  // REGISTER_CASH expenses move real drawer cash: require an OPEN session.
+  // No session (or a closed one) => reject without recording anything.
+  let openSession: any = null;
+  if (payment_source === 'REGISTER_CASH') {
+    openSession = session_id
+      ? db.prepare('SELECT * FROM register_sessions WHERE id = ?').get(session_id)
+      : null;
+    if (!openSession || openSession.status !== 'OPEN') {
+      res.status(400).json({
+        error: 'REGISTER_CASH expenses require an open register session (session_id of a session with status OPEN).'
+      });
+      return;
+    }
+  }
+
   const expenseTx = db.transaction(() => {
     // 1. Insert expense record
     db.prepare(`
@@ -48,22 +65,20 @@ accountingRouter.post('/expenses', (req: Request, res: Response) => {
       now
     );
 
-    // 2. If paid from register cash and session is provided, auto-record CASH_OUT movement
-    if (payment_source === 'REGISTER_CASH' && session_id) {
-      const session: any = db.prepare('SELECT status FROM register_sessions WHERE id = ?').get(session_id);
-      if (session && session.status === 'OPEN') {
-        db.prepare(`
-          INSERT INTO register_cash_movements (id, session_id, date, type, amount, reason, created_at)
-          VALUES (?, ?, ?, 'CASH_OUT', ?, ?, ?)
-        `).run(
-          crypto.randomUUID(),
-          session_id,
-          date,
-          expenseAmount,
-          `Expense: ${category.trim()}${description ? ' - ' + description.trim() : ''}`,
-          now
-        );
-      }
+    // 2. Paid from register cash: auto-record CASH_OUT movement (session is OPEN, checked above)
+    if (payment_source === 'REGISTER_CASH' && openSession) {
+      db.prepare(`
+        INSERT INTO register_cash_movements (id, session_id, date, type, amount, reason, created_at, expense_id)
+        VALUES (?, ?, ?, 'CASH_OUT', ?, ?, ?, ?)
+      `).run(
+        crypto.randomUUID(),
+        openSession.id,
+        date,
+        expenseAmount,
+        `Expense: ${category.trim()}${description ? ' - ' + description.trim() : ''}`,
+        now,
+        expenseId
+      );
     }
   });
 
@@ -111,7 +126,12 @@ accountingRouter.delete('/expenses/:id', (req: Request, res: Response) => {
     return;
   }
 
-  db.prepare('DELETE FROM general_expenses WHERE id = ?').run(req.params.id);
+  const deleteTx = db.transaction(() => {
+    db.prepare('DELETE FROM register_cash_movements WHERE expense_id = ?').run(req.params.id);
+    db.prepare('DELETE FROM general_expenses WHERE id = ?').run(req.params.id);
+  });
+  deleteTx();
+
   res.json({ success: true, id: req.params.id, message: 'Expense deleted' });
 });
 
@@ -120,24 +140,45 @@ accountingRouter.get('/cash-flow', (req: Request, res: Response) => {
   const db = getDb();
   const { start_date, end_date } = req.query;
 
+  // Business-day filters: compare against the Tunis local date via UTC range.
+  // Stored timestamps are full ISO instants and sort lexicographically.
   let dateFilter = '';
   const params: any[] = [];
 
   if (start_date && end_date) {
-    dateFilter = ` AND date(date) BETWEEN date(?) AND date(?)`;
-    params.push(String(start_date), String(end_date));
+    const s = String(start_date);
+    const e = String(end_date);
+    if (isFilterDay(s) && isFilterDay(e)) {
+      dateFilter = ` AND date >= ? AND date < ?`;
+      params.push(tunisDayRangeUTC(s).start, tunisDayRangeUTC(e).end);
+    } else {
+      dateFilter = ` AND date(date) BETWEEN date(?) AND date(?)`;
+      params.push(s, e);
+    }
   } else if (start_date) {
-    dateFilter = ` AND date(date) >= date(?)`;
-    params.push(String(start_date));
+    const s = String(start_date);
+    if (isFilterDay(s)) {
+      dateFilter = ` AND date >= ?`;
+      params.push(tunisDayRangeUTC(s).start);
+    } else {
+      dateFilter = ` AND date(date) >= date(?)`;
+      params.push(s);
+    }
   } else if (end_date) {
-    dateFilter = ` AND date(date) <= date(?)`;
-    params.push(String(end_date));
+    const e = String(end_date);
+    if (isFilterDay(e)) {
+      dateFilter = ` AND date < ?`;
+      params.push(tunisDayRangeUTC(e).end);
+    } else {
+      dateFilter = ` AND date(date) <= date(?)`;
+      params.push(e);
+    }
   }
 
   // --- MONEY IN ---
-  // 1. Cash received from sales (cash_paid - change_given)
+  // 1. Cash received from sales (cash_paid is net applied cash)
   const salesCashRow: any = db.prepare(`
-    SELECT COALESCE(SUM(cash_paid - change_given), 0) as total
+    SELECT COALESCE(SUM(cash_paid), 0) as total
     FROM sales
     WHERE 1=1 ${dateFilter}
   `).get(...params);
@@ -222,13 +263,24 @@ accountingRouter.get('/stock-valuation', (req: Request, res: Response) => {
   const db = getDb();
 
   // 1. Raw Materials & Packaging valuation
-  const materials: any[] = db.prepare(`
-    SELECT id, name, category, unit, stock_quantity, latest_purchase_cost,
-      ROUND(stock_quantity * latest_purchase_cost, 3) as line_valuation
+  const unitCosts = getMaterialUnitCosts(db);
+  const rawMaterials: any[] = db.prepare(`
+    SELECT id, name, category, unit, stock_quantity, latest_purchase_cost
     FROM raw_materials
     WHERE stock_quantity > 0
     ORDER BY category ASC, name ASC
   `).all();
+
+  const materials = rawMaterials.map((m: any) => {
+    const unitCost = unitCosts.get(m.id) ?? round3(Number(m.latest_purchase_cost) || 0);
+    const lineValuation = round3(m.stock_quantity * unitCost);
+    return {
+      ...m,
+      current_cost_per_unit: unitCost,
+      unit_cost: unitCost,
+      line_valuation: lineValuation
+    };
+  });
 
   let rawMaterialsTotal = 0;
   for (const m of materials) {
