@@ -65,6 +65,7 @@ import { ShopSettingsPanel } from './ShopSettingsPanel.js';
 import { SalesHistoryTab } from './SalesHistoryTab.js';
 import { CustomerStatementModal } from './CustomerStatementModal.js';
 import { PurchaseDetailModal } from './PurchaseDetailModal.js';
+import { BatchDetailModal } from './BatchDetailModal.js';
 
 interface BackofficeProps {
   products: Product[];
@@ -178,6 +179,7 @@ export const Backoffice: React.FC<BackofficeProps> = ({
 
   // History / Audit states (Section D)
   const [productionBatches, setProductionBatches] = useState<any[]>([]);
+  const [batchDetailId, setBatchDetailId] = useState<string | null>(null);
   const [purchasesHistory, setPurchasesHistory] = useState<any[]>([]);
   const [expensesHistory, setExpensesHistory] = useState<any[]>([]);
   const [inventoryAdjustments, setInventoryAdjustments] = useState<any[]>([]);
@@ -1147,10 +1149,17 @@ export const Backoffice: React.FC<BackofficeProps> = ({
                       </td>
                     </tr>
                   ) : null}
-                </tbody>
-              </table>
+                  </tbody>
+                </table>
               </div>
             </div>
+
+            {/* Batch Detail Modal (row click) */}
+            <BatchDetailModal
+              isOpen={Boolean(batchDetailId)}
+              onClose={() => setBatchDetailId(null)}
+              batchId={batchDetailId}
+            />
           </div>
         )}
 
@@ -1607,7 +1616,12 @@ export const Backoffice: React.FC<BackofficeProps> = ({
                   </thead>
                   <tbody className="divide-y divide-slate-100">
                     {productionBatches.map(b => (
-                      <tr key={b.id} className="hover:bg-slate-50">
+                      <tr
+                        key={b.id}
+                        className="hover:bg-slate-50 cursor-pointer"
+                        onClick={() => setBatchDetailId(b.id)}
+                        title="Voir le détail du lot"
+                      >
                         <td className="p-3 font-mono font-bold text-slate-900">{b.batch_number}</td>
                         <td className="p-3 text-slate-500 text-[11px]">{formatDateTime(b.date || b.created_at)}</td>
                         <td className="p-3 font-semibold text-slate-800">{b.formulation_name}</td>
