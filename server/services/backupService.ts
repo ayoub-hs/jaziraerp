@@ -1,6 +1,6 @@
 import fs from 'fs';
 import path from 'path';
-import Database from 'better-sqlite3';
+import Database, { Database as DatabaseType } from 'better-sqlite3';
 import { getDb, closeDb } from '../db/index.js';
 
 export interface BackupMetadata {
@@ -122,7 +122,68 @@ export class BackupService {
   }
 
   /**
+   * Table names the app expects, derived from server/db/schema.sql.
+   * The app has no version/migrations table: schema is applied with
+   * CREATE TABLE IF NOT EXISTS, so the full table list IS the expectation.
+   */
+  public getRequiredTables(): string[] {
+    const schemaPath = path.join(process.cwd(), 'server/db/schema.sql');
+    const sql = fs.readFileSync(schemaPath, 'utf8');
+    const names: string[] = [];
+    const re = /CREATE\s+TABLE\s+IF\s+NOT\s+EXISTS\s+["']?(\w+)["']?/gi;
+    let m: RegExpExecArray | null;
+    while ((m = re.exec(sql)) !== null) {
+      names.push(m[1]);
+    }
+    return names;
+  }
+
+  /**
+   * Validates an uploaded/SQLite file before it may replace the live DB:
+   * (a) PRAGMA integrity_check + foreign_key_check,
+   * (b) contains every table the app expects.
+   * Throws with a clear message on any failure. Live DB untouched.
+   */
+  public validateRestoreFile(sourcePath: string): void {
+    let checkDb: DatabaseType | null = null;
+    try {
+      checkDb = new Database(sourcePath, { readonly: true });
+    } catch (err: any) {
+      throw new Error(`Restore rejected: file is not a readable SQLite database (${err?.message || err})`);
+    }
+    try {
+      let integrity: any[];
+      try {
+        integrity = checkDb.prepare('PRAGMA integrity_check').all() as any[];
+      } catch (err: any) {
+        throw new Error(`Restore rejected: integrity check could not run (${err?.message || err})`);
+      }
+      const bad = integrity.filter(r => String(r?.integrity_check ?? r).toLowerCase() !== 'ok');
+      if (bad.length > 0) {
+        throw new Error(`Restore rejected: PRAGMA integrity_check failed (${JSON.stringify(bad.slice(0, 3))})`);
+      }
+
+      const fkViolations = checkDb.prepare('PRAGMA foreign_key_check').all() as any[];
+      if (fkViolations.length > 0) {
+        throw new Error(`Restore rejected: PRAGMA foreign_key_check found ${fkViolations.length} violation(s)`);
+      }
+
+      const existing = new Set(
+        (checkDb.prepare("SELECT name FROM sqlite_master WHERE type='table'").all() as any[]).map(r => r.name)
+      );
+      const missing = this.getRequiredTables().filter(t => !existing.has(t));
+      if (missing.length > 0) {
+        throw new Error(`Restore rejected: missing required table(s): ${missing.join(', ')}`);
+      }
+    } finally {
+      try { checkDb.close(); } catch {}
+    }
+  }
+
+  /**
    * Restores database from a specified backup file in backups/ or base64 data.
+   * Hardened: validate first, snapshot current DB to backups/pre-restore-<ts>.sqlite,
+   * then swap atomically (temp file + rename). On any failure the live DB is kept.
    */
   public async restoreBackup(source: { filename?: string; fileData?: string }): Promise<{ success: boolean; message: string }> {
     const dbPath = process.env.DATABASE_PATH || path.join(process.cwd(), 'data/erp.sqlite');
@@ -147,16 +208,25 @@ export class BackupService {
     }
 
     try {
-      // Validate that source is a valid SQLite database
-      const testDb = new Database(sourcePath, { readonly: true });
-      const testTables = testDb.prepare("SELECT count(*) as cnt FROM sqlite_master WHERE type='table'").get() as any;
-      testDb.close();
-      if (!testTables || testTables.cnt === 0) {
-        throw new Error('Provided file is not a valid SQLite database or contains no tables.');
-      }
+      // 1. Validate BEFORE touching the live DB (integrity, FK, required tables)
+      this.validateRestoreFile(sourcePath);
 
-      // Close current db connection
-      closeDb();
+      // 2. Safety snapshot of the current DB into backups/
+      this.ensureDir();
+      const now = new Date();
+      const pad = (n: number) => String(n).padStart(2, '0');
+      const stamp = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}_${pad(now.getHours())}-${pad(now.getMinutes())}-${pad(now.getSeconds())}`;
+      const snapshotPath = path.join(this.backupDir, `pre-restore-${stamp}.sqlite`);
+      try {
+        const live = getDb();
+        if (typeof (live as any).backup === 'function') {
+          await (live as any).backup(snapshotPath);
+        } else if (fs.existsSync(dbPath)) {
+          fs.copyFileSync(dbPath, snapshotPath);
+        }
+      } catch (snapErr: any) {
+        throw new Error(`Restore aborted: could not snapshot current database (${snapErr?.message || snapErr})`);
+      }
 
       // Ensure data directory exists
       const dir = path.dirname(dbPath);
@@ -164,8 +234,17 @@ export class BackupService {
         fs.mkdirSync(dir, { recursive: true });
       }
 
-      // Copy source to dbPath
-      fs.copyFileSync(sourcePath, dbPath);
+      // 3. Atomic swap: stage next to the live file, close, rename, clean WAL/SHM, reopen
+      const stagePath = `${dbPath}.restore-${Date.now()}.tmp`;
+      fs.copyFileSync(sourcePath, stagePath);
+      closeDb();
+      try {
+        fs.renameSync(stagePath, dbPath);
+      } catch (swapErr: any) {
+        try { if (fs.existsSync(stagePath)) fs.unlinkSync(stagePath); } catch {}
+        getDb();
+        throw new Error(`Restore failed during swap, current database kept (${swapErr?.message || swapErr})`);
+      }
 
       // Clean up wal and shm files if they exist
       if (fs.existsSync(`${dbPath}-wal`)) {

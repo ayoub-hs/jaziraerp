@@ -112,11 +112,12 @@ app.use((err: any, req: express.Request, res: express.Response, next: express.Ne
   });
 });
 
-// Start server if executed directly
-const HOST = process.env.HOST || '0.0.0.0';
+// Start server if executed directly (default: loopback only;
+// set HOST=0.0.0.0 plus a firewall rule to expose on LAN/VPN).
+const HOST = process.env.HOST || '127.0.0.1';
 if (process.env.NODE_ENV !== 'test') {
   app.listen(Number(PORT), HOST, () => {
-    console.log(`[Al Jazira ERP] Server running on http://${HOST}:${PORT} (accessible from local network)`);
+    console.log(`[Al Jazira ERP] Server running on http://${HOST}:${PORT} (bound to ${HOST})`);
   });
 }
 
