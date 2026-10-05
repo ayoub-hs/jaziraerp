@@ -64,6 +64,7 @@ import { ReportsTab } from './ReportsTab.js';
 import { ShopSettingsPanel } from './ShopSettingsPanel.js';
 import { SalesHistoryTab } from './SalesHistoryTab.js';
 import { CustomerStatementModal } from './CustomerStatementModal.js';
+import { PurchaseDetailModal } from './PurchaseDetailModal.js';
 
 interface BackofficeProps {
   products: Product[];
@@ -158,6 +159,7 @@ export const Backoffice: React.FC<BackofficeProps> = ({
   const [supplierActionNotice, setSupplierActionNotice] = useState<string | null>(null);
   const [isPayingSupplierDebt, setIsPayingSupplierDebt] = useState(false);
   const isPayingSupplierDebtRef = useRef(false);
+  const [selectedPurchaseId, setSelectedPurchaseId] = useState<string | null>(null);
 
   // Batch Wizard state
   const [isExecutingBatch, setIsExecutingBatch] = useState(false);
@@ -1405,7 +1407,10 @@ export const Backoffice: React.FC<BackofficeProps> = ({
                     </label>
                     <select
                       value={selectedFormulationId}
-                      onChange={e => setSelectedFormulationId(e.target.value)}
+                      onChange={e => {
+                        setSelectedFormulationId(e.target.value);
+                        setTargetProductId('');
+                      }}
                       required
                       className="w-full text-xs font-semibold px-3 py-2 border border-slate-300 rounded-xl"
                     >
@@ -1460,14 +1465,32 @@ export const Backoffice: React.FC<BackofficeProps> = ({
                       className="w-full text-xs font-semibold px-3 py-2 border border-slate-300 rounded-xl"
                     >
                       <option value="">Choose target SKU to restock...</option>
-                      {products
-                        .filter(p => p.product_type === 'MANUFACTURED' || !p.product_type)
-                        .map(p => (
-                          <option key={p.id} value={p.id}>
-                            {p.name} ({p.size_label || 'Piece'}) — Current Stock: {p.stock_quantity}
-                          </option>
-                        ))}
+                      {(() => {
+                        const familyById = new Map((families || []).map(f => [f.id, f]));
+                        return products
+                          .filter(p => {
+                            const fam = familyById.get(p.family_id);
+                            const isMfg = fam ? fam.type === 'MANUFACTURED' : (p.product_type === 'MANUFACTURED' || !p.product_type);
+                            if (!isMfg) return false;
+                            if (selectedFormulationId && fam) return fam.formulation_id === selectedFormulationId;
+                            return true;
+                          })
+                          .map(p => (
+                            <option key={p.id} value={p.id}>
+                              {p.name} ({p.size_label || 'Piece'}) — Current Stock: {p.stock_quantity}
+                            </option>
+                          ));
+                      })()}
                     </select>
+                    {selectedFormulationId &&
+                      !products.some(p => {
+                        const fam = (families || []).find(f => f.id === p.family_id);
+                        return fam && fam.type === 'MANUFACTURED' && fam.formulation_id === selectedFormulationId;
+                      }) && (
+                        <p className="text-[11px] text-amber-700 font-semibold mt-1">
+                          Aucun produit lié à cette formule — liez la formule à une famille.
+                        </p>
+                      )}
                   </div>
 
                   <button
