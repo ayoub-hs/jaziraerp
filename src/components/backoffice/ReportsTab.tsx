@@ -34,6 +34,7 @@ export const ReportsTab: React.FC = () => {
 
   // Report data states
   const [loading, setLoading] = useState(false);
+  const [fetchError, setFetchError] = useState<string | null>(null);
   const [salesByCustomerData, setSalesByCustomerData] = useState<any>(null);
   const [salesByRegisterData, setSalesByRegisterData] = useState<any>(null);
   const [debtPaymentsData, setDebtPaymentsData] = useState<any>(null);
@@ -41,22 +42,28 @@ export const ReportsTab: React.FC = () => {
 
   const fetchReportData = async () => {
     setLoading(true);
+    setFetchError(null);
     try {
       if (activeReport === 'SALES_CUSTOMER') {
         const res = await fetch(`/api/reports/sales-by-customer?start_date=${startDate}&end_date=${endDate}`);
         if (res.ok) setSalesByCustomerData(await res.json());
+        else setFetchError(`Erreur chargement rapport (${res.status})`);
       } else if (activeReport === 'SALES_REGISTER') {
         const res = await fetch(`/api/reports/sales-by-register?start_date=${startDate}&end_date=${endDate}`);
         if (res.ok) setSalesByRegisterData(await res.json());
+        else setFetchError(`Erreur chargement rapport (${res.status})`);
       } else if (activeReport === 'DEBT_PAYMENTS') {
         const res = await fetch(`/api/reports/customer-debt-payments?start_date=${startDate}&end_date=${endDate}`);
         if (res.ok) setDebtPaymentsData(await res.json());
+        else setFetchError(`Erreur chargement rapport (${res.status})`);
       } else if (activeReport === 'INVENTORY_VALUATION') {
         const res = await fetch('/api/reports/inventory-valuation');
         if (res.ok) setInventoryValuationData(await res.json());
+        else setFetchError(`Erreur chargement rapport (${res.status})`);
       }
-    } catch (err) {
+    } catch (err: any) {
       console.error('Error fetching report:', err);
+      setFetchError(err.message || 'Error fetching report');
     } finally {
       setLoading(false);
     }
@@ -330,6 +337,11 @@ export const ReportsTab: React.FC = () => {
       )}
 
       {/* KPI Summary Cards */}
+      {fetchError && (
+        <div className="p-3 bg-rose-50 text-rose-800 border border-rose-200 rounded-xl text-xs font-bold">
+          {fetchError}
+        </div>
+      )}
       {activeReport === 'SALES_CUSTOMER' && salesByCustomerData?.summary && (
         <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
           <div className="bg-white p-3.5 rounded-2xl shadow-sm border border-slate-200">

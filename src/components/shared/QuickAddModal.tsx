@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { X, Plus, Tag } from 'lucide-react';
 import type { CartItem } from '../../types/index.js';
+import { roundMoney } from '../../utils/formatters.js';
 
 interface QuickAddModalProps {
   isOpen: boolean;
@@ -41,7 +42,7 @@ export const QuickAddModal: React.FC<QuickAddModalProps> = ({
     const newItem: CartItem = {
       cart_item_id: 'quick_' + Date.now(),
       name: name.trim(),
-      unit_price: parsedPrice,
+      unit_price: roundMoney(parsedPrice),
       quantity: parsedQty,
       pack_multiplier: 1,
       is_quick_add: true

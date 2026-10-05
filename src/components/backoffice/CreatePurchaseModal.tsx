@@ -406,7 +406,7 @@ export const CreatePurchaseModal: React.FC<CreatePurchaseModalProps> = ({
                           </td>
 
                           <td className="p-2 text-right font-mono font-bold text-slate-800">
-                            {lineTotal.toFixed(3)}
+                            {Number(lineTotal || 0).toFixed(3)}
                           </td>
 
                           <td className="p-2 text-center">
