@@ -62,6 +62,32 @@ export function getDb(customPath?: string): DatabaseType {
     db.exec('CREATE INDEX IF NOT EXISTS idx_refunds_date ON refunds(date)');
     // One open session per counter, enforced at the DB level so concurrent
     // POST /api/register/open calls cannot both succeed (check-then-insert race).
+    // Pre-existing duplicate OPENs (from before the index) are reconciled first:
+    // keep the newest per counter, auto-close the rest.
+    try {
+      const dedupe = db.transaction(() => {
+        const dupes: any[] = db.prepare(`
+          SELECT id, counter_name FROM register_sessions
+          WHERE status = 'OPEN'
+          ORDER BY counter_name ASC, opened_at DESC, id DESC
+        `).all();
+        const seen = new Set<string>();
+        const closeOne = db.prepare(`
+          UPDATE register_sessions
+          SET status = 'CLOSED', closed_at = ?, notes = 'auto-closed duplicate'
+          WHERE id = ?
+        `);
+        const nowIso = new Date().toISOString();
+        for (const row of dupes) {
+          if (seen.has(row.counter_name)) {
+            closeOne.run(nowIso, row.id);
+          } else {
+            seen.add(row.counter_name);
+          }
+        }
+      });
+      dedupe();
+    } catch {}
     db.exec("CREATE UNIQUE INDEX IF NOT EXISTS idx_one_open_session_per_counter ON register_sessions(counter_name) WHERE status = 'OPEN'");
   } catch {}
 

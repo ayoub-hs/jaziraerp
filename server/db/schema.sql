@@ -424,7 +424,6 @@ CREATE INDEX IF NOT EXISTS idx_purchases_date ON purchases(date);
 CREATE INDEX IF NOT EXISTS idx_batches_product ON production_batches(target_product_id);
 CREATE INDEX IF NOT EXISTS idx_register_movements_session ON register_cash_movements(session_id);
 CREATE UNIQUE INDEX IF NOT EXISTS idx_sales_synced_client_id ON sales(synced_from_client_id) WHERE synced_from_client_id IS NOT NULL;
-CREATE UNIQUE INDEX IF NOT EXISTS idx_one_open_session_per_counter ON register_sessions(counter_name) WHERE status = 'OPEN';
 CREATE INDEX IF NOT EXISTS idx_general_expenses_date ON general_expenses(date);
 CREATE INDEX IF NOT EXISTS idx_customer_payments_date ON customer_payments(date);
 CREATE INDEX IF NOT EXISTS idx_supplier_payments_date ON supplier_payments(date);
