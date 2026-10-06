@@ -57,4 +57,10 @@
 - 5e04c40 fix(ui): quick-edit guard, counter-save guard, shared csv export
 - 2f7a988 fix(server): delete guards, overpay reject, atomic material create, refund/status validations
 - 564406f fix(ui): report error banner, quick-add rounding, purchase total guard
+- 5748803 Revert "feat(mobile): Tauri v2 Android client shell with server-URL setup gate"
+- e2a2423 feat(mobile): Capacitor v2 scaffold with Android shell
+- 65e30d6 feat(mobile): server URL resolution with Capacitor native detection
+- d38de54 feat(mobile): BLE shim wiring with native API patch at startup
+- 84eaa60 feat(mobile): server setup gate blocking first launch until URL saved
+- bf5b298 feat(mobile): BLE permissions, LAN cleartext, Capacitor CORS origin
 - NOTE: server now binds 127.0.0.1 by default (HOST env overrides). LAN/VPN exposure previously needed HOST=0.0.0.0 plus a firewall rule; see README Deployment.

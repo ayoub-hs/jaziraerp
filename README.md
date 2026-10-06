@@ -19,3 +19,19 @@ After one online visit the app shell works offline. A new deploy refreshes the
 cache and the page shows an "update available — reload" banner. To force-reset
 the offline shell, visit `/?nosw=1` (unregisters the service worker and clears
 its caches).
+
+## Android client (Capacitor)
+
+Native shell around the same React UI, talking to the shop server over
+LAN/Tailscale. First launch asks for the server URL (tested live, saved
+on-device). Bluetooth printing goes through the Capgo BLE shim, so the
+existing WebBluetooth ESC/POS path works unchanged (verified with MPT-II).
+
+- Prereqs: Android SDK + NDK, JDK 21, `~/gradle/gradle-8.13` (repo wrapper
+  version drift — local 8.13 satisfies AGP 8.13; do not use `/usr/bin/gradle` 4.x).
+- Build: `npm run build && npx cap sync android`, then
+  `JAVA_HOME=~/jdk-21 ~/gradle/gradle-8.13/bin/gradle assembleDebug`
+  inside `android/`. APK:
+  `android/app/build/outputs/apk/debug/app-debug.apk` (debug-signed).
+- Server must be reachable from the phone (`HOST=0.0.0.0` or Tailscale IP);
+  CORS already allowlists the app origin, manifest allows LAN cleartext.
