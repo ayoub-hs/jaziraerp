@@ -22,8 +22,6 @@ import { webBluetoothPrinter } from './services/hardware/webbluetooth.js';
 import { webSerialDrawer } from './services/hardware/webserial.js';
 import { authService } from './services/authService.js';
 import { fetchShopInfo } from './services/shopInfo.js';
-import { getServerUrl, isTauriApp } from './services/serverUrl.js';
-import { TauriServerSetup } from './components/shared/TauriServerSetup.js';
 
 export default function App() {
   const [currentView, setCurrentView] = useState<'DESKTOP_POS' | 'MOBILE_REGISTER' | 'BACKOFFICE'>('DESKTOP_POS');
@@ -47,8 +45,6 @@ export default function App() {
   const [printInvoiceSaleId, setPrintInvoiceSaleId] = useState<string | null>(null);
   const [isLocked, setIsLocked] = useState<boolean>(authService.isLocked());
   const [pwaUpdateReload, setPwaUpdateReload] = useState<(() => void) | null>(null);
-  // Tauri mobile only: no same-origin server until the cashier saves its URL.
-  const [serverUrl, setServerUrl] = useState<string>(() => getServerUrl());
   const prevSyncStateRef = useRef<SyncState>('ONLINE_SYNCED');
 
   // PWA update banner: a new deploy is cached and waits until the user reloads.
@@ -271,11 +267,6 @@ export default function App() {
 
   return (
     <div className="min-h-screen bg-slate-100 flex flex-col font-sans select-none antialiased">
-      {/* Tauri mobile first-launch: server URL required before anything else */}
-      {isTauriApp() && !serverUrl && (
-        <TauriServerSetup onSaved={url => setServerUrl(url)} />
-      )}
-      {!(isTauriApp() && !serverUrl) && (<>
       {/* PWA update banner: new version cached, reload to apply */}
       {pwaUpdateReload && (
         <div className="bg-emerald-700 text-white text-xs font-semibold px-4 py-2 flex items-center justify-center gap-3 print:hidden">
@@ -404,7 +395,6 @@ export default function App() {
         isLocked={isLocked}
         onUnlocked={() => setIsLocked(false)}
       />
-      </>)}
     </div>
   );
 }
