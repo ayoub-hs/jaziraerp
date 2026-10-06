@@ -12,6 +12,10 @@
     "test": "vitest run"
   },
   "dependencies": {
+    "@capacitor/android": "^8.5.2",
+    "@capacitor/cli": "^8.5.2",
+    "@capacitor/core": "^8.5.2",
+    "@capgo/capacitor-bluetooth-low-energy": "^8.2.1",
     "better-sqlite3": "^11.8.1",
     "cors": "^2.8.5",
     "dexie": "^4.0.11",

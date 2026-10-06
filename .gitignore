@@ -8,3 +8,7 @@ server/**/*.sqlite
 server/**/*.db
 server/*.sqlite
 server/*.db
+# Capacitor build outputs (generated Android shell itself is tracked)
+android/app/build
+android/.gradle
+android/app/src/main/assets/public
