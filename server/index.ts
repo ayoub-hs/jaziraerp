@@ -33,6 +33,9 @@ const PORT = process.env.PORT || 3000;
 const allowedOrigins = process.env.ALLOWED_ORIGINS
   ? process.env.ALLOWED_ORIGINS.split(',').map(o => o.trim()).filter(Boolean)
   : [];
+// Bundled Capacitor native client serves the UI from the app container, not
+// from the server origin. This origin can only be sent by our signed app webview.
+if (!allowedOrigins.includes('https://localhost')) allowedOrigins.push('https://localhost');
 
 app.use(cors({
   origin: (origin, callback) => {
