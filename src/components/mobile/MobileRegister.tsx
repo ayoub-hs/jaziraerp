@@ -34,6 +34,7 @@ import { formatMoney, roundMoney } from '../../utils/formatters.js';
 import { playBeep, playErrorBeep, vibrateError } from '../../utils/audio.js';
 import { CheckoutModal } from '../shared/CheckoutModal.js';
 import { FamilySizesModal } from '../shared/FamilySizesModal.js';
+import { QuickAddModal } from '../shared/QuickAddModal.js';
 import { CameraScannerModal } from '../shared/CameraScannerModal.js';
 import { scannerService } from '../../services/hardware/scanner.js';
 
@@ -115,6 +116,9 @@ export const MobileRegister: React.FC<MobileRegisterProps> = ({
   // Camera & Scanner State
   const [isCameraOpen, setIsCameraOpen] = useState(false);
   const [cameraMode, setCameraMode] = useState<'REGISTER' | 'LOOKUP' | 'QUICK_EDIT'>('REGISTER');
+
+  // Quick-add uncataloged item
+  const [isQuickAddOpen, setIsQuickAddOpen] = useState(false);
 
   const totals = calculateCartTotals(cart, saleDiscount);
   const categories = ['ALL', ...Array.from(new Set(families.map(f => f.category || 'Other')))];
@@ -577,6 +581,13 @@ export const MobileRegister: React.FC<MobileRegisterProps> = ({
                 title="Scan Barcode with Camera"
               >
                 <Camera className="w-4 h-4" />
+              </button>
+              <button
+                onClick={() => setIsQuickAddOpen(true)}
+                className="px-2.5 py-1.5 bg-slate-800 hover:bg-slate-900 text-white rounded-xl flex items-center justify-center shrink-0"
+                title="Quick-add uncataloged product"
+              >
+                <Tag className="w-4 h-4 text-emerald-400" />
               </button>
               <select
                 value={selectedCustomer?.id || ''}
@@ -1376,6 +1387,13 @@ export const MobileRegister: React.FC<MobileRegisterProps> = ({
         isOpen={isCameraOpen}
         onClose={() => setIsCameraOpen(false)}
         onScan={handleCameraScan}
+      />
+
+      {/* Quick-Add Uncataloged Item */}
+      <QuickAddModal
+        isOpen={isQuickAddOpen}
+        onClose={() => setIsQuickAddOpen(false)}
+        onAddItem={item => setCart(prev => [...prev, item])}
       />
 
       {/* FIXED BOTTOM NAVIGATION BAR (4 TABS) */}
