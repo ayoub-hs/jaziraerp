@@ -63,4 +63,7 @@
 - d38de54 feat(mobile): BLE shim wiring with native API patch at startup
 - 84eaa60 feat(mobile): server setup gate blocking first launch until URL saved
 - bf5b298 feat(mobile): BLE permissions, LAN cleartext, Capacitor CORS origin
+- 7e09439 fix(mobile): quick-add uncataloged item button and modal in MobileRegister
+- 63167a0 fix(mobile): BT pair button always available on native via lazy BLE shim
+- 4c61f50 fix(mobile): camera permission manifest plus runtime grant for scanner
 - NOTE: server now binds 127.0.0.1 by default (HOST env overrides). LAN/VPN exposure previously needed HOST=0.0.0.0 plus a firewall rule; see README Deployment.
