@@ -1,0 +1,71 @@
+/**
+ * Server endpoint resolution.
+ *
+ * Web (dev / PWA / tailscale): same-origin, relative `/api/...` just works.
+ * Tauri mobile: the UI is bundled and served from the asset container, so
+ * relative URLs resolve nowhere. The shop server URL (e.g.
+ * `http://192.168.1.10:3000`) is stored on-device and prepended instead.
+ */
+
+const STORAGE_KEY = 'erp_server_url';
+
+export function isTauriApp(): boolean {
+  if (typeof window === 'undefined') return false;
+  return '__TAURI_INTERNALS__' in window || '__TAURI__' in window;
+}
+
+export function getServerUrl(): string {
+  try {
+    return (localStorage.getItem(STORAGE_KEY) || '').trim().replace(/\/+$/, '');
+  } catch {
+    return '';
+  }
+}
+
+export function setServerUrl(url: string): void {
+  try {
+    localStorage.setItem(STORAGE_KEY, url.trim().replace(/\/+$/, ''));
+  } catch {
+    // storage unavailable: caller falls back to direct entry each launch
+  }
+}
+
+export function needsServerSetup(): boolean {
+  return isTauriApp() && getServerUrl().length === 0;
+}
+
+/** Prefix a root-relative API path with the stored server URL when set. */
+export function apiUrl(path: string): string {
+  const base = getServerUrl();
+  if (!base || !path.startsWith('/api')) return path;
+  return base + path;
+}
+
+/**
+ * Startup patch: rewrite root-relative `/api/...` fetches to the stored
+ * server URL. No-op on web (no URL stored → relative, unchanged) and outside
+ * Tauri. Reads the URL per call so saving it in the setup gate applies live.
+ */
+export function installApiUrlPatch(): void {
+  if (typeof window === 'undefined' || !isTauriApp()) return;
+  if ((window.fetch as any).__erpPatched) return;
+  const origFetch = window.fetch.bind(window);
+  const patched = ((input: any, init?: RequestInit) => {
+    const base = getServerUrl();
+    if (base) {
+      if (typeof input === 'string' && input.startsWith('/api')) {
+        input = base + input;
+      } else if (input instanceof Request) {
+        const url = input.url;
+        // Only rewrite same-origin-relative API requests, never absolute ones.
+        if (url.startsWith('/api') || (typeof window !== 'undefined' && url.startsWith(window.location.origin + '/api'))) {
+          const path = url.startsWith('/api') ? url : url.slice(window.location.origin.length);
+          input = new Request(base + path, input);
+        }
+      }
+    }
+    return origFetch(input, init);
+  }) as typeof fetch;
+  (patched as any).__erpPatched = true;
+  window.fetch = patched;
+}

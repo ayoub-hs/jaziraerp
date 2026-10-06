@@ -33,6 +33,11 @@ const PORT = process.env.PORT || 3000;
 const allowedOrigins = process.env.ALLOWED_ORIGINS
   ? process.env.ALLOWED_ORIGINS.split(',').map(o => o.trim()).filter(Boolean)
   : [];
+// Bundled Tauri mobile client serves the UI from the app container, not from
+// the server origin. These origins can only be sent by our signed app webview.
+for (const tauriOrigin of ['tauri://localhost', 'http://tauri.localhost']) {
+  if (!allowedOrigins.includes(tauriOrigin)) allowedOrigins.push(tauriOrigin);
+}
 
 app.use(cors({
   origin: (origin, callback) => {
