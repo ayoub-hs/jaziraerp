@@ -26,18 +26,34 @@ export class WebBluetoothPrinterService {
 
   /**
    * Installs the native BLE shim when navigator.bluetooth is missing
-   * (Capacitor WebView). No-op on web. Idempotent.
+   * (Capacitor WebView). No-op on web. Idempotent. Throws a descriptive
+   * error when the shim cannot be installed instead of failing later on
+   * `undefined.requestDevice`.
    */
   public async ensureShim(): Promise<void> {
-    if (typeof navigator !== 'undefined' && 'bluetooth' in navigator) return;
+    if (typeof navigator !== 'undefined' && typeof (navigator as any).bluetooth?.requestDevice === 'function') return;
     let native = false;
+    let platform = 'web';
     try {
       native = Capacitor.isNativePlatform();
+      platform = Capacitor.getPlatform();
     } catch {
       native = false;
     }
     if (!native) return;
     BluetoothLowEnergy.shimWebBluetooth();
+    if (typeof (navigator as any).bluetooth?.requestDevice !== 'function') {
+      let pluginVisible = false;
+      try {
+        pluginVisible = Capacitor.isPluginAvailable('BluetoothLowEnergy');
+      } catch {
+        pluginVisible = false;
+      }
+      throw new Error(
+        `Bluetooth natif indisponible (plateforme: ${platform}, plugin BLE visible: ${pluginVisible ? 'oui' : 'non'}). ` +
+        `Réinstallez l'APK la plus récente ou utilisez Chrome Android.`
+      );
+    }
     this.notifyStatus();
   }
 
@@ -75,6 +91,9 @@ export class WebBluetoothPrinterService {
 
     try {
       const bluetooth = (navigator as any).bluetooth;
+      if (typeof bluetooth?.requestDevice !== 'function') {
+        throw new Error('Bluetooth indisponible sur cet appareil. Réinstallez l\'APK la plus récente ou utilisez Chrome Android.');
+      }
 
       // Common BLE thermal printer service UUIDs
       const serviceUUIDs = [
