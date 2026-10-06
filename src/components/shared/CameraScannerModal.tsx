@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { X, Camera, Flashlight, AlertCircle } from 'lucide-react';
 import { playBeep } from '../../utils/audio.js';
+import { Capacitor } from '@capacitor/core';
 
 interface CameraScannerModalProps {
   isOpen: boolean;
@@ -38,6 +39,21 @@ export const CameraScannerModal: React.FC<CameraScannerModalProps> = ({
   const startCamera = async () => {
     setError(null);
     try {
+      // Native shell: WebView getUserMedia needs the runtime camera grant first.
+      let native = false;
+      try {
+        native = Capacitor.isNativePlatform();
+      } catch {
+        native = false;
+      }
+      if (native) {
+        const { Camera: CapCamera } = await import('@capacitor/camera');
+        const perm = await CapCamera.requestPermissions({ permissions: ['camera'] });
+        if (perm.camera !== 'granted') {
+          setError('Camera permission denied. Allow camera access in system settings.');
+          return;
+        }
+      }
       const mediaStream = await navigator.mediaDevices.getUserMedia({
         video: {
           facingMode: { ideal: 'environment' },

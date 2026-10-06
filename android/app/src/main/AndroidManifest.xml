@@ -45,4 +45,6 @@
     <uses-permission android:name="android.permission.BLUETOOTH" android:maxSdkVersion="30" />
     <uses-permission android:name="android.permission.BLUETOOTH_ADMIN" android:maxSdkVersion="30" />
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" android:maxSdkVersion="30" />
+    <!-- Camera barcode scanner (getUserMedia in WebView needs declared + runtime grant) -->
+    <uses-permission android:name="android.permission.CAMERA" />
 </manifest>
