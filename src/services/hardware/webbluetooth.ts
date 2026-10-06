@@ -1,5 +1,7 @@
 import { buildDrawerKickCommand, buildReceiptEscPos } from './escpos.js';
 import type { SaleSummary } from '../../types/index.js';
+import { Capacitor } from '@capacitor/core';
+import { BluetoothLowEnergy } from '@capgo/capacitor-bluetooth-low-energy';
 
 export interface BluetoothPrinterStatus {
   isSupported: boolean;
@@ -13,7 +15,30 @@ export class WebBluetoothPrinterService {
   private statusListeners: Array<(status: BluetoothPrinterStatus) => void> = [];
 
   public isSupported(): boolean {
-    return typeof navigator !== 'undefined' && 'bluetooth' in navigator;
+    if (typeof navigator !== 'undefined' && 'bluetooth' in navigator) return true;
+    // Native shell (no WebView WebBluetooth): pairable via the Capgo BLE shim.
+    try {
+      return Capacitor.isNativePlatform();
+    } catch {
+      return false;
+    }
+  }
+
+  /**
+   * Installs the native BLE shim when navigator.bluetooth is missing
+   * (Capacitor WebView). No-op on web. Idempotent.
+   */
+  public async ensureShim(): Promise<void> {
+    if (typeof navigator !== 'undefined' && 'bluetooth' in navigator) return;
+    let native = false;
+    try {
+      native = Capacitor.isNativePlatform();
+    } catch {
+      native = false;
+    }
+    if (!native) return;
+    BluetoothLowEnergy.shimWebBluetooth();
+    this.notifyStatus();
   }
 
   public getStatus(): BluetoothPrinterStatus {
@@ -43,6 +68,7 @@ export class WebBluetoothPrinterService {
    * Prompts user to pair with a Bluetooth thermal printer
    */
   public async requestAndConnect(): Promise<boolean> {
+    await this.ensureShim();
     if (!this.isSupported()) {
       throw new Error('WebBluetooth API is not supported in this browser. Please use Chrome on Android.');
     }
