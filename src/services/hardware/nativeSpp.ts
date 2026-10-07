@@ -74,14 +74,21 @@ class NativeSppPrinterService {
   /**
    * Connects to the bonded MPT-II (or first bonded device whose name
    * contains the hint). Throws a descriptive error on failure.
+   * `err.code === 'NO_BONDED'` means there is nothing to connect to
+   * (caller may fall back to BLE scan); any other error is a real
+   * connection failure that must be shown, not swallowed.
    */
   public async autoConnect(nameHint = 'MPT-II'): Promise<boolean> {
     if (!this.isNative()) {
-      throw new Error('SPP printer is only available in the native app.');
+      const err: any = new Error('SPP printer is only available in the native app.');
+      err.code = 'NOT_NATIVE';
+      throw err;
     }
     const { devices } = await ErpSppPrinter.listBonded();
     if (!devices || devices.length === 0) {
-      throw new Error('Aucune imprimante Bluetooth appairée. Appairez la MPT-II dans les réglages Android.');
+      const err: any = new Error('Aucune imprimante Bluetooth appairée. Appairez la MPT-II dans les réglages Android.');
+      err.code = 'NO_BONDED';
+      throw err;
     }
     const match =
       devices.find(d => (d.name || '').toUpperCase().includes(nameHint.toUpperCase())) || devices[0];

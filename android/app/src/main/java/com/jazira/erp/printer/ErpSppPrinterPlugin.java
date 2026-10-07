@@ -65,6 +65,7 @@ public class ErpSppPrinterPlugin extends Plugin {
             return;
         }
         closeQuietly();
+        Exception lastError = null;
         try {
             BluetoothAdapter adapter = BluetoothAdapter.getDefaultAdapter();
             if (adapter == null) {
@@ -76,9 +77,40 @@ public class ErpSppPrinterPlugin extends Plugin {
                 return;
             }
             BluetoothDevice device = adapter.getRemoteDevice(address);
-            socket = device.createRfcommSocketToServiceRecord(SPP_UUID);
             adapter.cancelDiscovery();
-            socket.connect();
+
+            // 1) Standard secure SPP socket (works for most bonded printers).
+            try {
+                socket = device.createRfcommSocketToServiceRecord(SPP_UUID);
+                socket.connect();
+            } catch (Exception e1) {
+                lastError = e1;
+                closeQuietly();
+                // 2) Insecure SPP socket (older printer firmware).
+                try {
+                    socket = device.createInsecureRfcommSocketToServiceRecord(SPP_UUID);
+                    socket.connect();
+                } catch (Exception e2) {
+                    lastError = e2;
+                    closeQuietly();
+                    // 3) Reflection on channel 1 (classic workaround for
+                    // cached/stale SDP channel on cheap SPP modules).
+                    try {
+                        socket = (BluetoothSocket) device.getClass()
+                                .getMethod("createRfcommSocket", int.class)
+                                .invoke(device, 1);
+                        socket.connect();
+                    } catch (Exception e3) {
+                        lastError = e3;
+                        closeQuietly();
+                    }
+                }
+            }
+
+            if (socket == null || !socket.isConnected()) {
+                call.reject("SPP connect failed: " + (lastError != null ? lastError.getMessage() : "unknown"));
+                return;
+            }
             out = socket.getOutputStream();
             connectedAddress = address;
             JSObject ret = new JSObject();

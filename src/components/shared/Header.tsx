@@ -377,13 +377,19 @@ export const Header: React.FC<HeaderProps> = ({
                 if (!anyConnected) {
                   try {
                     // Classic SPP first: bonded serial printers (MPT-II) connect
-                    // deterministically with no scan. BLE shim as fallback.
+                    // deterministically with no scan. Only fall back to the BLE
+                    // shim when there is nothing bonded to try.
                     if (sppStatus.isSupported) {
                       try {
                         await nativeSppPrinter.autoConnect();
                         return;
                       } catch (sppErr: any) {
-                        console.warn('[Header] SPP auto-connect failed, trying BLE:', sppErr);
+                        if (sppErr?.code === 'NO_BONDED' || sppErr?.code === 'NOT_NATIVE') {
+                          console.warn('[Header] No SPP candidate, trying BLE:', sppErr);
+                        } else {
+                          alert(sppErr.message || 'Failed to connect Bluetooth printer');
+                          return;
+                        }
                       }
                     }
                     await webBluetoothPrinter.requestAndConnect();
