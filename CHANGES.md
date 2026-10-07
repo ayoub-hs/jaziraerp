@@ -66,4 +66,9 @@
 - 7e09439 fix(mobile): quick-add uncataloged item button and modal in MobileRegister
 - 63167a0 fix(mobile): BT pair button always available on native via lazy BLE shim
 - 4c61f50 fix(mobile): camera permission manifest plus runtime grant for scanner
+- 1730afa fix(mobile): verify BLE shim install with diagnostics; bump to 1.0.1
+- 6005d5a feat(mobile): native Classic SPP printer plugin plus bonded auto-connect
+- 1936581 feat(mobile): route pair and print through SPP before BLE fallback
+- 2523499 chore(mobile): bump to 1.0.3
+- b409ec6 fix(mobile): SPP socket fallback chain; surface SPP errors instead of BLE
 - NOTE: server now binds 127.0.0.1 by default (HOST env overrides). LAN/VPN exposure previously needed HOST=0.0.0.0 plus a firewall rule; see README Deployment.
