@@ -41,7 +41,12 @@ export class WebBluetoothPrinterService {
       native = false;
     }
     if (!native) return;
-    BluetoothLowEnergy.shimWebBluetooth();
+    let installError = '';
+    try {
+      BluetoothLowEnergy.shimWebBluetooth();
+    } catch (err: any) {
+      installError = err?.message || String(err);
+    }
     if (typeof (navigator as any).bluetooth?.requestDevice !== 'function') {
       let pluginVisible = false;
       try {
@@ -49,9 +54,26 @@ export class WebBluetoothPrinterService {
       } catch {
         pluginVisible = false;
       }
+      // Ground-truth snapshot: tells exactly why the facade is missing.
+      const btVal = (navigator as any).bluetooth;
+      const btType =
+        btVal === undefined || btVal === null
+          ? String(btVal)
+          : typeof btVal + (btVal?.constructor?.name ? `:${btVal.constructor.name}` : '');
+      let btKeys = '';
+      try {
+        if (btVal && (typeof btVal === 'object' || typeof btVal === 'function')) {
+          btKeys = Object.getOwnPropertyNames(btVal).slice(0, 8).join(',');
+        }
+      } catch {
+        btKeys = '';
+      }
+      const shimFlag = (window as any).__capgoBluetoothLowEnergyShimInstalled === true;
       throw new Error(
-        `Bluetooth natif indisponible (plateforme: ${platform}, plugin BLE visible: ${pluginVisible ? 'oui' : 'non'}). ` +
-        `Réinstallez l'APK la plus récente ou utilisez Chrome Android.`
+        `Bluetooth natif indisponible (plateforme: ${platform}, plugin BLE visible: ${pluginVisible ? 'oui' : 'non'}, ` +
+          `navigator.bluetooth: ${btType}${btKeys ? ` [${btKeys}]` : ''}, shim installé: ${shimFlag ? 'oui' : 'non'}` +
+          `${installError ? `, erreur install: ${installError}` : ''}). ` +
+          `Réinstallez l'APK la plus récente ou utilisez Chrome Android.`
       );
     }
     this.notifyStatus();
