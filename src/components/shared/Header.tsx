@@ -23,6 +23,7 @@ import type { PendingSyncItem } from '../../db/clientDb.js';
 import { formatMoney } from '../../utils/formatters.js';
 import { webUsbPrinter, type UsbPrinterStatus } from '../../services/hardware/webusb.js';
 import { webBluetoothPrinter, type BluetoothPrinterStatus } from '../../services/hardware/webbluetooth.js';
+import { nativeSppPrinter, type SppPrinterStatus } from '../../services/hardware/nativeSpp.js';
 import { AuthCredentialsModal } from './AuthCredentialsModal.js';
 import { authService } from '../../services/authService.js';
 
@@ -61,6 +62,7 @@ export const Header: React.FC<HeaderProps> = ({
 }) => {
   const [usbStatus, setUsbStatus] = useState<UsbPrinterStatus>(webUsbPrinter.getStatus());
   const [btStatus, setBtStatus] = useState<BluetoothPrinterStatus>(webBluetoothPrinter.getStatus());
+  const [sppStatus, setSppStatus] = useState<SppPrinterStatus>(nativeSppPrinter.getStatus());
   const [serialPortInfo, setSerialPortInfo] = useState<string | null>(null);
   const [printerHardwareInfo, setPrinterHardwareInfo] = useState<{ connected: boolean; device_name?: string; driver_type?: string } | null>(null);
   const [drawerKicking, setDrawerKicking] = useState(false);
@@ -79,6 +81,7 @@ export const Header: React.FC<HeaderProps> = ({
   useEffect(() => {
     const unsubUsb = webUsbPrinter.subscribeStatus(setUsbStatus);
     const unsubBt = webBluetoothPrinter.subscribeStatus(setBtStatus);
+    const unsubSpp = nativeSppPrinter.subscribeStatus(setSppStatus);
 
     // Check for connected USB Serial Cash Drawer on /dev/ttyUSB*
     fetch('/api/hardware/drawer/status')
@@ -103,6 +106,7 @@ export const Header: React.FC<HeaderProps> = ({
     return () => {
       unsubUsb();
       unsubBt();
+      unsubSpp();
     };
   }, []);
 
@@ -366,26 +370,43 @@ export const Header: React.FC<HeaderProps> = ({
           </button>
 
           {/* Bluetooth Printer (Mobile) */}
-          {btStatus.isSupported && (
+          {(btStatus.isSupported || sppStatus.isSupported) && (
             <button
               onClick={async () => {
-                if (!btStatus.isConnected) {
+                const anyConnected = btStatus.isConnected || sppStatus.isConnected;
+                if (!anyConnected) {
                   try {
+                    // Classic SPP first: bonded serial printers (MPT-II) connect
+                    // deterministically with no scan. BLE shim as fallback.
+                    if (sppStatus.isSupported) {
+                      try {
+                        await nativeSppPrinter.autoConnect();
+                        return;
+                      } catch (sppErr: any) {
+                        console.warn('[Header] SPP auto-connect failed, trying BLE:', sppErr);
+                      }
+                    }
                     await webBluetoothPrinter.requestAndConnect();
                   } catch (err: any) {
                     alert(err.message || 'Failed to connect Bluetooth printer');
                   }
                 }
               }}
-              title={btStatus.isConnected ? `Connected: ${btStatus.deviceName}` : 'Pair 58mm Bluetooth Receipt Printer'}
+              title={
+                sppStatus.isConnected
+                  ? `Connected (SPP): ${sppStatus.deviceName}`
+                  : btStatus.isConnected
+                  ? `Connected: ${btStatus.deviceName}`
+                  : 'Pair 58mm Bluetooth Receipt Printer'
+              }
               className={`flex items-center gap-1 px-2 py-1 rounded-lg text-xs font-semibold border transition-colors ${
-                btStatus.isConnected
+                btStatus.isConnected || sppStatus.isConnected
                   ? 'bg-emerald-950/60 border-emerald-600 text-emerald-400'
                   : 'bg-slate-800 border-slate-700 text-slate-300 hover:text-white'
               }`}
             >
               <Bluetooth className="w-3.5 h-3.5 text-indigo-400" />
-              <span className="hidden lg:inline">{btStatus.isConnected ? 'BT Ready' : 'Pair BT'}</span>
+              <span className="hidden lg:inline">{btStatus.isConnected || sppStatus.isConnected ? 'BT Ready' : 'Pair BT'}</span>
             </button>
           )}
 

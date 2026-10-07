@@ -5,6 +5,7 @@ import { formatMoney, formatDateTime } from '../../utils/formatters.js';
 import { calculateCartTotals } from '../../utils/cart.js';
 import { webUsbPrinter } from '../../services/hardware/webusb.js';
 import { webBluetoothPrinter } from '../../services/hardware/webbluetooth.js';
+import { nativeSppPrinter } from '../../services/hardware/nativeSpp.js';
 import { clientDb } from '../../db/clientDb.js';
 import { getShopInfo } from '../../services/shopInfo.js';
 
@@ -118,7 +119,15 @@ export const ReceiptPrintModal: React.FC<ReceiptPrintModalProps> = ({
         return;
       }
 
-      // 2. Check WebBluetooth if connected (Android)
+      // 2. Check native Bluetooth Classic (SPP) bonded printer (MPT-II)
+      if (nativeSppPrinter.getStatus().isConnected) {
+        await nativeSppPrinter.printReceipt(sale);
+        setPrintFeedback('Imprimé via Bluetooth SPP !');
+        setTimeout(() => setPrintFeedback(null), 2500);
+        return;
+      }
+
+      // 3. Check WebBluetooth if connected (Android)
       if (webBluetoothPrinter.getStatus().isConnected) {
         await webBluetoothPrinter.printReceipt(sale);
         setPrintFeedback('Imprimé via Bluetooth !');
@@ -126,7 +135,7 @@ export const ReceiptPrintModal: React.FC<ReceiptPrintModalProps> = ({
         return;
       }
 
-      // 3. Attempt direct POS hardware driver (matches Kotlin DesktopReceiptPrinter libusb driver)
+      // 4. Attempt direct POS hardware driver (matches Kotlin DesktopReceiptPrinter libusb driver)
       try {
         const res = await fetch('/api/hardware/printer/print', {
           method: 'POST',
@@ -144,7 +153,7 @@ export const ReceiptPrintModal: React.FC<ReceiptPrintModalProps> = ({
       }
     }
 
-    // 4. Fallback to standard browser print (with our clean 58mm CSS isolation)
+    // 5. Fallback to standard browser print (with our clean 58mm CSS isolation)
     window.print();
   };
 
