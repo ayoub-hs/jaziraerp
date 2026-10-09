@@ -16,6 +16,9 @@ if (Capacitor.isNativePlatform()) {
 // Attach native Android hardware back button handler
 initBackButton();
 
+// Best-effort request for persistent storage quota (never claimed as a durability guarantee)
+if (navigator.storage?.persist) navigator.storage.persist().catch(() => {});
+
 // Capacitor native: bundled UI talks to the shop server via stored absolute
 // URL, and Web Bluetooth calls route to the native BLE stack via the shim.
 installApiUrlPatch();
