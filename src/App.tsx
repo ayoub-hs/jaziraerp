@@ -24,6 +24,7 @@ import { authService } from './services/authService.js';
 import { fetchShopInfo } from './services/shopInfo.js';
 import { getServerUrl, isNativeApp } from './services/serverUrl.js';
 import { ServerSetup } from './components/shared/ServerSetup.js';
+import { updateRegisterSessionState } from './utils/keepScreen.js';
 
 export default function App() {
   const [currentView, setCurrentView] = useState<'DESKTOP_POS' | 'MOBILE_REGISTER' | 'BACKOFFICE'>('DESKTOP_POS');
@@ -178,6 +179,12 @@ export default function App() {
       }
     }
   }, [currentView, openSessions]);
+
+  // Keep screen awake natively only while a register session is open
+  useEffect(() => {
+    const isOpen = Boolean(activeSession && activeSession.status === 'OPEN');
+    updateRegisterSessionState(isOpen);
+  }, [activeSession]);
 
   const triggerDrawerIfCash = (cashPaid: number, sourceView = currentView) => {
     if (cashPaid > 0) {

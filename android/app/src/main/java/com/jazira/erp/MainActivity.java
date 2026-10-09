@@ -8,6 +8,7 @@ public class MainActivity extends BridgeActivity {
     @Override
     public void onCreate(Bundle savedInstanceState) {
         registerPlugin(ErpSppPrinterPlugin.class);
+        registerPlugin(KeepScreenPlugin.class);
         super.onCreate(savedInstanceState);
     }
 }
