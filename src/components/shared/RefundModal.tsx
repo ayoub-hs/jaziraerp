@@ -371,8 +371,8 @@ export const RefundModal: React.FC<RefundModalProps> = ({
                   </label>
                   <input
                     type="number"
-                    step="1"
-                    min="1"
+                    step="any"
+                    min="0.001"
                     value={refundQuantity}
                     onChange={e => setRefundQuantity(e.target.value)}
                     className="w-full text-sm font-bold font-mono px-3 py-2 border border-slate-300 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:outline-none"

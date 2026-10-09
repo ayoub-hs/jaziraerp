@@ -384,8 +384,8 @@ export const CreatePurchaseModal: React.FC<CreatePurchaseModalProps> = ({
                           <td className="p-2">
                             <input
                               type="number"
-                              min="0.01"
-                              step="0.01"
+                              min="0.001"
+                              step="any"
                               required
                               value={item.quantity}
                               onChange={e => handleQuantityChange(item.id, parseFloat(e.target.value) || 0)}
