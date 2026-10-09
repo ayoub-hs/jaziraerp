@@ -285,6 +285,13 @@ export const CreateFormulationModal: React.FC<CreateFormulationModalProps> = ({
             </div>
           )}
 
+          {materials.length === 0 && (
+            <div className="p-3 bg-amber-50 border border-amber-200 text-amber-800 rounded-xl text-xs flex items-center gap-2">
+              <AlertCircle className="w-4 h-4 shrink-0 text-amber-600" />
+              <span>Aucune matière première trouvée. Veuillez d'abord enregistrer des matières premières ou emballages dans le module Matières pour composer cette recette.</span>
+            </div>
+          )}
+
           <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
             <div className="md:col-span-2">
               <label className="block text-xs font-bold text-slate-700 mb-1">
@@ -388,6 +395,7 @@ export const CreateFormulationModal: React.FC<CreateFormulationModalProps> = ({
                             onChange={e => handleUpdateItem(item.id, 'material_id', e.target.value)}
                             className="w-full text-xs font-semibold px-2 py-1.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-purple-500 outline-none"
                           >
+                            <option value="">-- Choisir une matière --</option>
                             {materials.map(m => (
                               <option key={m.id} value={m.id}>
                                 {m.name} ({m.unit}) — Stock: {m.stock_quantity}
