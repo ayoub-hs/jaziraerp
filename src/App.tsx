@@ -26,6 +26,7 @@ import { getServerUrl, isNativeApp } from './services/serverUrl.js';
 import { ServerSetup } from './components/shared/ServerSetup.js';
 import { updateRegisterSessionState } from './utils/keepScreen.js';
 import { useBackButton } from './utils/backButton.js';
+import { UpdateBanner } from './components/shared/UpdateBanner.js';
 
 export default function App() {
   const [currentView, setCurrentView] = useState<'DESKTOP_POS' | 'MOBILE_REGISTER' | 'BACKOFFICE'>('DESKTOP_POS');
@@ -316,6 +317,8 @@ export default function App() {
         <ServerSetup onSaved={url => setServerUrl(url)} />
       )}
       {!(isNativeApp() && !serverUrl) && (<>
+      {/* Server Build / APK version check banner */}
+      <UpdateBanner />
       {/* PWA update banner: new version cached, reload to apply */}
       {pwaUpdateReload && (
         <div className="bg-emerald-700 text-white text-xs font-semibold px-4 py-2 flex items-center justify-center gap-3 print:hidden">
