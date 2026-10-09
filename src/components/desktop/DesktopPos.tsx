@@ -785,9 +785,32 @@ export const DesktopPos: React.FC<DesktopPosProps> = ({
             <div key={item.cart_item_id} className="py-2.5 space-y-1.5">
               <div className="flex items-center justify-between gap-2">
                 <div className="flex-1 min-w-0">
-                  <h4 className="text-xs font-bold text-slate-900 truncate">
-                    {item.name}
-                  </h4>
+                  <div className="flex items-center gap-1.5 flex-wrap">
+                    <h4 className="text-xs font-bold text-slate-900 truncate">
+                      {item.name}
+                    </h4>
+                    {(() => {
+                      if (!item.product_id) return null;
+                      const prod = products.find(p => p.id === item.product_id);
+                      if (!prod) return null;
+                      const totalUnitsOrdered = item.quantity * (item.pack_multiplier || 1);
+                      if (prod.stock_quantity <= 0) {
+                        return (
+                          <span className="text-[9px] font-bold text-rose-700 bg-rose-50 border border-rose-200 px-1.5 py-0.2 rounded shrink-0" title="Rupture de stock en magasin">
+                            Rupture (0 dispo)
+                          </span>
+                        );
+                      }
+                      if (totalUnitsOrdered > prod.stock_quantity) {
+                        return (
+                          <span className="text-[9px] font-bold text-amber-700 bg-amber-50 border border-amber-200 px-1.5 py-0.2 rounded shrink-0" title="Quantité supérieure au stock disponible">
+                            Dispo: {prod.stock_quantity}
+                          </span>
+                        );
+                      }
+                      return null;
+                    })()}
+                  </div>
                   <div className="text-[10px] text-slate-500 flex items-center gap-1.5 mt-0.5">
                     <span className="text-slate-400 font-medium text-[9px]">P.U:</span>
                     <BufferedNumberInput
