@@ -3,6 +3,7 @@ import { X, Printer, Barcode as BarcodeIcon, Layers } from 'lucide-react';
 import type { Product } from '../../types/index.js';
 import { renderCode128Barcode } from '../../services/hardware/barcode.js';
 import { formatMoney } from '../../utils/formatters.js';
+import { getShopInfo } from '../../services/shopInfo.js';
 
 interface BarcodeLabelPrinterProps {
   isOpen: boolean;
@@ -17,6 +18,7 @@ export const BarcodeLabelPrinter: React.FC<BarcodeLabelPrinterProps> = ({
   products,
   initialProduct
 }) => {
+  const shop = getShopInfo();
   const [selectedProductId, setSelectedProductId] = useState<string>('');
   const [copies, setCopies] = useState<number>(12);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -119,7 +121,7 @@ export const BarcodeLabelPrinter: React.FC<BarcodeLabelPrinterProps> = ({
                 >
                   <div className="w-full">
                     <span className="text-[8px] font-bold text-slate-400 uppercase tracking-tight block">
-                      Al Jazira SHSP
+                      {shop.shop_name || 'Al Jazira SHSP'}
                     </span>
                     <h4 className="text-[10px] font-bold text-slate-900 truncate leading-tight mt-0.5">
                       {selectedProduct.name}
