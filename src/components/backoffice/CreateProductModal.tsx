@@ -15,6 +15,17 @@ interface CreateProductModalProps {
   onSwitchToEdit?: (product: Product) => void;
 }
 
+const DEFAULT_CATEGORIES = ['Detergents', 'Hygiene', 'Auto', 'Papier', 'Resale Goods'];
+
+const STANDARD_SIZE_UNITS = [
+  // Volumes
+  '1L', '5L', '1.5L', '2L', '3L', '4L', '10L', '20L', '250ml', '500ml', '750ml',
+  // Poids
+  '1kg', '2kg', '3kg', '5kg', '10kg', '25kg', '100g', '250g', '500g',
+  // Unités / Conditionnements
+  'Piece', 'Paquet', 'Carton', 'Boîte', 'Rouleau', 'Flacon', 'Bidon'
+];
+
 export const CreateProductModal: React.FC<CreateProductModalProps> = ({
   isOpen,
   onClose,
@@ -33,12 +44,17 @@ export const CreateProductModal: React.FC<CreateProductModalProps> = ({
   const [selectedFamilyId, setSelectedFamilyId] = useState('');
   const [familyName, setFamilyName] = useState('');
   const [familyCategory, setFamilyCategory] = useState('Detergents');
+  const [availableCategories, setAvailableCategories] = useState<string[]>(DEFAULT_CATEGORIES);
+  const [isCustomCategory, setIsCustomCategory] = useState(false);
+  const [customCategoryInput, setCustomCategoryInput] = useState('');
   const [familyType, setFamilyType] = useState<'MANUFACTURED' | 'RESALE'>('MANUFACTURED');
   const [formulationId, setFormulationId] = useState('');
 
   // SKU fields
   const [skuName, setSkuName] = useState('');
   const [sizeLabel, setSizeLabel] = useState('1L');
+  const [isCustomSize, setIsCustomSize] = useState(false);
+  const [customSizeInput, setCustomSizeInput] = useState('');
   const [barcode, setBarcode] = useState('');
   const [retailPrice, setRetailPrice] = useState('3.500');
   const [wholesalePrice, setWholesalePrice] = useState('2.800');
@@ -69,7 +85,7 @@ export const CreateProductModal: React.FC<CreateProductModalProps> = ({
   const [retailMarkup, setRetailMarkup] = useState('');
   const [wholesaleMarkup, setWholesaleMarkup] = useState('');
 
-  // Prefill default markup percentages from shop settings
+  // Prefill default markup percentages from shop settings and load categories
   useEffect(() => {
     if (isOpen) {
       fetch('/api/settings/shop')
@@ -81,8 +97,25 @@ export const CreateProductModal: React.FC<CreateProductModalProps> = ({
           }
         })
         .catch(() => {});
+
+      // Fetch dynamic categories from API
+      fetch('/api/categories')
+        .then(res => res.ok ? res.json() : [])
+        .then((data: any[]) => {
+          const productCats = data
+            .filter((c: any) => c.type !== 'MATERIAL')
+            .map((c: any) => c.name);
+          const famCats = (families || []).map(f => f.category).filter(Boolean);
+          const combined = Array.from(new Set([...DEFAULT_CATEGORIES, ...productCats, ...famCats]));
+          setAvailableCategories(combined);
+        })
+        .catch(() => {
+          const famCats = (families || []).map(f => f.category).filter(Boolean);
+          const combined = Array.from(new Set([...DEFAULT_CATEGORIES, ...famCats]));
+          setAvailableCategories(combined);
+        });
     }
-  }, [isOpen]);
+  }, [isOpen, families]);
 
   const costNum = parseFloat(costReference);
   const isCostValid = !isNaN(costNum) && costNum > 0;
@@ -121,7 +154,10 @@ export const CreateProductModal: React.FC<CreateProductModalProps> = ({
   useEffect(() => {
     if (familyToEdit) {
       setFamilyName(familyToEdit.name);
-      setFamilyCategory(familyToEdit.category || 'General');
+      const cat = familyToEdit.category || 'General';
+      setFamilyCategory(cat);
+      setIsCustomCategory(!DEFAULT_CATEGORIES.includes(cat) && !availableCategories.includes(cat));
+      setCustomCategoryInput(cat);
       setFamilyType(familyToEdit.type || 'MANUFACTURED');
       setFormulationId(familyToEdit.formulation_id || '');
       setFamilyActive(familyToEdit.active !== 0);
@@ -130,7 +166,15 @@ export const CreateProductModal: React.FC<CreateProductModalProps> = ({
       setPackError(null);
     } else if (productToEdit) {
       setSkuName(productToEdit.name);
-      setSizeLabel(productToEdit.size_label || '');
+      const sz = productToEdit.size_label || '';
+      setSizeLabel(sz);
+      if (sz && !STANDARD_SIZE_UNITS.includes(sz)) {
+        setIsCustomSize(true);
+        setCustomSizeInput(sz);
+      } else {
+        setIsCustomSize(false);
+        setCustomSizeInput('');
+      }
       setBarcode(productToEdit.barcode || '');
       setRetailPrice(productToEdit.retail_price ? productToEdit.retail_price.toFixed(3) : '0.000');
       setWholesalePrice(productToEdit.wholesale_price ? productToEdit.wholesale_price.toFixed(3) : '0.000');
@@ -154,10 +198,14 @@ export const CreateProductModal: React.FC<CreateProductModalProps> = ({
     } else {
       setFamilyName('');
       setFamilyCategory('Detergents');
+      setIsCustomCategory(false);
+      setCustomCategoryInput('');
       setFamilyType('MANUFACTURED');
       setFormulationId('');
       setSkuName('');
       setSizeLabel('1L');
+      setIsCustomSize(false);
+      setCustomSizeInput('');
       setBarcode('');
       setRetailPrice('3.500');
       setWholesalePrice('2.800');
@@ -543,17 +591,66 @@ export const CreateProductModal: React.FC<CreateProductModalProps> = ({
                 </div>
 
                 <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-1">
-                    Category *
-                  </label>
-                  <input
-                    type="text"
-                    required
-                    placeholder="e.g. Detergents, Hygiene, Auto..."
-                    value={familyCategory}
-                    onChange={e => setFamilyCategory(e.target.value)}
-                    className="w-full text-xs font-semibold px-3 py-2 border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none bg-white"
-                  />
+                  <div className="flex items-center justify-between mb-1">
+                    <label className="block text-xs font-bold text-slate-700">
+                      Category *
+                    </label>
+                    {!isCustomCategory ? (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setIsCustomCategory(true);
+                          setCustomCategoryInput('');
+                        }}
+                        className="text-[11px] text-blue-600 hover:text-blue-800 font-semibold underline"
+                      >
+                        + Saisir autre
+                      </button>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setIsCustomCategory(false);
+                          setFamilyCategory(availableCategories[0] || 'Detergents');
+                        }}
+                        className="text-[11px] text-slate-500 hover:text-slate-700 font-semibold underline"
+                      >
+                        Choisir liste
+                      </button>
+                    )}
+                  </div>
+                  {!isCustomCategory ? (
+                    <select
+                      value={familyCategory}
+                      onChange={e => {
+                        if (e.target.value === '__NEW__') {
+                          setIsCustomCategory(true);
+                          setCustomCategoryInput('');
+                        } else {
+                          setFamilyCategory(e.target.value);
+                        }
+                      }}
+                      className="w-full text-xs font-semibold px-3 py-2 border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none bg-white cursor-pointer"
+                    >
+                      {availableCategories.map(cat => (
+                        <option key={cat} value={cat}>{cat}</option>
+                      ))}
+                      <option value="__NEW__">+ Nouvelle catégorie...</option>
+                    </select>
+                  ) : (
+                    <input
+                      type="text"
+                      required
+                      placeholder="Nom de la nouvelle catégorie..."
+                      value={customCategoryInput}
+                      onChange={e => {
+                        setCustomCategoryInput(e.target.value);
+                        setFamilyCategory(e.target.value);
+                      }}
+                      className="w-full text-xs font-semibold px-3 py-2 border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none bg-white"
+                      autoFocus
+                    />
+                  )}
                 </div>
 
                 <div>
@@ -661,17 +758,96 @@ export const CreateProductModal: React.FC<CreateProductModalProps> = ({
                 </div>
 
                 <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-1">
-                    Size Label (e.g. 1L, 5L, Piece) *
-                  </label>
-                  <input
-                    type="text"
-                    required
-                    placeholder="1L, 1.5L, 5L, Piece..."
-                    value={sizeLabel}
-                    onChange={e => setSizeLabel(e.target.value)}
-                    className="w-full text-xs font-semibold px-3 py-2 border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none bg-white"
-                  />
+                  <div className="flex items-center justify-between mb-1">
+                    <label className="block text-xs font-bold text-slate-700">
+                      Unité / Taille (Size Label) *
+                    </label>
+                    {!isCustomSize ? (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setIsCustomSize(true);
+                          setCustomSizeInput('');
+                        }}
+                        className="text-[11px] text-blue-600 hover:text-blue-800 font-semibold underline"
+                      >
+                        + Autre unité
+                      </button>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setIsCustomSize(false);
+                          setSizeLabel('1L');
+                        }}
+                        className="text-[11px] text-slate-500 hover:text-slate-700 font-semibold underline"
+                      >
+                        Choisir liste
+                      </button>
+                    )}
+                  </div>
+                  {!isCustomSize ? (
+                    <select
+                      value={sizeLabel}
+                      onChange={e => {
+                        if (e.target.value === '__CUSTOM__') {
+                          setIsCustomSize(true);
+                          setCustomSizeInput('');
+                        } else {
+                          setSizeLabel(e.target.value);
+                        }
+                      }}
+                      className="w-full text-xs font-semibold px-3 py-2 border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none bg-white cursor-pointer"
+                    >
+                      <optgroup label="Volumes (Liquides)">
+                        <option value="1L">1L</option>
+                        <option value="5L">5L</option>
+                        <option value="1.5L">1.5L</option>
+                        <option value="2L">2L</option>
+                        <option value="3L">3L</option>
+                        <option value="4L">4L</option>
+                        <option value="10L">10L</option>
+                        <option value="20L">20L</option>
+                        <option value="250ml">250ml</option>
+                        <option value="500ml">500ml</option>
+                        <option value="750ml">750ml</option>
+                      </optgroup>
+                      <optgroup label="Poids (Poudre / Solide)">
+                        <option value="1kg">1kg</option>
+                        <option value="2kg">2kg</option>
+                        <option value="3kg">3kg</option>
+                        <option value="5kg">5kg</option>
+                        <option value="10kg">10kg</option>
+                        <option value="25kg">25kg</option>
+                        <option value="100g">100g</option>
+                        <option value="250g">250g</option>
+                        <option value="500g">500g</option>
+                      </optgroup>
+                      <optgroup label="Unités / Conditionnements">
+                        <option value="Piece">Piece (Unité)</option>
+                        <option value="Paquet">Paquet</option>
+                        <option value="Carton">Carton</option>
+                        <option value="Boîte">Boîte</option>
+                        <option value="Rouleau">Rouleau</option>
+                        <option value="Flacon">Flacon</option>
+                        <option value="Bidon">Bidon</option>
+                      </optgroup>
+                      <option value="__CUSTOM__">+ Autre / Saisie personnalisée...</option>
+                    </select>
+                  ) : (
+                    <input
+                      type="text"
+                      required
+                      placeholder="ex: 1.25L, 330ml, Lot de 3..."
+                      value={customSizeInput}
+                      onChange={e => {
+                        setCustomSizeInput(e.target.value);
+                        setSizeLabel(e.target.value);
+                      }}
+                      className="w-full text-xs font-semibold px-3 py-2 border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none bg-white"
+                      autoFocus
+                    />
+                  )}
                 </div>
 
                 <div className="col-span-2">
