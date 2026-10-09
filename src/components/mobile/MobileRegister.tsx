@@ -18,7 +18,9 @@ import {
   RefreshCw,
   Box,
   Tag,
-  AlertCircle
+  AlertCircle,
+  RotateCcw,
+  UserPlus
 } from 'lucide-react';
 import type { 
   Product, 
@@ -36,6 +38,8 @@ import { CheckoutModal } from '../shared/CheckoutModal.js';
 import { FamilySizesModal } from '../shared/FamilySizesModal.js';
 import { QuickAddModal } from '../shared/QuickAddModal.js';
 import { CameraScannerModal } from '../shared/CameraScannerModal.js';
+import { RefundModal } from '../shared/RefundModal.js';
+import { CreateCustomerModal } from '../backoffice/CreateCustomerModal.js';
 import { scannerService } from '../../services/hardware/scanner.js';
 import { BufferedNumberInput } from '../shared/BufferedNumberInput.js';
 
@@ -73,6 +77,8 @@ export const MobileRegister: React.FC<MobileRegisterProps> = ({
   const [editingDiscountItemId, setEditingDiscountItemId] = useState<string | null>(null);
   const [isCartDrawerOpen, setIsCartDrawerOpen] = useState(false);
   const [isCheckoutOpen, setIsCheckoutOpen] = useState(false);
+  const [isRefundOpen, setIsRefundOpen] = useState(false);
+  const [isCreateCustomerOpen, setIsCreateCustomerOpen] = useState(false);
   const [familyModalData, setFamilyModalData] = useState<{
     isOpen: boolean;
     familyName: string;
@@ -590,21 +596,42 @@ export const MobileRegister: React.FC<MobileRegisterProps> = ({
               >
                 <Tag className="w-4 h-4 text-emerald-400" />
               </button>
-              <select
-                value={selectedCustomer?.id || ''}
-                onChange={e => {
-                  const c = customers.find(c => c.id === e.target.value) || null;
-                  setSelectedCustomer(c);
-                }}
-                className="text-xs font-semibold px-2 py-1.5 border border-slate-300 rounded-xl bg-slate-50 max-w-[130px] truncate"
+              <button
+                onClick={() => setIsRefundOpen(true)}
+                className="px-2.5 py-1.5 bg-rose-50 hover:bg-rose-100 border border-rose-200 text-rose-700 rounded-xl flex items-center justify-center shrink-0"
+                title="Remboursement / Retour"
               >
-                <option value="">Passager</option>
-                {customers.map(c => (
-                  <option key={c.id} value={c.id}>
-                    {c.name}
-                  </option>
-                ))}
-              </select>
+                <RotateCcw className="w-4 h-4" />
+              </button>
+            </div>
+
+            {/* Customer Selector & Quick Add Customer Row */}
+            <div className="flex items-center gap-2">
+              <div className="flex-1 relative">
+                <select
+                  value={selectedCustomer?.id || ''}
+                  onChange={e => {
+                    const c = customers.find(c => c.id === e.target.value) || null;
+                    setSelectedCustomer(c);
+                  }}
+                  className="w-full text-xs font-semibold px-2.5 py-1.5 border border-slate-300 rounded-xl bg-slate-50 text-slate-800 focus:ring-2 focus:ring-emerald-500 focus:outline-none truncate"
+                >
+                  <option value="">Client : Passager (Comptant)</option>
+                  {customers.map(c => (
+                    <option key={c.id} value={c.id}>
+                      {c.name} {c.total_debt && c.total_debt > 0 ? `(Dette: ${c.total_debt.toFixed(1)} DT)` : ''} [{c.type}]
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <button
+                onClick={() => setIsCreateCustomerOpen(true)}
+                className="px-2.5 py-1.5 bg-emerald-50 hover:bg-emerald-100 border border-emerald-300 text-emerald-700 rounded-xl text-xs font-bold flex items-center gap-1 shrink-0 transition-colors"
+                title="Créer un nouveau client"
+              >
+                <UserPlus className="w-3.5 h-3.5" />
+                <span>+ Client</span>
+              </button>
             </div>
 
             {/* Category Pills */}
@@ -912,7 +939,16 @@ export const MobileRegister: React.FC<MobileRegisterProps> = ({
       {activeTab === 'CUSTOMERS' && (
         <div className="flex-1 p-4 overflow-y-auto space-y-4">
           <div className="bg-white p-4 rounded-2xl shadow-sm border border-slate-200">
-            <h2 className="text-sm font-bold text-slate-900 mb-2">Customers & Debt Ledger</h2>
+            <div className="flex items-center justify-between mb-2">
+              <h2 className="text-sm font-bold text-slate-900">Customers & Debt Ledger</h2>
+              <button
+                onClick={() => setIsCreateCustomerOpen(true)}
+                className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold flex items-center gap-1 shadow-sm transition-colors"
+              >
+                <UserPlus className="w-3.5 h-3.5" />
+                <span>+ Client</span>
+              </button>
+            </div>
             <div className="relative">
               <Search className="w-4 h-4 text-slate-400 absolute left-3 top-3" />
               <input
@@ -1393,6 +1429,24 @@ export const MobileRegister: React.FC<MobileRegisterProps> = ({
         isOpen={isQuickAddOpen}
         onClose={() => setIsQuickAddOpen(false)}
         onAddItem={item => setCart(prev => [...prev, item])}
+      />
+
+      {/* Refund and Returns Modal */}
+      <RefundModal
+        isOpen={isRefundOpen}
+        onClose={() => setIsRefundOpen(false)}
+        onRefundCompleted={onRefreshData}
+        activeSessionId={activeSession?.id || null}
+      />
+
+      {/* Create Customer Modal */}
+      <CreateCustomerModal
+        isOpen={isCreateCustomerOpen}
+        onClose={() => setIsCreateCustomerOpen(false)}
+        onSuccess={() => {
+          setIsCreateCustomerOpen(false);
+          onRefreshData();
+        }}
       />
 
       {/* FIXED BOTTOM NAVIGATION BAR (4 TABS) */}
