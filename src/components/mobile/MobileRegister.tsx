@@ -323,6 +323,53 @@ export const MobileRegister: React.FC<MobileRegisterProps> = ({
     return true;
   });
 
+  const handleSearchKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter') {
+      const q = searchQuery.trim();
+      if (!q) return;
+
+      let matchedProduct: Product | undefined;
+      let matchedPackSize: PackSize | undefined;
+      let packMultiplier = 1;
+      let packLabel: string | undefined;
+
+      for (const p of products) {
+        if (p.barcode && p.barcode.toLowerCase() === q.toLowerCase()) {
+          matchedProduct = p;
+          break;
+        }
+        const ps = p.pack_sizes?.find(s => s.barcode && s.barcode.toLowerCase() === q.toLowerCase());
+        if (ps) {
+          matchedProduct = p;
+          matchedPackSize = ps;
+          packMultiplier = ps.multiplier;
+          packLabel = ps.pack_label;
+          break;
+        }
+      }
+
+      if (matchedProduct) {
+        playBeep();
+        addProductToCart(matchedProduct, packMultiplier, packLabel, matchedPackSize);
+        setSearchQuery('');
+        setScanAlert({
+          type: 'success',
+          message: `Ajouté au panier : ${matchedProduct.name}${packLabel ? ` (${packLabel})` : ''}`
+        });
+        e.preventDefault();
+        return;
+      }
+
+      if (filteredProducts.length === 1) {
+        playBeep();
+        addProductToCart(filteredProducts[0]);
+        setSearchQuery('');
+        e.preventDefault();
+        return;
+      }
+    }
+  };
+
   // Group products by family for grid display — deduplicate filteredProducts by family_id
   const familyGroups = React.useMemo(() => {
     const map = new Map<string, {
@@ -576,6 +623,8 @@ export const MobileRegister: React.FC<MobileRegisterProps> = ({
                   placeholder="Search products..."
                   value={searchQuery}
                   onChange={e => setSearchQuery(e.target.value)}
+                  onKeyDown={handleSearchKeyDown}
+                  data-scanner-input="true"
                   className="w-full pl-9 pr-3 py-1.5 text-xs border border-slate-300 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:outline-none"
                 />
               </div>
@@ -825,6 +874,19 @@ export const MobileRegister: React.FC<MobileRegisterProps> = ({
                   {lookupProduct.stock_quantity} {lookupProduct.size_label || 'unités'}
                 </span>
               </div>
+
+              <button
+                type="button"
+                onClick={() => {
+                  addProductToCart(lookupProduct);
+                  setActiveTab('REGISTER');
+                  setIsCartDrawerOpen(true);
+                }}
+                className="w-full py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl flex items-center justify-center gap-2 shadow-sm transition-colors text-sm"
+              >
+                <Plus className="w-4 h-4" />
+                Ajouter au Panier & Voir Caisse
+              </button>
             </div>
           ) : lookupNotFound && lookupQuery ? (
             <div className="bg-rose-50 border-2 border-rose-200 p-6 rounded-2xl text-center space-y-2 animate-in fade-in">
