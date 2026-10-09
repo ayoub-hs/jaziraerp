@@ -10,6 +10,7 @@
 import { Capacitor } from '@capacitor/core';
 
 const STORAGE_KEY = 'erp_server_url';
+export const DEFAULT_SERVER_URL = 'https://jazicloud.fossa-wrasse.ts.net';
 
 export function isNativeApp(): boolean {
   if (typeof window === 'undefined') return false;

@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Server, Check, Loader2 } from 'lucide-react';
-import { setServerUrl } from '../../services/serverUrl.js';
+import { setServerUrl, DEFAULT_SERVER_URL } from '../../services/serverUrl.js';
 
 interface ServerSetupProps {
   onSaved: (url: string) => void;
@@ -9,10 +9,10 @@ interface ServerSetupProps {
 /**
  * First-launch gate for the native mobile build: the bundled UI has no
  * same-origin server, so the cashier enters the shop PC address once
- * (e.g. http://192.168.1.10:3000). Saved on-device.
+ * (prefilled with Tailscale / cloud URL). Saved on-device.
  */
 export const ServerSetup: React.FC<ServerSetupProps> = ({ onSaved }) => {
-  const [url, setUrl] = useState('http://192.168.1.10:3000');
+  const [url, setUrl] = useState(DEFAULT_SERVER_URL);
   const [testing, setTesting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -21,7 +21,7 @@ export const ServerSetup: React.FC<ServerSetupProps> = ({ onSaved }) => {
   const handleSave = async () => {
     setError(null);
     if (!/^https?:\/\/.+/.test(normalized)) {
-      setError('Adresse invalide. Exemple: http://192.168.1.10:3000');
+      setError(`Adresse invalide. Exemple: ${DEFAULT_SERVER_URL}`);
       return;
     }
     setTesting(true);
@@ -49,14 +49,14 @@ export const ServerSetup: React.FC<ServerSetupProps> = ({ onSaved }) => {
           <h1 className="text-lg font-black text-slate-900">Connexion au serveur</h1>
         </div>
         <p className="text-xs text-slate-600 font-semibold">
-          Entrez l'adresse du PC caisse (même Wi-Fi / réseau). Exemple: <span className="font-mono">http://192.168.1.10:3000</span>
+          Entrez l'adresse du serveur ERP. Exemple: <span className="font-mono">{DEFAULT_SERVER_URL}</span>
         </p>
         <input
           type="url"
           inputMode="url"
           value={url}
           onChange={e => setUrl(e.target.value)}
-          placeholder="http://192.168.1.10:3000"
+          placeholder={DEFAULT_SERVER_URL}
           className="w-full font-mono text-sm px-3 py-2.5 border border-slate-300 rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none"
         />
         {error && (

@@ -16,6 +16,14 @@ describe('Capacitor CORS and Scheme Hardening', () => {
     expect(res.headers['access-control-allow-origin']).toBe('https://localhost');
   });
 
+  it('allows requests with Origin: https://jazicloud.fossa-wrasse.ts.net', async () => {
+    const res = await request(app)
+      .get('/api/auth/status')
+      .set('Origin', 'https://jazicloud.fossa-wrasse.ts.net');
+
+    expect(res.headers['access-control-allow-origin']).toBe('https://jazicloud.fossa-wrasse.ts.net');
+  });
+
   it('rejects CORS for disallowed external origins', async () => {
     const res = await request(app)
       .get('/api/auth/status')

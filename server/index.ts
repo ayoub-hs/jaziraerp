@@ -37,6 +37,7 @@ const allowedOrigins = process.env.ALLOWED_ORIGINS
 // Bundled Capacitor native client serves the UI from the app container, not
 // from the server origin. This origin can only be sent by our signed app webview.
 if (!allowedOrigins.includes('https://localhost')) allowedOrigins.push('https://localhost');
+if (!allowedOrigins.includes('https://jazicloud.fossa-wrasse.ts.net')) allowedOrigins.push('https://jazicloud.fossa-wrasse.ts.net');
 
 app.use(cors({
   origin: (origin, callback) => {
