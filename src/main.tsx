@@ -5,6 +5,12 @@ import './index.css';
 import { initPwa } from './pwa';
 import { installApiUrlPatch, isNativeApp } from './services/serverUrl.js';
 import { BluetoothLowEnergy } from '@capgo/capacitor-bluetooth-low-energy';
+import { Capacitor } from '@capacitor/core';
+
+// Mark document root for native-only touch and layout rules
+if (Capacitor.isNativePlatform()) {
+  document.documentElement.classList.add('native-app');
+}
 
 // Capacitor native: bundled UI talks to the shop server via stored absolute
 // URL, and Web Bluetooth calls route to the native BLE stack via the shim.

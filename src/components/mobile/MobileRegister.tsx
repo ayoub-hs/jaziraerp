@@ -1117,7 +1117,7 @@ export const MobileRegister: React.FC<MobileRegisterProps> = ({
             {/* Cart Items List */}
             <div className="p-4 flex-1 overflow-y-auto divide-y divide-slate-100">
               {cart.map(item => (
-                <div key={item.cart_item_id} className="py-2.5 space-y-1.5">
+                <div key={item.cart_item_id} className="cart-row py-2.5 space-y-1.5">
                   <div className="flex items-center justify-between gap-2">
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-1.5 flex-wrap">
