@@ -244,6 +244,16 @@ export const Backoffice: React.FC<BackofficeProps> = ({
     loadBackofficeData();
   }, [activeTab]);
 
+  // Synchronize selected customer when customers list is refreshed
+  useEffect(() => {
+    if (selectedCustomer) {
+      const fresh = customers.find(c => c.id === selectedCustomer.id);
+      if (fresh) {
+        setSelectedCustomer(fresh);
+      }
+    }
+  }, [customers]);
+
   // Initial preload of reference data for modal pickers
   useEffect(() => {
     const fetchCommon = async () => {

@@ -204,7 +204,7 @@ export const CreateCustomerModal: React.FC<CreateCustomerModalProps> = ({
                 <input
                   type="text"
                   disabled
-                  value="N/A for Retail"
+                  value={type === 'WHOLESALE' ? 'N/A (Prix de gros appliqué)' : 'N/A (Prix détail)'}
                   className="w-full font-semibold text-slate-400 px-3 py-2 border border-slate-200 rounded-xl bg-slate-50 cursor-not-allowed"
                 />
               </div>
