@@ -149,11 +149,22 @@ export default function App() {
       const localCustomers = await clientDb.customers.toArray();
       const localContainers = await clientDb.container_types.toArray();
       const localFamilies = await clientDb.product_families.toArray();
+      const localSessions = await clientDb.active_session.toArray();
 
       if (localProducts.length > 0) setProducts(localProducts as any);
       if (localFamilies.length > 0) setFamilies(localFamilies as any);
       if (localCustomers.length > 0) setCustomers(localCustomers as any);
       if (localContainers.length > 0) setContainerTypes(localContainers as any);
+
+      if (localSessions.length > 0) {
+        const openLocal = localSessions.filter(s => s.status === 'OPEN');
+        if (openLocal.length > 0) {
+          setOpenSessions(openLocal as any);
+          const preferredName = currentView === 'MOBILE_REGISTER' ? 'Mobile Register' : 'Countertop';
+          const match = openLocal.find(s => s.counter_name === preferredName);
+          setActiveSession((match || openLocal[0]) as any);
+        }
+      }
     }
   };
 

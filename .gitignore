@@ -3,7 +3,7 @@ dist
 data
 backups
 tsconfig.tsbuildinfo
-ERP.zip
+*.zip
 server/**/*.sqlite
 server/**/*.db
 server/*.sqlite

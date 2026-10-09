@@ -254,6 +254,8 @@ describe('SyncManager & Offline Fallback', () => {
 
     const famClearSpy = vi.spyOn(clientDb.product_families, 'clear').mockResolvedValue(undefined as any);
     const famBulkPutSpy = vi.spyOn(clientDb.product_families, 'bulkPut').mockResolvedValue('ok' as any);
+    const sessionClearSpy = vi.spyOn(clientDb.active_session, 'clear').mockResolvedValue(undefined as any);
+    const sessionBulkPutSpy = vi.spyOn(clientDb.active_session, 'bulkPut').mockResolvedValue('ok' as any);
     vi.spyOn(clientDb.products, 'clear').mockResolvedValue(undefined as any);
     vi.spyOn(clientDb.customers, 'clear').mockResolvedValue(undefined as any);
     vi.spyOn(clientDb.container_types, 'clear').mockResolvedValue(undefined as any);
@@ -266,13 +268,18 @@ describe('SyncManager & Offline Fallback', () => {
       return callback();
     }) as any);
 
+    const mockOpenSessions = [
+      { id: 'sess-1', counter_name: 'Counter 1', session_number: 1, opening_cash: 50, status: 'OPEN' }
+    ];
+
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
       ok: true,
       json: async () => ({
         products: [],
         customers: [],
         container_types: [],
-        families: mockFamilies
+        families: mockFamilies,
+        open_sessions: mockOpenSessions
       })
     }));
 
@@ -280,6 +287,8 @@ describe('SyncManager & Offline Fallback', () => {
 
     expect(famClearSpy).toHaveBeenCalledTimes(1);
     expect(famBulkPutSpy).toHaveBeenCalledWith(mockFamilies);
+    expect(sessionClearSpy).toHaveBeenCalledTimes(1);
+    expect(sessionBulkPutSpy).toHaveBeenCalledWith(mockOpenSessions);
   });
 
   it('verifies clientDb schema upgrade preserves existing tables and adds product_families', () => {

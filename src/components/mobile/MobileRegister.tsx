@@ -37,6 +37,7 @@ import { FamilySizesModal } from '../shared/FamilySizesModal.js';
 import { QuickAddModal } from '../shared/QuickAddModal.js';
 import { CameraScannerModal } from '../shared/CameraScannerModal.js';
 import { scannerService } from '../../services/hardware/scanner.js';
+import { BufferedNumberInput } from '../shared/BufferedNumberInput.js';
 
 interface MobileRegisterProps {
   products: Product[];
@@ -255,7 +256,7 @@ export const MobileRegister: React.FC<MobileRegisterProps> = ({
           discount_amount: 0,
           container_type_id: product.container_type_id || null,
           container_capacity_liters: container?.capacity_liters ?? null,
-          loan_container: Boolean(product.container_type_id)
+          loan_container: Boolean(selectedCustomer && product.container_type_id)
         }
       ];
     });
@@ -413,7 +414,7 @@ export const MobileRegister: React.FC<MobileRegisterProps> = ({
     }
     const q = term.toLowerCase();
     const found = products.find(
-      p => p.barcode?.toLowerCase() === q || p.name.toLowerCase().includes(q)
+      p => p.barcode?.toLowerCase() === q || p.name.toLowerCase().includes(q) || p.pack_sizes?.some(s => s.barcode?.toLowerCase() === q)
     );
     if (found) {
       setEditProduct(found);
@@ -1050,14 +1051,12 @@ export const MobileRegister: React.FC<MobileRegisterProps> = ({
                       >
                         -
                       </button>
-                      <input
-                        type="number"
+                      <BufferedNumberInput
                         step="0.001"
-                        min="0.001"
+                        min={0.001}
+                        disallowZero={true}
                         value={item.quantity}
-                        onChange={e =>
-                          handleUpdateQuantity(item.cart_item_id, parseFloat(e.target.value) || 0)
-                        }
+                        onCommit={val => handleUpdateQuantity(item.cart_item_id, val)}
                         className="w-12 text-center text-xs font-bold font-mono bg-white border-x border-slate-300 py-0.5 focus:outline-none"
                       />
                       <button
@@ -1379,7 +1378,7 @@ export const MobileRegister: React.FC<MobileRegisterProps> = ({
         familyName={familyModalData.familyName}
         products={familyModalData.products}
         customer={selectedCustomer}
-        onSelectProduct={prod => addProductToCart(prod)}
+        onSelectProduct={(prod, mult, lbl, ps) => addProductToCart(prod, mult, lbl, ps)}
       />
 
       {/* Camera Barcode Scanner Viewfinder Modal */}

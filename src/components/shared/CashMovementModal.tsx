@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { X, ArrowDownRight, ArrowUpRight, AlertCircle, Check } from 'lucide-react';
 import type { RegisterSession } from '../../types/index.js';
+import { syncManager } from '../../services/syncManager.js';
 
 interface CashMovementModalProps {
   isOpen: boolean;
@@ -42,26 +43,54 @@ export const CashMovementModal: React.FC<CashMovementModalProps> = ({
 
     setSubmitting(true);
     setError(null);
+
+    const movementPayload = {
+      session_id: activeSession.id,
+      type,
+      amount: parsedAmount,
+      reason: reason.trim(),
+      date: new Date().toISOString()
+    };
+
+    if (typeof navigator !== 'undefined' && !navigator.onLine) {
+      try {
+        await syncManager.queueOfflineAction('CASH_MOVEMENT', movementPayload);
+        onSuccess();
+        onClose();
+        return;
+      } catch (err: any) {
+        setError(err.message || 'Error queueing offline cash movement');
+        setSubmitting(false);
+        return;
+      }
+    }
+
     try {
       const res = await fetch('/api/register/movement', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          session_id: activeSession.id,
-          type,
-          amount: parsedAmount,
-          reason: reason.trim()
-        })
+        body: JSON.stringify(movementPayload)
       });
 
       if (!res.ok) {
-        const data = await res.json();
+        const data = await res.json().catch(() => ({}));
         throw new Error(data.error || 'Failed to record cash movement');
       }
 
       onSuccess();
       onClose();
     } catch (err: any) {
+      if (err.name === 'TypeError' || err.message?.includes('fetch')) {
+        try {
+          await syncManager.queueOfflineAction('CASH_MOVEMENT', movementPayload);
+          onSuccess();
+          onClose();
+          return;
+        } catch (queueErr: any) {
+          setError(queueErr.message || 'Failed to queue offline cash movement');
+          return;
+        }
+      }
       setError(err.message || 'Error executing cash movement');
     } finally {
       setSubmitting(false);

@@ -8,6 +8,7 @@ import {
   Layers, 
   RotateCcw, 
   User, 
+  UserPlus,
   Wallet, 
   CreditCard, 
   Check, 
@@ -40,6 +41,8 @@ import { CameraScannerModal } from '../shared/CameraScannerModal.js';
 import { ContainerTransactionModal } from '../backoffice/ContainerTransactionModal.js';
 
 import { scannerService } from '../../services/hardware/scanner.js';
+import { BufferedNumberInput } from '../shared/BufferedNumberInput.js';
+import { CreateCustomerModal } from '../backoffice/CreateCustomerModal.js';
 
 interface DesktopPosProps {
   products: Product[];
@@ -90,6 +93,33 @@ export const DesktopPos: React.FC<DesktopPosProps> = ({
     products: Product[];
   }>({ isOpen: false, familyName: '', products: [] });
   const [scanAlert, setScanAlert] = useState<{ type: 'error' | 'success'; message: string; barcode?: string } | null>(null);
+  const searchInputRef = useRef<HTMLInputElement>(null);
+
+  // Customer Search & Quick Create
+  const [isCreateCustomerOpen, setIsCreateCustomerOpen] = useState(false);
+  const [customerSearchTerm, setCustomerSearchTerm] = useState('');
+  const [isCustomerDropdownOpen, setIsCustomerDropdownOpen] = useState(false);
+  const customerDropdownRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (customerDropdownRef.current && !customerDropdownRef.current.contains(event.target as Node)) {
+        setIsCustomerDropdownOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  const filteredCustomers = customers.filter(c => {
+    if (!customerSearchTerm.trim()) return true;
+    const term = customerSearchTerm.toLowerCase();
+    return (
+      c.name.toLowerCase().includes(term) ||
+      (c.phone && c.phone.toLowerCase().includes(term)) ||
+      c.type.toLowerCase().includes(term)
+    );
+  });
 
   useEffect(() => {
     if (scanAlert) {
@@ -97,6 +127,39 @@ export const DesktopPos: React.FC<DesktopPosProps> = ({
       return () => clearTimeout(timer);
     }
   }, [scanAlert]);
+
+  // Global POS Hotkeys (F1: Search, F2: Quick Add, F4: Refund, Space / F9: Checkout)
+  useEffect(() => {
+    const handlePosHotkeys = (e: KeyboardEvent) => {
+      if (isCheckoutOpen || isRefundOpen || isQuickAddOpen || isCameraOpen || isContainerTxOpen || familyModalData.isOpen) {
+        return;
+      }
+
+      const activeEl = document.activeElement;
+      const isInput = activeEl && (activeEl.tagName === 'INPUT' || activeEl.tagName === 'TEXTAREA' || activeEl.tagName === 'SELECT');
+
+      if (e.key === 'F1') {
+        e.preventDefault();
+        searchInputRef.current?.focus();
+        searchInputRef.current?.select();
+      } else if (e.key === 'F2') {
+        e.preventDefault();
+        setIsQuickAddOpen(true);
+      } else if (e.key === 'F4') {
+        e.preventDefault();
+        setIsRefundOpen(true);
+      } else if ((e.key === 'F9' || (e.key === ' ' && !isInput)) && cart.length > 0) {
+        e.preventDefault();
+        setIsCheckoutOpen(true);
+      } else if (e.key === '/' && !isInput) {
+        e.preventDefault();
+        searchInputRef.current?.focus();
+      }
+    };
+
+    window.addEventListener('keydown', handlePosHotkeys);
+    return () => window.removeEventListener('keydown', handlePosHotkeys);
+  }, [cart.length, isCheckoutOpen, isRefundOpen, isQuickAddOpen, isCameraOpen, isContainerTxOpen, familyModalData.isOpen]);
 
   // Extract unique categories
   const categories = ['ALL', ...Array.from(new Set(families.map(f => f.category || 'Other')))];
@@ -200,7 +263,7 @@ export const DesktopPos: React.FC<DesktopPosProps> = ({
           discount_amount: 0,
           container_type_id: product.container_type_id || null,
           container_capacity_liters: container?.capacity_liters ?? null,
-          loan_container: Boolean(product.container_type_id)
+          loan_container: Boolean(selectedCustomer && product.container_type_id)
         };
         return [...prev, newItem];
       }
@@ -294,6 +357,55 @@ export const DesktopPos: React.FC<DesktopPosProps> = ({
     return true;
   });
 
+  const handleSearchKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter') {
+      const q = searchQuery.trim();
+      if (!q) return;
+
+      // 1. Check exact barcode match
+      let matchedProduct: Product | undefined;
+      let matchedPackSize: PackSize | undefined;
+      let packMultiplier = 1;
+      let packLabel: string | undefined;
+
+      for (const p of products) {
+        if (p.barcode && p.barcode.toLowerCase() === q.toLowerCase()) {
+          matchedProduct = p;
+          break;
+        }
+        const ps = p.pack_sizes?.find(s => s.barcode && s.barcode.toLowerCase() === q.toLowerCase());
+        if (ps) {
+          matchedProduct = p;
+          matchedPackSize = ps;
+          packMultiplier = ps.multiplier;
+          packLabel = ps.pack_label;
+          break;
+        }
+      }
+
+      if (matchedProduct) {
+        playBeep();
+        addProductToCart(matchedProduct, packMultiplier, packLabel, matchedPackSize);
+        setSearchQuery('');
+        setScanAlert({
+          type: 'success',
+          message: `Ajouté au panier : ${matchedProduct.name}${packLabel ? ` (${packLabel})` : ''}`
+        });
+        e.preventDefault();
+        return;
+      }
+
+      // 2. If filtered search has exactly 1 match, add to cart
+      if (filteredProducts.length === 1) {
+        playBeep();
+        addProductToCart(filteredProducts[0]);
+        setSearchQuery('');
+        e.preventDefault();
+        return;
+      }
+    }
+  };
+
   // Group products by family for grid display — deduplicate filteredProducts by family_id
   const familyGroups = React.useMemo(() => {
     const map = new Map<string, {
@@ -343,6 +455,10 @@ export const DesktopPos: React.FC<DesktopPosProps> = ({
   }, [filteredProducts, families, products, selectedCustomer]);
 
   const handleFamilyTileClick = (group: { familyName: string; products: Product[] }) => {
+    if (group.products.length === 1 && (!group.products[0].pack_sizes || group.products[0].pack_sizes.length === 0)) {
+      addProductToCart(group.products[0]);
+      return;
+    }
     setFamilyModalData({
       isOpen: true,
       familyName: group.familyName,
@@ -390,10 +506,13 @@ export const DesktopPos: React.FC<DesktopPosProps> = ({
             <div className="relative flex-1">
               <Search className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
               <input
+                ref={searchInputRef}
+                data-scanner-input="true"
                 type="text"
                 value={searchQuery}
                 onChange={e => setSearchQuery(e.target.value)}
-                placeholder="Search products by name or scan barcode..."
+                onKeyDown={handleSearchKeyDown}
+                placeholder="Search products by name or scan barcode... (F1 / /)"
                 className="w-full pl-9 pr-3 py-1.5 text-xs sm:text-sm border border-slate-300 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:outline-none"
               />
             </div>
@@ -514,9 +633,18 @@ export const DesktopPos: React.FC<DesktopPosProps> = ({
           <div className="flex items-center justify-between">
             <label className="text-xs font-bold text-slate-700 flex items-center gap-1.5">
               <User className="w-3.5 h-3.5 text-emerald-600" />
-              Customer
+              Client
             </label>
             <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => setIsCreateCustomerOpen(true)}
+                className="text-xs font-bold text-emerald-800 hover:text-emerald-900 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 px-2.5 py-1 rounded-lg transition-colors flex items-center gap-1"
+                title="Créer un nouveau client"
+              >
+                <UserPlus className="w-3.5 h-3.5 text-emerald-600" />
+                <span>+ Client</span>
+              </button>
               <button
                 type="button"
                 onClick={() => setIsContainerTxOpen(true)}
@@ -537,39 +665,115 @@ export const DesktopPos: React.FC<DesktopPosProps> = ({
             </div>
           </div>
 
-          <div className="flex items-center gap-2">
-            <select
-              value={selectedCustomer?.id || ''}
-              onChange={e => {
-                const cust = customers.find(c => c.id === e.target.value) || null;
-                setSelectedCustomer(cust);
-              }}
-              className="flex-1 text-xs font-semibold px-2.5 py-1.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:outline-none bg-white"
-            >
-              <option value="">Passager / Retail Walk-in</option>
-              {customers.map(c => (
-                <option key={c.id} value={c.id}>
-                  {c.name} ({c.type}{c.reseller_discount_percent ? ` -${c.reseller_discount_percent}%` : ''})
-                </option>
-              ))}
-            </select>
-          </div>
+          {selectedCustomer ? (
+            <div className="bg-white border border-emerald-300 rounded-lg p-2.5 shadow-sm space-y-1.5">
+              <div className="flex items-center justify-between gap-2">
+                <div className="flex items-center gap-1.5 min-w-0">
+                  <span className="text-xs font-bold text-slate-900 truncate">
+                    {selectedCustomer.name}
+                  </span>
+                  <span className="text-[10px] font-bold bg-emerald-100 text-emerald-800 px-1.5 py-0.5 rounded shrink-0">
+                    {selectedCustomer.type}
+                    {selectedCustomer.reseller_discount_percent ? ` -${selectedCustomer.reseller_discount_percent}%` : ''}
+                  </span>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSelectedCustomer(null);
+                    setCustomerSearchTerm('');
+                  }}
+                  className="text-slate-400 hover:text-rose-600 hover:bg-rose-50 p-1 rounded transition-colors"
+                  title="Désélectionner le client (passer en Passager)"
+                >
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              </div>
 
-          {/* Customer Status Badges */}
-          {selectedCustomer && (
-            <div className="flex items-center gap-2 text-[10px] font-bold">
-              <span className="bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded">
-                Tier: {selectedCustomer.type}
-              </span>
-              <span className="bg-purple-100 text-purple-800 px-2 py-0.5 rounded flex items-center gap-1">
-                <Wallet className="w-3 h-3" />
-                Wallet: {formatMoney(selectedCustomer.wallet_balance)}
-              </span>
-              {(selectedCustomer.total_debt || 0) > 0 && (
-                <span className="bg-amber-100 text-amber-800 px-2 py-0.5 rounded flex items-center gap-1">
-                  <CreditCard className="w-3 h-3" />
-                  Debt: {formatMoney(selectedCustomer.total_debt)}
+              <div className="flex items-center gap-2 text-[10px] font-bold pt-1 border-t border-slate-100">
+                <span className="bg-purple-100 text-purple-800 px-2 py-0.5 rounded flex items-center gap-1">
+                  <Wallet className="w-3 h-3" />
+                  Solde: {formatMoney(selectedCustomer.wallet_balance)}
                 </span>
+                {(selectedCustomer.total_debt || 0) > 0 ? (
+                  <span className="bg-amber-100 text-amber-800 px-2 py-0.5 rounded flex items-center gap-1">
+                    <CreditCard className="w-3 h-3" />
+                    Dette: {formatMoney(selectedCustomer.total_debt)}
+                  </span>
+                ) : (
+                  <span className="text-slate-400 font-normal">Sans dette</span>
+                )}
+                {selectedCustomer.phone && (
+                  <span className="text-slate-500 font-medium ml-auto truncate max-w-[110px]">
+                    {selectedCustomer.phone}
+                  </span>
+                )}
+              </div>
+            </div>
+          ) : (
+            <div className="relative" ref={customerDropdownRef}>
+              <div className="relative">
+                <Search className="w-3.5 h-3.5 absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400" />
+                <input
+                  type="text"
+                  placeholder="Rechercher client (nom, tél...)"
+                  value={customerSearchTerm}
+                  onChange={e => {
+                    setCustomerSearchTerm(e.target.value);
+                    setIsCustomerDropdownOpen(true);
+                  }}
+                  onFocus={() => setIsCustomerDropdownOpen(true)}
+                  className="w-full text-xs pl-8 pr-3 py-1.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:outline-none bg-white font-medium text-slate-800 placeholder-slate-400"
+                />
+              </div>
+
+              {isCustomerDropdownOpen && (
+                <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-slate-200 rounded-lg shadow-xl z-50 max-h-64 overflow-y-auto divide-y divide-slate-100">
+                  <div
+                    onClick={() => {
+                      setSelectedCustomer(null);
+                      setIsCustomerDropdownOpen(false);
+                      setCustomerSearchTerm('');
+                    }}
+                    className="p-2.5 text-xs font-semibold hover:bg-slate-50 cursor-pointer flex items-center justify-between text-slate-600 bg-slate-50/50"
+                  >
+                    <span>Passager / Walk-in Retail</span>
+                    <span className="text-[10px] text-slate-400">Sans compte</span>
+                  </div>
+                  {filteredCustomers.length === 0 ? (
+                    <div className="p-4 text-xs text-slate-400 text-center">
+                      Aucun client trouvé
+                    </div>
+                  ) : (
+                    filteredCustomers.map(c => (
+                      <div
+                        key={c.id}
+                        onClick={() => {
+                          setSelectedCustomer(c);
+                          setIsCustomerDropdownOpen(false);
+                          setCustomerSearchTerm('');
+                        }}
+                        className="p-2.5 hover:bg-emerald-50/70 cursor-pointer transition-colors"
+                      >
+                        <div className="flex items-center justify-between gap-2">
+                          <span className="text-xs font-bold text-slate-800 truncate">{c.name}</span>
+                          <span className="text-[10px] font-semibold bg-slate-100 text-slate-700 px-1.5 py-0.5 rounded shrink-0">
+                            {c.type}{c.reseller_discount_percent ? ` -${c.reseller_discount_percent}%` : ''}
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-2 mt-1 text-[10px] text-slate-500">
+                          {c.phone && <span>{c.phone}</span>}
+                          {(c.total_debt || 0) > 0 && (
+                            <span className="text-amber-700 font-bold">Dette: {formatMoney(c.total_debt)}</span>
+                          )}
+                          {(c.wallet_balance || 0) > 0 && (
+                            <span className="text-purple-700 font-semibold">Solde: {formatMoney(c.wallet_balance)}</span>
+                          )}
+                        </div>
+                      </div>
+                    ))
+                  )}
+                </div>
               )}
             </div>
           )}
@@ -586,12 +790,11 @@ export const DesktopPos: React.FC<DesktopPosProps> = ({
                   </h4>
                   <div className="text-[10px] text-slate-500 flex items-center gap-1.5 mt-0.5">
                     <span className="text-slate-400 font-medium text-[9px]">P.U:</span>
-                    <input
-                      type="number"
+                    <BufferedNumberInput
                       step="0.001"
-                      min="0"
+                      min={0}
                       value={item.unit_price}
-                      onChange={e => handleUpdateUnitPrice(item.cart_item_id, parseFloat(e.target.value) || 0)}
+                      onCommit={val => handleUpdateUnitPrice(item.cart_item_id, val)}
                       className="w-16 px-1 py-0.2 text-[10px] font-mono font-bold text-emerald-700 bg-white border border-slate-200 rounded focus:border-emerald-500 focus:outline-none"
                       title="Modifier le prix unitaire"
                     />
@@ -599,9 +802,52 @@ export const DesktopPos: React.FC<DesktopPosProps> = ({
                     {item.size_label && (
                       <span className="bg-slate-100 px-1 rounded font-semibold">{item.size_label}</span>
                     )}
-                    {item.pack_multiplier > 1 && (
-                      <span className="text-blue-600 font-semibold">x{item.pack_multiplier} pcs</span>
-                    )}
+                    {(() => {
+                      const prod = products.find(p => p.id === item.product_id);
+                      if (!prod?.pack_sizes || prod.pack_sizes.length === 0) {
+                        return item.pack_multiplier > 1 ? (
+                          <span className="text-blue-600 font-semibold">{item.pack_label || `x${item.pack_multiplier} pcs`}</span>
+                        ) : null;
+                      }
+                      return (
+                        <select
+                          value={item.selected_pack_size_id || 'base'}
+                          onChange={e => {
+                            const selectedId = e.target.value;
+                            if (selectedId === 'base') {
+                              const unitPrice = getProductPackPrice(prod, selectedCustomer, null, 1);
+                              setCart(prev => prev.map(i => i.cart_item_id === item.cart_item_id ? {
+                                ...i,
+                                pack_multiplier: 1,
+                                selected_pack_size_id: undefined,
+                                pack_label: undefined,
+                                unit_price: unitPrice
+                              } : i));
+                            } else {
+                              const ps = prod.pack_sizes?.find(s => s.id === selectedId);
+                              if (ps) {
+                                const unitPrice = getProductPackPrice(prod, selectedCustomer, ps, ps.multiplier);
+                                setCart(prev => prev.map(i => i.cart_item_id === item.cart_item_id ? {
+                                  ...i,
+                                  pack_multiplier: ps.multiplier,
+                                  selected_pack_size_id: ps.id,
+                                  pack_label: ps.pack_label,
+                                  unit_price: unitPrice
+                                } : i));
+                              }
+                            }
+                          }}
+                          className="text-[9px] font-bold text-blue-700 bg-blue-50 border border-blue-200 rounded px-1 py-0.2 outline-none cursor-pointer"
+                        >
+                          <option value="base">Unité (1 pc)</option>
+                          {prod.pack_sizes.map(ps => (
+                            <option key={ps.id} value={ps.id}>
+                              {ps.pack_label || `Pack x${ps.multiplier}`}
+                            </option>
+                          ))}
+                        </select>
+                      );
+                    })()}
                   </div>
                 </div>
 
@@ -613,14 +859,12 @@ export const DesktopPos: React.FC<DesktopPosProps> = ({
                   >
                     -
                   </button>
-                  <input
-                    type="number"
+                  <BufferedNumberInput
                     step="0.001"
-                    min="0.001"
+                    min={0.001}
+                    disallowZero={true}
                     value={item.quantity}
-                    onChange={e =>
-                      handleUpdateQuantity(item.cart_item_id, parseFloat(e.target.value) || 0)
-                    }
+                    onCommit={val => handleUpdateQuantity(item.cart_item_id, val)}
                     className="w-12 text-center text-xs font-bold font-mono bg-white border-x border-slate-300 py-0.5 focus:outline-none"
                   />
                   <button
@@ -822,7 +1066,7 @@ export const DesktopPos: React.FC<DesktopPosProps> = ({
         familyName={familyModalData.familyName}
         products={familyModalData.products}
         customer={selectedCustomer}
-        onSelectProduct={prod => addProductToCart(prod)}
+        onSelectProduct={(prod, mult, lbl, ps) => addProductToCart(prod, mult, lbl, ps)}
       />
 
       <CheckoutModal
@@ -892,6 +1136,15 @@ export const DesktopPos: React.FC<DesktopPosProps> = ({
         customers={customers}
         initialCustomerId={selectedCustomer?.id || null}
         onSuccess={() => {
+          onRefreshData();
+        }}
+      />
+
+      <CreateCustomerModal
+        isOpen={isCreateCustomerOpen}
+        onClose={() => setIsCreateCustomerOpen(false)}
+        onSuccess={() => {
+          setIsCreateCustomerOpen(false);
           onRefreshData();
         }}
       />

@@ -15,6 +15,9 @@ import {
 import type { Customer, CartItem, RegisterSession } from '../../types/index.js';
 import { calculateCartTotals, validateSplitPayment, buildPaymentPayload, calculateContainersNeeded } from '../../utils/cart.js';
 import { formatMoney, roundMoney } from '../../utils/formatters.js';
+import { webUsbPrinter } from '../../services/hardware/webusb.js';
+import { webBluetoothPrinter } from '../../services/hardware/webbluetooth.js';
+import { nativeSppPrinter } from '../../services/hardware/nativeSpp.js';
 
 interface CheckoutModalProps {
   isOpen: boolean;
@@ -165,7 +168,8 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
     try {
       const targetId = completedSale.sale_id || completedSale.receipt_number;
       const tender = buildPaymentPayload(totals.totalTTC, parseFloat(cashPaid) || 0, parseFloat(walletPaid) || 0, parseFloat(creditAmount) || 0);
-      const salePayload = {
+      const salePayload: any = {
+        id: targetId,
         receipt_number: completedSale.receipt_number,
         date: new Date().toISOString(),
         customer_name: customer?.name || 'Client Passager',
@@ -180,6 +184,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
         change_given: changeDue || 0,
         items: items.map(item => ({
           catalog_product_name: item.name,
+          name: item.name,
           description: item.name,
           quantity: item.quantity,
           unit_price: item.unit_price,
@@ -189,6 +194,31 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
         }))
       };
 
+      // 1. Direct WebUSB
+      if (webUsbPrinter.getStatus().isConnected) {
+        await webUsbPrinter.printReceipt(salePayload);
+        setPrintSuccessMessage('Ticket imprimé via WebUSB !');
+        setTimeout(() => setPrintSuccessMessage(null), 3500);
+        return;
+      }
+
+      // 2. Direct Bluetooth Classic (SPP) on Android (MPT-II)
+      if (nativeSppPrinter.getStatus().isConnected) {
+        await nativeSppPrinter.printReceipt(salePayload);
+        setPrintSuccessMessage('Ticket imprimé via Bluetooth SPP !');
+        setTimeout(() => setPrintSuccessMessage(null), 3500);
+        return;
+      }
+
+      // 3. Direct WebBluetooth on mobile
+      if (webBluetoothPrinter.getStatus().isConnected) {
+        await webBluetoothPrinter.printReceipt(salePayload);
+        setPrintSuccessMessage('Ticket imprimé via Bluetooth !');
+        setTimeout(() => setPrintSuccessMessage(null), 3500);
+        return;
+      }
+
+      // 4. Attempt backend POS hardware print
       const res = await fetch('/api/hardware/printer/print', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },

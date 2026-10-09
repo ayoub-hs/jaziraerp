@@ -101,11 +101,12 @@ export class SyncManager {
       if (!res.ok) throw new Error(`HTTP error: ${res.status}`);
       const data = await res.json();
 
-      await clientDb.transaction('rw', [clientDb.products, clientDb.customers, clientDb.container_types, clientDb.product_families], async () => {
+      await clientDb.transaction('rw', [clientDb.products, clientDb.customers, clientDb.container_types, clientDb.product_families, clientDb.active_session], async () => {
         await clientDb.products.clear();
         await clientDb.customers.clear();
         await clientDb.container_types.clear();
         await clientDb.product_families.clear();
+        await clientDb.active_session.clear();
 
         if (Array.isArray(data.products)) {
           await clientDb.products.bulkPut(data.products);
@@ -119,6 +120,15 @@ export class SyncManager {
         const families = data.families || data.product_families;
         if (Array.isArray(families)) {
           await clientDb.product_families.bulkPut(families);
+        }
+        if (Array.isArray(data.open_sessions)) {
+          await clientDb.active_session.bulkPut(data.open_sessions.map((s: any) => ({
+            id: s.id,
+            counter_name: s.counter_name,
+            session_number: s.session_number,
+            opening_cash: Number(s.opening_cash) || 0,
+            status: s.status
+          })));
         }
       });
 
