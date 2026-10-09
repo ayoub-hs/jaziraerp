@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { 
   X, 
   CheckCircle, 
@@ -61,11 +61,14 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
   const [validationError, setValidationError] = useState<string | null>(null);
   const [changeDue, setChangeDue] = useState<number>(0);
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
+  const isSubmittingRef = useRef<boolean>(false);
+  const cashInputRef = useRef<HTMLInputElement>(null);
+  const startNextSaleBtnRef = useRef<HTMLButtonElement>(null);
   const [completedSale, setCompletedSale] = useState<{ sale_id: string; receipt_number: string } | null>(null);
   const [isPrintingDirect, setIsPrintingDirect] = useState(false);
   const [printSuccessMessage, setPrintSuccessMessage] = useState<string | null>(null);
 
-  // Initialize tender when modal opens
+  // Initialize tender when modal opens & auto-focus
   useEffect(() => {
     if (isOpen) {
       setCashPaid(totalTTC.toFixed(3));
@@ -74,9 +77,23 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
       setValidationError(null);
       setChangeDue(0);
       setIsSubmitting(false);
+      isSubmittingRef.current = false;
       setCompletedSale(null);
+      setTimeout(() => {
+        cashInputRef.current?.focus();
+        cashInputRef.current?.select();
+      }, 50);
     }
   }, [isOpen, totalTTC]);
+
+  // Focus next sale button once completed
+  useEffect(() => {
+    if (completedSale) {
+      setTimeout(() => {
+        startNextSaleBtnRef.current?.focus();
+      }, 80);
+    }
+  }, [completedSale]);
 
   // Recalculate validation & change due
   useEffect(() => {
@@ -95,6 +112,54 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
       setChangeDue(res.changeDue);
     }
   }, [cashPaid, walletPaid, creditAmount, totalTTC, customer, isOpen, completedSale]);
+
+  // Dynamic banknote options for quick cash tender
+  const currentWallet = parseFloat(walletPaid) || 0;
+  const cashRemaining = Math.max(0, roundMoney(totalTTC - currentWallet));
+
+  const quickCashOptions = useMemo(() => {
+    if (cashRemaining <= 0) return [];
+    const candidates = new Set<number>();
+    const nextFive = Math.ceil(cashRemaining / 5) * 5;
+    const nextTen = Math.ceil(cashRemaining / 10) * 10;
+    const nextTwenty = Math.ceil(cashRemaining / 20) * 20;
+    const nextFifty = Math.ceil(cashRemaining / 50) * 50;
+
+    if (nextFive > cashRemaining) candidates.add(nextFive);
+    if (nextTen > cashRemaining) candidates.add(nextTen);
+    if (nextTwenty > cashRemaining) candidates.add(nextTwenty);
+    if (nextFifty > cashRemaining) candidates.add(nextFifty);
+
+    [10, 20, 50, 100].forEach(d => {
+      if (d > cashRemaining) candidates.add(d);
+    });
+
+    return Array.from(candidates).sort((a, b) => a - b).slice(0, 3);
+  }, [cashRemaining]);
+
+  // Fast-checkout keyboard listener (Enter to complete / start next)
+  useEffect(() => {
+    if (!isOpen) return;
+    const handleModalKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Enter' && !e.shiftKey && !e.ctrlKey && !e.altKey) {
+        if (completedSale) {
+          e.preventDefault();
+          onSaleDone?.();
+          onClose();
+        } else if (!validationError && !isSubmittingRef.current && (!activeSession || activeSession.status === 'OPEN')) {
+          e.preventDefault();
+          handleSubmit();
+        }
+      } else if (e.key === 'Escape' && !isSubmittingRef.current) {
+        if (!completedSale) {
+          e.preventDefault();
+          onClose();
+        }
+      }
+    };
+    window.addEventListener('keydown', handleModalKeyDown);
+    return () => window.removeEventListener('keydown', handleModalKeyDown);
+  }, [isOpen, completedSale, validationError, activeSession, cashPaid, walletPaid, creditAmount, totalTTC]);
 
   if (!isOpen) return null;
 
@@ -121,13 +186,14 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
 
   const handleApplyCredit = () => {
     if (!customer) return;
-    const currentWallet = parseFloat(walletPaid) || 0;
-    const remaining = Math.max(0, roundMoney(totalTTC - currentWallet));
+    const currentW = parseFloat(walletPaid) || 0;
+    const remaining = Math.max(0, roundMoney(totalTTC - currentW));
     setCreditAmount(remaining.toFixed(3));
     setCashPaid('0.000');
   };
 
   const handleSubmit = async () => {
+    if (isSubmittingRef.current) return;
     const cash = parseFloat(cashPaid) || 0;
     const wallet = parseFloat(walletPaid) || 0;
     const credit = parseFloat(creditAmount) || 0;
@@ -143,6 +209,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
       return;
     }
 
+    isSubmittingRef.current = true;
     setIsSubmitting(true);
     try {
       const payload = buildPaymentPayload(totalTTC, cash, wallet, credit);
@@ -156,6 +223,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
     } catch (err: any) {
       setValidationError(err.message || 'Error processing checkout');
     } finally {
+      isSubmittingRef.current = false;
       setIsSubmitting(false);
     }
   };
@@ -326,13 +394,14 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
 
               <div className="pt-2">
                 <button
+                  ref={startNextSaleBtnRef}
                   onClick={() => {
                     onSaleDone?.();
                     onClose();
                   }}
-                  className="text-slate-600 hover:text-slate-900 font-semibold text-sm underline"
+                  className="text-slate-600 hover:text-slate-900 font-semibold text-sm underline focus:ring-2 focus:ring-emerald-500 rounded px-2 py-1"
                 >
-                  Start Next Sale
+                  Start Next Sale (Entrée)
                 </button>
               </div>
             </div>
@@ -415,31 +484,20 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
                       setCashPaid(remaining.toFixed(3));
                       setCreditAmount('0.000');
                     }}
-                    className="py-2 px-2 bg-slate-100 hover:bg-slate-200 text-slate-800 rounded-lg text-xs font-bold border border-slate-200 transition-colors"
+                    className="py-2 px-2 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 rounded-lg text-xs font-bold border border-emerald-200 transition-colors shadow-xs"
                   >
                     Exact {(parseFloat(walletPaid) || 0) > 0 ? `(${formatMoney(Math.max(0, roundMoney(totalTTC - (parseFloat(walletPaid) || 0))))})` : ''}
                   </button>
-                  <button
-                    type="button"
-                    onClick={() => handleQuickCash(10)}
-                    className="py-2 px-2 bg-slate-100 hover:bg-slate-200 text-slate-800 rounded-lg text-xs font-bold border border-slate-200 transition-colors"
-                  >
-                    10 DT
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => handleQuickCash(20)}
-                    className="py-2 px-2 bg-slate-100 hover:bg-slate-200 text-slate-800 rounded-lg text-xs font-bold border border-slate-200 transition-colors"
-                  >
-                    20 DT
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => handleQuickCash(50)}
-                    className="py-2 px-2 bg-slate-100 hover:bg-slate-200 text-slate-800 rounded-lg text-xs font-bold border border-slate-200 transition-colors"
-                  >
-                    50 DT
-                  </button>
+                  {quickCashOptions.map(amount => (
+                    <button
+                      key={amount}
+                      type="button"
+                      onClick={() => handleQuickCash(amount)}
+                      className="py-2 px-2 bg-slate-100 hover:bg-slate-200 text-slate-800 rounded-lg text-xs font-bold border border-slate-200 transition-colors"
+                    >
+                      {amount} DT
+                    </button>
+                  ))}
                 </div>
               </div>
 
@@ -450,7 +508,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
                   <div className="flex items-center justify-between mb-1">
                     <span className="text-xs font-bold text-slate-700 flex items-center gap-1.5">
                       <Banknote className="w-4 h-4 text-emerald-600" />
-                      Cash Tendered (DT)
+                      Cash Tendered (DT) — Entrée pour valider
                     </span>
                     {customer && ((parseFloat(walletPaid) || 0) > 0 || (parseFloat(creditAmount) || 0) > 0) && (
                       <button
@@ -468,6 +526,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
                     )}
                   </div>
                   <input
+                    ref={cashInputRef}
                     type="number"
                     step="0.001"
                     min="0"
