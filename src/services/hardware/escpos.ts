@@ -231,7 +231,6 @@ export function buildReceiptEscPos(
     .alignCenter()
     .line('Merci de votre visite!')
     .line('Bidons consignes remboursables')
-    .line('*** AL JAZIRA SHSP ***')
     .feed(3)
     .cut(true);
 

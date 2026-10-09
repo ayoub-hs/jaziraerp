@@ -58,6 +58,7 @@ describe('ESC/POS Thermal & Drawer Kick Hardware Service', () => {
     const textOutput = decoder.decode(receiptBytes);
 
     expect(textOutput).toContain('Société Al Jazira SHSP');
+    expect(textOutput).not.toContain('*** AL JAZIRA SHSP ***');
     expect(textOutput).toContain('REC-20260907-0001');
     expect(textOutput).toContain('Dish Soap Lemon 1L');
     expect(textOutput).toContain('TOTAL TTC:');

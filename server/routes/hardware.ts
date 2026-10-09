@@ -311,7 +311,6 @@ export function buildReceiptEscPosBuffer(sale: any, storeName?: string, customDb
   push(0x1b, 0x61, 0x01); // Center
   line('Merci de votre visite!');
   line('Les bidons sont remboursables');
-  line('*** AL JAZIRA SHSP ***');
   lf(4);
 
   // Cut

@@ -305,7 +305,6 @@ export const ReceiptPrintModal: React.FC<ReceiptPrintModalProps> = ({
               <div className="text-center pt-3 text-[9px] space-y-0.5">
                 <div>Merci de votre visite!</div>
                 <div>Les bidons consignés sont remboursables</div>
-                <div>*** AL JAZIRA SHSP ***</div>
               </div>
             </div>
           )}
