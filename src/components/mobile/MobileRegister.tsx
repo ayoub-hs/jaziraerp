@@ -1076,6 +1076,52 @@ export const MobileRegister: React.FC<MobileRegisterProps> = ({
                             {item.size_label}
                           </span>
                         )}
+                        {(() => {
+                          const prod = products.find(p => p.id === item.product_id);
+                          if (!prod?.pack_sizes || prod.pack_sizes.length === 0) {
+                            return item.pack_multiplier > 1 ? (
+                              <span className="text-blue-600 font-semibold bg-blue-50 px-1 rounded">{item.pack_label || `x${item.pack_multiplier} pcs`}</span>
+                            ) : null;
+                          }
+                          return (
+                            <select
+                              value={item.selected_pack_size_id || 'base'}
+                              onChange={e => {
+                                const selectedId = e.target.value;
+                                if (selectedId === 'base') {
+                                  const unitPrice = getProductPackPrice(prod, selectedCustomer, null, 1);
+                                  setCart(prev => prev.map(i => i.cart_item_id === item.cart_item_id ? {
+                                    ...i,
+                                    pack_multiplier: 1,
+                                    selected_pack_size_id: undefined,
+                                    pack_label: undefined,
+                                    unit_price: unitPrice
+                                  } : i));
+                                } else {
+                                  const ps = prod.pack_sizes?.find(s => s.id === selectedId);
+                                  if (ps) {
+                                    const unitPrice = getProductPackPrice(prod, selectedCustomer, ps, ps.multiplier);
+                                    setCart(prev => prev.map(i => i.cart_item_id === item.cart_item_id ? {
+                                      ...i,
+                                      pack_multiplier: ps.multiplier,
+                                      selected_pack_size_id: ps.id,
+                                      pack_label: ps.pack_label,
+                                      unit_price: unitPrice
+                                    } : i));
+                                  }
+                                }
+                              }}
+                              className="text-[9px] font-bold text-blue-700 bg-blue-50 border border-blue-200 rounded px-1 py-0.2 outline-none cursor-pointer"
+                            >
+                              <option value="base">Unité (1 pc)</option>
+                              {prod.pack_sizes.map(ps => (
+                                <option key={ps.id} value={ps.id}>
+                                  {ps.pack_label || `Pack x${ps.multiplier}`}
+                                </option>
+                              ))}
+                            </select>
+                          );
+                        })()}
                       </div>
                     </div>
 
