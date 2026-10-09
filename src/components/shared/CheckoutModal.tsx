@@ -18,6 +18,7 @@ import { formatMoney, roundMoney } from '../../utils/formatters.js';
 import { webUsbPrinter } from '../../services/hardware/webusb.js';
 import { webBluetoothPrinter } from '../../services/hardware/webbluetooth.js';
 import { nativeSppPrinter } from '../../services/hardware/nativeSpp.js';
+import { registerBackHandler } from '../../utils/backButton.js';
 
 interface CheckoutModalProps {
   isOpen: boolean;
@@ -94,6 +95,21 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
       }, 80);
     }
   }, [completedSale]);
+
+  // Handle hardware / gesture back button
+  useEffect(() => {
+    if (!isOpen) return;
+    return registerBackHandler(() => {
+      if (completedSale) {
+        onSaleDone?.();
+        onClose();
+      } else {
+        // During active checkout: close modal and preserve cart
+        onClose();
+      }
+      return true;
+    });
+  }, [isOpen, completedSale, onSaleDone, onClose]);
 
   // Recalculate validation & change due
   useEffect(() => {

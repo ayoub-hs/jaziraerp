@@ -25,6 +25,7 @@ import { fetchShopInfo } from './services/shopInfo.js';
 import { getServerUrl, isNativeApp } from './services/serverUrl.js';
 import { ServerSetup } from './components/shared/ServerSetup.js';
 import { updateRegisterSessionState } from './utils/keepScreen.js';
+import { useBackButton } from './utils/backButton.js';
 
 export default function App() {
   const [currentView, setCurrentView] = useState<'DESKTOP_POS' | 'MOBILE_REGISTER' | 'BACKOFFICE'>('DESKTOP_POS');
@@ -185,6 +186,27 @@ export default function App() {
     const isOpen = Boolean(activeSession && activeSession.status === 'OPEN');
     updateRegisterSessionState(isOpen);
   }, [activeSession]);
+
+  // Handle hardware / gesture back button for App-level modals
+  useBackButton(() => {
+    if (isSessionModalOpen) {
+      setIsSessionModalOpen(false);
+      return true;
+    }
+    if (isCashMovementOpen) {
+      setIsCashMovementOpen(false);
+      return true;
+    }
+    if (printReceiptSaleId) {
+      setPrintReceiptSaleId(null);
+      return true;
+    }
+    if (printInvoiceSaleId) {
+      setPrintInvoiceSaleId(null);
+      return true;
+    }
+    return false;
+  }, isSessionModalOpen || isCashMovementOpen || Boolean(printReceiptSaleId) || Boolean(printInvoiceSaleId));
 
   const triggerDrawerIfCash = (cashPaid: number, sourceView = currentView) => {
     if (cashPaid > 0) {

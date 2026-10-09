@@ -42,6 +42,7 @@ import { RefundModal } from '../shared/RefundModal.js';
 import { CreateCustomerModal } from '../backoffice/CreateCustomerModal.js';
 import { scannerService } from '../../services/hardware/scanner.js';
 import { BufferedNumberInput } from '../shared/BufferedNumberInput.js';
+import { useBackButton } from '../../utils/backButton.js';
 
 interface MobileRegisterProps {
   products: Product[];
@@ -129,6 +130,39 @@ export const MobileRegister: React.FC<MobileRegisterProps> = ({
 
   const totals = calculateCartTotals(cart, saleDiscount);
   const categories = ['ALL', ...Array.from(new Set(families.map(f => f.category || 'Other')))];
+
+  // Android back button: close topmost drawer/modal
+  useBackButton(() => {
+    if (isCameraOpen) {
+      setIsCameraOpen(false);
+      return true;
+    }
+    if (isContainerModalOpen) {
+      setIsContainerModalOpen(false);
+      return true;
+    }
+    if (familyModalData.isOpen) {
+      setFamilyModalData({ isOpen: false, familyName: '', products: [] });
+      return true;
+    }
+    if (isRefundOpen) {
+      setIsRefundOpen(false);
+      return true;
+    }
+    if (isCreateCustomerOpen) {
+      setIsCreateCustomerOpen(false);
+      return true;
+    }
+    if (isQuickAddOpen) {
+      setIsQuickAddOpen(false);
+      return true;
+    }
+    if (isCartDrawerOpen) {
+      setIsCartDrawerOpen(false);
+      return true;
+    }
+    return false;
+  }, isCameraOpen || isContainerModalOpen || familyModalData.isOpen || isRefundOpen || isCreateCustomerOpen || isQuickAddOpen || isCartDrawerOpen);
 
   // Global Keyboard Wedge Scanner Listener
   React.useEffect(() => {
