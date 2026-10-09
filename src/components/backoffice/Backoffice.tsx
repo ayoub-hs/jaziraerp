@@ -131,7 +131,6 @@ export const Backoffice: React.FC<BackofficeProps> = ({
 
   // Modals & Wizards
   const [isBarcodeLabelModalOpen, setIsBarcodeLabelModalOpen] = useState(false);
-  const [isBatchWizardOpen, setIsBatchWizardOpen] = useState(false);
   const [selectedFormulationId, setSelectedFormulationId] = useState('');
   const [batchVolume, setBatchVolume] = useState('100');
   const [targetProductId, setTargetProductId] = useState('');
@@ -1433,36 +1432,44 @@ export const Backoffice: React.FC<BackofficeProps> = ({
                     </select>
                   </div>
 
-                  <div className="grid grid-cols-2 gap-3">
-                    <div>
-                      <label className="block text-xs font-bold text-slate-700 mb-1">
-                        Batch Volume (Liters) *
-                      </label>
-                      <input
-                        type="number"
-                        step="1"
-                        min="1"
-                        required
-                        value={batchVolume}
-                        onChange={e => setBatchVolume(e.target.value)}
-                        className="w-full text-xs font-bold font-mono px-3 py-2 border border-slate-300 rounded-xl"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-xs font-bold text-slate-700 mb-1">
-                        Units Produced *
-                      </label>
-                      <input
-                        type="number"
-                        step="1"
-                        min="1"
-                        required
-                        value={unitsProduced}
-                        onChange={e => setUnitsProduced(e.target.value)}
-                        className="w-full text-xs font-bold font-mono px-3 py-2 border border-slate-300 rounded-xl"
-                      />
-                    </div>
-                  </div>
+                  {(() => {
+                    const selectedFormulation = formulations.find(f => f.id === selectedFormulationId);
+                    const yieldUnit = (selectedFormulation as any)?.base_yield_unit || 'L';
+                    const volumeUnitLabel = yieldUnit === 'kg' ? 'Kilogrammes' : yieldUnit === 'pcs' ? 'Pièces' : 'Litres';
+
+                    return (
+                      <div className="grid grid-cols-2 gap-3">
+                        <div>
+                          <label className="block text-xs font-bold text-slate-700 mb-1">
+                            Batch Volume ({volumeUnitLabel}) *
+                          </label>
+                          <input
+                            type="number"
+                            step="any"
+                            min="0.001"
+                            required
+                            value={batchVolume}
+                            onChange={e => setBatchVolume(e.target.value)}
+                            className="w-full text-xs font-bold font-mono px-3 py-2 border border-slate-300 rounded-xl"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-xs font-bold text-slate-700 mb-1">
+                            Units Produced *
+                          </label>
+                          <input
+                            type="number"
+                            step="any"
+                            min="0.001"
+                            required
+                            value={unitsProduced}
+                            onChange={e => setUnitsProduced(e.target.value)}
+                            className="w-full text-xs font-bold font-mono px-3 py-2 border border-slate-300 rounded-xl"
+                          />
+                        </div>
+                      </div>
+                    );
+                  })()}
 
                   <div>
                     <label className="block text-xs font-bold text-slate-700 mb-1">
@@ -1477,30 +1484,56 @@ export const Backoffice: React.FC<BackofficeProps> = ({
                       <option value="">Choose target SKU to restock...</option>
                       {(() => {
                         const familyById = new Map((families || []).map(f => [f.id, f]));
-                        return products
-                          .filter(p => {
-                            const fam = familyById.get(p.family_id);
-                            const isMfg = fam ? fam.type === 'MANUFACTURED' : (p.product_type === 'MANUFACTURED' || !p.product_type);
-                            if (!isMfg) return false;
-                            if (selectedFormulationId && fam) return fam.formulation_id === selectedFormulationId;
-                            return true;
-                          })
-                          .map(p => (
-                            <option key={p.id} value={p.id}>
-                              {p.name} ({p.size_label || 'Piece'}) — Current Stock: {p.stock_quantity}
-                            </option>
-                          ));
+                        const linkedProducts = products.filter(p => {
+                          const fam = familyById.get(p.family_id);
+                          const isMfg = fam ? fam.type === 'MANUFACTURED' : (p.product_type === 'MANUFACTURED' || !p.product_type);
+                          return isMfg && Boolean(selectedFormulationId && fam?.formulation_id === selectedFormulationId);
+                        });
+                        const otherMfgProducts = products.filter(p => {
+                          const fam = familyById.get(p.family_id);
+                          const isMfg = fam ? fam.type === 'MANUFACTURED' : (p.product_type === 'MANUFACTURED' || !p.product_type);
+                          return isMfg && (!selectedFormulationId || fam?.formulation_id !== selectedFormulationId);
+                        });
+
+                        return (
+                          <>
+                            {linkedProducts.length > 0 && (
+                              <optgroup label="Produits liés à cette recette">
+                                {linkedProducts.map(p => (
+                                  <option key={p.id} value={p.id}>
+                                    {p.name} ({p.size_label || 'Piece'}) — Stock: {p.stock_quantity}
+                                  </option>
+                                ))}
+                              </optgroup>
+                            )}
+                            {otherMfgProducts.length > 0 && (
+                              <optgroup label={linkedProducts.length > 0 ? "Autres produits fabriqués" : "Tous les produits fabriqués"}>
+                                {otherMfgProducts.map(p => (
+                                  <option key={p.id} value={p.id}>
+                                    {p.name} ({p.size_label || 'Piece'}) — Stock: {p.stock_quantity}
+                                  </option>
+                                ))}
+                              </optgroup>
+                            )}
+                          </>
+                        );
                       })()}
                     </select>
-                    {selectedFormulationId &&
-                      !products.some(p => {
-                        const fam = (families || []).find(f => f.id === p.family_id);
+                    {selectedFormulationId && (() => {
+                      const familyById = new Map((families || []).map(f => [f.id, f]));
+                      const hasLinked = products.some(p => {
+                        const fam = familyById.get(p.family_id);
                         return fam && fam.type === 'MANUFACTURED' && fam.formulation_id === selectedFormulationId;
-                      }) && (
-                        <p className="text-[11px] text-amber-700 font-semibold mt-1">
-                          Aucun produit lié à cette formule — liez la formule à une famille.
-                        </p>
-                      )}
+                      });
+                      if (!hasLinked) {
+                        return (
+                          <p className="text-[11px] text-amber-700 font-semibold mt-1">
+                            ℹ️ Cette formule n'est pas encore liée à une famille spécifique. Vous pouvez choisir n'importe quel produit fabriqué ci-dessus.
+                          </p>
+                        );
+                      }
+                      return null;
+                    })()}
                   </div>
 
                   <button
