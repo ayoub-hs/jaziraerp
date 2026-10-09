@@ -9,7 +9,9 @@ import com.getcapacitor.JSObject;
 import com.getcapacitor.Plugin;
 import com.getcapacitor.PluginCall;
 import com.getcapacitor.PluginMethod;
+import android.Manifest;
 import com.getcapacitor.annotation.CapacitorPlugin;
+import com.getcapacitor.annotation.Permission;
 import java.io.OutputStream;
 import java.util.Set;
 import java.util.UUID;
@@ -20,7 +22,15 @@ import java.util.UUID;
  * WebBluetooth path can never reach it. This plugin opens the standard
  * SPP RFCOMM socket and streams raw ESC/POS bytes.
  */
-@CapacitorPlugin(name = "ErpSppPrinter")
+@CapacitorPlugin(
+    name = "ErpSppPrinter",
+    permissions = {
+        @Permission(
+            strings = { Manifest.permission.BLUETOOTH_CONNECT },
+            alias = "bluetooth"
+        )
+    }
+)
 public class ErpSppPrinterPlugin extends Plugin {
 
     private static final UUID SPP_UUID = UUID.fromString("00001101-0000-1000-8000-00805F9B34FB");

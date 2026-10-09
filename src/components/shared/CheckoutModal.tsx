@@ -287,11 +287,18 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
       }
 
       // 2. Direct Bluetooth Classic (SPP) on Android (MPT-II)
-      if (nativeSppPrinter.getStatus().isConnected) {
-        await nativeSppPrinter.printReceipt(salePayload);
-        setPrintSuccessMessage('Ticket imprimé via Bluetooth SPP !');
-        setTimeout(() => setPrintSuccessMessage(null), 3500);
-        return;
+      if (nativeSppPrinter.isSupported()) {
+        try {
+          await nativeSppPrinter.printReceipt(salePayload);
+          setPrintSuccessMessage('Ticket imprimé via Bluetooth SPP !');
+          setTimeout(() => setPrintSuccessMessage(null), 3500);
+          return;
+        } catch (sppErr: any) {
+          console.warn('[SPP] Bluetooth print attempt failed:', sppErr);
+          setPrintSuccessMessage(`Ticket enregistré (impression: ${sppErr?.message || 'non disponible'})`);
+          setTimeout(() => setPrintSuccessMessage(null), 4000);
+          return;
+        }
       }
 
       // 3. Direct WebBluetooth on mobile
