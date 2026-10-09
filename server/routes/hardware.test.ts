@@ -122,6 +122,7 @@ describe('Hardware Router & USB Serial Cash Drawer (HTTP Routes)', () => {
     expect(Buffer.isBuffer(buffer)).toBe(true);
     const text = buffer.toString('utf-8');
     expect(text).toContain('Bidon Vaisselle 10L');
+    expect(text).toContain('30.000 DT');
     expect(text).toContain('Remise:');
     expect(text).toContain('-2.000 DT');
     expect(text).toContain('Remise globale:');

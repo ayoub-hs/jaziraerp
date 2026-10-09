@@ -1,5 +1,5 @@
 import type { SaleSummary } from '../../types/index.js';
-import { formatMoney, formatDateTime } from '../../utils/formatters.js';
+import { formatMoney, formatDateTime, roundMoney } from '../../utils/formatters.js';
 import { getShopInfo } from '../shopInfo.js';
 
 export const ESC = 0x1b;
@@ -180,10 +180,13 @@ export function buildReceiptEscPos(
     const name = rawName.length > 32 ? rawName.slice(0, 31) : rawName;
     builder.line(name);
     const detail = `  ${item.quantity} x ${formatMoney(item.unit_price)}${item.pack_multiplier > 1 ? ` (x${item.pack_multiplier})` : ''}`;
-    const total = formatMoney(item.total_line ?? item.line_total ?? (item.quantity * item.unit_price));
-    builder.twoColumns(detail, total);
-
     const discount = Number(item.discount_amount) || 0;
+    const computedFull = roundMoney((Number(item.quantity) || 0) * (Number(item.unit_price) || 0));
+    const fullTotal = computedFull > 0
+      ? computedFull
+      : roundMoney((Number(item.total_line ?? (item as any).line_total) || 0) + discount);
+    builder.twoColumns(detail, formatMoney(fullTotal));
+
     if (discount > 0) {
       builder.twoColumns('  Remise:', `-${formatMoney(discount)}`);
     }

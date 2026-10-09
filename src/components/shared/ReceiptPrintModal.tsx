@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { X, Printer } from 'lucide-react';
 import type { SaleSummary } from '../../types/index.js';
-import { formatMoney, formatDateTime } from '../../utils/formatters.js';
+import { formatMoney, formatDateTime, roundMoney } from '../../utils/formatters.js';
 import { calculateCartTotals } from '../../utils/cart.js';
 import { webUsbPrinter } from '../../services/hardware/webusb.js';
 import { webBluetoothPrinter } from '../../services/hardware/webbluetooth.js';
@@ -219,8 +219,11 @@ export const ReceiptPrintModal: React.FC<ReceiptPrintModalProps> = ({
                 </div>
                 {sale.items?.map(item => {
                   const name = item.description || item.name || (item as any).catalog_product_name || (item as any).quick_add_name || 'Article';
-                  const lineTotal = item.total_line ?? (item as any).line_total ?? (item.quantity * item.unit_price);
-                  const discount = item.discount_amount || 0;
+                  const discount = Number(item.discount_amount) || 0;
+                  const computedFull = roundMoney((Number(item.quantity) || 0) * (Number(item.unit_price) || 0));
+                  const fullTotal = computedFull > 0
+                    ? computedFull
+                    : roundMoney((Number(item.total_line ?? (item as any).line_total) || 0) + discount);
                   return (
                     <div key={item.id} className="text-[10px]">
                       <div className="truncate font-semibold">{name}</div>
@@ -229,12 +232,12 @@ export const ReceiptPrintModal: React.FC<ReceiptPrintModalProps> = ({
                           {item.quantity} x {formatMoney(item.unit_price)}
                           {item.pack_multiplier > 1 ? ` (x${item.pack_multiplier})` : ''}
                         </span>
-                        <span className="text-black font-semibold">{formatMoney(lineTotal)}</span>
+                        <span className="text-black font-semibold">{formatMoney(fullTotal)}</span>
                       </div>
                       {discount > 0 && (
-                        <div className="flex justify-between text-emerald-700 text-[9px] italic">
-                          <span>  Remise:</span>
-                          <span>-{formatMoney(discount)}</span>
+                        <div className="flex justify-between text-slate-700 print:text-black text-[9px] italic">
+                          <span className="pl-2">Remise:</span>
+                          <span className="font-semibold text-rose-700 print:text-black">-{formatMoney(discount)}</span>
                         </div>
                       )}
                     </div>

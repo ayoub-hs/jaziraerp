@@ -267,13 +267,16 @@ export function buildReceiptEscPosBuffer(sale: any, storeName?: string, customDb
 
       const qty = item.quantity || 1;
       const unitPrice = item.unit_price || 0;
-      const lineTotal = item.line_total ?? item.total_line ?? (qty * unitPrice);
+      const itemDiscount = Number(item.discount_amount) || 0;
+      const computedFull = Math.round(Number(qty) * Number(unitPrice) * 1000) / 1000;
+      const fullTotal = computedFull > 0
+        ? computedFull
+        : Math.round(((Number(item.line_total ?? item.total_line) || 0) + itemDiscount) * 1000) / 1000;
 
       const qtyStr = `${qty} x ${formatMoneyDinars(unitPrice)}`;
-      const totStr = formatMoneyDinars(lineTotal);
+      const totStr = formatMoneyDinars(fullTotal);
       twoCol(qtyStr, totStr);
 
-      const itemDiscount = Number(item.discount_amount) || 0;
       if (itemDiscount > 0) {
         twoCol('  Remise:', `-${formatMoneyDinars(itemDiscount)}`);
       }

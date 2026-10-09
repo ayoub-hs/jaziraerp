@@ -109,6 +109,7 @@ describe('ESC/POS Thermal & Drawer Kick Hardware Service', () => {
     const textOutput = decoder.decode(receiptBytes);
 
     expect(textOutput).toContain('Savon Liquide 5L');
+    expect(textOutput).toContain('20.000 DT');
     expect(textOutput).toContain('Sac Plastique 50L');
     expect(textOutput).toContain('Remise:');
     expect(textOutput).toContain('-1.000 DT');
