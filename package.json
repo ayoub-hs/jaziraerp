@@ -9,7 +9,8 @@
     "dev": "vite",
     "build": "node scripts/generate-build-id.js && tsc -b && vite build",
     "start": "tsx server/index.ts",
-    "test": "vitest run"
+    "test": "vitest run",
+    "test:invariants": "NODE_ENV=test tsx tests/invariants.ts"
   },
   "dependencies": {
     "@capacitor/android": "^8.5.2",
