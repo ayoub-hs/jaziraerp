@@ -389,16 +389,16 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 overflow-y-auto">
-      <div className="bg-white rounded-2xl shadow-2xl max-w-lg w-full overflow-hidden flex flex-col border border-slate-200">
+    <div className="fixed inset-0 z-50 flex items-start sm:items-center justify-center bg-black/60 backdrop-blur-sm p-2 sm:p-4 overflow-y-auto">
+      <div className="bg-white rounded-2xl shadow-2xl max-w-lg w-full overflow-hidden flex flex-col border border-slate-200 my-auto max-h-[95dvh]">
         {/* Header */}
-        <div className="bg-slate-900 text-white px-6 py-4 flex items-center justify-between">
+        <div className="sticky top-0 z-10 bg-slate-900 text-white px-5 py-3.5 flex items-center justify-between shrink-0">
           <div>
             <h2 className="text-lg font-bold">
               {completedSale ? 'Sale Completed' : 'Tender & Split Payment'}
             </h2>
             <p className="text-xs text-slate-400">
-              {customer ? `${customer.name} (${customer.type})` : 'Walk-in Retail Customer'}
+              {customer ? `${customer.name} (${customer.type})` : 'Client Passager'}
             </p>
           </div>
           {!completedSale && (
@@ -412,21 +412,21 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
         </div>
 
         {/* Content */}
-        <div className="p-6 flex-1 space-y-5">
+        <div className="p-5 flex-1 overflow-y-auto space-y-4">
           {completedSale ? (
             <div className="text-center py-6 space-y-4">
               <div className="w-16 h-16 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center mx-auto shadow-inner">
                 <CheckCircle className="w-10 h-10" />
               </div>
               <h3 className="text-xl font-bold text-slate-800">
-                Transaction Successful!
+                Transaction réussie !
               </h3>
               <p className="text-sm font-semibold text-slate-500">
-                Receipt Number: <span className="text-slate-900 font-mono">{completedSale.receipt_number}</span>
+                N° Reçu : <span className="text-slate-900 font-mono">{completedSale.receipt_number}</span>
               </p>
               {changeDue > 0 && (
                 <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-3 inline-block">
-                  <span className="text-xs font-semibold text-emerald-800 uppercase block">Change Given</span>
+                  <span className="text-xs font-semibold text-emerald-800 uppercase block">Monnaie rendue</span>
                   <span className="text-2xl font-black text-emerald-700">{formatMoney(changeDue)}</span>
                 </div>
               )}
@@ -446,12 +446,12 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
                   disabled={isPrintingDirect}
                   className={`flex items-center justify-center gap-2 font-bold py-2.5 px-4 rounded-xl shadow transition-colors ${
                     printSuccessMessage
-                      ? 'bg-emerald-600 hover:bg-emerald-700 text-white'
+                      ? 'bg-emerald-700 hover:bg-emerald-800 text-white'
                       : 'bg-slate-800 hover:bg-slate-900 text-white'
                   }`}
                 >
                   <Printer className={`w-4 h-4 ${isPrintingDirect ? 'animate-spin' : ''}`} />
-                  {isPrintingDirect ? 'Impression...' : printSuccessMessage ? 'Imprimé !' : 'Print 58mm Receipt'}
+                  {isPrintingDirect ? 'Impression...' : printSuccessMessage ? 'Imprimé !' : 'Imprimer ticket 58mm'}
                 </button>
                 <button
                   type="button"
@@ -465,7 +465,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
                   <button
                     type="button"
                     onClick={() => onPrintDeliveryNote(completedSale.sale_id)}
-                    className="flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2.5 px-4 rounded-xl shadow transition-colors"
+                    className="flex items-center justify-center gap-2 bg-emerald-700 hover:bg-emerald-800 text-white font-bold py-2.5 px-4 rounded-xl shadow transition-colors"
                   >
                     <Truck className="w-4 h-4" />
                     Bon de Livraison (BL)
@@ -492,7 +492,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
                   }}
                   className="text-slate-600 hover:text-slate-900 font-semibold text-sm underline focus:ring-2 focus:ring-emerald-500 rounded px-2 py-1"
                 >
-                  Start Next Sale (Entrée)
+                  Nouvelle vente (Entrée)
                 </button>
               </div>
             </div>
@@ -502,15 +502,15 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
               <div className="bg-slate-50 border border-slate-200 rounded-xl p-4 flex items-center justify-between">
                 <div>
                   <span className="text-xs font-semibold text-slate-500 uppercase tracking-wide">
-                    Total Due (TTC)
+                    Total à payer (TTC)
                   </span>
-                  <div className="text-3xl font-black text-slate-900 tracking-tight">
+                  <div className="text-4xl font-black text-slate-900 tracking-tight font-mono">
                     {formatMoney(totalTTC)}
                   </div>
                 </div>
                 <div className="text-right text-xs text-slate-500">
-                  <div>Subtotal HT: {formatMoney(totals.subtotalHT)}</div>
-                  <div>TVA (19%): {formatMoney(totals.tvaAmount)}</div>
+                  <div>Total HT : {formatMoney(totals.subtotalHT)}</div>
+                  <div>TVA (19%) : {formatMoney(totals.tvaAmount)}</div>
                 </div>
               </div>
 
@@ -563,7 +563,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
 
               {/* Quick Cash Buttons */}
               <div>
-                <label className="text-xs font-semibold text-slate-600 mb-1.5 block">
+                <label className="text-pos-caption font-bold text-slate-700 mb-1.5 block">
                   Quick Cash Tender
                 </label>
                 <div className="grid grid-cols-4 gap-2">
@@ -575,7 +575,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
                       setCashPaid(remaining.toFixed(3));
                       setCreditAmount('0.000');
                     }}
-                    className="py-2 px-2 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 rounded-lg text-xs font-bold border border-emerald-200 transition-colors shadow-xs"
+                    className="py-2.5 px-2 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 rounded-lg text-sm font-bold border border-emerald-200 transition-colors shadow-xs min-h-[44px]"
                   >
                     Exact {(parseFloat(walletPaid) || 0) > 0 ? `(${formatMoney(Math.max(0, roundMoney(totalTTC - (parseFloat(walletPaid) || 0))))})` : ''}
                   </button>
@@ -584,7 +584,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
                       key={amount}
                       type="button"
                       onClick={() => handleQuickCash(amount)}
-                      className="py-2 px-2 bg-slate-100 hover:bg-slate-200 text-slate-800 rounded-lg text-xs font-bold border border-slate-200 transition-colors"
+                      className="py-2.5 px-2 bg-slate-100 hover:bg-slate-200 text-slate-800 rounded-lg text-sm font-bold border border-slate-200 transition-colors min-h-[44px]"
                     >
                       {amount} DT
                     </button>
@@ -599,7 +599,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
                   <div className="flex items-center justify-between mb-1">
                     <span className="text-xs font-bold text-slate-700 flex items-center gap-1.5">
                       <Banknote className="w-4 h-4 text-emerald-600" />
-                      Cash Tendered (DT) — Entrée pour valider
+                      Espèces reçues (DT) — Entrée pour valider
                     </span>
                     {customer && ((parseFloat(walletPaid) || 0) > 0 || (parseFloat(creditAmount) || 0) > 0) && (
                       <button
@@ -612,7 +612,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
                         }}
                         className="text-[11px] font-bold text-emerald-700 bg-emerald-100 hover:bg-emerald-200 px-2 py-0.5 rounded transition-colors"
                       >
-                        Pay Remaining ({formatMoney(Math.max(0, roundMoney(totalTTC - (parseFloat(walletPaid) || 0))))})
+                        Payer le reste ({formatMoney(Math.max(0, roundMoney(totalTTC - (parseFloat(walletPaid) || 0))))})
                       </button>
                     )}
                   </div>
@@ -628,7 +628,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
                       setHighChangeConfirmed(false);
                       if (scannerError) setScannerError(null);
                     }}
-                    className="w-full text-lg font-bold font-mono px-3 py-2 border border-slate-300 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:outline-none"
+                    className="w-full text-pos-input font-bold font-mono px-3.5 py-2.5 border border-slate-300 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:outline-none"
                     placeholder="0.000"
                   />
                 </div>
@@ -639,7 +639,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
                     <div className="flex items-center justify-between mb-1">
                       <span className="text-xs font-bold text-purple-900 flex items-center gap-1.5">
                         <Wallet className="w-4 h-4 text-purple-600" />
-                        Wallet Payment (Balance: {formatMoney(customer.wallet_balance)})
+                        Paiement par solde (Solde : {formatMoney(customer.wallet_balance)})
                       </span>
                       {customer.wallet_balance > 0 && (
                         <button
@@ -647,7 +647,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
                           onClick={handleApplyMaxWallet}
                           className="text-[11px] font-bold text-purple-700 bg-purple-100 hover:bg-purple-200 px-2 py-0.5 rounded transition-colors"
                         >
-                          Use Max
+                          Max
                         </button>
                       )}
                     </div>
@@ -672,7 +672,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
                     <div className="flex items-center justify-between mb-1">
                       <span className="text-xs font-bold text-amber-900 flex items-center gap-1.5">
                         <CreditCard className="w-4 h-4 text-amber-600" />
-                        Open Credit Ticket (DT)
+                        Crédit client (DT)
                       </span>
                       <button
                         type="button"
@@ -680,8 +680,8 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
                         className="text-[11px] font-bold text-amber-700 bg-amber-100 hover:bg-amber-200 px-2 py-0.5 rounded transition-colors"
                       >
                         {(parseFloat(walletPaid) || 0) > 0
-                          ? `Charge Remaining (${formatMoney(Math.max(0, roundMoney(totalTTC - (parseFloat(walletPaid) || 0))))})`
-                          : 'Charge All'}
+                          ? `Reporter reste (${formatMoney(Math.max(0, roundMoney(totalTTC - (parseFloat(walletPaid) || 0))))})`
+                          : 'Tout à crédit'}
                       </button>
                     </div>
                     <input
@@ -701,7 +701,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
               {/* Change Due Display */}
               <div className="flex items-center justify-between bg-emerald-50/80 border border-emerald-200 rounded-xl px-4 py-3">
                 <span className="text-sm font-bold text-emerald-900">
-                  Change Due to Customer:
+                  Monnaie à rendre :
                 </span>
                 <span className="text-2xl font-black text-emerald-700 font-mono">
                   {formatMoney(changeDue)}
@@ -710,7 +710,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
 
               {/* High Change Due Confirmation */}
               {changeDue > 500 && (
-                <div className="bg-amber-50 border border-amber-300 rounded-xl p-3 text-xs text-amber-900 flex items-center justify-between gap-2">
+                <div className="bg-amber-50 border border-amber-300 rounded-xl p-3 text-pos-caption text-amber-900 flex items-center justify-between gap-2">
                   <div className="flex items-center gap-2">
                     <AlertCircle className="w-5 h-5 text-amber-600 shrink-0" />
                     <span>
@@ -736,32 +736,34 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
                   <span>{validationError}</span>
                 </div>
               )}
-
-              {/* Action Buttons */}
-              <div className="pt-2 flex gap-3">
-                <button
-                  type="button"
-                  onClick={onClose}
-                  className="flex-1 py-3 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl transition-colors"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="button"
-                  disabled={Boolean(validationError) || isSubmitting || (activeSession !== undefined && (!activeSession || activeSession.status !== 'OPEN'))}
-                  onClick={handleSubmit}
-                  className="flex-[2] py-3 bg-emerald-600 hover:bg-emerald-700 disabled:bg-slate-300 disabled:text-slate-500 text-white font-extrabold rounded-xl shadow-lg transition-all"
-                >
-                  {isSubmitting
-                    ? 'Processing...'
-                    : activeSession !== undefined && (!activeSession || activeSession.status !== 'OPEN')
-                    ? 'Caisse fermée'
-                    : 'Complete Sale & Pop Drawer'}
-                </button>
-              </div>
             </>
           )}
         </div>
+
+        {/* Sticky Footer for Active Checkout */}
+        {!completedSale && (
+          <div className="sticky bottom-0 z-10 bg-white border-t border-slate-200 p-4 flex gap-3 shrink-0">
+            <button
+              type="button"
+              onClick={onClose}
+              className="flex-1 py-3 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl transition-colors"
+            >
+              Annuler
+            </button>
+            <button
+              type="button"
+              disabled={Boolean(validationError) || isSubmitting || (activeSession !== undefined && (!activeSession || activeSession.status !== 'OPEN'))}
+              onClick={handleSubmit}
+              className="flex-[2] py-3.5 min-h-[52px] bg-emerald-700 hover:bg-emerald-800 disabled:bg-slate-300 disabled:text-slate-500 text-white font-extrabold rounded-xl shadow-lg transition-all text-lg flex items-center justify-center gap-2"
+            >
+              {isSubmitting
+                ? 'Processing...'
+                : activeSession !== undefined && (!activeSession || activeSession.status !== 'OPEN')
+                ? 'Caisse fermée'
+                : 'Complete Sale & Pop Drawer'}
+            </button>
+          </div>
+        )}
       </div>
     </div>
   );

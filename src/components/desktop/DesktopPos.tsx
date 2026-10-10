@@ -655,36 +655,33 @@ export const DesktopPos: React.FC<DesktopPosProps> = ({
                 className="bg-white border border-slate-200 hover:border-emerald-500 hover:shadow-md p-2.5 rounded-xl cursor-pointer flex flex-col justify-between transition-all group"
               >
                 <div>
-                  <div className="flex items-start justify-between gap-1">
-                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-tight truncate">
-                      {group.category}
-                    </span>
+                  <div className="flex items-start justify-end gap-1 min-h-[20px]">
                     {group.products.length > 1 ? (
-                      <span className="text-[10px] font-extrabold bg-emerald-50 text-emerald-700 border border-emerald-200 px-1.5 py-0.2 rounded">
+                      <span className="text-pos-badge font-extrabold bg-emerald-50 text-emerald-800 border border-emerald-200 px-1.5 py-0.5 rounded">
                         {group.products.length} tailles
                       </span>
                     ) : (
                       group.products[0]?.size_label && (
-                        <span className="text-[10px] font-extrabold bg-slate-100 text-slate-700 px-1.5 py-0.2 rounded">
+                        <span className="text-pos-badge font-extrabold bg-slate-100 text-slate-700 px-1.5 py-0.5 rounded">
                           {group.products[0].size_label}
                         </span>
                       )
                     )}
                   </div>
-                  <h3 className="text-xs font-bold text-slate-900 line-clamp-2 mt-1 group-hover:text-emerald-700 transition-colors">
+                  <h3 className="text-sm font-bold text-slate-900 line-clamp-2 mt-1 group-hover:text-emerald-700 transition-colors">
                     {group.familyName}
                   </h3>
                 </div>
 
                 <div className="mt-3 pt-2 border-t border-slate-100 flex items-center justify-between">
                   <div>
-                    <span className="text-xs font-black text-emerald-700 font-mono">
+                    <span className="text-pos-price font-bold text-emerald-700 font-mono">
                       {group.products.length > 1 ? `dès ${formatMoney(group.minPrice)}` : formatMoney(group.minPrice)}
                     </span>
                   </div>
 
                   <span
-                    className={`text-[9px] font-bold px-1.5 py-0.5 rounded flex items-center gap-0.5 ${
+                    className={`text-pos-badge font-bold px-1.5 py-0.5 rounded flex items-center gap-0.5 ${
                       group.hasLowStock
                         ? 'bg-amber-100 text-amber-800'
                         : 'bg-slate-100 text-slate-600'
@@ -708,9 +705,9 @@ export const DesktopPos: React.FC<DesktopPosProps> = ({
       </div>
 
       {/* RIGHT COLUMN: Persistent Cart & Terminal (40% width) */}
-      <div className="w-5/12 flex flex-col bg-white overflow-hidden shadow-lg border-l border-slate-200">
+      <div className="w-5/12 flex flex-col min-h-0 bg-white overflow-hidden shadow-lg border-l border-slate-200">
         {/* Customer Header Bar */}
-        <div className="p-3 border-b border-slate-200 bg-slate-50/80 space-y-2">
+        <div className="p-3 border-b border-slate-200 bg-slate-50/80 space-y-2 shrink-0">
           <div className="flex items-center justify-between">
             <label className="text-xs font-bold text-slate-700 flex items-center gap-1.5">
               <User className="w-3.5 h-3.5 text-emerald-600" />
@@ -901,167 +898,175 @@ export const DesktopPos: React.FC<DesktopPosProps> = ({
         </div>
 
         {/* Cart Item Rows */}
-        <div className="flex-1 p-3 overflow-y-auto divide-y divide-slate-100">
+        <div className="flex-1 min-h-0 p-2.5 overflow-y-auto divide-y divide-slate-100">
           {cart.map(item => (
-            <div key={item.cart_item_id} className="cart-row py-2.5 space-y-1.5">
+            <div key={item.cart_item_id} className="cart-row py-1.5 space-y-1">
               <div className="flex items-center justify-between gap-2">
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-1.5 flex-wrap">
-                    <h4 className="text-xs font-bold text-slate-900 truncate">
-                      {item.name}
-                    </h4>
-                    {(() => {
-                      if (!item.product_id) return null;
-                      const prod = products.find(p => p.id === item.product_id);
-                      if (!prod) return null;
-                      const totalUnitsOrdered = item.quantity * (item.pack_multiplier || 1);
-                      if (prod.stock_quantity <= 0) {
-                        return (
-                          <span className="text-[9px] font-bold text-rose-700 bg-rose-50 border border-rose-200 px-1.5 py-0.2 rounded shrink-0" title="Rupture de stock en magasin">
-                            Rupture (0 dispo)
-                          </span>
-                        );
-                      }
-                      if (totalUnitsOrdered > prod.stock_quantity) {
-                        return (
-                          <span className="text-[9px] font-bold text-amber-700 bg-amber-50 border border-amber-200 px-1.5 py-0.2 rounded shrink-0" title="Quantité supérieure au stock disponible">
-                            Dispo: {prod.stock_quantity}
-                          </span>
-                        );
-                      }
-                      return null;
-                    })()}
-                  </div>
-                  <div className="text-[10px] text-slate-500 flex items-center gap-1.5 mt-0.5">
-                    <span className="text-slate-400 font-medium text-[9px]">P.U:</span>
+                <div className="flex-1 min-w-0 flex items-center gap-1.5">
+                  <h4 className="text-pos-name font-bold text-slate-900 truncate" title={item.name}>
+                    {item.name}
+                  </h4>
+                  {item.size_label && (
+                    <span className="text-pos-badge font-bold bg-slate-100 text-slate-700 px-1.5 py-0.5 rounded shrink-0">
+                      {item.size_label}
+                    </span>
+                  )}
+                  {(() => {
+                    if (!item.product_id) return null;
+                    const prod = products.find(p => p.id === item.product_id);
+                    if (!prod) return null;
+                    const totalUnitsOrdered = item.quantity * (item.pack_multiplier || 1);
+                    if (prod.stock_quantity <= 0) {
+                      return (
+                        <span className="text-pos-badge font-bold text-rose-700 bg-rose-50 border border-rose-200 px-1.5 py-0.5 rounded shrink-0" title="Rupture de stock en magasin">
+                          Rupture (0 dispo)
+                        </span>
+                      );
+                    }
+                    if (totalUnitsOrdered > prod.stock_quantity) {
+                      return (
+                        <span className="text-pos-badge font-bold text-amber-700 bg-amber-50 border border-amber-200 px-1.5 py-0.5 rounded shrink-0" title="Quantité supérieure au stock disponible">
+                          Dispo: {prod.stock_quantity}
+                        </span>
+                      );
+                    }
+                    return null;
+                  })()}
+                </div>
+
+                <div className="flex items-center gap-2 shrink-0">
+                  {/* Quantity Stepper */}
+                  <div className="flex items-center border border-slate-300 rounded-lg overflow-hidden bg-slate-50">
+                    <button
+                      type="button"
+                      onClick={() => handleUpdateQuantity(item.cart_item_id, Math.max(0, item.quantity - 1))}
+                      className="min-w-[36px] min-h-[36px] flex items-center justify-center hover:bg-slate-200 text-slate-700 font-bold text-sm"
+                    >
+                      -
+                    </button>
                     <BufferedNumberInput
                       step="0.001"
-                      min={0}
-                      value={item.unit_price}
-                      onCommit={val => handleUpdateUnitPrice(item.cart_item_id, val)}
-                      className="w-16 px-1 py-0.2 text-[10px] font-mono font-bold text-emerald-700 bg-white border border-slate-200 rounded focus:border-emerald-500 focus:outline-none"
-                      title="Modifier le prix unitaire"
+                      min={0.001}
+                      disallowZero={true}
+                      value={item.quantity}
+                      onCommit={val => handleUpdateQuantity(item.cart_item_id, val)}
+                      title="Modifier la quantité"
+                      className="w-16 qty-input text-center text-pos-qty font-bold font-mono bg-white border-x border-slate-300 py-1 focus:outline-none"
                     />
-                    <span className="text-[9px] text-slate-400 font-mono">DT</span>
-                    <span
-                      className={`text-[9px] font-semibold px-1 py-0.2 rounded border ${
-                        item.price_overridden
-                          ? 'bg-amber-100 text-amber-800 border-amber-200'
-                          : selectedCustomer?.type === 'RESELLER'
-                          ? 'bg-purple-100 text-purple-800 border-purple-200'
-                          : selectedCustomer?.type === 'WHOLESALE'
-                          ? 'bg-blue-100 text-blue-800 border-blue-200'
-                          : 'bg-slate-100 text-slate-700 border-slate-200'
-                      }`}
-                      title={`Tarification : ${getPriceSourceLabel(item, selectedCustomer)}`}
+                    <button
+                      type="button"
+                      onClick={() => handleUpdateQuantity(item.cart_item_id, item.quantity + 1)}
+                      className="min-w-[36px] min-h-[36px] flex items-center justify-center hover:bg-slate-200 text-slate-700 font-bold text-sm"
                     >
-                      {getPriceSourceLabel(item, selectedCustomer)}
-                    </span>
-                    {item.size_label && (
-                      <span className="bg-slate-100 px-1 rounded font-semibold">{item.size_label}</span>
-                    )}
-                    {(() => {
-                      const prod = products.find(p => p.id === item.product_id);
-                      if (!prod?.pack_sizes || prod.pack_sizes.length === 0) {
-                        return item.pack_multiplier > 1 ? (
-                          <span className="text-blue-600 font-semibold">{item.pack_label || `x${item.pack_multiplier} pcs`}</span>
-                        ) : null;
-                      }
-                      return (
-                        <select
-                          value={item.selected_pack_size_id || 'base'}
-                          onChange={e => {
-                            const selectedId = e.target.value;
-                            if (selectedId === 'base') {
-                              const unitPrice = getProductPackPrice(prod, selectedCustomer, null, 1);
-                              setCart(prev => prev.map(i => i.cart_item_id === item.cart_item_id ? {
-                                ...i,
-                                pack_multiplier: 1,
-                                selected_pack_size_id: undefined,
-                                pack_label: undefined,
-                                unit_price: unitPrice
-                              } : i));
-                            } else {
-                              const ps = prod.pack_sizes?.find(s => s.id === selectedId);
-                              if (ps) {
-                                const unitPrice = getProductPackPrice(prod, selectedCustomer, ps, ps.multiplier);
-                                setCart(prev => prev.map(i => i.cart_item_id === item.cart_item_id ? {
-                                  ...i,
-                                  pack_multiplier: ps.multiplier,
-                                  selected_pack_size_id: ps.id,
-                                  pack_label: ps.pack_label,
-                                  unit_price: unitPrice
-                                } : i));
-                              }
-                            }
-                          }}
-                          className="text-[9px] font-bold text-blue-700 bg-blue-50 border border-blue-200 rounded px-1 py-0.2 outline-none cursor-pointer"
-                        >
-                          <option value="base">Unité (1 pc)</option>
-                          {prod.pack_sizes.map(ps => (
-                            <option key={ps.id} value={ps.id}>
-                              {ps.pack_label || `Pack x${ps.multiplier}`}
-                            </option>
-                          ))}
-                        </select>
-                      );
-                    })()}
+                      +
+                    </button>
                   </div>
-                </div>
 
-                {/* Quantity Stepper */}
-                <div className="flex items-center border border-slate-300 rounded-lg overflow-hidden bg-slate-50">
-                  <button
-                    onClick={() => handleUpdateQuantity(item.cart_item_id, Math.max(0, item.quantity - 1))}
-                    className="px-2 py-0.5 hover:bg-slate-200 text-slate-700 font-bold text-xs"
-                  >
-                    -
-                  </button>
-                  <BufferedNumberInput
-                    step="0.001"
-                    min={0.001}
-                    disallowZero={true}
-                    value={item.quantity}
-                    onCommit={val => handleUpdateQuantity(item.cart_item_id, val)}
-                    className="w-12 text-center text-xs font-bold font-mono bg-white border-x border-slate-300 py-0.5 focus:outline-none"
-                  />
-                  <button
-                    onClick={() => handleUpdateQuantity(item.cart_item_id, item.quantity + 1)}
-                    className="px-2 py-0.5 hover:bg-slate-200 text-slate-700 font-bold text-xs"
-                  >
-                    +
-                  </button>
-                </div>
-
-                {/* Total Line & Remove */}
-                <div className="text-right flex items-center gap-2">
-                  <div className="flex flex-col items-end">
-                    {(item.discount_amount || 0) > 0 && (
-                      <span className="text-[10px] line-through text-slate-400 font-mono">
-                        {formatMoney(item.unit_price * item.quantity)}
+                  {/* Total Line & Remove */}
+                  <div className="text-right flex items-center gap-1.5">
+                    <div className="flex flex-col items-end min-w-[65px]">
+                      {(item.discount_amount || 0) > 0 && (
+                        <span className="text-pos-badge line-through text-slate-400 font-mono">
+                          {formatMoney(item.unit_price * item.quantity)}
+                        </span>
+                      )}
+                      <span className="text-pos-price font-black text-slate-900 font-mono">
+                        {formatMoney(Math.max(0, (item.unit_price * item.quantity) - (item.discount_amount || 0)))}
                       </span>
-                    )}
-                    <span className="text-xs font-black text-slate-900 font-mono">
-                      {formatMoney(Math.max(0, (item.unit_price * item.quantity) - (item.discount_amount || 0)))}
-                    </span>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => handleRemoveItem(item.cart_item_id)}
+                      className="text-slate-400 hover:text-rose-600 min-w-[36px] min-h-[36px] flex items-center justify-center p-1 rounded-lg hover:bg-rose-50 transition-colors"
+                      title="Supprimer la ligne"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
                   </div>
-                  <button
-                    onClick={() => handleRemoveItem(item.cart_item_id)}
-                    className="text-slate-300 hover:text-rose-600 p-1 transition-colors"
-                  >
-                    <Trash2 className="w-3.5 h-3.5" />
-                  </button>
                 </div>
               </div>
 
-              {/* Per-line controls: Container Loan Toggle & Discount */}
-              <div className="flex items-center justify-between gap-2 pt-0.5">
-                <div className="flex items-center gap-2">
+              {/* Row Line 2: P.U input, Price Source, Pack Selector, Container Loan & Remise buttons */}
+              <div className="flex items-center justify-between gap-2 flex-wrap">
+                <div className="flex items-center gap-1.5 flex-wrap">
+                  <span className="text-pos-badge font-semibold text-slate-500">P.U:</span>
+                  <BufferedNumberInput
+                    step="0.001"
+                    min={0}
+                    value={item.unit_price}
+                    onCommit={val => handleUpdateUnitPrice(item.cart_item_id, val)}
+                    className="w-24 px-1.5 py-0.5 text-pos-price font-mono font-bold text-emerald-700 bg-white border border-slate-200 rounded focus:border-emerald-500 focus:outline-none"
+                    title="Modifier le prix unitaire"
+                  />
+                  <span className="text-pos-badge font-mono text-slate-400">DT</span>
+                  <span
+                    className={`text-pos-badge font-bold px-1.5 py-0.5 rounded border ${
+                      item.price_overridden
+                        ? 'bg-amber-100 text-amber-800 border-amber-200'
+                        : selectedCustomer?.type === 'RESELLER'
+                        ? 'bg-purple-100 text-purple-800 border-purple-200'
+                        : selectedCustomer?.type === 'WHOLESALE'
+                        ? 'bg-blue-100 text-blue-800 border-blue-200'
+                        : 'bg-slate-100 text-slate-700 border-slate-200'
+                    }`}
+                    title={`Tarification : ${getPriceSourceLabel(item, selectedCustomer)}`}
+                  >
+                    {getPriceSourceLabel(item, selectedCustomer)}
+                  </span>
+                  {(() => {
+                    const prod = products.find(p => p.id === item.product_id);
+                    if (!prod?.pack_sizes || prod.pack_sizes.length === 0) {
+                      return item.pack_multiplier > 1 ? (
+                        <span className="text-pos-badge text-blue-600 font-bold">{item.pack_label || `x${item.pack_multiplier} pcs`}</span>
+                      ) : null;
+                    }
+                    return (
+                      <select
+                        value={item.selected_pack_size_id || 'base'}
+                        onChange={e => {
+                          const selectedId = e.target.value;
+                          if (selectedId === 'base') {
+                            const unitPrice = getProductPackPrice(prod, selectedCustomer, null, 1);
+                            setCart(prev => prev.map(i => i.cart_item_id === item.cart_item_id ? {
+                              ...i,
+                              pack_multiplier: 1,
+                              selected_pack_size_id: undefined,
+                              pack_label: undefined,
+                              unit_price: unitPrice
+                            } : i));
+                          } else {
+                            const ps = prod.pack_sizes?.find(s => s.id === selectedId);
+                            if (ps) {
+                              const unitPrice = getProductPackPrice(prod, selectedCustomer, ps, ps.multiplier);
+                              setCart(prev => prev.map(i => i.cart_item_id === item.cart_item_id ? {
+                                ...i,
+                                pack_multiplier: ps.multiplier,
+                                selected_pack_size_id: ps.id,
+                                pack_label: ps.pack_label,
+                                unit_price: unitPrice
+                              } : i));
+                            }
+                          }
+                        }}
+                        className="text-pos-badge font-bold text-blue-700 bg-blue-50 border border-blue-200 rounded px-1.5 py-0.5 outline-none cursor-pointer"
+                      >
+                        <option value="base">Unité (1 pc)</option>
+                        {prod.pack_sizes.map(ps => (
+                          <option key={ps.id} value={ps.id}>
+                            {ps.pack_label || `Pack x${ps.multiplier}`}
+                          </option>
+                        ))}
+                      </select>
+                    );
+                  })()}
+                </div>
+
+                <div className="flex items-center gap-1.5">
                   {item.container_type_id && (
                     <button
                       type="button"
                       onClick={() => handleToggleContainerLoan(item.cart_item_id)}
-                      className={`text-[10px] font-bold px-2 py-0.5 rounded-full flex items-center gap-1 transition-colors border ${
+                      className={`text-pos-badge font-bold px-2 py-0.5 rounded-full flex items-center gap-1 transition-colors border ${
                         item.loan_container
                           ? 'bg-amber-100 text-amber-900 border-amber-300 shadow-xs'
                           : 'bg-slate-100 text-slate-600 border-slate-200 hover:bg-slate-200'
@@ -1080,10 +1085,10 @@ export const DesktopPos: React.FC<DesktopPosProps> = ({
                   <button
                     type="button"
                     onClick={() => setEditingDiscountItemId(editingDiscountItemId === item.cart_item_id ? null : item.cart_item_id)}
-                    className={`text-[10px] font-bold px-1.5 py-0.5 rounded flex items-center gap-0.5 transition-colors ${
+                    className={`text-pos-badge font-bold px-1.5 py-0.5 rounded flex items-center gap-0.5 transition-colors border ${
                       (item.discount_amount || 0) > 0
-                        ? 'bg-rose-100 text-rose-700 font-mono'
-                        : 'text-slate-500 hover:text-slate-700 bg-slate-100 hover:bg-slate-200 border border-slate-200'
+                        ? 'bg-rose-100 text-rose-700 border-rose-200 font-mono'
+                        : 'text-slate-600 hover:text-slate-800 bg-slate-100 hover:bg-slate-200 border border-slate-200'
                     }`}
                     title="Remise par article"
                   >
@@ -1096,7 +1101,7 @@ export const DesktopPos: React.FC<DesktopPosProps> = ({
               {/* Line Discount Input dropdown */}
               {editingDiscountItemId === item.cart_item_id && (
                 <div className="mt-1 flex items-center gap-2 bg-slate-50 p-1.5 rounded-lg border border-slate-200">
-                  <span className="text-[10px] font-bold text-slate-600">Remise ligne (DT):</span>
+                  <span className="text-pos-badge font-bold text-slate-600">Remise ligne (DT):</span>
                   <input
                     type="number"
                     step="0.1"
@@ -1109,7 +1114,7 @@ export const DesktopPos: React.FC<DesktopPosProps> = ({
                   <button
                     type="button"
                     onClick={() => setEditingDiscountItemId(null)}
-                    className="text-[10px] font-bold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 px-2 py-0.5 rounded"
+                    className="text-pos-badge font-bold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 px-2 py-0.5 rounded"
                   >
                     OK
                   </button>
@@ -1128,9 +1133,9 @@ export const DesktopPos: React.FC<DesktopPosProps> = ({
         </div>
 
         {/* Totals & Checkout Box */}
-        <div className="p-4 border-t border-slate-200 bg-slate-50 space-y-3">
+        <div className="p-3 border-t border-slate-200 bg-slate-50 space-y-2 shrink-0">
           {/* Sale Discount Input */}
-          <div className="flex items-center justify-between pb-2 border-b border-slate-200">
+          <div className="flex items-center justify-between pb-1.5 border-b border-slate-200">
             <span className="text-xs font-semibold text-slate-600 flex items-center gap-1">
               <Tag className="w-3.5 h-3.5 text-emerald-600" />
               Remise globale (DT):
@@ -1147,7 +1152,7 @@ export const DesktopPos: React.FC<DesktopPosProps> = ({
           </div>
 
           {/* Subtotals & Taxes */}
-          <div className="space-y-1 text-xs text-slate-600">
+          <div className="space-y-0.5 text-xs text-slate-600">
             <div className="flex justify-between">
               <span>Articles ({totals.itemCount} items / {totals.totalPieces} pcs):</span>
               <span className="font-mono">{formatMoney(totals.subtotalHT)} HT</span>
@@ -1162,9 +1167,9 @@ export const DesktopPos: React.FC<DesktopPosProps> = ({
                 <span className="font-mono">-{formatMoney(totals.totalDiscount)}</span>
               </div>
             )}
-            <div className="flex justify-between text-base font-black text-slate-900 pt-1 border-t border-slate-200">
-              <span>TOTAL TTC:</span>
-              <span className="font-mono text-xl text-emerald-700">
+            <div className="flex justify-between items-baseline pt-1 border-t border-slate-200">
+              <span className="text-sm font-bold text-slate-900">TOTAL TTC:</span>
+              <span className="cart-grand-total font-mono text-pos-total text-emerald-700">
                 {formatMoney(totals.totalTTC)}
               </span>
             </div>
@@ -1172,7 +1177,7 @@ export const DesktopPos: React.FC<DesktopPosProps> = ({
 
           {/* Closed Register Notice */}
           {!activeSession && (
-            <div className="mb-2.5 p-2.5 bg-amber-50 border border-amber-300 rounded-xl flex items-center justify-between gap-2 text-xs">
+            <div className="mb-2 p-2 bg-amber-50 border border-amber-300 rounded-xl flex items-center justify-between gap-2 text-xs">
               <div className="flex items-center gap-1.5 text-amber-900 font-semibold">
                 <AlertCircle className="w-4 h-4 text-amber-600 shrink-0" />
                 <span>Caisse fermée — Session requise</span>
@@ -1197,12 +1202,12 @@ export const DesktopPos: React.FC<DesktopPosProps> = ({
               }
               setIsCheckoutOpen(true);
             }}
-            className={`w-full py-3 text-white font-black rounded-xl shadow-lg transition-all text-sm flex items-center justify-center gap-2 ${
+            className={`w-full py-3.5 min-h-[52px] text-white font-black rounded-xl shadow-lg transition-all text-lg flex items-center justify-center gap-2 ${
               cart.length === 0
                 ? 'bg-slate-300 text-slate-500 cursor-not-allowed'
                 : !activeSession
                 ? 'bg-amber-600 hover:bg-amber-700'
-                : 'bg-emerald-600 hover:bg-emerald-700'
+                : 'bg-emerald-700 hover:bg-emerald-800'
             }`}
           >
             <span>{!activeSession ? 'Ouvrir la caisse pour encaisser' : 'Tender & Split Payment'}</span>

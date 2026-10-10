@@ -785,33 +785,30 @@ export const MobileRegister: React.FC<MobileRegisterProps> = ({
                 className="bg-white p-3 rounded-xl border border-slate-200 flex flex-col justify-between shadow-sm active:bg-slate-50 transition-colors cursor-pointer"
               >
                 <div>
-                  <div className="flex items-center justify-between gap-1 mb-1">
-                    <span className="text-[10px] font-bold text-slate-400 uppercase truncate">
-                      {group.category}
-                    </span>
+                  <div className="flex items-center justify-end gap-1 mb-1 min-h-[20px]">
                     {group.products.length > 1 ? (
-                      <span className="text-[10px] font-extrabold bg-emerald-50 text-emerald-700 px-1.5 py-0.2 rounded border border-emerald-200">
+                      <span className="text-pos-badge font-extrabold bg-emerald-50 text-emerald-800 px-1.5 py-0.5 rounded border border-emerald-200">
                         {group.products.length} tailles
                       </span>
                     ) : (
                       group.products[0]?.size_label && (
-                        <span className="text-[10px] font-bold bg-slate-100 text-slate-600 px-1.5 py-0.2 rounded">
+                        <span className="text-pos-badge font-bold bg-slate-100 text-slate-700 px-1.5 py-0.5 rounded">
                           {group.products[0].size_label}
                         </span>
                       )
                     )}
                   </div>
-                  <h3 className="text-xs font-bold text-slate-900 line-clamp-2">
+                  <h3 className="text-sm font-bold text-slate-900 line-clamp-2">
                     {group.familyName}
                   </h3>
                 </div>
 
                 <div className="mt-2.5 pt-2 border-t border-slate-100 flex items-center justify-between">
-                  <span className="text-xs font-black text-emerald-700 font-mono">
+                  <span className="text-pos-price font-bold text-emerald-700 font-mono">
                     {group.products.length > 1 ? `dès ${formatMoney(group.minPrice)}` : formatMoney(group.minPrice)}
                   </span>
                   <span
-                    className={`text-[9px] font-bold px-1.5 py-0.5 rounded flex items-center gap-0.5 ${
+                    className={`text-pos-badge font-bold px-1.5 py-0.5 rounded flex items-center gap-0.5 ${
                       group.hasLowStock
                         ? 'bg-amber-100 text-amber-800'
                         : 'bg-slate-100 text-slate-600'
@@ -1555,7 +1552,7 @@ export const MobileRegister: React.FC<MobileRegisterProps> = ({
                 className={`w-full py-3.5 text-white font-black rounded-xl text-sm shadow-lg transition-colors ${
                   !activeSession
                     ? 'bg-amber-600 hover:bg-amber-700'
-                    : 'bg-emerald-600 hover:bg-emerald-700'
+                    : 'bg-emerald-700 hover:bg-emerald-800'
                 }`}
               >
                 {!activeSession ? 'Ouvrir la caisse pour encaisser' : 'Tender Payment'}
