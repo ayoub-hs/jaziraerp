@@ -382,6 +382,13 @@ CREATE TABLE IF NOT EXISTS refund_items (
     amount_refunded REAL NOT NULL
 );
 
+CREATE TABLE IF NOT EXISTS delivery_notes (
+    id TEXT PRIMARY KEY,
+    sale_id TEXT NOT NULL UNIQUE REFERENCES sales(id) ON DELETE CASCADE,
+    number TEXT NOT NULL UNIQUE,
+    created_at TEXT NOT NULL
+);
+
 -- 11. Inventory Adjustments
 CREATE TABLE IF NOT EXISTS inventory_adjustments (
     id TEXT PRIMARY KEY,
@@ -428,6 +435,7 @@ CREATE INDEX IF NOT EXISTS idx_general_expenses_date ON general_expenses(date);
 CREATE INDEX IF NOT EXISTS idx_customer_payments_date ON customer_payments(date);
 CREATE INDEX IF NOT EXISTS idx_supplier_payments_date ON supplier_payments(date);
 CREATE INDEX IF NOT EXISTS idx_refunds_date ON refunds(date);
+CREATE INDEX IF NOT EXISTS idx_delivery_notes_sale_id ON delivery_notes(sale_id);
 
 -- 13. Unified Sync Idempotency Table
 CREATE TABLE IF NOT EXISTS sync_processed (

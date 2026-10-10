@@ -66,6 +66,13 @@ export function getDb(customPath?: string): DatabaseType {
         action_type TEXT NOT NULL,
         processed_at TEXT NOT NULL
       );
+      CREATE TABLE IF NOT EXISTS delivery_notes (
+        id TEXT PRIMARY KEY,
+        sale_id TEXT NOT NULL UNIQUE REFERENCES sales(id) ON DELETE CASCADE,
+        number TEXT NOT NULL UNIQUE,
+        created_at TEXT NOT NULL
+      );
+      CREATE INDEX IF NOT EXISTS idx_delivery_notes_sale_id ON delivery_notes(sale_id);
     `);
     // One open session per counter, enforced at the DB level so concurrent
     // POST /api/register/open calls cannot both succeed (check-then-insert race).

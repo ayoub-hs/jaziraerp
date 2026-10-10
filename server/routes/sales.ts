@@ -28,6 +28,16 @@ function generateTicketNumber(db: any): string {
   return `${prefix}${seq}`;
 }
 
+export function generateDeliveryNoteNumber(db: any): string {
+  const dateStr = businessDateKey();
+  const prefix = `BL-${dateStr}-`;
+  const countRow: any = db.prepare(`
+    SELECT COUNT(*) as cnt FROM delivery_notes WHERE number LIKE ?
+  `).get(`${prefix}%`);
+  const seq = ((countRow?.cnt || 0) + 1).toString().padStart(4, '0');
+  return `${prefix}${seq}`;
+}
+
 // GET /api/sales - list sales
 salesRouter.get('/', (req: Request, res: Response) => {
   const db = getDb();
@@ -201,12 +211,86 @@ salesRouter.get('/:id', (req: Request, res: Response) => {
     SELECT * FROM customer_debt_tickets WHERE sale_id = ? ORDER BY date DESC LIMIT 1
   `).get(sale.id);
 
+  const deliveryNote = db.prepare(`
+    SELECT * FROM delivery_notes WHERE sale_id = ?
+  `).get(sale.id);
+
   res.json({
     ...sale,
     debt_ticket: debtTicket ?? null,
+    delivery_note: deliveryNote ?? null,
     items: mappedItems,
     receipt: receiptFormat
   });
+});
+
+// POST /api/sales/:id/delivery-note - generate or retrieve persistent delivery note
+salesRouter.post('/:id/delivery-note', (req: Request, res: Response) => {
+  const db = getDb();
+  const sale: any = db.prepare('SELECT * FROM sales WHERE id = ?').get(req.params.id);
+  if (!sale) {
+    res.status(404).json({ error: 'Sale not found' });
+    return;
+  }
+
+  const existing = db.prepare('SELECT * FROM delivery_notes WHERE sale_id = ?').get(sale.id);
+  if (existing) {
+    res.status(200).json(existing);
+    return;
+  }
+
+  const now = new Date().toISOString();
+  const noteId = `bl-${crypto.randomUUID()}`;
+  let noteNumber = generateDeliveryNoteNumber(db);
+  let noteCommitted = false;
+  let noteRow: any = null;
+
+  for (let attempt = 0; attempt < 3 && !noteCommitted; attempt++) {
+    try {
+      db.prepare(`
+        INSERT INTO delivery_notes (id, sale_id, number, created_at)
+        VALUES (?, ?, ?, ?)
+      `).run(noteId, sale.id, noteNumber, now);
+      noteRow = {
+        id: noteId,
+        sale_id: sale.id,
+        number: noteNumber,
+        created_at: now
+      };
+      noteCommitted = true;
+    } catch (err: any) {
+      const checkAgain = db.prepare('SELECT * FROM delivery_notes WHERE sale_id = ?').get(sale.id);
+      if (checkAgain) {
+        res.status(200).json(checkAgain);
+        return;
+      }
+      if (isUniqueViolation(err) && attempt < 2) {
+        noteNumber = generateDeliveryNoteNumber(db);
+        continue;
+      }
+      throw err;
+    }
+  }
+
+  res.status(201).json(noteRow);
+});
+
+// GET /api/sales/:id/delivery-note - fetch delivery note for a sale
+salesRouter.get('/:id/delivery-note', (req: Request, res: Response) => {
+  const db = getDb();
+  const sale: any = db.prepare('SELECT * FROM sales WHERE id = ?').get(req.params.id);
+  if (!sale) {
+    res.status(404).json({ error: 'Sale not found' });
+    return;
+  }
+
+  const note = db.prepare('SELECT * FROM delivery_notes WHERE sale_id = ?').get(sale.id);
+  if (!note) {
+    res.status(404).json({ error: 'Delivery note not found' });
+    return;
+  }
+
+  res.json(note);
 });
 
 export function computeExpectedCatalogPrice(

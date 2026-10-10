@@ -217,4 +217,12 @@ export interface SaleSummary {
     discount_amount?: number;
     refunded_quantity?: number;
   }>;
+  delivery_note?: DeliveryNote | null;
+}
+
+export interface DeliveryNote {
+  id: string;
+  sale_id: string;
+  number: string;
+  created_at: string;
 }

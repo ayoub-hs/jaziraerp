@@ -79,6 +79,7 @@ interface BackofficeProps {
   activeSession?: RegisterSession | null;
   onPrintReceipt?: (saleId: string) => void;
   onPrintInvoice?: (saleId: string) => void;
+  onPrintDeliveryNote?: (saleId: string) => void;
 }
 
 type BackofficeTab = 
@@ -103,7 +104,8 @@ export const Backoffice: React.FC<BackofficeProps> = ({
   onRefreshData,
   activeSession,
   onPrintReceipt,
-  onPrintInvoice
+  onPrintInvoice,
+  onPrintDeliveryNote
 }) => {
   const [activeTab, setActiveTab] = useState<BackofficeTab>('CATALOG');
 
@@ -958,6 +960,7 @@ export const Backoffice: React.FC<BackofficeProps> = ({
           <SalesHistoryTab
             onPrintReceipt={onPrintReceipt || (() => {})}
             onPrintInvoice={onPrintInvoice || (() => {})}
+            onPrintDeliveryNote={onPrintDeliveryNote}
           />
         )}
 

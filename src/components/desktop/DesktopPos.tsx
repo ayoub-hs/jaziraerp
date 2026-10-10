@@ -56,6 +56,7 @@ interface DesktopPosProps {
   onProcessSale: (saleData: any) => Promise<{ sale_id: string; receipt_number: string } | null>;
   onPrintReceipt: (saleId: string) => void;
   onPrintInvoice: (saleId: string) => void;
+  onPrintDeliveryNote?: (saleId: string) => void;
 }
 
 export const DesktopPos: React.FC<DesktopPosProps> = ({
@@ -69,7 +70,8 @@ export const DesktopPos: React.FC<DesktopPosProps> = ({
   onPopDrawer,
   onProcessSale,
   onPrintReceipt,
-  onPrintInvoice
+  onPrintInvoice,
+  onPrintDeliveryNote
 }) => {
   // Cart state
   const [cart, setCart] = useState<CartItem[]>([]);
@@ -1136,6 +1138,7 @@ export const DesktopPos: React.FC<DesktopPosProps> = ({
         }}
         onPrintReceipt={onPrintReceipt}
         onPrintInvoice={onPrintInvoice}
+        onPrintDeliveryNote={onPrintDeliveryNote}
       />
 
       <RefundModal

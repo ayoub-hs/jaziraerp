@@ -42,3 +42,12 @@ existing WebBluetooth ESC/POS path works unchanged (verified with MPT-II).
   1. Run `npm run build` (this automatically computes a new build ID from git + timestamp, injects `VITE_BUILD_ID` into the client bundle, and records `dist/build-id.txt`).
   2. Restart the server (`npm start` or systemd service) so `/api/version` serves the new build ID.
   3. Rebuild and reinstall the Android APK **only if native code changed** (the APK bundles the web UI, so an older installed APK will see the non-blocking update banner pointing to the new server build until updated).
+
+## Delivery Notes (Bons de Livraison)
+
+- **1:1 Mapping**: Each Delivery Note (BL) is permanently mapped 1:1 to a completed sale (`delivery_notes.sale_id` UNIQUE).
+- **Numbering**: Sequential daily format `BL-YYYYMMDD-XXXX`.
+- **Price Modes**: Supports both "Avec prix (TTC)" and "Sans prix (Quantités seules)" toggle when printing.
+- **Dual Signatures**: Standard carrier ("Transporteur / Livreur") and client ("Client / Réceptionnaire") acceptance blocks.
+- **Scope & Boundaries**: Devis (quotes) and partial deliveries are deliberately out of scope for v1; each BL is generated for a finalized sale.
+

@@ -16,6 +16,7 @@ import { SessionModal } from './components/shared/SessionModal.js';
 import { CashMovementModal } from './components/shared/CashMovementModal.js';
 import { ReceiptPrintModal } from './components/shared/ReceiptPrintModal.js';
 import { InvoicePrintModal } from './components/shared/InvoicePrintModal.js';
+import { DeliveryNotePrintModal } from './components/shared/DeliveryNotePrintModal.js';
 import { LockScreenModal } from './components/shared/LockScreenModal.js';
 import { webUsbPrinter } from './services/hardware/webusb.js';
 import { webBluetoothPrinter } from './services/hardware/webbluetooth.js';
@@ -48,6 +49,7 @@ export default function App() {
   const [isCashMovementOpen, setIsCashMovementOpen] = useState(false);
   const [printReceiptSaleId, setPrintReceiptSaleId] = useState<string | null>(null);
   const [printInvoiceSaleId, setPrintInvoiceSaleId] = useState<string | null>(null);
+  const [printDeliveryNoteSaleId, setPrintDeliveryNoteSaleId] = useState<string | null>(null);
   const [isLocked, setIsLocked] = useState<boolean>(authService.isLocked());
   const [pwaUpdateReload, setPwaUpdateReload] = useState<(() => void) | null>(null);
   // Native mobile only: no same-origin server until the cashier saves its URL.
@@ -206,8 +208,12 @@ export default function App() {
       setPrintInvoiceSaleId(null);
       return true;
     }
+    if (printDeliveryNoteSaleId) {
+      setPrintDeliveryNoteSaleId(null);
+      return true;
+    }
     return false;
-  }, isSessionModalOpen || isCashMovementOpen || Boolean(printReceiptSaleId) || Boolean(printInvoiceSaleId));
+  }, isSessionModalOpen || isCashMovementOpen || Boolean(printReceiptSaleId) || Boolean(printInvoiceSaleId) || Boolean(printDeliveryNoteSaleId));
 
   const triggerDrawerIfCash = (cashPaid: number, sourceView = currentView) => {
     if (cashPaid > 0) {
@@ -374,6 +380,7 @@ export default function App() {
             onProcessSale={handleProcessSale}
             onPrintReceipt={saleId => setPrintReceiptSaleId(saleId)}
             onPrintInvoice={saleId => setPrintInvoiceSaleId(saleId)}
+            onPrintDeliveryNote={saleId => setPrintDeliveryNoteSaleId(saleId)}
           />
         )}
 
@@ -392,6 +399,7 @@ export default function App() {
             onProcessSale={handleProcessSale}
             onPrintReceipt={saleId => setPrintReceiptSaleId(saleId)}
             onPrintInvoice={saleId => setPrintInvoiceSaleId(saleId)}
+            onPrintDeliveryNote={saleId => setPrintDeliveryNoteSaleId(saleId)}
           />
         )}
 
@@ -405,6 +413,7 @@ export default function App() {
             onRefreshData={loadAllData}
             onPrintReceipt={saleId => setPrintReceiptSaleId(saleId)}
             onPrintInvoice={saleId => setPrintInvoiceSaleId(saleId)}
+            onPrintDeliveryNote={saleId => setPrintDeliveryNoteSaleId(saleId)}
           />
         )}
       </div>
@@ -440,6 +449,13 @@ export default function App() {
         isOpen={Boolean(printInvoiceSaleId)}
         onClose={() => setPrintInvoiceSaleId(null)}
         saleId={printInvoiceSaleId}
+      />
+
+      {/* Delivery Note Print Modal (Bon de Livraison) */}
+      <DeliveryNotePrintModal
+        isOpen={Boolean(printDeliveryNoteSaleId)}
+        onClose={() => setPrintDeliveryNoteSaleId(null)}
+        saleId={printDeliveryNoteSaleId}
       />
 
       {/* Lock Screen & PIN Unlock Modal */}

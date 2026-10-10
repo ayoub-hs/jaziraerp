@@ -10,7 +10,8 @@ import {
   Banknote, 
   AlertCircle,
   Package,
-  Tag
+  Tag,
+  Truck
 } from 'lucide-react';
 import type { Customer, CartItem, RegisterSession } from '../../types/index.js';
 import { calculateCartTotals, validateSplitPayment, buildPaymentPayload, calculateContainersNeeded } from '../../utils/cart.js';
@@ -38,6 +39,7 @@ interface CheckoutModalProps {
   }) => Promise<{ sale_id: string; receipt_number: string } | null>;
   onPrintReceipt: (saleId: string) => void;
   onPrintInvoice: (saleId: string) => void;
+  onPrintDeliveryNote?: (saleId: string) => void;
   onSaleDone?: () => void;
 }
 
@@ -52,7 +54,8 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
   onOpenSessionModal,
   onCompleteSale,
   onPrintReceipt,
-  onPrintInvoice
+  onPrintInvoice,
+  onPrintDeliveryNote
 }) => {
   useModalScanPause(isOpen);
 
@@ -458,6 +461,16 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
                   <FileText className="w-4 h-4" />
                   Print A4 Invoice
                 </button>
+                {onPrintDeliveryNote && (
+                  <button
+                    type="button"
+                    onClick={() => onPrintDeliveryNote(completedSale.sale_id)}
+                    className="flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2.5 px-4 rounded-xl shadow transition-colors"
+                  >
+                    <Truck className="w-4 h-4" />
+                    Bon de Livraison (BL)
+                  </button>
+                )}
               </div>
 
               <div className="flex justify-center gap-4 text-xs pt-1">

@@ -55,6 +55,7 @@ interface MobileRegisterProps {
   onProcessSale: (saleData: any) => Promise<{ sale_id: string; receipt_number: string } | null>;
   onPrintReceipt: (saleId: string) => void;
   onPrintInvoice: (saleId: string) => void;
+  onPrintDeliveryNote?: (saleId: string) => void;
 }
 
 export const MobileRegister: React.FC<MobileRegisterProps> = ({
@@ -67,7 +68,8 @@ export const MobileRegister: React.FC<MobileRegisterProps> = ({
   onRefreshData,
   onProcessSale,
   onPrintReceipt,
-  onPrintInvoice
+  onPrintInvoice,
+  onPrintDeliveryNote
 }) => {
   const [activeTab, setActiveTab] = useState<'REGISTER' | 'LOOKUP' | 'QUICK_EDIT' | 'CUSTOMERS'>('REGISTER');
 
@@ -1586,6 +1588,7 @@ export const MobileRegister: React.FC<MobileRegisterProps> = ({
         }}
         onPrintReceipt={onPrintReceipt}
         onPrintInvoice={onPrintInvoice}
+        onPrintDeliveryNote={onPrintDeliveryNote}
       />
 
       {/* Family Sizes Selection Modal */}

@@ -10,7 +10,8 @@ import {
   Calendar,
   Filter,
   RefreshCw,
-  Plus
+  Plus,
+  Truck
 } from 'lucide-react';
 import { formatMoney, formatDateTime } from '../../utils/formatters.js';
 import { RefundModal } from '../shared/RefundModal.js';
@@ -18,11 +19,13 @@ import { RefundModal } from '../shared/RefundModal.js';
 interface SalesHistoryTabProps {
   onPrintReceipt: (saleId: string) => void;
   onPrintInvoice: (saleId: string) => void;
+  onPrintDeliveryNote?: (saleId: string) => void;
 }
 
 export const SalesHistoryTab: React.FC<SalesHistoryTabProps> = ({
   onPrintReceipt,
-  onPrintInvoice
+  onPrintInvoice,
+  onPrintDeliveryNote
 }) => {
   const [sales, setSales] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
@@ -293,6 +296,16 @@ export const SalesHistoryTab: React.FC<SalesHistoryTabProps> = ({
                         >
                           <FileText className="w-3.5 h-3.5" />
                         </button>
+                        {onPrintDeliveryNote && (
+                          <button
+                            type="button"
+                            onClick={() => onPrintDeliveryNote(s.id)}
+                            title="Bon de Livraison (BL)"
+                            className="p-1.5 text-slate-500 hover:text-emerald-700 hover:bg-emerald-50 rounded-lg transition-colors"
+                          >
+                            <Truck className="w-3.5 h-3.5" />
+                          </button>
+                        )}
                         <button
                           type="button"
                           onClick={() => setRefundModalSaleId(s.id)}
@@ -509,6 +522,18 @@ export const SalesHistoryTab: React.FC<SalesHistoryTabProps> = ({
                   <FileText className="w-3.5 h-3.5" />
                   <span>Facture A4</span>
                 </button>
+                {onPrintDeliveryNote && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (saleDetail) onPrintDeliveryNote(saleDetail.id);
+                    }}
+                    className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl text-xs flex items-center gap-1.5 shadow-sm"
+                  >
+                    <Truck className="w-3.5 h-3.5" />
+                    <span>Bon de Livraison</span>
+                  </button>
+                )}
               </div>
 
               <div className="flex items-center gap-2">
