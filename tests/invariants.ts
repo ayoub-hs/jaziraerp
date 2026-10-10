@@ -114,6 +114,11 @@ export async function runHarness(seed: number, numSteps: number = 200): Promise<
   const customers = [null, 'cust-ret', 'cust-ws', 'cust-res1', 'cust-res2'];
   const products = ['prod-1', 'prod-2', 'prod-3'];
   const packSizes = [null, 'pack-1', 'pack-3'];
+  const initialProductStocks: Record<string, number> = {
+    'prod-1': 500,
+    'prod-2': 300,
+    'prod-3': 200
+  };
 
   // Invariant Assertion Checkers
   async function assertInvariants(step: number, opName: string) {
@@ -326,11 +331,91 @@ export async function runHarness(seed: number, numSteps: number = 200): Promise<
         seed
       });
     }
+
+    // I11: For every sale_item, quantity_refunded <= quantity and stock moved by exactly quantity_refunded * pack_multiplier
+    const allSaleItems: any[] = db.prepare(`
+      SELECT si.id, si.sale_id, si.product_id, si.quantity, si.quantity_refunded, si.pack_multiplier
+      FROM sale_items si
+    `).all();
+
+    for (const si of allSaleItems) {
+      if (si.quantity_refunded > si.quantity + 0.0001) {
+        failures.push({
+          invariant: 'I11_OVER_REFUNDED',
+          step,
+          operation: opName,
+          details: `Sale item ${si.id} (sale ${si.sale_id}) quantity_refunded=${si.quantity_refunded} exceeds quantity=${si.quantity}`,
+          seed
+        });
+      }
+
+      if (si.quantity_refunded < -0.0001) {
+        failures.push({
+          invariant: 'I11_NEGATIVE_REFUNDED',
+          step,
+          operation: opName,
+          details: `Sale item ${si.id} quantity_refunded is negative: ${si.quantity_refunded}`,
+          seed
+        });
+      }
+
+      const sumRefundItemsRow: any = db.prepare(`
+        SELECT COALESCE(SUM(quantity_refunded), 0) as sum_qty
+        FROM refund_items
+        WHERE sale_item_id = ?
+      `).get(si.id);
+      const sumRefundItemsQty = round3(sumRefundItemsRow?.sum_qty || 0);
+
+      if (Math.abs(si.quantity_refunded - sumRefundItemsQty) > 0.001) {
+        failures.push({
+          invariant: 'I11_REFUND_ITEMS_MISMATCH',
+          step,
+          operation: opName,
+          details: `Sale item ${si.id} quantity_refunded=${si.quantity_refunded} != sum(refund_items)=${sumRefundItemsQty}`,
+          seed
+        });
+      }
+    }
+
+    // Verify stock moved by exactly quantity_refunded * pack_multiplier for all products
+    for (const prodId of products) {
+      const initialStock = initialProductStocks[prodId];
+      const prodRow: any = db.prepare('SELECT stock_quantity FROM products WHERE id = ?').get(prodId);
+      const currentStock = prodRow?.stock_quantity ?? 0;
+
+      const soldRow: any = db.prepare(`
+        SELECT COALESCE(SUM(quantity * COALESCE(pack_multiplier, 1)), 0) as sold_stock,
+               COALESCE(SUM(quantity_refunded * COALESCE(pack_multiplier, 1)), 0) as refunded_stock
+        FROM sale_items
+        WHERE product_id = ?
+      `).get(prodId);
+
+      const soldStock = soldRow?.sold_stock || 0;
+      const refundedStock = soldRow?.refunded_stock || 0;
+
+      const adjRow: any = db.prepare(`
+        SELECT COALESCE(SUM(quantity_delta), 0) as adj_stock
+        FROM inventory_adjustments
+        WHERE product_id = ?
+      `).get(prodId);
+      const adjStock = adjRow?.adj_stock || 0;
+
+      const expectedStock = initialStock - soldStock + refundedStock + adjStock;
+      if (Math.abs(currentStock - expectedStock) > 0.001) {
+        failures.push({
+          invariant: 'I11_STOCK_MOVED',
+          step,
+          operation: opName,
+          details: `Product ${prodId} stock_quantity=${currentStock} != expected (${initialStock} - ${soldStock} sold + ${refundedStock} refunded + ${adjStock} adj = ${expectedStock})`,
+          seed
+        });
+      }
+    }
   }
 
   // Operation execution loop
   for (let step = 1; step <= numSteps; step++) {
-    const opChoice = rng.nextInt(1, 9);
+    const opChoice = rng.nextInt(1, 10);
     let opName = '';
 
     try {
@@ -631,6 +716,101 @@ export async function runHarness(seed: number, numSteps: number = 200): Promise<
               details: `Sync action ${actionType} was replayed but state duplicated! snapAfter1=${JSON.stringify(snapAfter1)}, snapAfter2=${JSON.stringify(snapAfter2)}`,
               seed
             });
+          }
+        }
+      } else if (opChoice === 10) {
+        // --- HOSTILE REFUND OPERATIONS ---
+        opName = 'HOSTILE_REFUND';
+        const sales: any[] = db.prepare('SELECT id, customer_id FROM sales').all();
+        if (sales.length > 0) {
+          const targetSale = rng.pick(sales);
+          const saleItems: any[] = db.prepare('SELECT id, product_id, quantity, quantity_refunded, pack_multiplier FROM sale_items WHERE sale_id = ?').all(targetSale.id);
+
+          if (saleItems.length > 0) {
+            const saleItem = rng.pick(saleItems);
+            const openSession: any = db.prepare("SELECT id FROM register_sessions WHERE status = 'OPEN' ORDER BY opened_at DESC LIMIT 1").get();
+            const hostileType = rng.pick(['DUPLICATE_LINES', 'OVER_QUANTITY', 'REPLAYED_REFUND', 'MALFORMED_NUMBERS']);
+
+            let payloadItems: any[] = [];
+            if (hostileType === 'DUPLICATE_LINES') {
+              payloadItems = [
+                { sale_item_id: saleItem.id, quantity: 1 },
+                { sale_item_id: saleItem.id, quantity: 1 }
+              ];
+            } else if (hostileType === 'OVER_QUANTITY') {
+              const available = Math.max(0, saleItem.quantity - saleItem.quantity_refunded);
+              payloadItems = [
+                { sale_item_id: saleItem.id, quantity: available + rng.nextInt(1, 5) }
+              ];
+            } else if (hostileType === 'REPLAYED_REFUND') {
+              const available = saleItem.quantity - saleItem.quantity_refunded;
+              if (available > 0 && openSession) {
+                const firstRes = await request(app).post(`/api/sales/${targetSale.id}/refund`).send({
+                  session_id: openSession.id,
+                  items: [{ sale_item_id: saleItem.id, quantity: available }],
+                  reason: 'Prep line full refund for replay test'
+                });
+                if (firstRes.status !== 200 && firstRes.status !== 201) {
+                  continue;
+                }
+              }
+              payloadItems = [
+                { sale_item_id: saleItem.id, quantity: 1 }
+              ];
+            } else if (hostileType === 'MALFORMED_NUMBERS') {
+              const badVal = rng.pick([-1, 0, 'abc', 'NaN', 1.5]);
+              payloadItems = [
+                { sale_item_id: saleItem.id, quantity: badVal }
+              ];
+            }
+
+            // Snapshot state before hostile call
+            const snapBefore = {
+              refundCount: (db.prepare('SELECT COUNT(*) as c FROM refunds').get() as any).c,
+              refundItemsCount: (db.prepare('SELECT COUNT(*) as c FROM refund_items').get() as any).c,
+              itemRefundedQty: (db.prepare('SELECT quantity_refunded FROM sale_items WHERE id = ?').get(saleItem.id) as any).quantity_refunded,
+              stockQty: saleItem.product_id ? (db.prepare('SELECT stock_quantity FROM products WHERE id = ?').get(saleItem.product_id) as any).stock_quantity : null,
+              sesCash: openSession ? (db.prepare('SELECT expected_cash FROM register_sessions WHERE id = ?').get(openSession.id) as any).expected_cash : null
+            };
+
+            const hostileRes = await request(app).post(`/api/sales/${targetSale.id}/refund`).send({
+              session_id: openSession ? openSession.id : null,
+              items: payloadItems,
+              reason: `Hostile invariant test: ${hostileType}`
+            });
+
+            if (hostileRes.status !== 400) {
+              failures.push({
+                invariant: 'HOSTILE_NOT_REJECTED',
+                step,
+                operation: `HOSTILE_${hostileType}`,
+                details: `Hostile operation ${hostileType} expected status 400 but got ${hostileRes.status}: ${JSON.stringify(hostileRes.body)}`,
+                seed
+              });
+            }
+
+            // Snapshot state after hostile call - must remain identical
+            const snapAfter = {
+              refundCount: (db.prepare('SELECT COUNT(*) as c FROM refunds').get() as any).c,
+              refundItemsCount: (db.prepare('SELECT COUNT(*) as c FROM refund_items').get() as any).c,
+              itemRefundedQty: (db.prepare('SELECT quantity_refunded FROM sale_items WHERE id = ?').get(saleItem.id) as any).quantity_refunded,
+              stockQty: saleItem.product_id ? (db.prepare('SELECT stock_quantity FROM products WHERE id = ?').get(saleItem.product_id) as any).stock_quantity : null,
+              sesCash: openSession ? (db.prepare('SELECT expected_cash FROM register_sessions WHERE id = ?').get(openSession.id) as any).expected_cash : null
+            };
+
+            if (snapAfter.refundCount !== snapBefore.refundCount ||
+                snapAfter.refundItemsCount !== snapBefore.refundItemsCount ||
+                snapAfter.itemRefundedQty !== snapBefore.itemRefundedQty ||
+                snapAfter.stockQty !== snapBefore.stockQty ||
+                snapAfter.sesCash !== snapBefore.sesCash) {
+              failures.push({
+                invariant: 'HOSTILE_MUTATED_STATE',
+                step,
+                operation: `HOSTILE_${hostileType}`,
+                details: `Hostile operation ${hostileType} mutated database state despite failure!`,
+                seed
+              });
+            }
           }
         }
       }
