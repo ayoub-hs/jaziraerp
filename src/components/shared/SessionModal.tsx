@@ -1,11 +1,12 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { X, Lock, Unlock, AlertTriangle, CheckCircle, Printer } from 'lucide-react';
+import { X, Lock, Unlock, AlertTriangle, AlertCircle, CheckCircle, Printer } from 'lucide-react';
 import type { RegisterSession } from '../../types/index.js';
 import { formatMoney, roundMoney } from '../../utils/formatters.js';
 import { useBackButton } from '../../utils/backButton.js';
 import { useModalScanPause } from '../../hooks/useModalScanPause.js';
 import { printZReportThermal } from '../../services/hardware/zReportPrinter.js';
 import type { ZReportSessionData } from '../../services/hardware/escpos.js';
+import { heldCartsService } from '../../services/heldCartsService.js';
 
 interface SessionModalProps {
   isOpen: boolean;
@@ -507,6 +508,17 @@ export const SessionModal: React.FC<SessionModalProps> = ({
           </form>
         ) : (
           <form onSubmit={handleCloseSubmit} className="p-5 space-y-4">
+            {heldCartsService.getHeldCartCount() > 0 && (
+              <div className="bg-amber-50 border border-amber-300 rounded-xl p-3 flex items-start gap-2.5 text-amber-900 text-xs shadow-xs">
+                <AlertCircle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
+                <div>
+                  <span className="font-bold">Attention : {heldCartsService.getHeldCartCount()} panier(s) en attente non finalisé(s)</span>
+                  <p className="text-[11px] text-amber-800 mt-0.5">
+                    Il reste des paniers en attente. Veuillez les reprendre ou les supprimer avant de clôturer la caisse.
+                  </p>
+                </div>
+              </div>
+            )}
             {openSessions.length > 1 && (
               <div>
                 <label className="block text-xs font-bold text-slate-700 mb-1">

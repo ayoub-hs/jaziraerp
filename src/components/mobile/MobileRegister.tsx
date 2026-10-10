@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { 
   ShoppingCart, 
   Search, 
@@ -20,7 +20,9 @@ import {
   Tag,
   AlertCircle,
   RotateCcw,
-  UserPlus
+  UserPlus,
+  Clock,
+  PauseCircle
 } from 'lucide-react';
 import type { 
   Product, 
@@ -40,6 +42,8 @@ import { QuickAddModal } from '../shared/QuickAddModal.js';
 import { CameraScannerModal } from '../shared/CameraScannerModal.js';
 import { RefundModal } from '../shared/RefundModal.js';
 import { CreateCustomerModal } from '../backoffice/CreateCustomerModal.js';
+import { HeldCartsModal } from '../shared/HeldCartsModal.js';
+import { heldCartsService, type HeldCart, type PriceDiscrepancy } from '../../services/heldCartsService.js';
 import { scannerService } from '../../services/hardware/scanner.js';
 import { BufferedNumberInput } from '../shared/BufferedNumberInput.js';
 import { useBackButton } from '../../utils/backButton.js';
@@ -82,6 +86,42 @@ export const MobileRegister: React.FC<MobileRegisterProps> = ({
   const [isCheckoutOpen, setIsCheckoutOpen] = useState(false);
   const [isRefundOpen, setIsRefundOpen] = useState(false);
   const [isCreateCustomerOpen, setIsCreateCustomerOpen] = useState(false);
+  const [isHeldCartsModalOpen, setIsHeldCartsModalOpen] = useState(false);
+  const [heldCartCount, setHeldCartCount] = useState<number>(() => heldCartsService.getHeldCartCount());
+  const [priceWarning, setPriceWarning] = useState<string | null>(null);
+
+  useEffect(() => {
+    const handleHeldChanged = () => setHeldCartCount(heldCartsService.getHeldCartCount());
+    window.addEventListener('held-carts-changed', handleHeldChanged);
+    return () => window.removeEventListener('held-carts-changed', handleHeldChanged);
+  }, []);
+
+  const handleHoldCart = () => {
+    if (cart.length === 0) return;
+    try {
+      heldCartsService.holdCart(cart, selectedCustomer, saleDiscount);
+      setCart([]);
+      setSelectedCustomer(null);
+      setSaleDiscount(0);
+      setIsCartDrawerOpen(false);
+      setPriceWarning(null);
+    } catch (err: any) {
+      alert(err.message || 'Erreur lors de la mise en attente');
+    }
+  };
+
+  const handleResumeCart = (resumed: HeldCart, discrepancies: PriceDiscrepancy[]) => {
+    setCart(resumed.items);
+    setSelectedCustomer(resumed.customer);
+    setSaleDiscount(resumed.saleDiscount);
+    if (discrepancies.length > 0) {
+      const itemsList = discrepancies.map(d => `${d.productName} (${formatMoney(d.oldPrice)} → ${formatMoney(d.newPrice)})`).join(', ');
+      setPriceWarning(`Attention : Le prix catalogue a changé pour : ${itemsList}`);
+    } else {
+      setPriceWarning(null);
+    }
+    setIsCartDrawerOpen(true);
+  };
   const [familyModalData, setFamilyModalData] = useState<{
     isOpen: boolean;
     familyName: string;
@@ -160,12 +200,16 @@ export const MobileRegister: React.FC<MobileRegisterProps> = ({
       setIsQuickAddOpen(false);
       return true;
     }
+    if (isHeldCartsModalOpen) {
+      setIsHeldCartsModalOpen(false);
+      return true;
+    }
     if (isCartDrawerOpen) {
       setIsCartDrawerOpen(false);
       return true;
     }
     return false;
-  }, isCameraOpen || isContainerModalOpen || familyModalData.isOpen || isRefundOpen || isCreateCustomerOpen || isQuickAddOpen || isCartDrawerOpen);
+  }, isCameraOpen || isContainerModalOpen || familyModalData.isOpen || isRefundOpen || isCreateCustomerOpen || isQuickAddOpen || isHeldCartsModalOpen || isCartDrawerOpen);
 
   // Global Keyboard Wedge Scanner Listener
   React.useEffect(() => {
@@ -826,6 +870,26 @@ export const MobileRegister: React.FC<MobileRegisterProps> = ({
               </div>
             </div>
           )}
+
+          {cart.length === 0 && heldCartCount > 0 && (
+            <div
+              onClick={() => setIsHeldCartsModalOpen(true)}
+              className="absolute bottom-16 inset-x-3 bg-amber-500 hover:bg-amber-600 text-slate-950 p-3.5 rounded-2xl shadow-xl flex items-center justify-between cursor-pointer active:scale-[0.99] transition-transform z-20 font-bold"
+            >
+              <div className="flex items-center gap-2.5">
+                <div className="w-8 h-8 rounded-xl bg-amber-900 text-white flex items-center justify-center font-bold text-xs">
+                  {heldCartCount}
+                </div>
+                <div>
+                  <span className="text-xs font-bold block">
+                    {heldCartCount} panier(s) en attente
+                  </span>
+                  <span className="text-[10px] text-amber-950/80">Appuyer pour reprendre un panier</span>
+                </div>
+              </div>
+              <Clock className="w-5 h-5 text-slate-950" />
+            </div>
+          )}
         </div>
       )}
 
@@ -1144,13 +1208,55 @@ export const MobileRegister: React.FC<MobileRegisterProps> = ({
                   {selectedCustomer ? selectedCustomer.name : 'Walk-in Retail'}
                 </p>
               </div>
-              <button
-                onClick={() => setIsCartDrawerOpen(false)}
-                className="text-slate-400 hover:text-white p-1 rounded-lg"
-              >
-                <X className="w-5 h-5" />
-              </button>
+              <div className="flex items-center gap-2">
+                {cart.length > 0 && (
+                  <button
+                    type="button"
+                    onClick={handleHoldCart}
+                    className="text-xs font-bold text-amber-200 bg-amber-900/60 hover:bg-amber-800/80 border border-amber-600/50 px-2 py-1 rounded-lg flex items-center gap-1 transition-colors"
+                    title="Mettre en attente"
+                  >
+                    <PauseCircle className="w-3.5 h-3.5 text-amber-400" />
+                    <span>Attente</span>
+                  </button>
+                )}
+                <button
+                  type="button"
+                  onClick={() => setIsHeldCartsModalOpen(true)}
+                  className={`text-xs font-bold px-2 py-1 rounded-lg flex items-center gap-1 transition-colors border ${
+                    heldCartCount > 0
+                      ? 'bg-amber-500 text-slate-950 border-amber-400 font-extrabold'
+                      : 'bg-slate-800 text-slate-400 border-slate-700 hover:text-white'
+                  }`}
+                  title="Paniers en attente"
+                >
+                  <Clock className="w-3.5 h-3.5" />
+                  <span>({heldCartCount})</span>
+                </button>
+                <button
+                  onClick={() => setIsCartDrawerOpen(false)}
+                  className="text-slate-400 hover:text-white p-1 rounded-lg"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
             </div>
+
+            {priceWarning && (
+              <div className="mx-4 mt-3 p-2.5 bg-amber-50 border border-amber-300 rounded-xl flex items-center justify-between gap-2 text-xs text-amber-900 font-semibold shadow-xs">
+                <div className="flex items-center gap-2 min-w-0">
+                  <AlertCircle className="w-4 h-4 text-amber-600 shrink-0" />
+                  <span className="truncate">{priceWarning}</span>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setPriceWarning(null)}
+                  className="p-1 hover:bg-amber-100 rounded text-amber-700"
+                >
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              </div>
+            )}
 
             {/* Cart Items List */}
             <div className="p-4 flex-1 overflow-y-auto divide-y divide-slate-100">
@@ -1631,6 +1737,18 @@ export const MobileRegister: React.FC<MobileRegisterProps> = ({
           setIsCreateCustomerOpen(false);
           onRefreshData();
         }}
+      />
+
+      {/* Held Carts Modal */}
+      <HeldCartsModal
+        isOpen={isHeldCartsModalOpen}
+        onClose={() => setIsHeldCartsModalOpen(false)}
+        products={products}
+        currentCartItems={cart}
+        currentCustomer={selectedCustomer}
+        currentSaleDiscount={saleDiscount}
+        onResumeCart={handleResumeCart}
+        onHoldCurrentCart={handleHoldCart}
       />
 
       {/* FIXED BOTTOM NAVIGATION BAR (4 TABS) */}

@@ -186,6 +186,7 @@ describe('Step 4: Android Hardware Back Button Handling', () => {
       'src/components/shared/ReceiptPrintModal.tsx',
       'src/components/shared/InvoicePrintModal.tsx',
       'src/components/shared/DeliveryNotePrintModal.tsx',
+      'src/components/shared/HeldCartsModal.tsx',
       'src/components/shared/AuthCredentialsModal.tsx',
       'src/components/backoffice/ContainerTransactionModal.tsx',
       'src/components/backoffice/CreateCustomerModal.tsx',

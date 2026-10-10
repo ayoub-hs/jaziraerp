@@ -19,7 +19,9 @@ import {
   Box,
   AlertCircle,
   CheckCircle2,
-  X
+  X,
+  Clock,
+  PauseCircle
 } from 'lucide-react';
 import type { 
   Product, 
@@ -39,6 +41,8 @@ import { CheckoutModal } from '../shared/CheckoutModal.js';
 import { RefundModal } from '../shared/RefundModal.js';
 import { CameraScannerModal } from '../shared/CameraScannerModal.js';
 import { ContainerTransactionModal } from '../backoffice/ContainerTransactionModal.js';
+import { HeldCartsModal } from '../shared/HeldCartsModal.js';
+import { heldCartsService, type HeldCart, type PriceDiscrepancy } from '../../services/heldCartsService.js';
 
 import { scannerService } from '../../services/hardware/scanner.js';
 import { BufferedNumberInput } from '../shared/BufferedNumberInput.js';
@@ -99,6 +103,40 @@ export const DesktopPos: React.FC<DesktopPosProps> = ({
 
   // Customer Search & Quick Create
   const [isCreateCustomerOpen, setIsCreateCustomerOpen] = useState(false);
+  const [isHeldCartsModalOpen, setIsHeldCartsModalOpen] = useState(false);
+  const [heldCartCount, setHeldCartCount] = useState<number>(() => heldCartsService.getHeldCartCount());
+  const [priceWarning, setPriceWarning] = useState<string | null>(null);
+
+  useEffect(() => {
+    const handleHeldChanged = () => setHeldCartCount(heldCartsService.getHeldCartCount());
+    window.addEventListener('held-carts-changed', handleHeldChanged);
+    return () => window.removeEventListener('held-carts-changed', handleHeldChanged);
+  }, []);
+
+  const handleHoldCart = () => {
+    if (cart.length === 0) return;
+    try {
+      heldCartsService.holdCart(cart, selectedCustomer, saleDiscount);
+      setCart([]);
+      setSelectedCustomer(null);
+      setSaleDiscount(0);
+      setPriceWarning(null);
+    } catch (err: any) {
+      alert(err.message || 'Erreur lors de la mise en attente');
+    }
+  };
+
+  const handleResumeCart = (resumed: HeldCart, discrepancies: PriceDiscrepancy[]) => {
+    setCart(resumed.items);
+    setSelectedCustomer(resumed.customer);
+    setSaleDiscount(resumed.saleDiscount);
+    if (discrepancies.length > 0) {
+      const itemsList = discrepancies.map(d => `${d.productName} (${formatMoney(d.oldPrice)} → ${formatMoney(d.newPrice)})`).join(', ');
+      setPriceWarning(`Attention : Le prix catalogue a changé pour : ${itemsList}`);
+    } else {
+      setPriceWarning(null);
+    }
+  };
   const [customerSearchTerm, setCustomerSearchTerm] = useState('');
   const [isCustomerDropdownOpen, setIsCustomerDropdownOpen] = useState(false);
   const customerDropdownRef = useRef<HTMLDivElement>(null);
@@ -645,6 +683,30 @@ export const DesktopPos: React.FC<DesktopPosProps> = ({
               </button>
               {cart.length > 0 && (
                 <button
+                  type="button"
+                  onClick={handleHoldCart}
+                  className="text-xs font-bold text-slate-700 hover:text-slate-900 bg-slate-100 hover:bg-slate-200 border border-slate-300 px-2 py-1 rounded-lg transition-colors flex items-center gap-1 shadow-xs"
+                  title="Mettre ce panier en attente pour servir un autre client"
+                >
+                  <PauseCircle className="w-3.5 h-3.5 text-amber-600" />
+                  <span>En attente</span>
+                </button>
+              )}
+              <button
+                type="button"
+                onClick={() => setIsHeldCartsModalOpen(true)}
+                className={`text-xs font-bold px-2 py-1 rounded-lg transition-colors flex items-center gap-1 border shadow-xs ${
+                  heldCartCount > 0
+                    ? 'bg-amber-100 text-amber-900 border-amber-300 hover:bg-amber-200'
+                    : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'
+                }`}
+                title="Afficher les paniers mis en attente"
+              >
+                <Clock className="w-3.5 h-3.5 text-amber-600" />
+                <span>Paniers ({heldCartCount})</span>
+              </button>
+              {cart.length > 0 && (
+                <button
                   onClick={handleClearCart}
                   className="text-[11px] font-semibold text-rose-600 hover:text-rose-800"
                 >
@@ -653,6 +715,22 @@ export const DesktopPos: React.FC<DesktopPosProps> = ({
               )}
             </div>
           </div>
+
+          {priceWarning && (
+            <div className="bg-amber-50 border border-amber-300 rounded-lg p-2.5 text-xs text-amber-900 font-semibold flex items-center justify-between gap-2 shadow-xs">
+              <div className="flex items-center gap-2 min-w-0">
+                <AlertCircle className="w-4 h-4 text-amber-600 shrink-0" />
+                <span className="truncate">{priceWarning}</span>
+              </div>
+              <button
+                type="button"
+                onClick={() => setPriceWarning(null)}
+                className="p-1 hover:bg-amber-100 rounded text-amber-700"
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
+            </div>
+          )}
 
           {selectedCustomer ? (
             <div className="bg-white border border-emerald-300 rounded-lg p-2.5 shadow-sm space-y-1.5">
@@ -1174,6 +1252,17 @@ export const DesktopPos: React.FC<DesktopPosProps> = ({
           setIsCreateCustomerOpen(false);
           onRefreshData();
         }}
+      />
+
+      <HeldCartsModal
+        isOpen={isHeldCartsModalOpen}
+        onClose={() => setIsHeldCartsModalOpen(false)}
+        products={products}
+        currentCartItems={cart}
+        currentCustomer={selectedCustomer}
+        currentSaleDiscount={saleDiscount}
+        onResumeCart={handleResumeCart}
+        onHoldCurrentCart={handleHoldCart}
       />
     </div>
   );
