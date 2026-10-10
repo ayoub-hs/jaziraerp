@@ -69,6 +69,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
   const [isPrintingDirect, setIsPrintingDirect] = useState(false);
   const [printSuccessMessage, setPrintSuccessMessage] = useState<string | null>(null);
   const [highChangeConfirmed, setHighChangeConfirmed] = useState<boolean>(false);
+  const [scannerError, setScannerError] = useState<string | null>(null);
 
   // Initialize tender when modal opens & auto-focus
   useEffect(() => {
@@ -77,6 +78,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
       setWalletPaid('0.000');
       setCreditAmount('0.000');
       setValidationError(null);
+      setScannerError(null);
       setChangeDue(0);
       setIsSubmitting(false);
       isSubmittingRef.current = false;
@@ -117,6 +119,12 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
   useEffect(() => {
     if (!isOpen || completedSale) return;
 
+    if (scannerError) {
+      setValidationError(scannerError);
+      setChangeDue(0);
+      return;
+    }
+
     const cash = parseFloat(cashPaid) || 0;
     const wallet = parseFloat(walletPaid) || 0;
     const credit = parseFloat(creditAmount) || 0;
@@ -132,7 +140,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
       setValidationError(null);
       setChangeDue(res.changeDue);
     }
-  }, [cashPaid, walletPaid, creditAmount, totalTTC, customer, isOpen, completedSale, highChangeConfirmed]);
+  }, [cashPaid, walletPaid, creditAmount, totalTTC, customer, isOpen, completedSale, highChangeConfirmed, scannerError]);
 
   // Dynamic banknote options for quick cash tender
   const currentWallet = parseFloat(walletPaid) || 0;
@@ -173,6 +181,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
           if (intPart.length > 7) {
             e.preventDefault();
             setCashPaid('');
+            setScannerError('Montant espèces invalide - code-barres scanné ?');
             setValidationError('Montant espèces invalide - code-barres scanné ?');
             return;
           }
@@ -240,6 +249,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
     const intPart = cashPaid.split('.')[0].replace(/^[-+]/, '').replace(/^0+/, '') || '0';
     if (intPart.length > 7) {
       setCashPaid('');
+      setScannerError('Montant espèces invalide - code-barres scanné ?');
       setValidationError('Montant espèces invalide - code-barres scanné ?');
       return;
     }
@@ -600,6 +610,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
                     onChange={e => {
                       setCashPaid(e.target.value);
                       setHighChangeConfirmed(false);
+                      if (scannerError) setScannerError(null);
                     }}
                     className="w-full text-lg font-bold font-mono px-3 py-2 border border-slate-300 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:outline-none"
                     placeholder="0.000"
