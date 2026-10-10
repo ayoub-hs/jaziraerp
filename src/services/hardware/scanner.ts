@@ -62,6 +62,10 @@ export class KeyboardWedgeScanner {
     }
 
     if (e.key === 'Enter') {
+      if (e.defaultPrevented) {
+        this.buffer = '';
+        return;
+      }
       if (this.buffer.length >= this.minBarcodeLength) {
         const barcode = this.buffer.trim();
         this.buffer = '';
