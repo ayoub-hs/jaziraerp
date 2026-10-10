@@ -197,8 +197,13 @@ salesRouter.get('/:id', (req: Request, res: Response) => {
     credit_amount: sale.credit_amount
   };
 
+  const debtTicket = db.prepare(`
+    SELECT * FROM customer_debt_tickets WHERE sale_id = ? ORDER BY date DESC LIMIT 1
+  `).get(sale.id);
+
   res.json({
     ...sale,
+    debt_ticket: debtTicket ?? null,
     items: mappedItems,
     receipt: receiptFormat
   });

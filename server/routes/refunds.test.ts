@@ -589,6 +589,79 @@ describe('Returns & Line-Item Partial Refunds Module — Real HTTP Integration T
       expect(ref2.status).toBe(400);
       expect(ref2.body.error).toBeDefined();
     });
+
+    it('returns debt_ticket in GET /api/sales/:id and enforces remaining debt cap with wallet split (REF-02)', async () => {
+      const db = getDb();
+
+      // 1. Create a credit sale of 20.000 DT (2 x 10.000 DT item)
+      const saleRes = await request(app)
+        .post('/api/sales')
+        .send({
+          customer_id: 'cust-refund-test',
+          items: [{ product_id: 'prod-bleach', quantity: 10, unit_price: 2.000 }],
+          credit_amount: 20.000
+        });
+
+      expect(saleRes.status).toBe(201);
+      const saleId = saleRes.body.id;
+      const itemId = saleRes.body.items[0].id;
+
+      // 2. GET /api/sales/:id should include the debt ticket
+      const getSaleRes = await request(app).get(`/api/sales/${saleId}`);
+      expect(getSaleRes.status).toBe(200);
+      expect(getSaleRes.body.debt_ticket).toBeDefined();
+      expect(getSaleRes.body.debt_ticket.total_amount).toBe(20.000);
+      expect(getSaleRes.body.debt_ticket.remaining_amount).toBe(20.000);
+
+      // 3. Customer pays 15.000 DT towards debt, leaving 5.000 DT remaining debt
+      const payRes = await request(app)
+        .post('/api/customers/cust-refund-test/payments')
+        .send({
+          amount: 15.000,
+          payment_method: 'CASH',
+          notes: 'Partial payment on debt ticket'
+        });
+      expect(payRes.status).toBe(200);
+
+      // Verify ticket now has remaining_amount = 5.000 DT
+      const getSaleRes2 = await request(app).get(`/api/sales/${saleId}`);
+      expect(getSaleRes2.body.debt_ticket).toBeDefined();
+      expect(getSaleRes2.body.debt_ticket.remaining_amount).toBe(5.000);
+
+      // 4. Customer returns 5 units (10.000 DT total refund).
+      // Attempting to reduce credit by 10.000 DT must fail with HTTP 400 (cannot reduce below 0)
+      const overCreditRef = await request(app)
+        .post(`/api/sales/${saleId}/refund`)
+        .send({
+          items: [{ sale_item_id: itemId, quantity: 5 }],
+          credit_reduced: 10.000
+        });
+      expect(overCreditRef.status).toBe(400);
+      expect(overCreditRef.body.error).toContain('exceeds remaining ticket balance');
+
+      // 5. Proper split: Cap credit_reduced at ticket remaining (5.000 DT), refund remaining 5.000 DT to WALLET
+      const splitRef = await request(app)
+        .post(`/api/sales/${saleId}/refund`)
+        .send({
+          items: [{ sale_item_id: itemId, quantity: 5 }],
+          credit_reduced: 5.000,
+          wallet_refunded: 5.000,
+          reason: 'Return with split to remaining debt and wallet'
+        });
+      expect(splitRef.status).toBe(201);
+      expect(splitRef.body.credit_reduced).toBe(5.000);
+      expect(splitRef.body.wallet_refunded).toBe(5.000);
+
+      // Debt ticket is now fully paid (remaining_amount = 0)
+      const ticketFinal: any = db.prepare('SELECT * FROM customer_debt_tickets WHERE sale_id = ?').get(saleId);
+      expect(ticketFinal.remaining_amount).toBe(0.000);
+      expect(ticketFinal.status).toBe('PAID');
+
+      // Customer wallet balance increased by 5.000 DT
+      const custFinal: any = db.prepare('SELECT wallet_balance FROM customers WHERE id = ?').get('cust-refund-test');
+      expect(custFinal.wallet_balance).toBe(5.000);
+    });
   });
 });
+
 

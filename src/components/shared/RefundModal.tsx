@@ -29,7 +29,7 @@ export const RefundModal: React.FC<RefundModalProps> = ({
   // Refund form state
   const [selectedItemId, setSelectedItemId] = useState<string>('');
   const [refundQuantity, setRefundQuantity] = useState<string>('1');
-  const [refundMethod, setRefundMethod] = useState<'CASH' | 'CREDIT_REDUCTION'>('CASH');
+  const [refundMethod, setRefundMethod] = useState<'CASH' | 'WALLET' | 'CREDIT_REDUCTION'>('CASH');
   const [reason, setReason] = useState<string>('Customer returned goods');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -123,9 +123,13 @@ export const RefundModal: React.FC<RefundModalProps> = ({
             setError('All items in this sale have already been fully refunded.');
           }
         }
-        // Auto default to CREDIT_REDUCTION if original sale was credit-heavy
-        if (fullSale.credit_amount > 0) {
+        // Auto default to CREDIT_REDUCTION if debt ticket has open balance
+        if (fullSale.debt_ticket && Number(fullSale.debt_ticket.remaining_amount) > 0) {
           setRefundMethod('CREDIT_REDUCTION');
+        } else if (fullSale.credit_amount > 0 && !fullSale.debt_ticket) {
+          setRefundMethod('CREDIT_REDUCTION');
+        } else if (fullSale.customer_id) {
+          setRefundMethod('WALLET');
         } else {
           setRefundMethod('CASH');
         }
@@ -298,6 +302,11 @@ export const RefundModal: React.FC<RefundModalProps> = ({
                   <div className="text-slate-500">
                     {selectedSale.customer_name || 'Walk-in'} • {formatDateTime(selectedSale.date)}
                   </div>
+                  {(selectedSale as any).debt_ticket && (
+                    <div className="text-[11px] font-semibold text-amber-800 mt-0.5">
+                      Dette liée : {formatMoney((selectedSale as any).debt_ticket.remaining_amount)} restants / {formatMoney((selectedSale as any).debt_ticket.total_amount)}
+                    </div>
+                  )}
                 </div>
                 <button
                   type="button"
@@ -390,8 +399,15 @@ export const RefundModal: React.FC<RefundModalProps> = ({
                     onChange={e => setRefundMethod(e.target.value as any)}
                     className="w-full text-sm font-semibold px-3 py-2 border border-slate-300 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:outline-none"
                   >
-                    <option value="CASH">Cash Refund</option>
-                    <option value="CREDIT_REDUCTION">Credit Reduction</option>
+                    <option value="CASH">Cash Refund (Espèces)</option>
+                    {selectedSale?.customer_id && (
+                      <option value="WALLET">Wallet (Solde Client)</option>
+                    )}
+                    {((selectedSale as any)?.debt_ticket ? Number((selectedSale as any).debt_ticket.remaining_amount) > 0 : (selectedSale?.credit_amount ?? 0) > 0) && (
+                      <option value="CREDIT_REDUCTION">
+                        Credit Reduction {(selectedSale as any)?.debt_ticket ? `(Reste: ${formatMoney((selectedSale as any).debt_ticket.remaining_amount)})` : ''}
+                      </option>
+                    )}
                   </select>
                 </div>
               </div>
