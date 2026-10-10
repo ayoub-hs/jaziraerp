@@ -413,9 +413,15 @@ syncRouter.post('/flush', (req: Request, res: Response) => {
 
         // Wallet deduction
         if (walletAmount > 0 && validCustomerId) {
-          db.prepare(`
-            UPDATE customers SET wallet_balance = wallet_balance - ?, updated_at = ? WHERE id = ?
-          `).run(walletAmount, now, validCustomerId);
+          const deduct = db.prepare(`
+            UPDATE customers
+            SET wallet_balance = wallet_balance - ?, updated_at = ?
+            WHERE id = ? AND wallet_balance >= ?
+          `).run(walletAmount, now, validCustomerId, walletAmount);
+
+          if (deduct.changes === 0) {
+            throw new Error(`INSUFFICIENT_WALLET: Solde portefeuille insuffisant (${walletAmount.toFixed(3)} DT requis)`);
+          }
 
           db.prepare(`
             INSERT INTO customer_wallet_transactions (id, customer_id, date, type, amount, reference_id, notes, created_at)
@@ -606,9 +612,49 @@ syncRouter.post('/flush', (req: Request, res: Response) => {
           status: 'SYNCED'
         });
       } else if (action_type === 'PRICE_STOCK_EDIT') {
-        const { product_id, retail_price, wholesale_price, stock_quantity } = payload;
+        const { product_id, retail_price, wholesale_price, stock_quantity } = payload || {};
+        if (!product_id) {
+          failed.push({ temp_client_id, action_type, reason: 'product_id is required' });
+          return;
+        }
+
         const currentProd: any = db.prepare('SELECT stock_quantity FROM products WHERE id = ?').get(product_id);
-        const oldQty = currentProd ? Number(currentProd.stock_quantity) : 0;
+        if (!currentProd) {
+          failed.push({ temp_client_id, action_type, reason: `Product not found: ${product_id}` });
+          return;
+        }
+
+        let parsedRetail: number | null = null;
+        if (retail_price !== undefined) {
+          const num = Number(retail_price);
+          if (!Number.isFinite(num) || num < 0) {
+            failed.push({ temp_client_id, action_type, reason: 'retail_price must be a finite non-negative number' });
+            return;
+          }
+          parsedRetail = round3(num);
+        }
+
+        let parsedWholesale: number | null = null;
+        if (wholesale_price !== undefined) {
+          const num = Number(wholesale_price);
+          if (!Number.isFinite(num) || num < 0) {
+            failed.push({ temp_client_id, action_type, reason: 'wholesale_price must be a finite non-negative number' });
+            return;
+          }
+          parsedWholesale = round3(num);
+        }
+
+        let parsedStock: number | null = null;
+        if (stock_quantity !== undefined) {
+          const num = Number(stock_quantity);
+          if (!Number.isFinite(num)) {
+            failed.push({ temp_client_id, action_type, reason: 'stock_quantity must be a finite number' });
+            return;
+          }
+          parsedStock = num;
+        }
+
+        const oldQty = Number(currentProd.stock_quantity) || 0;
 
         db.prepare(`
           UPDATE products
@@ -618,16 +664,15 @@ syncRouter.post('/flush', (req: Request, res: Response) => {
               updated_at = ?
           WHERE id = ?
         `).run(
-          retail_price !== undefined ? round3(Number(retail_price)) : null,
-          wholesale_price !== undefined ? round3(Number(wholesale_price)) : null,
-          stock_quantity !== undefined ? Number(stock_quantity) : null,
+          parsedRetail,
+          parsedWholesale,
+          parsedStock,
           now,
           product_id
         );
 
-        if (stock_quantity !== undefined && currentProd) {
-          const newQty = Number(stock_quantity);
-          const delta = round3(newQty - oldQty);
+        if (parsedStock !== null) {
+          const delta = round3(parsedStock - oldQty);
           if (delta !== 0) {
             db.prepare(`
               INSERT INTO inventory_adjustments (id, date, item_type, material_id, product_id, quantity_delta, reason, created_at)

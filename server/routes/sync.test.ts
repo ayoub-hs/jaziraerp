@@ -590,6 +590,87 @@ describe('Offline Storage & Sync Engine Module (HTTP Routes)', () => {
     expect(pullProd3.pack_sizes).toEqual(expectedOldProd3PackSizes);
     expect(pullProd3.pack_sizes).toEqual([]);
   });
+
+  it('validates PRICE_STOCK_EDIT and rejects non-finite or negative values', async () => {
+    // 0. Seed product
+    const famRes = await request(app)
+      .post('/api/products/families')
+      .send({ name: 'Price Edit Family', category: 'Cleaning', type: 'MANUFACTURED' });
+    const prodRes = await request(app)
+      .post('/api/products')
+      .send({
+        family_id: famRes.body.id,
+        name: 'Price Edit Item',
+        stock_quantity: 10,
+        retail_price: 5.0,
+        wholesale_price: 4.0
+      });
+    const testProdId = prodRes.body.id;
+
+    // 1. Attempt PRICE_STOCK_EDIT with invalid prices / stock
+    const badEditRes = await request(app)
+      .post('/api/sync/flush')
+      .send({
+        operations: [
+          {
+            temp_client_id: 'edit-bad-retail',
+            action_type: 'PRICE_STOCK_EDIT',
+            payload: {
+              product_id: testProdId,
+              retail_price: 'not-a-number'
+            }
+          },
+          {
+            temp_client_id: 'edit-neg-wholesale',
+            action_type: 'PRICE_STOCK_EDIT',
+            payload: {
+              product_id: testProdId,
+              wholesale_price: -10
+            }
+          },
+          {
+            temp_client_id: 'edit-nan-stock',
+            action_type: 'PRICE_STOCK_EDIT',
+            payload: {
+              product_id: testProdId,
+              stock_quantity: 'invalid-qty'
+            }
+          }
+        ]
+      });
+
+    expect(badEditRes.status).toBe(200);
+    expect(badEditRes.body.reconciled).toHaveLength(0);
+    expect(badEditRes.body.failed).toHaveLength(3);
+
+    // 2. Perform valid PRICE_STOCK_EDIT
+    const goodEditRes = await request(app)
+      .post('/api/sync/flush')
+      .send({
+        operations: [
+          {
+            temp_client_id: 'edit-good',
+            action_type: 'PRICE_STOCK_EDIT',
+            payload: {
+              product_id: testProdId,
+              retail_price: 6.500,
+              wholesale_price: 5.000,
+              stock_quantity: 120
+            }
+          }
+        ]
+      });
+
+    expect(goodEditRes.status).toBe(200);
+    expect(goodEditRes.body.reconciled).toHaveLength(1);
+    expect(goodEditRes.body.failed).toHaveLength(0);
+
+    const db = getDb();
+    const prod: any = db.prepare('SELECT retail_price, wholesale_price, stock_quantity FROM products WHERE id = ?').get(testProdId);
+    expect(prod.retail_price).toBe(6.500);
+    expect(prod.wholesale_price).toBe(5.000);
+    expect(prod.stock_quantity).toBe(120);
+  });
 });
 
 

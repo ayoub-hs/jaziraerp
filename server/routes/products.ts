@@ -411,6 +411,28 @@ productsRouter.put('/:id', (req: Request, res: Response) => {
     return;
   }
 
+  if (retail_price !== undefined) {
+    const num = Number(retail_price);
+    if (!Number.isFinite(num) || num < 0) {
+      res.status(400).json({ error: 'retail_price must be a finite non-negative number' });
+      return;
+    }
+  }
+  if (wholesale_price !== undefined) {
+    const num = Number(wholesale_price);
+    if (!Number.isFinite(num) || num < 0) {
+      res.status(400).json({ error: 'wholesale_price must be a finite non-negative number' });
+      return;
+    }
+  }
+  if (stock_quantity !== undefined) {
+    const num = Number(stock_quantity);
+    if (!Number.isFinite(num)) {
+      res.status(400).json({ error: 'stock_quantity must be a finite number' });
+      return;
+    }
+  }
+
   const now = new Date().toISOString();
 
   try {
