@@ -269,4 +269,88 @@ describe('Customers, Debt Tickets & Wallet Module', () => {
     expect(statement.body.wallet.final_balance).toBe(20);
     resetTestDb();
   });
+
+  it('RES-01: statement debt ledger running balance matches summary final_balance after sale, refund, payment, second refund', async () => {
+    resetTestDb();
+    const db = getDb();
+
+    // 1. Setup customer, open register session, product
+    const custRes = await request(app).post('/api/customers').send({ name: 'Wholesale Statement Client', type: 'WHOLESALE' });
+    const customerId = custRes.body.id;
+    await request(app).post('/api/register/open').send({ counter_name: 'Countertop', opening_cash: 100 });
+    const famRes = await request(app).post('/api/products/families').send({ name: 'Statement Fam', category: 'Detergents', type: 'MANUFACTURED' });
+    const prodRes = await request(app).post('/api/products').send({ family_id: famRes.body.id, name: 'Statement Prod', stock_quantity: 100, retail_price: 50, wholesale_price: 50 });
+    const prodId = prodRes.body.id;
+
+    // Step A: Credit sale of 2 units @ 50 DT = 100 DT
+    const saleRes = await request(app).post('/api/sales').send({
+      customer_id: customerId,
+      items: [{ product_id: prodId, quantity: 2, unit_price: 50.000 }],
+      credit_amount: 100.000
+    });
+    expect(saleRes.status).toBe(201);
+    const saleId = saleRes.body.id;
+    const saleItemId = saleRes.body.items[0].id;
+
+    // Step B: Refund 1 (1 unit = 50 DT) via CREDIT_REDUCTION
+    const ref1Res = await request(app).post(`/api/sales/${saleId}/refund`).send({
+      refund_method: 'CREDIT_REDUCTION',
+      items: [{ sale_item_id: saleItemId, quantity: 1 }],
+      reason: 'First return'
+    });
+    expect(ref1Res.status).toBe(201);
+    expect(ref1Res.body.credit_reduced).toBe(50.000);
+
+    // Step C: Payment of 20 DT
+    const payRes = await request(app).post(`/api/customers/${customerId}/payments`).send({
+      amount: 20.000,
+      payment_method: 'Cash',
+      notes: 'Partial payment'
+    });
+    expect(payRes.status).toBe(200);
+
+    // Step D: Second Refund of remaining unit partially (e.g. 0.2 quantity or another sale with refund)
+    // Create second sale of 1 unit @ 50 DT credit
+    const sale2Res = await request(app).post('/api/sales').send({
+      customer_id: customerId,
+      items: [{ product_id: prodId, quantity: 1, unit_price: 50.000 }],
+      credit_amount: 50.000
+    });
+    expect(sale2Res.status).toBe(201);
+    const sale2Id = sale2Res.body.id;
+    const sale2ItemId = sale2Res.body.items[0].id;
+
+    // Second refund: refund 1 unit from sale 2 (50 DT) via CREDIT_REDUCTION
+    const ref2Res = await request(app).post(`/api/sales/${sale2Id}/refund`).send({
+      refund_method: 'CREDIT_REDUCTION',
+      items: [{ sale_item_id: sale2ItemId, quantity: 1 }],
+      reason: 'Second return'
+    });
+    expect(ref2Res.status).toBe(201);
+    expect(ref2Res.body.credit_reduced).toBe(50.000);
+
+    // Fetch statement
+    const statement = await request(app).get(`/api/customers/${customerId}/statement`);
+    expect(statement.status).toBe(200);
+
+    // Summary final_balance:
+    // Sale 1 (100) - Refund 1 (50) - Pay (20) = 30 DT
+    // Sale 2 (50) - Refund 2 (50) = 0 DT
+    // Total remaining debt = 30 DT
+    expect(statement.body.debt.final_balance).toBe(30.000);
+
+    // Under old code, debt.entries omitted credit_reduced refunds, so running_balance ended at 130 DT!
+    const entries = statement.body.debt.entries;
+    expect(entries.length).toBeGreaterThanOrEqual(4);
+    const lastEntry = entries[entries.length - 1];
+    expect(lastEntry.running_balance).toBe(statement.body.debt.final_balance);
+
+    // Check that REFUND_CREDIT entries exist with credit > 0
+    const refundCreditEntries = entries.filter((e: any) => e.entry_type === 'REFUND_CREDIT');
+    expect(refundCreditEntries).toHaveLength(2);
+    expect(refundCreditEntries[0].credit).toBe(50.000);
+    expect(refundCreditEntries[1].credit).toBe(50.000);
+
+    resetTestDb();
+  });
 });

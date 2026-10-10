@@ -331,7 +331,17 @@ customersRouter.get('/:id/statement', (req: Request, res: Response) => {
     WHERE cp.customer_id = ?
   `).all(req.params.id);
 
-  const debtEntries = withRunning([...tickets, ...allocations]);
+  const creditRefunds: any[] = db.prepare(`
+    SELECT r.id, 'REFUND_CREDIT' as entry_type,
+      'Remboursement ' || r.refund_number || ' → ' || cdt.ticket_number as reference,
+      r.date, 0 as debit, r.credit_reduced as credit,
+      'Réduction dette' as status, r.created_at
+    FROM refunds r
+    JOIN customer_debt_tickets cdt ON cdt.sale_id = r.sale_id
+    WHERE cdt.customer_id = ? AND r.credit_reduced > 0
+  `).all(req.params.id);
+
+  const debtEntries = withRunning([...tickets, ...allocations, ...creditRefunds]);
   const debtTotal: any = db.prepare(`
     SELECT COALESCE(SUM(remaining_amount), 0) as total_debt
     FROM customer_debt_tickets
