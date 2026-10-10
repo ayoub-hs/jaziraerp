@@ -321,3 +321,26 @@ export function calculateContainersNeeded(
   return Math.floor(totalUnits / containerCapacityLiters);
 }
 
+/**
+ * Recalculates cart unit prices for a newly selected customer tier.
+ */
+export function recalculateCartForCustomer(
+  cart: CartItem[],
+  customer: Customer | null,
+  products: Product[]
+): CartItem[] {
+  return cart.map(item => {
+    if (item.is_quick_add || !item.product_id || item.price_overridden) return item;
+    const prod = products.find(p => p.id === item.product_id);
+    if (!prod) return item;
+    const packSize = item.selected_pack_size_id
+      ? prod.pack_sizes?.find(s => s.id === item.selected_pack_size_id)
+      : prod.pack_sizes?.find(s => s.multiplier === item.pack_multiplier);
+    return {
+      ...item,
+      unit_price: getProductPackPrice(prod, customer, packSize, item.pack_multiplier || 1)
+    };
+  });
+}
+
+

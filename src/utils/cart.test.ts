@@ -6,7 +6,8 @@ import {
   validateSplitPayment,
   buildPaymentPayload,
   parseSizeToLiters,
-  calculateContainersNeeded
+  calculateContainersNeeded,
+  recalculateCartForCustomer
 } from './cart.js';
 import type { Customer, Product, CartItem, PackSize } from '../types/index.js';
 
@@ -386,4 +387,59 @@ describe('Cart Utilities', () => {
       expect(calculateContainersNeeded(-5, 1, '10L', 10)).toBe(0);
     });
   });
+
+  describe('recalculateCartForCustomer (POS-03)', () => {
+    it('preserves manual price override when customer changes to wholesale, but updates non-overridden item', () => {
+      const product2: Product = {
+        id: 'prod-2',
+        family_id: 'fam-1',
+        category: 'Detergents',
+        name: 'Floor Cleaner 1L',
+        stock_quantity: 40,
+        low_stock_threshold: 5,
+        cost_reference: 2.000,
+        retail_price: 5.000,
+        wholesale_price: 3.800,
+        active: 1
+      };
+
+      const cart: CartItem[] = [
+        {
+          cart_item_id: 'item-1',
+          product_id: 'prod-1',
+          name: 'Dish Soap 1L',
+          unit_price: 4.000, // Manually overridden from 3.500 to 4.000
+          price_overridden: true,
+          quantity: 1,
+          pack_multiplier: 1
+        },
+        {
+          cart_item_id: 'item-2',
+          product_id: 'prod-2',
+          name: 'Floor Cleaner 1L',
+          unit_price: 5.000, // Standard retail price, not overridden
+          quantity: 1,
+          pack_multiplier: 1
+        }
+      ];
+
+      const wholesaleCustomer: Customer = {
+        id: 'c-ws',
+        name: 'Gros Djerba',
+        type: 'WHOLESALE',
+        reseller_discount_percent: 0,
+        wallet_balance: 0
+      };
+
+      const updated = recalculateCartForCustomer(cart, wholesaleCustomer, [dummyProduct, product2]);
+
+      // Overridden item 1 must preserve its manual price 4.000
+      expect(updated[0].unit_price).toBe(4.000);
+      expect(updated[0].price_overridden).toBe(true);
+
+      // Non-overridden item 2 must flip to wholesale price 3.800
+      expect(updated[1].unit_price).toBe(3.800);
+    });
+  });
 });
+

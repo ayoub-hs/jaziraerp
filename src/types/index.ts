@@ -69,6 +69,7 @@ export interface CartItem {
   container_type_id?: string | null;
   container_capacity_liters?: number | null;
   loan_container?: boolean;
+  price_overridden?: boolean;
 }
 
 export interface RegisterSession {

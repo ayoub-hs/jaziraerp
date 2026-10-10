@@ -30,7 +30,7 @@ import type {
   RegisterSession,
   PackSize
 } from '../../types/index.js';
-import { calculateCartTotals, getProductPriceForCustomer, getProductPackPrice, calculateContainersNeeded } from '../../utils/cart.js';
+import { calculateCartTotals, getProductPriceForCustomer, getProductPackPrice, calculateContainersNeeded, recalculateCartForCustomer } from '../../utils/cart.js';
 import { formatMoney, roundMoney } from '../../utils/formatters.js';
 import { playBeep, playErrorBeep, vibrateError } from '../../utils/audio.js';
 import { QuickAddModal } from '../shared/QuickAddModal.js';
@@ -284,7 +284,7 @@ export const DesktopPos: React.FC<DesktopPosProps> = ({
     setCart(prev =>
       prev.map(item =>
         item.cart_item_id === cartItemId
-          ? { ...item, unit_price: Math.max(0, roundMoney(newPrice)) }
+          ? { ...item, unit_price: Math.max(0, roundMoney(newPrice)), price_overridden: true }
           : item
       )
     );
@@ -324,20 +324,7 @@ export const DesktopPos: React.FC<DesktopPosProps> = ({
 
   // Recalculate customer tier prices on cart when customer changes
   useEffect(() => {
-    setCart(prev =>
-      prev.map(item => {
-        if (item.is_quick_add || !item.product_id) return item;
-        const prod = products.find(p => p.id === item.product_id);
-        if (!prod) return item;
-        const packSize = item.selected_pack_size_id
-          ? prod.pack_sizes?.find(s => s.id === item.selected_pack_size_id)
-          : prod.pack_sizes?.find(s => s.multiplier === item.pack_multiplier);
-        return {
-          ...item,
-          unit_price: getProductPackPrice(prod, selectedCustomer, packSize, item.pack_multiplier || 1)
-        };
-      })
-    );
+    setCart(prev => recalculateCartForCustomer(prev, selectedCustomer, products));
   }, [selectedCustomer, products]);
 
   // Filter products
@@ -822,6 +809,11 @@ export const DesktopPos: React.FC<DesktopPosProps> = ({
                       title="Modifier le prix unitaire"
                     />
                     <span className="text-[9px] text-slate-400 font-mono">DT</span>
+                    {item.price_overridden && (
+                      <span className="bg-amber-100 text-amber-800 text-[9px] font-semibold px-1 py-0.2 rounded border border-amber-200" title="Prix modifié manuellement">
+                        Modifié
+                      </span>
+                    )}
                     {item.size_label && (
                       <span className="bg-slate-100 px-1 rounded font-semibold">{item.size_label}</span>
                     )}
