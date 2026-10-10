@@ -1210,7 +1210,7 @@ export const DesktopPos: React.FC<DesktopPosProps> = ({
                 : 'bg-emerald-700 hover:bg-emerald-800'
             }`}
           >
-            <span>{!activeSession ? 'Ouvrir la caisse pour encaisser' : 'Tender & Split Payment'}</span>
+            <span>{!activeSession ? 'Ouvrir la caisse pour encaisser' : 'Encaisser'}</span>
             <ChevronRight className="w-4 h-4" />
           </button>
         </div>

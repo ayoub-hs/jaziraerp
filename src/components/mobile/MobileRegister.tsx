@@ -1555,7 +1555,7 @@ export const MobileRegister: React.FC<MobileRegisterProps> = ({
                     : 'bg-emerald-700 hover:bg-emerald-800'
                 }`}
               >
-                {!activeSession ? 'Ouvrir la caisse pour encaisser' : 'Tender Payment'}
+                {!activeSession ? 'Ouvrir la caisse pour encaisser' : 'Encaisser'}
               </button>
             </div>
           </div>

@@ -395,7 +395,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
         <div className="sticky top-0 z-10 bg-slate-900 text-white px-5 py-3.5 flex items-center justify-between shrink-0">
           <div>
             <h2 className="text-lg font-bold">
-              {completedSale ? 'Sale Completed' : 'Tender & Split Payment'}
+              {completedSale ? 'Vente finalisée' : 'Encaisser'}
             </h2>
             <p className="text-xs text-slate-400">
               {customer ? `${customer.name} (${customer.type})` : 'Client Passager'}
@@ -459,7 +459,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
                   className="flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-bold py-2.5 px-4 rounded-xl shadow transition-colors"
                 >
                   <FileText className="w-4 h-4" />
-                  Print A4 Invoice
+                  Imprimer facture A4
                 </button>
                 {onPrintDeliveryNote && (
                   <button
@@ -564,7 +564,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
               {/* Quick Cash Buttons */}
               <div>
                 <label className="text-pos-caption font-bold text-slate-700 mb-1.5 block">
-                  Quick Cash Tender
+                  Espèces rapides
                 </label>
                 <div className="grid grid-cols-4 gap-2">
                   <button
@@ -757,10 +757,10 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
               className="flex-[2] py-3.5 min-h-[52px] bg-emerald-700 hover:bg-emerald-800 disabled:bg-slate-300 disabled:text-slate-500 text-white font-extrabold rounded-xl shadow-lg transition-all text-lg flex items-center justify-center gap-2"
             >
               {isSubmitting
-                ? 'Processing...'
+                ? 'Traitement...'
                 : activeSession !== undefined && (!activeSession || activeSession.status !== 'OPEN')
                 ? 'Caisse fermée'
-                : 'Complete Sale & Pop Drawer'}
+                : 'Valider et ouvrir le tiroir'}
             </button>
           </div>
         )}
