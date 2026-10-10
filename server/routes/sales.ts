@@ -966,6 +966,11 @@ export function processRefund(saleId: string, req: Request, res: Response) {
     creditReduction = creditReduction || 0;
   }
 
+  if (cashPayout < 0 || walletPayout < 0 || creditReduction < 0) {
+    res.status(400).json({ error: 'Payout amounts cannot be negative' });
+    return;
+  }
+
   const totalPayout = round3(cashPayout + walletPayout + creditReduction);
 
   if (Math.abs(totalPayout - totalRefunded) > 0.005) {

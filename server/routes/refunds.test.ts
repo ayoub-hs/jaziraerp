@@ -714,6 +714,156 @@ describe('Returns & Line-Item Partial Refunds Module — Real HTTP Integration T
       expect(sesAfter.expected_cash).toBe(cashBefore);
     });
   });
+
+  describe('Hostile-payload tests for the refund endpoint (Batch 3 Item 2)', () => {
+    let saleId: string;
+    let itemId: string;
+    let otherSaleId: string;
+    let otherItemId: string;
+
+    beforeEach(async () => {
+      // Create primary sale with 3x prod-bleach (total 6.000 DT)
+      const res1 = await request(app)
+        .post('/api/sales')
+        .send({
+          session_id: 'ses-refund-test',
+          customer_id: 'cust-refund-test',
+          items: [{ product_id: 'prod-bleach', quantity: 3, unit_price: 2.000 }],
+          cash_paid: 6.000,
+          cash_tendered: 6.000
+        });
+      expect(res1.status).toBe(201);
+      saleId = res1.body.id;
+      itemId = res1.body.items[0].id;
+
+      // Create a second sale for cross-sale item test
+      const res2 = await request(app)
+        .post('/api/sales')
+        .send({
+          session_id: 'ses-refund-test',
+          customer_id: 'cust-refund-test',
+          items: [{ product_id: 'prod-degreaser', quantity: 1, unit_price: 15.000 }],
+          cash_paid: 15.000,
+          cash_tendered: 15.000
+        });
+      expect(res2.status).toBe(201);
+      otherSaleId = res2.body.id;
+      otherItemId = res2.body.items[0].id;
+    });
+
+    it('rejects refund request with empty items array', async () => {
+      const res = await request(app)
+        .post(`/api/sales/${saleId}/refund`)
+        .send({
+          session_id: 'ses-refund-test',
+          items: []
+        });
+      expect(res.status).toBe(400);
+      expect(res.body.error).toMatch(/at least one line item/i);
+    });
+
+    it('rejects refund request with quantity 0', async () => {
+      const res = await request(app)
+        .post(`/api/sales/${saleId}/refund`)
+        .send({
+          session_id: 'ses-refund-test',
+          items: [{ sale_item_id: itemId, quantity: 0 }]
+        });
+      expect(res.status).toBe(400);
+      expect(res.body.error).toMatch(/invalid refund quantity/i);
+    });
+
+    it('rejects refund request with negative quantity (-1)', async () => {
+      const res = await request(app)
+        .post(`/api/sales/${saleId}/refund`)
+        .send({
+          session_id: 'ses-refund-test',
+          items: [{ sale_item_id: itemId, quantity: -1 }]
+        });
+      expect(res.status).toBe(400);
+      expect(res.body.error).toMatch(/invalid refund quantity/i);
+    });
+
+    it('rejects refund request with NaN quantity', async () => {
+      const res = await request(app)
+        .post(`/api/sales/${saleId}/refund`)
+        .send({
+          session_id: 'ses-refund-test',
+          items: [{ sale_item_id: itemId, quantity: 'NaN' }]
+        });
+      expect(res.status).toBe(400);
+      expect(res.body.error).toMatch(/invalid refund quantity/i);
+    });
+
+    it('rejects refund request with non-numeric string quantity ("abc")', async () => {
+      const res = await request(app)
+        .post(`/api/sales/${saleId}/refund`)
+        .send({
+          session_id: 'ses-refund-test',
+          items: [{ sale_item_id: itemId, quantity: 'abc' }]
+        });
+      expect(res.status).toBe(400);
+      expect(res.body.error).toMatch(/invalid refund quantity/i);
+    });
+
+    it('rejects fractional quantity on integer-only lines (1.5 on item with quantity 3)', async () => {
+      const res = await request(app)
+        .post(`/api/sales/${saleId}/refund`)
+        .send({
+          session_id: 'ses-refund-test',
+          items: [{ sale_item_id: itemId, quantity: 1.5 }]
+        });
+      expect(res.status).toBe(400);
+      expect(res.body.error).toMatch(/fractional refund quantity/i);
+    });
+
+    it('rejects unknown sale_item_id', async () => {
+      const res = await request(app)
+        .post(`/api/sales/${saleId}/refund`)
+        .send({
+          session_id: 'ses-refund-test',
+          items: [{ sale_item_id: 'non-existent-line-id', quantity: 1 }]
+        });
+      expect(res.status).toBe(400);
+      expect(res.body.error).toMatch(/sale line item not found/i);
+    });
+
+    it('rejects sale_item_id from another sale', async () => {
+      const res = await request(app)
+        .post(`/api/sales/${saleId}/refund`)
+        .send({
+          session_id: 'ses-refund-test',
+          items: [{ sale_item_id: otherItemId, quantity: 1 }]
+        });
+      expect(res.status).toBe(400);
+      expect(res.body.error).toMatch(/sale line item not found/i);
+    });
+
+    it('rejects payouts not summing to the refund total', async () => {
+      // 1 item of bleach @ 2.000 DT refunded, but payout says 5.000 DT cash
+      const res = await request(app)
+        .post(`/api/sales/${saleId}/refund`)
+        .send({
+          session_id: 'ses-refund-test',
+          items: [{ sale_item_id: itemId, quantity: 1 }],
+          cash_refunded: 5.000
+        });
+      expect(res.status).toBe(400);
+      expect(res.body.error).toMatch(/payout total.*does not equal/i);
+    });
+
+    it('rejects negative payout amounts', async () => {
+      const res = await request(app)
+        .post(`/api/sales/${saleId}/refund`)
+        .send({
+          session_id: 'ses-refund-test',
+          items: [{ sale_item_id: itemId, quantity: 1 }],
+          cash_refunded: -2.000
+        });
+      expect(res.status).toBe(400);
+      expect(res.body.error).toMatch(/payout amounts cannot be negative/i);
+    });
+  });
 });
 
 
