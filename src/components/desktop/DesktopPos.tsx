@@ -21,7 +21,8 @@ import {
   CheckCircle2,
   X,
   Clock,
-  PauseCircle
+  PauseCircle,
+  HelpCircle
 } from 'lucide-react';
 import type { 
   Product, 
@@ -42,6 +43,7 @@ import { RefundModal } from '../shared/RefundModal.js';
 import { CameraScannerModal } from '../shared/CameraScannerModal.js';
 import { ContainerTransactionModal } from '../backoffice/ContainerTransactionModal.js';
 import { HeldCartsModal } from '../shared/HeldCartsModal.js';
+import { QuickPriceLookupModal } from '../shared/QuickPriceLookupModal.js';
 import { heldCartsService, type HeldCart, type PriceDiscrepancy } from '../../services/heldCartsService.js';
 
 import { scannerService } from '../../services/hardware/scanner.js';
@@ -89,6 +91,7 @@ export const DesktopPos: React.FC<DesktopPosProps> = ({
 
   // Modals
   const [isQuickAddOpen, setIsQuickAddOpen] = useState(false);
+  const [isPriceLookupOpen, setIsPriceLookupOpen] = useState(false);
   const [isCheckoutOpen, setIsCheckoutOpen] = useState(false);
   const [isRefundOpen, setIsRefundOpen] = useState(false);
   const [isCameraOpen, setIsCameraOpen] = useState(false);
@@ -168,10 +171,20 @@ export const DesktopPos: React.FC<DesktopPosProps> = ({
     }
   }, [scanAlert]);
 
-  // Global POS Hotkeys (F1: Search, F2: Quick Add, F4: Refund, Space / F9: Checkout)
+  // Global POS Hotkeys (F1: Search, F2: Quick Add, F3: Price Lookup, F4: Refund, Space / F9: Checkout)
   useEffect(() => {
     const handlePosHotkeys = (e: KeyboardEvent) => {
-      if (isCheckoutOpen || isRefundOpen || isQuickAddOpen || isCameraOpen || isContainerTxOpen || familyModalData.isOpen) {
+      if (
+        isCheckoutOpen ||
+        isRefundOpen ||
+        isQuickAddOpen ||
+        isPriceLookupOpen ||
+        isCameraOpen ||
+        isContainerTxOpen ||
+        familyModalData.isOpen ||
+        isHeldCartsModalOpen ||
+        isCreateCustomerOpen
+      ) {
         return;
       }
 
@@ -185,6 +198,9 @@ export const DesktopPos: React.FC<DesktopPosProps> = ({
       } else if (e.key === 'F2') {
         e.preventDefault();
         setIsQuickAddOpen(true);
+      } else if (e.key === 'F3' || ((e.ctrlKey || e.metaKey) && (e.key === 'l' || e.key === 'L'))) {
+        e.preventDefault();
+        setIsPriceLookupOpen(true);
       } else if (e.key === 'F4') {
         e.preventDefault();
         setIsRefundOpen(true);
@@ -199,7 +215,18 @@ export const DesktopPos: React.FC<DesktopPosProps> = ({
 
     window.addEventListener('keydown', handlePosHotkeys);
     return () => window.removeEventListener('keydown', handlePosHotkeys);
-  }, [cart.length, isCheckoutOpen, isRefundOpen, isQuickAddOpen, isCameraOpen, isContainerTxOpen, familyModalData.isOpen]);
+  }, [
+    cart.length,
+    isCheckoutOpen,
+    isRefundOpen,
+    isQuickAddOpen,
+    isPriceLookupOpen,
+    isCameraOpen,
+    isContainerTxOpen,
+    familyModalData.isOpen,
+    isHeldCartsModalOpen,
+    isCreateCustomerOpen
+  ]);
 
   // Extract unique categories
   const categories = ['ALL', ...Array.from(new Set(families.map(f => f.category || 'Other')))];
@@ -308,6 +335,23 @@ export const DesktopPos: React.FC<DesktopPosProps> = ({
         return [...prev, newItem];
       }
     });
+  };
+
+  const handleClosePriceLookup = () => {
+    setIsPriceLookupOpen(false);
+    setTimeout(() => {
+      searchInputRef.current?.focus();
+    }, 50);
+  };
+
+  const handleAddToCartFromLookup = (
+    product: Product,
+    multiplier = 1,
+    label?: string,
+    packSize?: PackSize | null
+  ) => {
+    addProductToCart(product, multiplier, label, packSize);
+    handleClosePriceLookup();
   };
 
   const handleToggleContainerLoan = (cartItemId: string) => {
@@ -552,6 +596,16 @@ export const DesktopPos: React.FC<DesktopPosProps> = ({
             >
               <Camera className="w-3.5 h-3.5 text-slate-600" />
               Scan
+            </button>
+
+            {/* Quick Price/Stock Lookup Button */}
+            <button
+              onClick={() => setIsPriceLookupOpen(true)}
+              title="Vérifier prix et stock [F3 / Ctrl+L]"
+              className="flex items-center gap-1 bg-cyan-50 hover:bg-cyan-100 text-cyan-800 font-bold px-3 py-1.5 rounded-xl text-xs border border-cyan-200 transition-colors shrink-0"
+            >
+              <HelpCircle className="w-3.5 h-3.5 text-cyan-700" />
+              Vérif Prix [F3]
             </button>
 
             {/* Quick Add Button */}
@@ -1263,6 +1317,15 @@ export const DesktopPos: React.FC<DesktopPosProps> = ({
         currentSaleDiscount={saleDiscount}
         onResumeCart={handleResumeCart}
         onHoldCurrentCart={handleHoldCart}
+      />
+
+      <QuickPriceLookupModal
+        isOpen={isPriceLookupOpen}
+        onClose={handleClosePriceLookup}
+        products={products}
+        families={families}
+        customer={selectedCustomer}
+        onAddToCart={handleAddToCartFromLookup}
       />
     </div>
   );
