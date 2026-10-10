@@ -800,14 +800,43 @@ export function processRefund(saleId: string, req: Request, res: Response) {
 
   const now = new Date().toISOString();
 
-  // 1. Calculate and validate item refunds
+  // 1. Calculate and validate item refunds with pro-rata discount allocation
+  const allSaleItems: any[] = db.prepare(`
+    SELECT * FROM sale_items WHERE sale_id = ? ORDER BY id ASC
+  `).all(sale.id);
+
+  const subtotal = round3(allSaleItems.reduce((sum, item) => sum + (Number(item.line_total) || 0), 0));
+  const globalDiscount = round3(Number(sale.total_discount) || 0);
+
+  // Compute net line totals for all lines of the sale
+  const netLineTotals = new Map<string, number>();
+  if (globalDiscount <= 0 || subtotal <= 0) {
+    for (const item of allSaleItems) {
+      netLineTotals.set(item.id, round3(Number(item.line_total) || 0));
+    }
+  } else {
+    let allocatedDiscountSum = 0;
+    for (let i = 0; i < allSaleItems.length; i++) {
+      const item = allSaleItems[i];
+      const lineTotal = round3(Number(item.line_total) || 0);
+      let lineDiscount: number;
+      if (i === allSaleItems.length - 1) {
+        // Remainder on the last line
+        lineDiscount = round3(globalDiscount - allocatedDiscountSum);
+      } else {
+        lineDiscount = round3(globalDiscount * (lineTotal / subtotal));
+        allocatedDiscountSum = addMoney(allocatedDiscountSum, lineDiscount);
+      }
+      const netLineTotal = Math.max(0, round3(lineTotal - lineDiscount));
+      netLineTotals.set(item.id, netLineTotal);
+    }
+  }
+
   let totalRefunded = 0;
   const processedRefundItems: any[] = [];
 
   for (const item of items) {
-    const saleItem: any = db.prepare(`
-      SELECT * FROM sale_items WHERE id = ? AND sale_id = ?
-    `).get(item.sale_item_id, sale.id);
+    const saleItem: any = allSaleItems.find(si => si.id === item.sale_item_id);
 
     if (!saleItem) {
       res.status(404).json({ error: `Sale line item not found: ${item.sale_item_id}` });
@@ -824,7 +853,9 @@ export function processRefund(saleId: string, req: Request, res: Response) {
       return;
     }
 
-    // For the last remaining quantity of a line, amountRefunded = line_total - already_refunded; otherwise effective unit price
+    const netLineTotal = netLineTotals.get(saleItem.id) ?? round3(Number(saleItem.line_total) || 0);
+
+    // For the last remaining quantity of a line, amountRefunded = netLineTotal - already_refunded; otherwise effective net unit price
     let amountRefunded: number;
     if (qtyToRefund === availableToRefund) {
       const alreadyRefundedRow: any = db.prepare(`
@@ -837,9 +868,9 @@ export function processRefund(saleId: string, req: Request, res: Response) {
         .filter(p => p.sale_item.id === saleItem.id)
         .reduce((sum, p) => sum + p.amount_refunded, 0);
       const alreadyRefunded = round3(alreadyRefundedDb + processedForThisLine);
-      amountRefunded = round3(saleItem.line_total - alreadyRefunded);
+      amountRefunded = round3(netLineTotal - alreadyRefunded);
     } else {
-      const effectiveUnitPrice = saleItem.line_total / saleItem.quantity;
+      const effectiveUnitPrice = netLineTotal / saleItem.quantity;
       amountRefunded = round3(effectiveUnitPrice * qtyToRefund);
     }
 
@@ -850,6 +881,21 @@ export function processRefund(saleId: string, req: Request, res: Response) {
       amount_refunded: amountRefunded,
       stock_to_restore: saleItem.product_id ? qtyToRefund * (saleItem.pack_multiplier || 1) : 0
     });
+  }
+
+  // Over-refund cap: check cumulative refunds against sale.total_ttc
+  const priorRefundsRow: any = db.prepare(`
+    SELECT COALESCE(SUM(total_refunded), 0) as prior_refunded
+    FROM refunds
+    WHERE sale_id = ?
+  `).get(sale.id);
+  const priorRefunded = round3(priorRefundsRow?.prior_refunded || 0);
+
+  if (addMoney(priorRefunded, totalRefunded) > sale.total_ttc) {
+    res.status(400).json({
+      error: `Le montant total remboursé (${round3(priorRefunded + totalRefunded).toFixed(3)} DT) dépasserait le total payé de la vente (${sale.total_ttc.toFixed(3)} DT).`
+    });
+    return;
   }
 
   // 2. Validate or auto-calculate payout methods equal total refunded

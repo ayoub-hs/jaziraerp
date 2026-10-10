@@ -437,5 +437,158 @@ describe('Returns & Line-Item Partial Refunds Module — Real HTTP Integration T
     expect(ticketAfter.remaining_amount).toBe(5.000);
     expect(ticketAfter.status).toBe('PARTIALLY_PAID');
   });
+
+  describe('REF-01: Global cart discount pro-rata refund allocation and 400 capping', () => {
+    it('allocates global cart discount pro-rata on full return (20 DT items - 5 DT discount = 15 DT refund)', async () => {
+      // 10x Bleach @ 2.000 = 20.000 DT, total_discount = 5.000 DT => total_ttc = 15.000 DT
+      const saleRes = await request(app)
+        .post('/api/sales')
+        .send({
+          customer_id: 'cust-refund-test',
+          items: [{ product_id: 'prod-bleach', quantity: 10, unit_price: 2.000 }],
+          total_discount: 5.000,
+          cash_paid: 15.000,
+          cash_tendered: 15.000
+        });
+
+      expect(saleRes.status).toBe(201);
+      const saleId = saleRes.body.id;
+      const itemId = saleRes.body.items[0].id;
+
+      // Full return of all 10 items
+      const refundRes = await request(app)
+        .post(`/api/sales/${saleId}/refund`)
+        .send({
+          items: [{ sale_item_id: itemId, quantity: 10 }],
+          reason: 'Full return on discounted sale'
+        });
+
+      expect(refundRes.status).toBe(201);
+      // Under old code, this was 20.000 DT (gross line_total), leaking 5 DT cash!
+      // Must be exactly 15.000 DT
+      expect(refundRes.body.total_refunded).toBe(15.000);
+      expect(refundRes.body.cash_refunded).toBe(15.000);
+    });
+
+    it('allocates global cart discount pro-rata across partial returns summing to net total (15.000 DT)', async () => {
+      // 2 items: 5x Bleach @ 2.000 = 10.000 DT, 1x Degreaser @ 10.000 = 10.000 DT. Total 20.000 DT.
+      // Global discount = 5.000 DT. Total TTC = 15.000 DT.
+      // Pro-rata: each line has 10 DT gross, so each line gets 2.500 DT discount => net 7.500 DT each.
+      const saleRes = await request(app)
+        .post('/api/sales')
+        .send({
+          customer_id: 'cust-refund-test',
+          items: [
+            { product_id: 'prod-bleach', quantity: 5, unit_price: 2.000 },
+            { product_id: 'prod-degreaser', quantity: 1, unit_price: 10.000 }
+          ],
+          total_discount: 5.000,
+          cash_paid: 15.000,
+          cash_tendered: 15.000
+        });
+
+      expect(saleRes.status).toBe(201);
+      const saleId = saleRes.body.id;
+      const bleachItemId = saleRes.body.items[0].id;
+      const degreaserItemId = saleRes.body.items[1].id;
+
+      // Partial return 1: return all bleach items (net should be 7.500 DT)
+      const ref1 = await request(app)
+        .post(`/api/sales/${saleId}/refund`)
+        .send({
+          items: [{ sale_item_id: bleachItemId, quantity: 5 }],
+          reason: 'Partial return line 1'
+        });
+      expect(ref1.status).toBe(201);
+      expect(ref1.body.total_refunded).toBe(7.500);
+
+      // Partial return 2: return degreaser item (net should be 7.500 DT)
+      const ref2 = await request(app)
+        .post(`/api/sales/${saleId}/refund`)
+        .send({
+          items: [{ sale_item_id: degreaserItemId, quantity: 1 }],
+          reason: 'Partial return line 2'
+        });
+      expect(ref2.status).toBe(201);
+      expect(ref2.body.total_refunded).toBe(7.500);
+
+      // Cumulative refunds exactly equal sale total_ttc (15.000 DT)
+      expect(ref1.body.total_refunded + ref2.body.total_refunded).toBe(15.000);
+    });
+
+    it('correctly allocates discount on a reseller credit sale refunded via CREDIT_REDUCTION', async () => {
+      const db = getDb();
+      db.prepare(`
+        INSERT INTO customers (id, name, type, reseller_discount_percent, wallet_balance, created_at, updated_at)
+        VALUES ('cust-reseller-ref', 'Reseller Discount Co', 'RESELLER', 10, 0, '2026-09-07', '2026-09-07')
+      `).run();
+
+      // 2x Degreaser @ 10.000 = 20.000 DT, global cart discount 5.000 DT => 15.000 DT credit sale
+      const saleRes = await request(app)
+        .post('/api/sales')
+        .send({
+          customer_id: 'cust-reseller-ref',
+          items: [{ product_id: 'prod-degreaser', quantity: 2, unit_price: 10.000 }],
+          total_discount: 5.000,
+          credit_amount: 15.000
+        });
+
+      expect(saleRes.status).toBe(201);
+      const saleId = saleRes.body.id;
+      const itemId = saleRes.body.items[0].id;
+
+      // Debt ticket created with 15.000 DT remaining
+      const ticketBefore: any = db.prepare('SELECT * FROM customer_debt_tickets WHERE sale_id = ?').get(saleId);
+      expect(ticketBefore.remaining_amount).toBe(15.000);
+
+      // Refund 1 unit: net should be 7.500 DT credit reduction
+      const refRes = await request(app)
+        .post(`/api/sales/${saleId}/refund`)
+        .send({
+          refund_method: 'CREDIT_REDUCTION',
+          items: [{ sale_item_id: itemId, quantity: 1 }],
+          reason: 'Reseller return 1 unit'
+        });
+
+      expect(refRes.status).toBe(201);
+      expect(refRes.body.credit_reduced).toBe(7.500);
+
+      const ticketAfter: any = db.prepare('SELECT * FROM customer_debt_tickets WHERE sale_id = ?').get(saleId);
+      expect(ticketAfter.remaining_amount).toBe(7.500);
+    });
+
+    it('rejects with HTTP 400 when cumulative refunds would exceed sale.total_ttc', async () => {
+      // 10 DT sale
+      const saleRes = await request(app)
+        .post('/api/sales')
+        .send({
+          customer_id: 'cust-refund-test',
+          items: [{ product_id: 'prod-bleach', quantity: 5, unit_price: 2.000 }],
+          cash_paid: 10.000,
+          cash_tendered: 10.000
+        });
+
+      expect(saleRes.status).toBe(201);
+      const saleId = saleRes.body.id;
+      const itemId = saleRes.body.items[0].id;
+
+      // Refund all 5 units => 10 DT refunded
+      const ref1 = await request(app)
+        .post(`/api/sales/${saleId}/refund`)
+        .send({
+          items: [{ sale_item_id: itemId, quantity: 5 }]
+        });
+      expect(ref1.status).toBe(201);
+
+      // Attempting to refund again on already fully refunded sale returns 400
+      const ref2 = await request(app)
+        .post(`/api/sales/${saleId}/refund`)
+        .send({
+          items: [{ sale_item_id: itemId, quantity: 1 }]
+        });
+      expect(ref2.status).toBe(400);
+      expect(ref2.body.error).toBeDefined();
+    });
+  });
 });
 
