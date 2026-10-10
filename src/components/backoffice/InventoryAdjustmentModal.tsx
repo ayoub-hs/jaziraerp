@@ -1,6 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { X, Scale, AlertCircle } from 'lucide-react';
 import type { RawMaterial, Product } from '../../types/index.js';
+import { useBackButton } from '../../utils/backButton.js';
 
 interface InventoryAdjustmentModalProps {
   isOpen: boolean;
@@ -26,6 +27,11 @@ export const InventoryAdjustmentModal: React.FC<InventoryAdjustmentModalProps> =
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  useBackButton(() => {
+    onClose();
+    return true;
+  }, isOpen);
 
   React.useEffect(() => {
     if (isOpen && initialType) {

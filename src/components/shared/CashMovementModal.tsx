@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { X, ArrowDownRight, ArrowUpRight, AlertCircle, Check } from 'lucide-react';
 import type { RegisterSession } from '../../types/index.js';
 import { syncManager } from '../../services/syncManager.js';
+import { useBackButton } from '../../utils/backButton.js';
 
 interface CashMovementModalProps {
   isOpen: boolean;
@@ -21,6 +22,11 @@ export const CashMovementModal: React.FC<CashMovementModalProps> = ({
   const [reason, setReason] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+
+  useBackButton(() => {
+    onClose();
+    return true;
+  }, isOpen);
 
   if (!isOpen) return null;
 

@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { X, Plus, Tag } from 'lucide-react';
 import type { CartItem } from '../../types/index.js';
 import { roundMoney } from '../../utils/formatters.js';
+import { useBackButton } from '../../utils/backButton.js';
 
 interface QuickAddModalProps {
   isOpen: boolean;
@@ -18,6 +19,11 @@ export const QuickAddModal: React.FC<QuickAddModalProps> = ({
   const [price, setPrice] = useState('');
   const [quantity, setQuantity] = useState('1');
   const [error, setError] = useState<string | null>(null);
+
+  useBackButton(() => {
+    onClose();
+    return true;
+  }, isOpen);
 
   if (!isOpen) return null;
 

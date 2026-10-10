@@ -8,6 +8,7 @@ import { webBluetoothPrinter } from '../../services/hardware/webbluetooth.js';
 import { nativeSppPrinter } from '../../services/hardware/nativeSpp.js';
 import { clientDb } from '../../db/clientDb.js';
 import { getShopInfo } from '../../services/shopInfo.js';
+import { useBackButton } from '../../utils/backButton.js';
 
 interface ReceiptPrintModalProps {
   isOpen: boolean;
@@ -24,6 +25,11 @@ export const ReceiptPrintModal: React.FC<ReceiptPrintModalProps> = ({
   const [loading, setLoading] = useState(false);
   const printRef = useRef<HTMLDivElement>(null);
   const shop = getShopInfo();
+
+  useBackButton(() => {
+    onClose();
+    return true;
+  }, isOpen);
 
   useEffect(() => {
     if (isOpen && saleId) {

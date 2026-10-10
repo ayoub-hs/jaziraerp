@@ -2,6 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { X, Layers, Plus, Trash2, AlertCircle, Calculator, Eye, Play, AlertTriangle } from 'lucide-react';
 import type { RawMaterial, Formulation } from '../../types/index.js';
 import { formatMoney } from '../../utils/formatters.js';
+import { useBackButton } from '../../utils/backButton.js';
 
 interface CreateFormulationModalProps {
   isOpen: boolean;
@@ -34,6 +35,11 @@ export const CreateFormulationModal: React.FC<CreateFormulationModalProps> = ({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  useBackButton(() => {
+    onClose();
+    return true;
+  }, isOpen);
 
   // Batch preview state
   const [previewUnits, setPreviewUnits] = useState('100');

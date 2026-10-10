@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { AlertTriangle, X } from 'lucide-react';
+import { useBackButton } from '../../utils/backButton.js';
 
 interface ConfirmDeleteModalProps {
   isOpen: boolean;
@@ -22,6 +23,11 @@ export const ConfirmDeleteModal: React.FC<ConfirmDeleteModalProps> = ({
 }) => {
   const [isDeleting, setIsDeleting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  useBackButton(() => {
+    onClose();
+    return true;
+  }, isOpen);
 
   if (!isOpen) return null;
 

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { X, ArrowUpRight, ArrowDownLeft, AlertCircle, Package } from 'lucide-react';
 import type { Customer, ContainerType } from '../../types/index.js';
+import { useBackButton } from '../../utils/backButton.js';
 
 interface ContainerTransactionModalProps {
   isOpen: boolean;
@@ -31,6 +32,11 @@ export const ContainerTransactionModal: React.FC<ContainerTransactionModalProps>
   const [correction, setCorrection] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  useBackButton(() => {
+    onClose();
+    return true;
+  }, isOpen);
 
   // Sync state when opened with initial props
   useEffect(() => {

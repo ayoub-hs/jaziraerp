@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { X, History, TrendingUp, TrendingDown, Clock, Building2 } from 'lucide-react';
 import type { RawMaterial } from '../../types/index.js';
 import { formatMoney, formatDateTime } from '../../utils/formatters.js';
+import { useBackButton } from '../../utils/backButton.js';
 
 interface MaterialPriceHistoryModalProps {
   isOpen: boolean;
@@ -27,6 +28,11 @@ export const MaterialPriceHistoryModal: React.FC<MaterialPriceHistoryModalProps>
   const [history, setHistory] = useState<PriceHistoryEntry[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  useBackButton(() => {
+    onClose();
+    return true;
+  }, isOpen);
 
   useEffect(() => {
     if (isOpen && material) {

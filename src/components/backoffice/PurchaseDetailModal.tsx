@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { X, ShoppingBag, Calendar, AlertCircle, RefreshCw, Truck, CreditCard, DollarSign } from 'lucide-react';
 import { formatMoney, formatDate } from '../../utils/formatters.js';
+import { useBackButton } from '../../utils/backButton.js';
 
 interface PurchaseItem {
   id: string;
@@ -45,6 +46,11 @@ export const PurchaseDetailModal: React.FC<PurchaseDetailModalProps> = ({
   const [purchase, setPurchase] = useState<PurchaseDetail | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  useBackButton(() => {
+    onClose();
+    return true;
+  }, isOpen);
 
   useEffect(() => {
     if (isOpen && purchaseId) {

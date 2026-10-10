@@ -3,6 +3,7 @@ import { X, FileText, Download, RefreshCw, AlertCircle, Calendar, ArrowUpRight, 
 import type { Customer } from '../../types/index.js';
 import { formatMoney, formatDateTime, formatDate } from '../../utils/formatters.js';
 import { exportToCsv } from '../../utils/csv.js';
+import { useBackButton } from '../../utils/backButton.js';
 
 interface StatementEntry {
   id: string;
@@ -36,6 +37,11 @@ export const CustomerStatementModal: React.FC<CustomerStatementModalProps> = ({
   const [wallet, setWallet] = useState<Ledger>({ entries: [], final_balance: 0 });
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  useBackButton(() => {
+    onClose();
+    return true;
+  }, isOpen);
 
   useEffect(() => {
     if (isOpen && customer) {

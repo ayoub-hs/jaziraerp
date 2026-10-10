@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { X, Camera, Flashlight, AlertCircle } from 'lucide-react';
 import { playBeep } from '../../utils/audio.js';
 import { Capacitor } from '@capacitor/core';
+import { useBackButton } from '../../utils/backButton.js';
 
 interface CameraScannerModalProps {
   isOpen: boolean;
@@ -24,6 +25,11 @@ export const CameraScannerModal: React.FC<CameraScannerModalProps> = ({
   const [hasTorch, setHasTorch] = useState(false);
   const [manualCode, setManualCode] = useState('');
   const scanningActive = useRef(false);
+
+  useBackButton(() => {
+    onClose();
+    return true;
+  }, isOpen);
 
   useEffect(() => {
     if (isOpen) {

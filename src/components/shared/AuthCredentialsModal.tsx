@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { X, Shield, KeyRound, Lock, AlertCircle, CheckCircle, RefreshCw } from 'lucide-react';
 import { authService } from '../../services/authService.js';
+import { useBackButton } from '../../utils/backButton.js';
 
 interface AuthCredentialsModalProps {
   isOpen: boolean;
@@ -33,6 +34,11 @@ export const AuthCredentialsModal: React.FC<AuthCredentialsModalProps> = ({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
+
+  useBackButton(() => {
+    onClose();
+    return true;
+  }, isOpen);
 
   if (!isOpen) return null;
 

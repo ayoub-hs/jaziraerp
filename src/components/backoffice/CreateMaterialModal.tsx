@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { X, FlaskConical, AlertCircle } from 'lucide-react';
 import type { Supplier, RawMaterial } from '../../types/index.js';
+import { useBackButton } from '../../utils/backButton.js';
 
 interface CreateMaterialModalProps {
   isOpen: boolean;
@@ -50,6 +51,11 @@ export const CreateMaterialModal: React.FC<CreateMaterialModalProps> = ({
   const [supplierId, setSupplierId] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  useBackButton(() => {
+    onClose();
+    return true;
+  }, isOpen);
 
   useEffect(() => {
     if (isOpen) {

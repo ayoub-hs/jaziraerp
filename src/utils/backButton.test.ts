@@ -171,4 +171,50 @@ describe('Step 4: Android Hardware Back Button Handling', () => {
     // 3rd back: nothing open -> falls through to minimize
     expect(handleBackButton()).toBe(false);
   });
+
+  it('MOB-01: ensures all 25 application modals register useBackButton or registerBackHandler', async () => {
+    const fs = await import('fs');
+    const path = await import('path');
+
+    const modalFiles = [
+      'src/components/shared/SessionModal.tsx',
+      'src/components/shared/RefundModal.tsx',
+      'src/components/shared/CashMovementModal.tsx',
+      'src/components/shared/QuickAddModal.tsx',
+      'src/components/shared/CameraScannerModal.tsx',
+      'src/components/shared/FamilySizesModal.tsx',
+      'src/components/shared/ReceiptPrintModal.tsx',
+      'src/components/shared/InvoicePrintModal.tsx',
+      'src/components/shared/AuthCredentialsModal.tsx',
+      'src/components/backoffice/ContainerTransactionModal.tsx',
+      'src/components/backoffice/CreateCustomerModal.tsx',
+      'src/components/backoffice/InventoryAdjustmentModal.tsx',
+      'src/components/backoffice/BatchDetailModal.tsx',
+      'src/components/backoffice/ConfirmDeleteModal.tsx',
+      'src/components/backoffice/CreateContainerModal.tsx',
+      'src/components/backoffice/CreateExpenseModal.tsx',
+      'src/components/backoffice/CreateFormulationModal.tsx',
+      'src/components/backoffice/CreateMaterialModal.tsx',
+      'src/components/backoffice/CreateProductModal.tsx',
+      'src/components/backoffice/CreatePurchaseModal.tsx',
+      'src/components/backoffice/CreateSupplierModal.tsx',
+      'src/components/backoffice/CustomerStatementModal.tsx',
+      'src/components/backoffice/ManageCategoriesModal.tsx',
+      'src/components/backoffice/MaterialPriceHistoryModal.tsx',
+      'src/components/backoffice/PurchaseDetailModal.tsx',
+    ];
+
+    const missingBackHandler: string[] = [];
+
+    for (const relPath of modalFiles) {
+      const fullPath = path.resolve(process.cwd(), relPath);
+      expect(fs.existsSync(fullPath)).toBe(true);
+      const content = fs.readFileSync(fullPath, 'utf-8');
+      if (!content.includes('useBackButton') && !content.includes('registerBackHandler')) {
+        missingBackHandler.push(relPath);
+      }
+    }
+
+    expect(missingBackHandler).toEqual([]);
+  });
 });

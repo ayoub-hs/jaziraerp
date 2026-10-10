@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { X, Receipt, AlertCircle } from 'lucide-react';
+import { useBackButton } from '../../utils/backButton.js';
 
 interface CreateExpenseModalProps {
   isOpen: boolean;
@@ -38,6 +39,11 @@ export const CreateExpenseModal: React.FC<CreateExpenseModalProps> = ({
   // Open register sessions for REGISTER_CASH (same pattern as RefundModal)
   const [openSessions, setOpenSessions] = useState<any[]>([]);
   const [selectedSessionId, setSelectedSessionId] = useState<string>('');
+
+  useBackButton(() => {
+    onClose();
+    return true;
+  }, isOpen);
 
   useEffect(() => {
     if (!isOpen) return;

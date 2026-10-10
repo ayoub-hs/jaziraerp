@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { X, Truck, AlertCircle } from 'lucide-react';
 import type { Supplier } from '../../types/index.js';
+import { useBackButton } from '../../utils/backButton.js';
 
 interface CreateSupplierModalProps {
   isOpen: boolean;
@@ -21,6 +22,11 @@ export const CreateSupplierModal: React.FC<CreateSupplierModalProps> = ({
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  useBackButton(() => {
+    onClose();
+    return true;
+  }, isOpen);
 
   useEffect(() => {
     if (isOpen) {

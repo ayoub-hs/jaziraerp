@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { X, Layers, Plus, Edit2, Check, Trash2, AlertCircle } from 'lucide-react';
+import { useBackButton } from '../../utils/backButton.js';
 
 interface CategoryItem {
   id: string;
@@ -35,6 +36,11 @@ export const ManageCategoriesModal: React.FC<ManageCategoriesModalProps> = ({
   const [editingCatName, setEditingCatName] = useState<string | null>(null);
   const [renamedValue, setRenamedValue] = useState('');
   const [isRenaming, setIsRenaming] = useState(false);
+
+  useBackButton(() => {
+    onClose();
+    return true;
+  }, isOpen);
 
   const loadCategories = async () => {
     setLoading(true);

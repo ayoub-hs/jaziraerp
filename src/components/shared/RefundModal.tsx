@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { X, RotateCcw, Search, AlertCircle, CheckCircle, ArrowRight } from 'lucide-react';
 import type { SaleSummary } from '../../types/index.js';
 import { formatMoney, formatDateTime } from '../../utils/formatters.js';
+import { useBackButton } from '../../utils/backButton.js';
 
 interface RefundModalProps {
   isOpen: boolean;
@@ -37,6 +38,11 @@ export const RefundModal: React.FC<RefundModalProps> = ({
   const [openSessions, setOpenSessions] = useState<any[]>([]);
   const [selectedSessionId, setSelectedSessionId] = useState<string>('');
   const [sessionTouched, setSessionTouched] = useState(false);
+
+  useBackButton(() => {
+    onClose();
+    return true;
+  }, isOpen);
 
   useEffect(() => {
     if (isOpen) {

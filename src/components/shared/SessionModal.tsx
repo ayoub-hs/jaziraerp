@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { X, Lock, Unlock, AlertTriangle, CheckCircle } from 'lucide-react';
 import type { RegisterSession } from '../../types/index.js';
 import { formatMoney, roundMoney } from '../../utils/formatters.js';
+import { useBackButton } from '../../utils/backButton.js';
 
 interface SessionModalProps {
   isOpen: boolean;
@@ -39,6 +40,11 @@ export const SessionModal: React.FC<SessionModalProps> = ({
   // Multi-session tracking for register switching and target closing
   const [openSessions, setOpenSessions] = useState<RegisterSession[]>([]);
   const [selectedSessionToCloseId, setSelectedSessionToCloseId] = useState<string>('');
+
+  useBackButton(() => {
+    onClose();
+    return true;
+  }, isOpen);
 
   const loadSessionDetails = (sessionId: string) => {
     fetch(`/api/register/sessions/${sessionId}`)

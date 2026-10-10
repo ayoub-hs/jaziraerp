@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { X, FlaskConical, Calendar, AlertCircle, RefreshCw } from 'lucide-react';
 import { formatMoney, formatDate } from '../../utils/formatters.js';
+import { useBackButton } from '../../utils/backButton.js';
 
 interface ConsumedMaterial {
   id: string;
@@ -44,6 +45,11 @@ export const BatchDetailModal: React.FC<BatchDetailModalProps> = ({
   const [batch, setBatch] = useState<BatchDetail | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  useBackButton(() => {
+    onClose();
+    return true;
+  }, isOpen);
 
   useEffect(() => {
     if (isOpen && batchId) {

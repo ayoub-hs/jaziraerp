@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { X, Users, AlertCircle } from 'lucide-react';
 import type { Customer } from '../../types/index.js';
+import { useBackButton } from '../../utils/backButton.js';
 
 interface CreateCustomerModalProps {
   isOpen: boolean;
@@ -24,6 +25,11 @@ export const CreateCustomerModal: React.FC<CreateCustomerModalProps> = ({
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  useBackButton(() => {
+    onClose();
+    return true;
+  }, isOpen);
 
   useEffect(() => {
     if (isOpen) {

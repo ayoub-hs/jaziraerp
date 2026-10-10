@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { X, ShoppingBag, Plus, Trash2, AlertCircle, CheckCircle2 } from 'lucide-react';
 import type { Supplier, RawMaterial, Product } from '../../types/index.js';
+import { useBackButton } from '../../utils/backButton.js';
 
 export interface PurchaseLineItem {
   id: string;
@@ -44,6 +45,11 @@ export const CreatePurchaseModal: React.FC<CreatePurchaseModalProps> = ({
   ]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  useBackButton(() => {
+    onClose();
+    return true;
+  }, isOpen);
 
   // Initialize or reset on open
   useEffect(() => {

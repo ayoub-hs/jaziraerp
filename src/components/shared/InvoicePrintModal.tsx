@@ -4,6 +4,7 @@ import type { SaleSummary } from '../../types/index.js';
 import { formatMoney, formatDate } from '../../utils/formatters.js';
 import { calculateTaxBreakdown } from '../../utils/tax.js';
 import { getShopInfo } from '../../services/shopInfo.js';
+import { useBackButton } from '../../utils/backButton.js';
 
 interface InvoicePrintModalProps {
   isOpen: boolean;
@@ -19,6 +20,11 @@ export const InvoicePrintModal: React.FC<InvoicePrintModalProps> = ({
   const [sale, setSale] = useState<SaleSummary | null>(null);
   const [loading, setLoading] = useState(false);
   const shop = getShopInfo();
+
+  useBackButton(() => {
+    onClose();
+    return true;
+  }, isOpen);
 
   useEffect(() => {
     if (isOpen && saleId) {

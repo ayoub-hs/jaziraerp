@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { X, Package, AlertCircle, Plus, Edit2, Trash2 } from 'lucide-react';
 import type { Product, ProductFamily, Formulation, ContainerType, PackSize } from '../../types/index.js';
 import { formatMoney } from '../../utils/formatters.js';
+import { useBackButton } from '../../utils/backButton.js';
 
 interface CreateProductModalProps {
   isOpen: boolean;
@@ -80,6 +81,11 @@ export const CreateProductModal: React.FC<CreateProductModalProps> = ({
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  useBackButton(() => {
+    onClose();
+    return true;
+  }, isOpen);
 
   // Price markup suggestions
   const [retailMarkup, setRetailMarkup] = useState('');

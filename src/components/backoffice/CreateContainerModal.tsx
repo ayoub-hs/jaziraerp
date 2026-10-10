@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { X, Box, AlertCircle } from 'lucide-react';
 import type { ContainerType } from '../../types/index.js';
+import { useBackButton } from '../../utils/backButton.js';
 
 interface CreateContainerModalProps {
   isOpen: boolean;
@@ -21,6 +22,11 @@ export const CreateContainerModal: React.FC<CreateContainerModalProps> = ({
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  useBackButton(() => {
+    onClose();
+    return true;
+  }, isOpen);
 
   useEffect(() => {
     if (isOpen) {
