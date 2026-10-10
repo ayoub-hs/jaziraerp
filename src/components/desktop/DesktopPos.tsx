@@ -83,7 +83,7 @@ export const DesktopPos: React.FC<DesktopPosProps> = ({
   const [cart, setCart] = useState<CartItem[]>([]);
   const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
   const [saleDiscount, setSaleDiscount] = useState<number>(0);
-  const [editingDiscountItemId, setEditingDiscountItemId] = useState<string | null>(null);
+  const [editingOptionsItemId, setEditingOptionsItemId] = useState<string | null>(null);
 
   // Search & Filter
   const [searchQuery, setSearchQuery] = useState('');
@@ -538,7 +538,7 @@ export const DesktopPos: React.FC<DesktopPosProps> = ({
   };
 
   return (
-    <div className="flex-1 flex overflow-hidden bg-slate-100 relative">
+    <div className="flex-1 min-h-0 flex overflow-hidden bg-slate-100 relative">
       {/* Barcode Scan Notification Alert */}
       {scanAlert && (
         <div
@@ -707,40 +707,133 @@ export const DesktopPos: React.FC<DesktopPosProps> = ({
       {/* RIGHT COLUMN: Persistent Cart & Terminal (40% width) */}
       <div className="w-5/12 flex flex-col min-h-0 bg-white overflow-hidden shadow-lg border-l border-slate-200">
         {/* Customer Header Bar */}
-        <div className="p-3 border-b border-slate-200 bg-slate-50/80 space-y-2 shrink-0">
-          <div className="flex items-center justify-between">
-            <label className="text-xs font-bold text-slate-700 flex items-center gap-1.5">
-              <User className="w-3.5 h-3.5 text-emerald-600" />
-              Client
-            </label>
-            <div className="flex items-center gap-2">
+        <div className="px-3 py-1 border-b border-slate-200 bg-slate-50/80 shrink-0">
+          <div className="flex items-center justify-between gap-1.5">
+            {selectedCustomer ? (
+              <div className="flex items-center gap-1.5 min-w-0 flex-1 bg-white border border-emerald-300 rounded-lg px-2 py-0.5 shadow-xs">
+                <span className="text-xs font-bold text-slate-900 truncate max-w-[120px]" title={selectedCustomer.name}>
+                  {selectedCustomer.name}
+                </span>
+                <span className="text-[10px] font-bold bg-emerald-100 text-emerald-800 px-1 py-0.2 rounded shrink-0">
+                  {selectedCustomer.type}
+                </span>
+                <span className="text-[10px] font-semibold text-purple-700 bg-purple-50 px-1 py-0.2 rounded shrink-0">
+                  Solde: {formatMoney(selectedCustomer.wallet_balance)}
+                </span>
+                {(selectedCustomer.total_debt || 0) > 0 && (
+                  <span className="text-[10px] font-bold text-amber-800 bg-amber-50 px-1 py-0.2 rounded shrink-0">
+                    D: {formatMoney(selectedCustomer.total_debt)}
+                  </span>
+                )}
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSelectedCustomer(null);
+                    setCustomerSearchTerm('');
+                  }}
+                  className="text-slate-400 hover:text-rose-600 hover:bg-rose-50 p-0.5 rounded ml-auto transition-colors shrink-0"
+                  title="Désélectionner le client (passer en Passager)"
+                >
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              </div>
+            ) : (
+              <div className="relative flex-1 min-w-[160px]" ref={customerDropdownRef}>
+                <div className="relative">
+                  <Search className="w-3.5 h-3.5 absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400" />
+                  <input
+                    type="text"
+                    placeholder="Rechercher client (nom, tél...)"
+                    value={customerSearchTerm}
+                    onChange={e => {
+                      setCustomerSearchTerm(e.target.value);
+                      setIsCustomerDropdownOpen(true);
+                    }}
+                    onFocus={() => setIsCustomerDropdownOpen(true)}
+                    className="w-full text-xs pl-8 pr-2.5 py-1 border border-slate-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:outline-none bg-white font-medium text-slate-800 placeholder-slate-400"
+                  />
+                </div>
+
+                {isCustomerDropdownOpen && (
+                  <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-slate-200 rounded-lg shadow-xl z-50 max-h-64 overflow-y-auto divide-y divide-slate-100">
+                    <div
+                      onClick={() => {
+                        setSelectedCustomer(null);
+                        setIsCustomerDropdownOpen(false);
+                        setCustomerSearchTerm('');
+                      }}
+                      className="p-2.5 text-xs font-semibold hover:bg-slate-50 cursor-pointer flex items-center justify-between text-slate-600 bg-slate-50/50"
+                    >
+                      <span>Passager / Walk-in Retail</span>
+                      <span className="text-[10px] text-slate-400">Sans compte</span>
+                    </div>
+                    {filteredCustomers.length === 0 ? (
+                      <div className="p-4 text-xs text-slate-400 text-center">
+                        Aucun client trouvé
+                      </div>
+                    ) : (
+                      filteredCustomers.map(c => (
+                        <div
+                          key={c.id}
+                          onClick={() => {
+                            setSelectedCustomer(c);
+                            setIsCustomerDropdownOpen(false);
+                            setCustomerSearchTerm('');
+                          }}
+                          className="p-2 hover:bg-emerald-50/70 cursor-pointer transition-colors"
+                        >
+                          <div className="flex items-center justify-between gap-2">
+                            <span className="text-xs font-bold text-slate-800 truncate">{c.name}</span>
+                            <span className="text-[10px] font-semibold bg-slate-100 text-slate-700 px-1.5 py-0.5 rounded shrink-0">
+                              {c.type}{c.reseller_discount_percent ? ` -${c.reseller_discount_percent}%` : ''}
+                            </span>
+                          </div>
+                          <div className="flex items-center gap-2 mt-0.5 text-[10px] text-slate-500">
+                            {c.phone && <span>{c.phone}</span>}
+                            {(c.total_debt || 0) > 0 && (
+                              <span className="text-amber-700 font-bold">Dette: {formatMoney(c.total_debt)}</span>
+                            )}
+                            {(c.wallet_balance || 0) > 0 && (
+                              <span className="text-purple-700 font-semibold">Solde: {formatMoney(c.wallet_balance)}</span>
+                            )}
+                          </div>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Action buttons */}
+            <div className="flex items-center gap-1 shrink-0">
               <button
                 type="button"
                 onClick={() => setIsCreateCustomerOpen(true)}
-                className="text-xs font-bold text-emerald-800 hover:text-emerald-900 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 px-2.5 py-1 rounded-lg transition-colors flex items-center gap-1"
+                className="text-xs font-bold text-emerald-800 hover:text-emerald-900 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 p-1.5 rounded-lg transition-colors flex items-center gap-1"
                 title="Créer un nouveau client"
               >
                 <UserPlus className="w-3.5 h-3.5 text-emerald-600" />
-                <span>+ Client</span>
+                <span className="hidden 2xl:inline">+ Client</span>
               </button>
               <button
                 type="button"
                 onClick={() => setIsContainerTxOpen(true)}
-                className="text-xs font-bold text-amber-800 hover:text-amber-900 bg-amber-50 hover:bg-amber-100 border border-amber-200 px-2.5 py-1 rounded-lg transition-colors flex items-center gap-1"
+                className="text-xs font-bold text-amber-800 hover:text-amber-900 bg-amber-50 hover:bg-amber-100 border border-amber-200 p-1.5 rounded-lg transition-colors flex items-center gap-1"
                 title="Enregistrer un prêt ou retour de consigne"
               >
                 <Box className="w-3.5 h-3.5 text-amber-600" />
-                <span>Consignes</span>
+                <span className="hidden 2xl:inline">Consignes</span>
               </button>
               {cart.length > 0 && (
                 <button
                   type="button"
                   onClick={handleHoldCart}
-                  className="text-xs font-bold text-slate-700 hover:text-slate-900 bg-slate-100 hover:bg-slate-200 border border-slate-300 px-2 py-1 rounded-lg transition-colors flex items-center gap-1 shadow-xs"
+                  className="text-xs font-bold text-slate-700 hover:text-slate-900 bg-slate-100 hover:bg-slate-200 border border-slate-300 p-1.5 rounded-lg transition-colors flex items-center gap-1 shadow-xs"
                   title="Mettre ce panier en attente pour servir un autre client"
                 >
                   <PauseCircle className="w-3.5 h-3.5 text-amber-600" />
-                  <span>En attente</span>
+                  <span className="hidden 2xl:inline">En attente</span>
                 </button>
               )}
               <button
@@ -759,148 +852,20 @@ export const DesktopPos: React.FC<DesktopPosProps> = ({
               {cart.length > 0 && (
                 <button
                   onClick={handleClearCart}
-                  className="text-[11px] font-semibold text-rose-600 hover:text-rose-800"
+                  className="text-xs font-semibold text-rose-600 hover:text-rose-800 p-1.5 rounded-lg hover:bg-rose-50 transition-colors"
+                  title="Vider le panier"
                 >
-                  Clear Cart
+                  <Trash2 className="w-3.5 h-3.5" />
                 </button>
               )}
             </div>
           </div>
-
-          {priceWarning && (
-            <div className="bg-amber-50 border border-amber-300 rounded-lg p-2.5 text-xs text-amber-900 font-semibold flex items-center justify-between gap-2 shadow-xs">
-              <div className="flex items-center gap-2 min-w-0">
-                <AlertCircle className="w-4 h-4 text-amber-600 shrink-0" />
-                <span className="truncate">{priceWarning}</span>
-              </div>
-              <button
-                type="button"
-                onClick={() => setPriceWarning(null)}
-                className="p-1 hover:bg-amber-100 rounded text-amber-700"
-              >
-                <X className="w-3.5 h-3.5" />
-              </button>
-            </div>
-          )}
-
-          {selectedCustomer ? (
-            <div className="bg-white border border-emerald-300 rounded-lg p-2.5 shadow-sm space-y-1.5">
-              <div className="flex items-center justify-between gap-2">
-                <div className="flex items-center gap-1.5 min-w-0">
-                  <span className="text-xs font-bold text-slate-900 truncate">
-                    {selectedCustomer.name}
-                  </span>
-                  <span className="text-[10px] font-bold bg-emerald-100 text-emerald-800 px-1.5 py-0.5 rounded shrink-0">
-                    {selectedCustomer.type}
-                    {selectedCustomer.reseller_discount_percent ? ` -${selectedCustomer.reseller_discount_percent}%` : ''}
-                  </span>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setSelectedCustomer(null);
-                    setCustomerSearchTerm('');
-                  }}
-                  className="text-slate-400 hover:text-rose-600 hover:bg-rose-50 p-1 rounded transition-colors"
-                  title="Désélectionner le client (passer en Passager)"
-                >
-                  <X className="w-3.5 h-3.5" />
-                </button>
-              </div>
-
-              <div className="flex items-center gap-2 text-[10px] font-bold pt-1 border-t border-slate-100">
-                <span className="bg-purple-100 text-purple-800 px-2 py-0.5 rounded flex items-center gap-1">
-                  <Wallet className="w-3 h-3" />
-                  Solde: {formatMoney(selectedCustomer.wallet_balance)}
-                </span>
-                {(selectedCustomer.total_debt || 0) > 0 ? (
-                  <span className="bg-amber-100 text-amber-800 px-2 py-0.5 rounded flex items-center gap-1">
-                    <CreditCard className="w-3 h-3" />
-                    Dette: {formatMoney(selectedCustomer.total_debt)}
-                  </span>
-                ) : (
-                  <span className="text-slate-400 font-normal">Sans dette</span>
-                )}
-                {selectedCustomer.phone && (
-                  <span className="text-slate-500 font-medium ml-auto truncate max-w-[110px]">
-                    {selectedCustomer.phone}
-                  </span>
-                )}
-              </div>
-            </div>
-          ) : (
-            <div className="relative" ref={customerDropdownRef}>
-              <div className="relative">
-                <Search className="w-3.5 h-3.5 absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400" />
-                <input
-                  type="text"
-                  placeholder="Rechercher client (nom, tél...)"
-                  value={customerSearchTerm}
-                  onChange={e => {
-                    setCustomerSearchTerm(e.target.value);
-                    setIsCustomerDropdownOpen(true);
-                  }}
-                  onFocus={() => setIsCustomerDropdownOpen(true)}
-                  className="w-full text-xs pl-8 pr-3 py-1.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:outline-none bg-white font-medium text-slate-800 placeholder-slate-400"
-                />
-              </div>
-
-              {isCustomerDropdownOpen && (
-                <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-slate-200 rounded-lg shadow-xl z-50 max-h-64 overflow-y-auto divide-y divide-slate-100">
-                  <div
-                    onClick={() => {
-                      setSelectedCustomer(null);
-                      setIsCustomerDropdownOpen(false);
-                      setCustomerSearchTerm('');
-                    }}
-                    className="p-2.5 text-xs font-semibold hover:bg-slate-50 cursor-pointer flex items-center justify-between text-slate-600 bg-slate-50/50"
-                  >
-                    <span>Passager / Walk-in Retail</span>
-                    <span className="text-[10px] text-slate-400">Sans compte</span>
-                  </div>
-                  {filteredCustomers.length === 0 ? (
-                    <div className="p-4 text-xs text-slate-400 text-center">
-                      Aucun client trouvé
-                    </div>
-                  ) : (
-                    filteredCustomers.map(c => (
-                      <div
-                        key={c.id}
-                        onClick={() => {
-                          setSelectedCustomer(c);
-                          setIsCustomerDropdownOpen(false);
-                          setCustomerSearchTerm('');
-                        }}
-                        className="p-2.5 hover:bg-emerald-50/70 cursor-pointer transition-colors"
-                      >
-                        <div className="flex items-center justify-between gap-2">
-                          <span className="text-xs font-bold text-slate-800 truncate">{c.name}</span>
-                          <span className="text-[10px] font-semibold bg-slate-100 text-slate-700 px-1.5 py-0.5 rounded shrink-0">
-                            {c.type}{c.reseller_discount_percent ? ` -${c.reseller_discount_percent}%` : ''}
-                          </span>
-                        </div>
-                        <div className="flex items-center gap-2 mt-1 text-[10px] text-slate-500">
-                          {c.phone && <span>{c.phone}</span>}
-                          {(c.total_debt || 0) > 0 && (
-                            <span className="text-amber-700 font-bold">Dette: {formatMoney(c.total_debt)}</span>
-                          )}
-                          {(c.wallet_balance || 0) > 0 && (
-                            <span className="text-purple-700 font-semibold">Solde: {formatMoney(c.wallet_balance)}</span>
-                          )}
-                        </div>
-                      </div>
-                    ))
-                  )}
-                </div>
-              )}
-            </div>
-          )}
         </div>
 
         {/* Cart Item Rows */}
-        <div className="flex-1 min-h-0 p-2.5 overflow-y-auto divide-y divide-slate-100">
+        <div className="flex-1 min-h-0 p-2 overflow-y-auto divide-y divide-slate-100">
           {cart.map(item => (
-            <div key={item.cart_item_id} className="cart-row py-1.5 space-y-1">
+            <div key={item.cart_item_id} className="cart-row py-0.5 space-y-0.5">
               <div className="flex items-center justify-between gap-2">
                 <div className="flex-1 min-w-0 flex items-center gap-1.5">
                   <h4 className="text-pos-name font-bold text-slate-900 truncate" title={item.name}>
@@ -1061,60 +1026,69 @@ export const DesktopPos: React.FC<DesktopPosProps> = ({
                   })()}
                 </div>
 
-                <div className="flex items-center gap-1.5">
-                  {item.container_type_id && (
-                    <button
-                      type="button"
-                      onClick={() => handleToggleContainerLoan(item.cart_item_id)}
-                      className={`text-pos-badge font-bold px-2 py-0.5 rounded-full flex items-center gap-1 transition-colors border ${
-                        item.loan_container
-                          ? 'bg-amber-100 text-amber-900 border-amber-300 shadow-xs'
-                          : 'bg-slate-100 text-slate-600 border-slate-200 hover:bg-slate-200'
-                      }`}
-                      title={item.loan_container ? "Consigne prêtée (enregistrée au compte client)" : "Emballage client (pas de consigne prêtée)"}
-                    >
-                      <Box className="w-3 h-3 text-amber-600" />
-                      <span>
-                        {item.loan_container
-                          ? `Prêt consigne (${calculateContainersNeeded(item.quantity, item.pack_multiplier, item.size_label, item.container_capacity_liters, item.name)} pcs)`
-                          : 'Emballage client'}
-                      </span>
-                    </button>
+                <div className="flex items-center gap-1.5 shrink-0">
+                  {item.container_type_id && item.loan_container && (
+                    <span className="text-pos-badge font-bold px-1.5 py-0.5 rounded bg-amber-100 text-amber-900 border border-amber-300" title="Consigne prêtée">
+                      Consigne
+                    </span>
+                  )}
+                  {(item.discount_amount || 0) > 0 && (
+                    <span className="text-pos-badge font-bold px-1.5 py-0.5 rounded bg-rose-100 text-rose-700 border border-rose-200 font-mono" title={`Remise: -${formatMoney(item.discount_amount)}`}>
+                      -{formatMoney(item.discount_amount)}
+                    </span>
                   )}
 
                   <button
                     type="button"
-                    onClick={() => setEditingDiscountItemId(editingDiscountItemId === item.cart_item_id ? null : item.cart_item_id)}
-                    className={`text-pos-badge font-bold px-1.5 py-0.5 rounded flex items-center gap-0.5 transition-colors border ${
-                      (item.discount_amount || 0) > 0
-                        ? 'bg-rose-100 text-rose-700 border-rose-200 font-mono'
-                        : 'text-slate-600 hover:text-slate-800 bg-slate-100 hover:bg-slate-200 border border-slate-200'
+                    onClick={() => setEditingOptionsItemId(editingOptionsItemId === item.cart_item_id ? null : item.cart_item_id)}
+                    className={`text-pos-badge font-bold px-2 py-0.5 rounded transition-colors border ${
+                      editingOptionsItemId === item.cart_item_id
+                        ? 'bg-slate-800 text-white border-slate-800'
+                        : 'text-slate-600 hover:text-slate-800 bg-slate-100 hover:bg-slate-200 border-slate-200'
                     }`}
-                    title="Remise par article"
+                    title="Options article (consigne, remise)"
                   >
-                    <Tag className="w-3 h-3" />
-                    {(item.discount_amount || 0) > 0 ? `Remise: -${formatMoney(item.discount_amount)}` : 'Remise'}
+                    ...
                   </button>
                 </div>
               </div>
 
-              {/* Line Discount Input dropdown */}
-              {editingDiscountItemId === item.cart_item_id && (
-                <div className="mt-1 flex items-center gap-2 bg-slate-50 p-1.5 rounded-lg border border-slate-200">
-                  <span className="text-pos-badge font-bold text-slate-600">Remise ligne (DT):</span>
-                  <input
-                    type="number"
-                    step="0.1"
-                    min="0"
-                    value={item.discount_amount || ''}
-                    onChange={e => handleUpdateItemDiscount(item.cart_item_id, parseFloat(e.target.value) || 0)}
-                    placeholder="0.000"
-                    className="w-20 px-1.5 py-0.5 text-xs font-mono font-bold border border-slate-300 rounded focus:outline-none focus:ring-1 focus:ring-emerald-500 bg-white"
-                  />
+              {/* Toggle 2b: Expanded options panel for container & discount */}
+              {editingOptionsItemId === item.cart_item_id && (
+                <div className="mt-1 flex items-center justify-between gap-2 bg-slate-50 p-1.5 rounded-lg border border-slate-200 text-xs">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    {item.container_type_id && (
+                      <button
+                        type="button"
+                        onClick={() => handleToggleContainerLoan(item.cart_item_id)}
+                        className={`text-pos-badge font-bold px-2 py-0.5 rounded-full flex items-center gap-1 transition-colors border ${
+                          item.loan_container
+                            ? 'bg-amber-100 text-amber-900 border-amber-300 shadow-xs'
+                            : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-100'
+                        }`}
+                        title={item.loan_container ? "Consigne prêtée (enregistrée au compte client)" : "Emballage client (pas de consigne prêtée)"}
+                      >
+                        <Box className="w-3 h-3 text-amber-600" />
+                        <span>{item.loan_container ? `Prêt consigne (${calculateContainersNeeded(item.quantity, item.pack_multiplier, item.size_label, item.container_capacity_liters, item.name)} pcs)` : 'Emballage client'}</span>
+                      </button>
+                    )}
+                    <div className="flex items-center gap-1">
+                      <span className="text-pos-badge font-bold text-slate-600">Remise (DT):</span>
+                      <input
+                        type="number"
+                        step="0.1"
+                        min="0"
+                        value={item.discount_amount || ''}
+                        onChange={e => handleUpdateItemDiscount(item.cart_item_id, parseFloat(e.target.value) || 0)}
+                        placeholder="0.000"
+                        className="w-16 px-1.5 py-0.5 text-xs font-mono font-bold border border-slate-300 rounded focus:outline-none focus:ring-1 focus:ring-emerald-500 bg-white"
+                      />
+                    </div>
+                  </div>
                   <button
                     type="button"
-                    onClick={() => setEditingDiscountItemId(null)}
-                    className="text-pos-badge font-bold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 px-2 py-0.5 rounded"
+                    onClick={() => setEditingOptionsItemId(null)}
+                    className="text-pos-badge font-bold text-slate-600 bg-white hover:bg-slate-100 border border-slate-200 px-2 py-0.5 rounded"
                   >
                     OK
                   </button>
@@ -1133,9 +1107,9 @@ export const DesktopPos: React.FC<DesktopPosProps> = ({
         </div>
 
         {/* Totals & Checkout Box */}
-        <div className="p-3 border-t border-slate-200 bg-slate-50 space-y-2 shrink-0">
+        <div className="px-3 py-1.5 border-t border-slate-200 bg-slate-50 space-y-1 shrink-0">
           {/* Sale Discount Input */}
-          <div className="flex items-center justify-between pb-1.5 border-b border-slate-200">
+          <div className="flex items-center justify-between pb-1 border-b border-slate-200">
             <span className="text-xs font-semibold text-slate-600 flex items-center gap-1">
               <Tag className="w-3.5 h-3.5 text-emerald-600" />
               Remise globale (DT):
@@ -1147,19 +1121,15 @@ export const DesktopPos: React.FC<DesktopPosProps> = ({
               value={saleDiscount || ''}
               onChange={e => setSaleDiscount(Math.max(0, parseFloat(e.target.value) || 0))}
               placeholder="0.000"
-              className="w-24 px-2 py-1 text-xs text-right font-mono font-bold border border-slate-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-emerald-500 bg-white"
+              className="w-24 px-2 py-0.5 text-xs text-right font-mono font-bold border border-slate-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-emerald-500 bg-white"
             />
           </div>
 
           {/* Subtotals & Taxes */}
           <div className="space-y-0.5 text-xs text-slate-600">
-            <div className="flex justify-between">
-              <span>Articles ({totals.itemCount} items / {totals.totalPieces} pcs):</span>
-              <span className="font-mono">{formatMoney(totals.subtotalHT)} HT</span>
-            </div>
-            <div className="flex justify-between">
-              <span>TVA (19%):</span>
-              <span className="font-mono">{formatMoney(totals.tvaAmount)}</span>
+            <div className="flex justify-between items-center">
+              <span>Articles ({totals.itemCount} items / {totals.totalPieces} pcs): <span className="font-mono text-slate-800">{formatMoney(totals.subtotalHT)} HT</span></span>
+              <span>TVA (19%): <span className="font-mono text-slate-800">{formatMoney(totals.tvaAmount)}</span></span>
             </div>
             {totals.totalDiscount > 0 && (
               <div className="flex justify-between text-rose-600 font-semibold">
@@ -1167,7 +1137,7 @@ export const DesktopPos: React.FC<DesktopPosProps> = ({
                 <span className="font-mono">-{formatMoney(totals.totalDiscount)}</span>
               </div>
             )}
-            <div className="flex justify-between items-baseline pt-1 border-t border-slate-200">
+            <div className="flex justify-between items-baseline pt-0.5 border-t border-slate-200">
               <span className="text-sm font-bold text-slate-900">TOTAL TTC:</span>
               <span className="cart-grand-total font-mono text-pos-total text-emerald-700">
                 {formatMoney(totals.totalTTC)}
@@ -1177,7 +1147,7 @@ export const DesktopPos: React.FC<DesktopPosProps> = ({
 
           {/* Closed Register Notice */}
           {!activeSession && (
-            <div className="mb-2 p-2 bg-amber-50 border border-amber-300 rounded-xl flex items-center justify-between gap-2 text-xs">
+            <div className="mb-1 p-1.5 bg-amber-50 border border-amber-300 rounded-xl flex items-center justify-between gap-2 text-xs">
               <div className="flex items-center gap-1.5 text-amber-900 font-semibold">
                 <AlertCircle className="w-4 h-4 text-amber-600 shrink-0" />
                 <span>Caisse fermée — Session requise</span>
@@ -1185,7 +1155,7 @@ export const DesktopPos: React.FC<DesktopPosProps> = ({
               <button
                 type="button"
                 onClick={onOpenSessionModal}
-                className="bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold px-2.5 py-1 rounded-lg text-xs transition-colors shadow-xs"
+                className="bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold px-2 py-0.5 rounded-lg text-xs transition-colors shadow-xs"
               >
                 Ouvrir la caisse
               </button>
@@ -1202,7 +1172,7 @@ export const DesktopPos: React.FC<DesktopPosProps> = ({
               }
               setIsCheckoutOpen(true);
             }}
-            className={`w-full py-3.5 min-h-[52px] text-white font-black rounded-xl shadow-lg transition-all text-lg flex items-center justify-center gap-2 ${
+            className={`w-full py-2 min-h-[48px] text-white font-black rounded-xl shadow-lg transition-all text-lg flex items-center justify-center gap-2 ${
               cart.length === 0
                 ? 'bg-slate-300 text-slate-500 cursor-not-allowed'
                 : !activeSession

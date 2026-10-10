@@ -170,7 +170,7 @@ export const ReceiptPrintModal: React.FC<ReceiptPrintModalProps> = ({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 overflow-y-auto print:p-0 print:bg-white print:static print:overflow-visible">
-      <div className="bg-white rounded-2xl shadow-2xl max-w-sm w-full overflow-hidden flex flex-col border border-slate-200 print:border-none print:shadow-none print:w-auto print:max-w-none">
+      <div className="bg-white rounded-2xl shadow-2xl max-w-sm w-full overflow-hidden flex flex-col border border-slate-200 print:border-none print:shadow-none print:w-auto print:max-w-none print:overflow-visible print:h-auto">
         {/* Header */}
         <div className="bg-slate-900 text-white px-4 py-3 flex items-center justify-between print:hidden">
           <div className="flex items-center gap-2">

@@ -1,78 +1,372 @@
 {
-  "timestamp": "2026-10-10T19:45:03.331Z",
-  "viewport": "desktop_1600x780",
-  "cartMetrics": {
-    "rowDetails": [
-      {
-        "index": 1,
-        "height": 82,
-        "top": 74,
-        "bottom": 156,
-        "isFullyVisible": true,
-        "text": "Javel Parfumée Citron Frais 1.5L Flacon Ergonomique"
+  "timestamp": "2026-10-10T22:26:11.811Z",
+  "description": "Empirical measurements after Batch UI-1 (desktop POS cart compaction, zero page scroll, sticky checkout total)",
+  "viewports": {
+    "1600x780": {
+      "cartScrollContainerClientHeight": 484,
+      "summaryHeight": 172,
+      "docScrollHeight": 780,
+      "innerH": 780,
+      "noPageScroll": true,
+      "totalRect": {
+        "x": 1425.953125,
+        "y": 686,
+        "width": 162.03125,
+        "height": 36,
+        "top": 686,
+        "right": 1587.984375,
+        "bottom": 722,
+        "left": 1425.953125
       },
-      {
-        "index": 2,
-        "height": 83,
-        "top": 156,
-        "bottom": 239,
-        "isFullyVisible": true,
-        "text": "Eau de Javel Désinfectante Concentrée 12° Bidon 5L"
+      "totalInsideViewport": true,
+      "payRect": {
+        "x": 946.328125,
+        "y": 726,
+        "width": 641.65625,
+        "height": 48,
+        "top": 726,
+        "right": 1587.984375,
+        "bottom": 774,
+        "left": 946.328125
       },
-      {
-        "index": 3,
-        "height": 83,
-        "top": 239,
-        "bottom": 322,
-        "isFullyVisible": true,
-        "text": "Eau de Javel Industrielle 18° Fût Plastique 20L"
-      },
-      {
-        "index": 4,
-        "height": 83,
-        "top": 322,
-        "bottom": 405,
-        "isFullyVisible": true,
-        "text": "Gel Javel Épais Surpuissant Océan Flacon Canard 750ml"
-      },
-      {
-        "index": 5,
-        "height": 83,
-        "top": 405,
-        "bottom": 488,
-        "isFullyVisible": true,
-        "text": "Liquide Vaisselle Extra Dégraissant Pomme Verte 1L"
-      },
-      {
-        "index": 6,
-        "height": 83,
-        "top": 488,
-        "bottom": 571,
-        "isFullyVisible": true,
-        "text": "Liquide Vaisselle Concentré Citron Vert Antibactérien 1L"
-      },
-      {
-        "index": 7,
-        "height": 83,
-        "top": 571,
-        "bottom": 654,
-        "isFullyVisible": true,
-        "text": "Liquide Vaisselle Formule Pro Économique Bidon 5L"
-      },
-      {
-        "index": 8,
-        "height": 83,
-        "top": 654,
-        "bottom": 737,
-        "isFullyVisible": true,
-        "text": "Liquide Vaisselle Restauration Collective Fût 20L"
+      "payInsideViewport": true,
+      "minRowHeight": 72,
+      "maxRowHeight": 73,
+      "meanRowHeight": 72.9,
+      "fullyVisibleRowsCount": 6,
+      "totalRowsCount": 8,
+      "rowDetails": [
+        {
+          "index": 1,
+          "height": 72,
+          "top": 132,
+          "bottom": 204,
+          "isInsideContainer": true,
+          "isInsideViewport": true,
+          "isFullyVisible": true,
+          "text": "Javel Parfumée Citron Frais 1.5L Flacon Ergonomique"
+        },
+        {
+          "index": 2,
+          "height": 73,
+          "top": 204,
+          "bottom": 277,
+          "isInsideContainer": true,
+          "isInsideViewport": true,
+          "isFullyVisible": true,
+          "text": "Eau de Javel Désinfectante Concentrée 12° Bidon 5L"
+        },
+        {
+          "index": 3,
+          "height": 73,
+          "top": 277,
+          "bottom": 350,
+          "isInsideContainer": true,
+          "isInsideViewport": true,
+          "isFullyVisible": true,
+          "text": "Eau de Javel Industrielle 18° Fût Plastique 20L"
+        },
+        {
+          "index": 4,
+          "height": 73,
+          "top": 350,
+          "bottom": 423,
+          "isInsideContainer": true,
+          "isInsideViewport": true,
+          "isFullyVisible": true,
+          "text": "Gel Javel Épais Surpuissant Océan Flacon Canard 750ml"
+        },
+        {
+          "index": 5,
+          "height": 73,
+          "top": 423,
+          "bottom": 496,
+          "isInsideContainer": true,
+          "isInsideViewport": true,
+          "isFullyVisible": true,
+          "text": "Liquide Vaisselle Extra Dégraissant Pomme Verte 1L"
+        },
+        {
+          "index": 6,
+          "height": 73,
+          "top": 496,
+          "bottom": 569,
+          "isInsideContainer": true,
+          "isInsideViewport": true,
+          "isFullyVisible": true,
+          "text": "Liquide Vaisselle Concentré Citron Vert Antibactérien 1L"
+        },
+        {
+          "index": 7,
+          "height": 73,
+          "top": 569,
+          "bottom": 642,
+          "isInsideContainer": false,
+          "isInsideViewport": true,
+          "isFullyVisible": false,
+          "text": "Liquide Vaisselle Formule Pro Économique Bidon 5L"
+        },
+        {
+          "index": 8,
+          "height": 73,
+          "top": 642,
+          "bottom": 715,
+          "isInsideContainer": false,
+          "isInsideViewport": true,
+          "isFullyVisible": false,
+          "text": "Liquide Vaisselle Restauration Collective Fût 20L"
+        }
+      ],
+      "cashTenderInput": {
+        "fontSizePx": 22,
+        "fontWeight": "700",
+        "fontWeightNum": 700,
+        "selector": ".fixed.inset-0 input.text-pos-input, .fixed.inset-0 input[placeholder=\"0.000\"]"
       }
-    ],
-    "minHeight": 82,
-    "maxHeight": 83,
-    "meanHeight": 82.9,
-    "fullyVisibleCount": 8,
-    "cartScrollAreaHeight": 683,
-    "summaryBlockHeight": 225
+    },
+    "1600x900": {
+      "cartScrollContainerClientHeight": 604,
+      "summaryHeight": 172,
+      "docScrollHeight": 900,
+      "innerH": 900,
+      "noPageScroll": true,
+      "totalRect": {
+        "x": 1425.953125,
+        "y": 806,
+        "width": 162.03125,
+        "height": 36,
+        "top": 806,
+        "right": 1587.984375,
+        "bottom": 842,
+        "left": 1425.953125
+      },
+      "totalInsideViewport": true,
+      "payRect": {
+        "x": 946.328125,
+        "y": 846,
+        "width": 641.65625,
+        "height": 48,
+        "top": 846,
+        "right": 1587.984375,
+        "bottom": 894,
+        "left": 946.328125
+      },
+      "payInsideViewport": true,
+      "minRowHeight": 72,
+      "maxRowHeight": 73,
+      "meanRowHeight": 72.9,
+      "fullyVisibleRowsCount": 8,
+      "totalRowsCount": 8,
+      "rowDetails": [
+        {
+          "index": 1,
+          "height": 72,
+          "top": 132,
+          "bottom": 204,
+          "isInsideContainer": true,
+          "isInsideViewport": true,
+          "isFullyVisible": true,
+          "text": "Javel Parfumée Citron Frais 1.5L Flacon Ergonomique"
+        },
+        {
+          "index": 2,
+          "height": 73,
+          "top": 204,
+          "bottom": 277,
+          "isInsideContainer": true,
+          "isInsideViewport": true,
+          "isFullyVisible": true,
+          "text": "Eau de Javel Désinfectante Concentrée 12° Bidon 5L"
+        },
+        {
+          "index": 3,
+          "height": 73,
+          "top": 277,
+          "bottom": 350,
+          "isInsideContainer": true,
+          "isInsideViewport": true,
+          "isFullyVisible": true,
+          "text": "Eau de Javel Industrielle 18° Fût Plastique 20L"
+        },
+        {
+          "index": 4,
+          "height": 73,
+          "top": 350,
+          "bottom": 423,
+          "isInsideContainer": true,
+          "isInsideViewport": true,
+          "isFullyVisible": true,
+          "text": "Gel Javel Épais Surpuissant Océan Flacon Canard 750ml"
+        },
+        {
+          "index": 5,
+          "height": 73,
+          "top": 423,
+          "bottom": 496,
+          "isInsideContainer": true,
+          "isInsideViewport": true,
+          "isFullyVisible": true,
+          "text": "Liquide Vaisselle Extra Dégraissant Pomme Verte 1L"
+        },
+        {
+          "index": 6,
+          "height": 73,
+          "top": 496,
+          "bottom": 569,
+          "isInsideContainer": true,
+          "isInsideViewport": true,
+          "isFullyVisible": true,
+          "text": "Liquide Vaisselle Concentré Citron Vert Antibactérien 1L"
+        },
+        {
+          "index": 7,
+          "height": 73,
+          "top": 569,
+          "bottom": 642,
+          "isInsideContainer": true,
+          "isInsideViewport": true,
+          "isFullyVisible": true,
+          "text": "Liquide Vaisselle Formule Pro Économique Bidon 5L"
+        },
+        {
+          "index": 8,
+          "height": 73,
+          "top": 642,
+          "bottom": 715,
+          "isInsideContainer": true,
+          "isInsideViewport": true,
+          "isFullyVisible": true,
+          "text": "Liquide Vaisselle Restauration Collective Fût 20L"
+        }
+      ],
+      "cashTenderInput": {
+        "fontSizePx": 22,
+        "fontWeight": "700",
+        "fontWeightNum": 700,
+        "selector": ".fixed.inset-0 input.text-pos-input, .fixed.inset-0 input[placeholder=\"0.000\"]"
+      }
+    },
+    "1563x545": {
+      "cartScrollContainerClientHeight": 236,
+      "summaryHeight": 172,
+      "docScrollHeight": 545,
+      "innerH": 545,
+      "noPageScroll": true,
+      "totalRect": {
+        "x": 1388.96875,
+        "y": 451,
+        "width": 162.03125,
+        "height": 36,
+        "top": 451,
+        "right": 1551,
+        "bottom": 487,
+        "left": 1388.96875
+      },
+      "totalInsideViewport": true,
+      "payRect": {
+        "x": 924.75,
+        "y": 491,
+        "width": 626.25,
+        "height": 48,
+        "top": 491,
+        "right": 1551,
+        "bottom": 539,
+        "left": 924.75
+      },
+      "payInsideViewport": true,
+      "minRowHeight": 72,
+      "maxRowHeight": 73,
+      "meanRowHeight": 72.9,
+      "fullyVisibleRowsCount": 3,
+      "totalRowsCount": 8,
+      "rowDetails": [
+        {
+          "index": 1,
+          "height": 72,
+          "top": 145,
+          "bottom": 217,
+          "isInsideContainer": true,
+          "isInsideViewport": true,
+          "isFullyVisible": true,
+          "text": "Javel Parfumée Citron Frais 1.5L Flacon Ergonomique"
+        },
+        {
+          "index": 2,
+          "height": 73,
+          "top": 217,
+          "bottom": 290,
+          "isInsideContainer": true,
+          "isInsideViewport": true,
+          "isFullyVisible": true,
+          "text": "Eau de Javel Désinfectante Concentrée 12° Bidon 5L"
+        },
+        {
+          "index": 3,
+          "height": 73,
+          "top": 290,
+          "bottom": 363,
+          "isInsideContainer": true,
+          "isInsideViewport": true,
+          "isFullyVisible": true,
+          "text": "Eau de Javel Industrielle 18° Fût Plastique 20L"
+        },
+        {
+          "index": 4,
+          "height": 73,
+          "top": 363,
+          "bottom": 436,
+          "isInsideContainer": false,
+          "isInsideViewport": true,
+          "isFullyVisible": false,
+          "text": "Gel Javel Épais Surpuissant Océan Flacon Canard 750ml"
+        },
+        {
+          "index": 5,
+          "height": 73,
+          "top": 436,
+          "bottom": 509,
+          "isInsideContainer": false,
+          "isInsideViewport": true,
+          "isFullyVisible": false,
+          "text": "Liquide Vaisselle Extra Dégraissant Pomme Verte 1L"
+        },
+        {
+          "index": 6,
+          "height": 73,
+          "top": 509,
+          "bottom": 582,
+          "isInsideContainer": false,
+          "isInsideViewport": false,
+          "isFullyVisible": false,
+          "text": "Liquide Vaisselle Concentré Citron Vert Antibactérien 1L"
+        },
+        {
+          "index": 7,
+          "height": 73,
+          "top": 582,
+          "bottom": 655,
+          "isInsideContainer": false,
+          "isInsideViewport": false,
+          "isFullyVisible": false,
+          "text": "Liquide Vaisselle Formule Pro Économique Bidon 5L"
+        },
+        {
+          "index": 8,
+          "height": 73,
+          "top": 655,
+          "bottom": 728,
+          "isInsideContainer": false,
+          "isInsideViewport": false,
+          "isFullyVisible": false,
+          "text": "Liquide Vaisselle Restauration Collective Fût 20L"
+        }
+      ],
+      "cashTenderInput": {
+        "fontSizePx": 22,
+        "fontWeight": "700",
+        "fontWeightNum": 700,
+        "selector": ".fixed.inset-0 input.text-pos-input, .fixed.inset-0 input[placeholder=\"0.000\"]"
+      }
+    }
   }
 }

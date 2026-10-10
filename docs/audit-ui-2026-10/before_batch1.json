@@ -1,78 +1,325 @@
 {
-  "timestamp": "2026-10-10T19:17:56.028Z",
-  "viewport": "desktop_1600x780",
-  "cartMetrics": {
-    "rowDetails": [
-      {
-        "index": 1,
-        "height": 84,
-        "top": 52,
-        "bottom": 136,
-        "isFullyVisible": true,
-        "text": "Javel Parfumée Citron Frais 1.5L Flacon Ergonomique"
+  "timestamp": "2026-10-10T22:08:48Z",
+  "commit": "561b69a",
+  "description": "Baseline measurements prior to Batch UI-1 (commit 561b69a) measured with strict assertions (no page scroll, bounding box inside both container and viewport)",
+  "viewports": {
+    "1600x780": {
+      "cartScrollContainerClientHeight": 703,
+      "summaryHeight": 209,
+      "docScrollHeight": 1147,
+      "innerH": 780,
+      "noPageScroll": false,
+      "totalRect": {
+        "top": 1047,
+        "bottom": 1075,
+        "height": 28
       },
-      {
-        "index": 2,
-        "height": 85,
-        "top": 136,
-        "bottom": 221,
-        "isFullyVisible": true,
-        "text": "Eau de Javel Désinfectante Concentrée 12° Bidon 5L"
+      "totalInsideViewport": false,
+      "payRect": {
+        "top": 1087,
+        "bottom": 1131,
+        "height": 44
       },
-      {
-        "index": 3,
-        "height": 85,
-        "top": 221,
-        "bottom": 306,
-        "isFullyVisible": true,
-        "text": "Eau de Javel Industrielle 18° Fût Plastique 20L"
+      "payInsideViewport": false,
+      "minRowHeight": 84,
+      "maxRowHeight": 85,
+      "meanRowHeight": 84.9,
+      "fullyVisibleRowsCount": 6,
+      "totalRowsCount": 8,
+      "rowDetails": [
+        {
+          "index": 1,
+          "top": 247,
+          "bottom": 331,
+          "height": 84,
+          "isInsideContainer": true,
+          "isInsideViewport": true,
+          "isFullyVisible": true,
+          "text": "Javel Parfumée Citron Frais 1."
+        },
+        {
+          "index": 2,
+          "top": 331,
+          "bottom": 416,
+          "height": 85,
+          "isInsideContainer": true,
+          "isInsideViewport": true,
+          "isFullyVisible": true,
+          "text": "Eau de Javel Désinfectante Con"
+        },
+        {
+          "index": 3,
+          "top": 416,
+          "bottom": 501,
+          "height": 85,
+          "isInsideContainer": true,
+          "isInsideViewport": true,
+          "isFullyVisible": true,
+          "text": "Eau de Javel Industrielle 18° "
+        },
+        {
+          "index": 4,
+          "top": 501,
+          "bottom": 586,
+          "height": 85,
+          "isInsideContainer": true,
+          "isInsideViewport": true,
+          "isFullyVisible": true,
+          "text": "Gel Javel Épais Surpuissant Oc"
+        },
+        {
+          "index": 5,
+          "top": 586,
+          "bottom": 671,
+          "height": 85,
+          "isInsideContainer": true,
+          "isInsideViewport": true,
+          "isFullyVisible": true,
+          "text": "Liquide Vaisselle Extra Dégrai"
+        },
+        {
+          "index": 6,
+          "top": 671,
+          "bottom": 756,
+          "height": 85,
+          "isInsideContainer": true,
+          "isInsideViewport": true,
+          "isFullyVisible": true,
+          "text": "Liquide Vaisselle Concentré Ci"
+        },
+        {
+          "index": 7,
+          "top": 756,
+          "bottom": 841,
+          "height": 85,
+          "isInsideContainer": true,
+          "isInsideViewport": false,
+          "isFullyVisible": false,
+          "text": "Liquide Vaisselle Formule Pro "
+        },
+        {
+          "index": 8,
+          "top": 841,
+          "bottom": 926,
+          "height": 85,
+          "isInsideContainer": true,
+          "isInsideViewport": false,
+          "isFullyVisible": false,
+          "text": "Liquide Vaisselle Restauration"
+        }
+      ]
+    },
+    "1600x900": {
+      "cartScrollContainerClientHeight": 703,
+      "summaryHeight": 209,
+      "docScrollHeight": 1147,
+      "innerH": 900,
+      "noPageScroll": false,
+      "totalRect": {
+        "top": 1047,
+        "bottom": 1075,
+        "height": 28
       },
-      {
-        "index": 4,
-        "height": 85,
-        "top": 306,
-        "bottom": 391,
-        "isFullyVisible": true,
-        "text": "Gel Javel Épais Surpuissant Océan Flacon Canard 750ml"
+      "totalInsideViewport": false,
+      "payRect": {
+        "top": 1087,
+        "bottom": 1131,
+        "height": 44
       },
-      {
-        "index": 5,
-        "height": 85,
-        "top": 391,
-        "bottom": 476,
-        "isFullyVisible": true,
-        "text": "Liquide Vaisselle Extra Dégraissant Pomme Verte 1L"
+      "payInsideViewport": false,
+      "minRowHeight": 84,
+      "maxRowHeight": 85,
+      "meanRowHeight": 84.9,
+      "fullyVisibleRowsCount": 7,
+      "totalRowsCount": 8,
+      "rowDetails": [
+        {
+          "index": 1,
+          "top": 247,
+          "bottom": 331,
+          "height": 84,
+          "isInsideContainer": true,
+          "isInsideViewport": true,
+          "isFullyVisible": true,
+          "text": "Javel Parfumée Citron Frais 1."
+        },
+        {
+          "index": 2,
+          "top": 331,
+          "bottom": 416,
+          "height": 85,
+          "isInsideContainer": true,
+          "isInsideViewport": true,
+          "isFullyVisible": true,
+          "text": "Eau de Javel Désinfectante Con"
+        },
+        {
+          "index": 3,
+          "top": 416,
+          "bottom": 501,
+          "height": 85,
+          "isInsideContainer": true,
+          "isInsideViewport": true,
+          "isFullyVisible": true,
+          "text": "Eau de Javel Industrielle 18° "
+        },
+        {
+          "index": 4,
+          "top": 501,
+          "bottom": 586,
+          "height": 85,
+          "isInsideContainer": true,
+          "isInsideViewport": true,
+          "isFullyVisible": true,
+          "text": "Gel Javel Épais Surpuissant Oc"
+        },
+        {
+          "index": 5,
+          "top": 586,
+          "bottom": 671,
+          "height": 85,
+          "isInsideContainer": true,
+          "isInsideViewport": true,
+          "isFullyVisible": true,
+          "text": "Liquide Vaisselle Extra Dégrai"
+        },
+        {
+          "index": 6,
+          "top": 671,
+          "bottom": 756,
+          "height": 85,
+          "isInsideContainer": true,
+          "isInsideViewport": true,
+          "isFullyVisible": true,
+          "text": "Liquide Vaisselle Concentré Ci"
+        },
+        {
+          "index": 7,
+          "top": 756,
+          "bottom": 841,
+          "height": 85,
+          "isInsideContainer": true,
+          "isInsideViewport": true,
+          "isFullyVisible": true,
+          "text": "Liquide Vaisselle Formule Pro "
+        },
+        {
+          "index": 8,
+          "top": 841,
+          "bottom": 926,
+          "height": 85,
+          "isInsideContainer": true,
+          "isInsideViewport": false,
+          "isFullyVisible": false,
+          "text": "Liquide Vaisselle Restauration"
+        }
+      ]
+    },
+    "1563x545": {
+      "cartScrollContainerClientHeight": 703,
+      "summaryHeight": 209,
+      "docScrollHeight": 1147,
+      "innerH": 545,
+      "noPageScroll": false,
+      "totalRect": {
+        "top": 1047,
+        "bottom": 1075,
+        "height": 28
       },
-      {
-        "index": 6,
-        "height": 85,
-        "top": 476,
-        "bottom": 561,
-        "isFullyVisible": true,
-        "text": "Liquide Vaisselle Concentré Citron Vert Antibactérien 1L"
+      "totalInsideViewport": false,
+      "payRect": {
+        "top": 1087,
+        "bottom": 1131,
+        "height": 44
       },
-      {
-        "index": 7,
-        "height": 85,
-        "top": 561,
-        "bottom": 646,
-        "isFullyVisible": true,
-        "text": "Liquide Vaisselle Formule Pro Économique Bidon 5L"
-      },
-      {
-        "index": 8,
-        "height": 85,
-        "top": 646,
-        "bottom": 731,
-        "isFullyVisible": true,
-        "text": "Liquide Vaisselle Restauration Collective Fût 20L"
-      }
-    ],
-    "minHeight": 84,
-    "maxHeight": 85,
-    "meanHeight": 84.9,
-    "fullyVisibleCount": 8,
-    "cartScrollAreaHeight": 703,
-    "summaryBlockHeight": 229
+      "payInsideViewport": false,
+      "minRowHeight": 84,
+      "maxRowHeight": 85,
+      "meanRowHeight": 84.9,
+      "fullyVisibleRowsCount": 3,
+      "totalRowsCount": 8,
+      "rowDetails": [
+        {
+          "index": 1,
+          "top": 247,
+          "bottom": 331,
+          "height": 84,
+          "isInsideContainer": true,
+          "isInsideViewport": true,
+          "isFullyVisible": true,
+          "text": "Javel Parfumée Citron Frais 1."
+        },
+        {
+          "index": 2,
+          "top": 331,
+          "bottom": 416,
+          "height": 85,
+          "isInsideContainer": true,
+          "isInsideViewport": true,
+          "isFullyVisible": true,
+          "text": "Eau de Javel Désinfectante Con"
+        },
+        {
+          "index": 3,
+          "top": 416,
+          "bottom": 501,
+          "height": 85,
+          "isInsideContainer": true,
+          "isInsideViewport": true,
+          "isFullyVisible": true,
+          "text": "Eau de Javel Industrielle 18° "
+        },
+        {
+          "index": 4,
+          "top": 501,
+          "bottom": 586,
+          "height": 85,
+          "isInsideContainer": true,
+          "isInsideViewport": false,
+          "isFullyVisible": false,
+          "text": "Gel Javel Épais Surpuissant Oc"
+        },
+        {
+          "index": 5,
+          "top": 586,
+          "bottom": 671,
+          "height": 85,
+          "isInsideContainer": true,
+          "isInsideViewport": false,
+          "isFullyVisible": false,
+          "text": "Liquide Vaisselle Extra Dégrai"
+        },
+        {
+          "index": 6,
+          "top": 671,
+          "bottom": 756,
+          "height": 85,
+          "isInsideContainer": true,
+          "isInsideViewport": false,
+          "isFullyVisible": false,
+          "text": "Liquide Vaisselle Concentré Ci"
+        },
+        {
+          "index": 7,
+          "top": 756,
+          "bottom": 841,
+          "height": 85,
+          "isInsideContainer": true,
+          "isInsideViewport": false,
+          "isFullyVisible": false,
+          "text": "Liquide Vaisselle Formule Pro "
+        },
+        {
+          "index": 8,
+          "top": 841,
+          "bottom": 926,
+          "height": 85,
+          "isInsideContainer": true,
+          "isInsideViewport": false,
+          "isFullyVisible": false,
+          "text": "Liquide Vaisselle Restauration"
+        }
+      ]
+    }
   }
 }

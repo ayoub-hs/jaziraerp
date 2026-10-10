@@ -317,7 +317,7 @@ export default function App() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-100 flex flex-col font-sans select-none antialiased">
+    <div className="h-dvh flex flex-col bg-slate-100 font-sans select-none antialiased print:h-auto print:overflow-visible">
       {/* Native mobile first-launch: server URL required before anything else */}
       {isNativeApp() && !serverUrl && (
         <ServerSetup onSaved={url => setServerUrl(url)} />
@@ -363,7 +363,7 @@ export default function App() {
       />
 
       {/* Main View Area */}
-      <div className="flex-1 flex overflow-hidden">
+      <div className="flex-1 min-h-0 flex overflow-hidden">
         {currentView === 'DESKTOP_POS' && (
           <DesktopPos
             products={products}
@@ -404,17 +404,19 @@ export default function App() {
         )}
 
         {currentView === 'BACKOFFICE' && (
-          <Backoffice
-            products={products}
-            families={families}
-            customers={customers}
-            containerTypes={containerTypes}
-            activeSession={activeSession}
-            onRefreshData={loadAllData}
-            onPrintReceipt={saleId => setPrintReceiptSaleId(saleId)}
-            onPrintInvoice={saleId => setPrintInvoiceSaleId(saleId)}
-            onPrintDeliveryNote={saleId => setPrintDeliveryNoteSaleId(saleId)}
-          />
+          <div className="flex-1 min-h-0 flex flex-col overflow-y-auto">
+            <Backoffice
+              products={products}
+              families={families}
+              customers={customers}
+              containerTypes={containerTypes}
+              activeSession={activeSession}
+              onRefreshData={loadAllData}
+              onPrintReceipt={saleId => setPrintReceiptSaleId(saleId)}
+              onPrintInvoice={saleId => setPrintInvoiceSaleId(saleId)}
+              onPrintDeliveryNote={saleId => setPrintDeliveryNoteSaleId(saleId)}
+            />
+          </div>
         )}
       </div>
 

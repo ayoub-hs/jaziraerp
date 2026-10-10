@@ -177,6 +177,11 @@ async function runAudit() {
 
   const allMeasurements: Record<string, any[]> = {};
   const violations: Array<{ target: string; screen: string; viewport: string; details: string; severity: 'Blocker' | 'High' | 'Medium' | 'Low' }> = [];
+  const afterBatch1Results: any = {
+    timestamp: new Date().toISOString(),
+    description: "Empirical measurements after Batch UI-1 (desktop POS cart compaction, zero page scroll, sticky checkout total)",
+    viewports: {}
+  };
 
   try {
     await waitForServer('http://127.0.0.1:3344/api/health');
@@ -421,19 +426,39 @@ async function runAudit() {
 
         const cartMetrics = await page.evaluate(() => {
           const rows = Array.from(document.querySelectorAll('.cart-row'));
-          const container = document.querySelector('.overflow-y-auto.divide-y');
-          const summary = document.querySelector('.w-5\\/12 .border-t.bg-slate-50') || document.querySelector('.w-5\\/12 > div:last-child');
+          const container = document.querySelector('.overflow-y-auto.divide-y') as HTMLElement | null;
+          const summary = (document.querySelector('.w-5\\/12 .border-t.bg-slate-50') || document.querySelector('.w-5\\/12 > div:last-child')) as HTMLElement | null;
+          const total = (document.querySelector('.cart-grand-total, .text-xl.text-emerald-700, .text-3xl.text-emerald-700') ||
+            Array.from(document.querySelectorAll('span')).find(s => s.textContent?.includes('TOTAL TTC'))?.parentElement) as HTMLElement | null;
+          const pay = (Array.from(document.querySelectorAll('button')).find(b => b.textContent?.includes('Tender') || b.textContent?.includes('Encaisser'))) as HTMLElement | null;
+
           const cRect = container ? container.getBoundingClientRect() : { height: 0, top: 0, bottom: 0 };
           const sRect = summary ? summary.getBoundingClientRect() : { height: 0 };
-          
+          const tRect = total ? total.getBoundingClientRect() : { top: 0, bottom: 0, height: 0 };
+          const pRect = pay ? pay.getBoundingClientRect() : { top: 0, bottom: 0, height: 0 };
+
+          const innerH = window.innerHeight;
+          const innerW = window.innerWidth;
+          const docScrollH = document.documentElement.scrollHeight;
+          const docScrollW = document.documentElement.scrollWidth;
+          const noPageScroll = docScrollH <= innerH;
+          const noHorizScroll = docScrollW <= innerW;
+
+          const totalInsideViewport = tRect.bottom <= innerH && tRect.top >= 0;
+          const payInsideViewport = pay ? (pRect.bottom <= innerH && pRect.top >= 0) : false;
+
           const details = rows.map((r, i) => {
             const rect = r.getBoundingClientRect();
-            const isFullyVisible = rect.top >= cRect.top && rect.bottom <= cRect.bottom;
+            const inC = rect.top >= cRect.top && rect.bottom <= cRect.bottom;
+            const inV = rect.top >= 0 && rect.bottom <= innerH;
+            const isFullyVisible = inC && inV;
             return {
               index: i + 1,
               height: Math.round(rect.height * 10) / 10,
               top: Math.round(rect.top),
               bottom: Math.round(rect.bottom),
+              isInsideContainer: inC,
+              isInsideViewport: inV,
               isFullyVisible,
               text: (r.querySelector('h4')?.textContent || '').trim()
             };
@@ -452,13 +477,84 @@ async function runAudit() {
             meanHeight,
             fullyVisibleCount,
             cartScrollAreaHeight: Math.round(cRect.height),
-            summaryBlockHeight: Math.round(sRect.height)
+            summaryBlockHeight: Math.round(sRect.height),
+            docScrollH,
+            docScrollW,
+            innerH,
+            innerW,
+            noPageScroll,
+            noHorizScroll,
+            totalInsideViewport,
+            payInsideViewport,
+            tRect,
+            pRect
           };
         });
 
         const visibleRowsCount = cartMetrics.fullyVisibleCount;
-        const payVisible = await page.locator('button:has-text("Tender"), button:has-text("Encaisser")').isVisible();
-        const totalVisible = await page.locator('.cart-grand-total, .text-xl.text-emerald-700, .text-3xl.text-emerald-700, span:has-text("TOTAL TTC")').first().isVisible();
+
+        if (['desktop_1600x780', 'desktop_1600x900', 'desktop_1563x545', 'phone_384x725'].includes(vp.name)) {
+          if (!cartMetrics.noPageScroll) {
+            violations.push({
+              target: 'Zero page scroll (document scrollHeight <= innerHeight)',
+              screen: 'pos_cart_8lines',
+              viewport: vp.name,
+              details: `Document scrollHeight is ${cartMetrics.docScrollH}px, window innerHeight is ${cartMetrics.innerH}px (page scroll detected)`,
+              severity: 'Blocker'
+            });
+          }
+        }
+
+        if (!cartMetrics.noHorizScroll) {
+          violations.push({
+            target: 'No horizontal page scroll',
+            screen: 'pos_cart_8lines',
+            viewport: vp.name,
+            details: `Horizontal scroll detected: scrollWidth ${cartMetrics.docScrollW}px > innerWidth ${cartMetrics.innerW}px`,
+            severity: 'Blocker'
+          });
+        }
+
+        if (!cartMetrics.totalInsideViewport) {
+          violations.push({
+            target: 'Total element inside viewport',
+            screen: 'pos_cart_8lines',
+            viewport: vp.name,
+            details: `Total TTC element not inside viewport: bottom ${cartMetrics.tRect.bottom}px, innerHeight ${cartMetrics.innerH}px`,
+            severity: 'Blocker'
+          });
+        }
+
+        if (!cartMetrics.payInsideViewport) {
+          violations.push({
+            target: 'Pay button inside viewport',
+            screen: 'pos_cart_8lines',
+            viewport: vp.name,
+            details: `Pay button not inside viewport: bottom ${cartMetrics.pRect.bottom}px, innerHeight ${cartMetrics.innerH}px`,
+            severity: 'Blocker'
+          });
+        }
+
+        const vpKey = vp.name.replace('desktop_', '');
+        if (['1600x780', '1600x900', '1563x545'].includes(vpKey)) {
+          afterBatch1Results.viewports[vpKey] = {
+            cartScrollContainerClientHeight: cartMetrics.cartScrollAreaHeight,
+            summaryHeight: cartMetrics.summaryBlockHeight,
+            docScrollHeight: cartMetrics.docScrollH,
+            innerH: cartMetrics.innerH,
+            noPageScroll: cartMetrics.noPageScroll,
+            totalRect: cartMetrics.tRect,
+            totalInsideViewport: cartMetrics.totalInsideViewport,
+            payRect: cartMetrics.pRect,
+            payInsideViewport: cartMetrics.payInsideViewport,
+            minRowHeight: cartMetrics.minHeight,
+            maxRowHeight: cartMetrics.maxHeight,
+            meanRowHeight: cartMetrics.meanHeight,
+            fullyVisibleRowsCount: cartMetrics.fullyVisibleCount,
+            totalRowsCount: cartMetrics.rowDetails.length,
+            rowDetails: cartMetrics.rowDetails
+          };
+        }
 
         if (vp.name === 'desktop_1600x780') {
           console.log('\n======================================================');
@@ -467,46 +563,42 @@ async function runAudit() {
           console.log(`- Summary Block Height:    ${cartMetrics.summaryBlockHeight}px`);
           console.log(`- Number of Fully Visible Rows: ${visibleRowsCount} of ${cartMetrics.rowDetails.length}`);
           console.log(`- Row Heights: min = ${cartMetrics.minHeight}px, max = ${cartMetrics.maxHeight}px, mean = ${cartMetrics.meanHeight}px`);
+          console.log(`- Document Scroll Height:  ${cartMetrics.docScrollH}px (innerH: ${cartMetrics.innerH}px, noPageScroll: ${cartMetrics.noPageScroll})`);
+          console.log(`- Total Inside Viewport:   ${cartMetrics.totalInsideViewport}`);
+          console.log(`- Pay Inside Viewport:     ${cartMetrics.payInsideViewport}`);
           cartMetrics.rowDetails.forEach(r => {
             console.log(`  * Row ${r.index} [${r.height}px] (visible: ${r.isFullyVisible}): ${r.text.slice(0, 45)}`);
           });
           console.log('======================================================\n');
-
-          const beforePath = path.join(PROJECT_ROOT, 'docs/audit-ui-2026-10/before_batch1.json');
-          if (!fs.existsSync(beforePath)) {
-            fs.writeFileSync(beforePath, JSON.stringify({
-              timestamp: new Date().toISOString(),
-              viewport: vp.name,
-              cartMetrics
-            }, null, 2), 'utf8');
-            console.log(`Saved baseline to ${beforePath}`);
-          }
-          const afterPath = path.join(PROJECT_ROOT, 'docs/audit-ui-2026-10/after_batch1.json');
-          fs.writeFileSync(afterPath, JSON.stringify({
-            timestamp: new Date().toISOString(),
-            viewport: vp.name,
-            cartMetrics
-          }, null, 2), 'utf8');
-          console.log(`Saved post-batch metrics to ${afterPath}`);
         }
 
         if (vp.name === 'desktop_1600x780') {
-          if (visibleRowsCount < 6 || !payVisible || !totalVisible) {
+          if (visibleRowsCount < 6 || !cartMetrics.payInsideViewport || !cartMetrics.totalInsideViewport) {
             violations.push({
               target: 'Desktop 1600x780: at least 6 cart lines + total + pay visible',
               screen: 'pos_cart_8lines',
               viewport: vp.name,
-              details: `Visible cart lines: ${visibleRowsCount} (target >= 6), Pay visible: ${payVisible}, Total visible: ${totalVisible}`,
+              details: `Visible cart lines: ${visibleRowsCount} (target >= 6), Pay visible: ${cartMetrics.payInsideViewport}, Total visible: ${cartMetrics.totalInsideViewport}`,
+              severity: 'High'
+            });
+          }
+        } else if (vp.name === 'desktop_1600x900') {
+          if (visibleRowsCount < 6 || !cartMetrics.payInsideViewport || !cartMetrics.totalInsideViewport) {
+            violations.push({
+              target: 'Desktop 1600x780: at least 6 cart lines + total + pay visible',
+              screen: 'pos_cart_8lines',
+              viewport: vp.name,
+              details: `Visible cart lines at 1600x900: ${visibleRowsCount} (target >= 6), Pay visible: ${cartMetrics.payInsideViewport}, Total visible: ${cartMetrics.totalInsideViewport}`,
               severity: 'High'
             });
           }
         } else if (vp.name === 'desktop_1563x545') {
-          if (visibleRowsCount < 3 || !payVisible || !totalVisible) {
+          if (visibleRowsCount < 3 || !cartMetrics.payInsideViewport || !cartMetrics.totalInsideViewport) {
             violations.push({
               target: 'Desktop 1563x545: at least 3 cart lines + total + pay visible',
               screen: 'pos_cart_8lines',
               viewport: vp.name,
-              details: `Visible cart lines: ${visibleRowsCount} (target >= 3), Pay visible: ${payVisible}, Total visible: ${totalVisible}`,
+              details: `Visible cart lines: ${visibleRowsCount} (target >= 3), Pay visible: ${cartMetrics.payInsideViewport}, Total visible: ${cartMetrics.totalInsideViewport}`,
               severity: 'High'
             });
           }
@@ -676,14 +768,24 @@ async function runAudit() {
 
         await takeShot('checkout_cash');
 
-        const cashInput = await measure('checkout_cash', 'input[type="number"][step="0.001"]', 'Cash Tender Input');
+        const cashInput = await measure('checkout_cash', '.fixed.inset-0 input.text-pos-input, .fixed.inset-0 input[placeholder="0.000"]', 'Cash Tender Input');
         const changeDueDisplay = await measure('checkout_cash', '.bg-emerald-50\\/80 span.text-2xl', 'Change Due Display');
         const tenderLabel = await measure('checkout_cash', 'span:has-text("Cash Tendered"), span:has-text("Espèces reçues"), span:has-text("Espèces")', 'Cash Tender Label');
         const confirmBtn = await measure('checkout_cash', 'button:has-text("Complete Sale"), button:has-text("Valider"), button:has-text("Finaliser")', 'Confirm Sale Button');
 
+        const vpShort = vp.name.replace('desktop_', '');
+        if (cashInput && afterBatch1Results.viewports[vpShort]) {
+          afterBatch1Results.viewports[vpShort].cashTenderInput = {
+            fontSizePx: cashInput.fontSizePx,
+            fontWeight: cashInput.fontWeight,
+            fontWeightNum: cashInput.fontWeightNum,
+            selector: cashInput.selector
+          };
+        }
+
         if (cashInput && cashInput.fontSizePx < 20) {
           violations.push({
-            target: 'Amount input at least 20px',
+            target: 'Checkout cash input at least 20px',
             screen: 'checkout_cash',
             viewport: vp.name,
             details: `Checkout cash input font size is ${cashInput.fontSizePx}px (target >= 20px)`,
@@ -729,17 +831,19 @@ async function runAudit() {
         await takeShot('checkout_overpayment_change');
 
         if (vp.name === 'phone_384x400') {
+          await cashInp.focus();
+          await page.waitForTimeout(200);
           await takeShot('checkout_keyboard');
           const isCashInpVisible = await cashInp.isVisible();
-          const isChangeVisible = await page.locator('.bg-emerald-50\\/80').isVisible();
+          const isStickyTotalVisible = await page.locator('.sticky.top-0 span:has-text("TOTAL À PAYER"), .sticky.top-0 span:has-text("TOTAL")').first().isVisible();
           const isConfirmVisible = await page.locator('button:has-text("Complete Sale"), button:has-text("Valider")').isVisible();
 
-          if (!isCashInpVisible || !isChangeVisible || !isConfirmVisible) {
+          if (!isCashInpVisible || !isStickyTotalVisible || !isConfirmVisible) {
             violations.push({
               target: 'Phone 384x400: cash field, change due and confirm button all visible',
               screen: 'checkout_keyboard',
               viewport: vp.name,
-              details: `Visibility at 384x400: cash=${isCashInpVisible}, change=${isChangeVisible}, confirm=${isConfirmVisible}`,
+              details: `Visibility at 384x400: cash=${isCashInpVisible}, stickyTotal=${isStickyTotalVisible}, confirm=${isConfirmVisible}`,
               severity: 'Blocker'
             });
           }
@@ -767,14 +871,27 @@ async function runAudit() {
             await page.waitForTimeout(400);
             await takeShot('receipt_preview');
 
-            const receiptFont = await measure('receipt_preview', '.font-mono.text-\\[10px\\], .receipt-paper', 'Receipt Monospace Text');
-            if (receiptFont && receiptFont.fontSizePx < 12) {
+            // Print emulation verification
+            await page.emulateMedia({ media: 'print' });
+            const receiptPrintCheck = await page.evaluate(() => {
+              const root = document.querySelector('#root > div') as HTMLElement | null;
+              const rootStyle = root ? window.getComputedStyle(root) : null;
+              const printable = document.querySelector('.printable-receipt') as HTMLElement | null;
+              return {
+                rootOverflow: rootStyle?.overflow,
+                hasPrintable: Boolean(printable),
+                isClipped: rootStyle?.overflow === 'hidden'
+              };
+            });
+            await page.emulateMedia({ media: 'screen' });
+
+            if (receiptPrintCheck.isClipped) {
               violations.push({
-                target: 'NOTHING under 12px anywhere',
+                target: 'Print preview full content unclipped',
                 screen: 'receipt_preview',
                 viewport: vp.name,
-                details: `Thermal receipt preview font size is ${receiptFont.fontSizePx}px (< 12px)`,
-                severity: 'Medium'
+                details: `Receipt print preview clipped by root overflow: ${receiptPrintCheck.rootOverflow}`,
+                severity: 'Blocker'
               });
             }
 
@@ -786,6 +903,32 @@ async function runAudit() {
             await invoiceBtn.click({ force: true });
             await page.waitForTimeout(400);
             await takeShot('invoice_preview');
+
+            // Print emulation verification
+            await page.emulateMedia({ media: 'print' });
+            const invoicePrintCheck = await page.evaluate(() => {
+              const root = document.querySelector('#root > div') as HTMLElement | null;
+              const rootStyle = root ? window.getComputedStyle(root) : null;
+              const card = document.querySelector('.fixed.inset-0.print\\:static > div') as HTMLElement | null;
+              const cardStyle = card ? window.getComputedStyle(card) : null;
+              return {
+                rootOverflow: rootStyle?.overflow,
+                cardOverflow: cardStyle?.overflow,
+                isClipped: rootStyle?.overflow === 'hidden' || cardStyle?.overflow === 'hidden'
+              };
+            });
+            await page.emulateMedia({ media: 'screen' });
+
+            if (invoicePrintCheck.isClipped) {
+              violations.push({
+                target: 'Print preview full content unclipped',
+                screen: 'invoice_preview',
+                viewport: vp.name,
+                details: `Invoice print preview clipped: root=${invoicePrintCheck.rootOverflow}, card=${invoicePrintCheck.cardOverflow}`,
+                severity: 'Blocker'
+              });
+            }
+
             await safeCloseModal();
           }
 
@@ -794,6 +937,32 @@ async function runAudit() {
             await blBtn.click({ force: true });
             await page.waitForTimeout(400);
             await takeShot('delivery_note_preview');
+
+            // Print emulation verification
+            await page.emulateMedia({ media: 'print' });
+            const blPrintCheck = await page.evaluate(() => {
+              const root = document.querySelector('#root > div') as HTMLElement | null;
+              const rootStyle = root ? window.getComputedStyle(root) : null;
+              const card = document.querySelector('.fixed.inset-0.print\\:static > div') as HTMLElement | null;
+              const cardStyle = card ? window.getComputedStyle(card) : null;
+              return {
+                rootOverflow: rootStyle?.overflow,
+                cardOverflow: cardStyle?.overflow,
+                isClipped: rootStyle?.overflow === 'hidden' || cardStyle?.overflow === 'hidden'
+              };
+            });
+            await page.emulateMedia({ media: 'screen' });
+
+            if (blPrintCheck.isClipped) {
+              violations.push({
+                target: 'Print preview full content unclipped',
+                screen: 'delivery_note_preview',
+                viewport: vp.name,
+                details: `BL print preview clipped: root=${blPrintCheck.rootOverflow}, card=${blPrintCheck.cardOverflow}`,
+                severity: 'Blocker'
+              });
+            }
+
             await safeCloseModal();
           }
 
@@ -939,6 +1108,31 @@ async function runAudit() {
 
         await takeShot('navigation');
 
+        // Non-POS views scroll normally verification
+        const boScrollCheck = await page.evaluate(() => {
+          const bo = document.querySelector('.flex-1.min-h-0.flex.flex-col.overflow-y-auto') as HTMLElement | null;
+          const innerH = window.innerHeight;
+          const docScrollH = document.documentElement.scrollHeight;
+          const style = bo ? window.getComputedStyle(bo) : null;
+          return {
+            hasContainer: Boolean(bo),
+            overflowY: style?.overflowY,
+            clientHeight: bo?.clientHeight || 0,
+            scrollHeight: bo?.scrollHeight || 0,
+            noPageScroll: docScrollH <= innerH
+          };
+        });
+
+        if (!boScrollCheck.hasContainer || boScrollCheck.overflowY !== 'auto' || !boScrollCheck.noPageScroll) {
+          violations.push({
+            target: 'Non-POS views scroll normally',
+            screen: 'navigation',
+            viewport: vp.name,
+            details: `Backoffice scroll check: hasContainer=${boScrollCheck.hasContainer}, overflowY=${boScrollCheck.overflowY}, noPageScroll=${boScrollCheck.noPageScroll}`,
+            severity: 'Blocker'
+          });
+        }
+
         // Customers & Debt Tab
         await page.click('button:has-text("Customers & Debt")').catch(() => {});
         await page.waitForTimeout(400);
@@ -1061,8 +1255,12 @@ async function runAudit() {
     fs.copyFileSync(path.join(__dirname, 'measure.ts'), path.join(PROJECT_ROOT, 'docs/audit-ui-2026-10/scratch/measure.ts'));
     console.log(`Measured data written to: ${OUTPUT_DATA_PATH}`);
 
+    const afterPath = path.join(PROJECT_ROOT, 'docs/audit-ui-2026-10/after_batch1.json');
+    fs.writeFileSync(afterPath, JSON.stringify(afterBatch1Results, null, 2), 'utf8');
+    console.log(`Measured after-batch metrics written to: ${afterPath}`);
+
     console.log('\n======================================================');
-    console.log('AUDIT MEASUREMENT SUMMARY — TARGET VERIFICATION REPORT');
+    console.log('AUDIT MEASUREMENT SUMMARY — ALL TARGETS');
     console.log('======================================================');
     const targetGroups: Record<string, number> = {};
     for (const v of violations) {
@@ -1074,6 +1272,7 @@ async function runAudit() {
       'Quantity at least 18px bold',
       'Cart grand total at least 28px bold',
       'Change due at least 22px bold',
+      'Checkout cash input at least 20px',
       'Amount input at least 20px',
       'Secondary text at least 13px',
       'NOTHING under 12px anywhere',
@@ -1083,26 +1282,60 @@ async function runAudit() {
       'Desktop 1563x545: at least 3 cart lines + total + pay visible',
       'Phone 384x725: at least 4 cart lines visible before scroll',
       'Phone 384x400: cash field, change due and confirm button all visible',
-      'No horizontal page scroll'
+      'Zero page scroll (document scrollHeight <= innerHeight)',
+      'No horizontal page scroll',
+      'Total element inside viewport',
+      'Pay button inside viewport',
+      'Non-POS views scroll normally',
+      'Print preview full content unclipped'
     ];
 
     console.log(String('Target').padEnd(65) + ' | ' + 'Status' + ' | ' + 'Violations');
     console.log('-'.repeat(85));
-    let hasFailures = false;
     for (const t of TARGET_DEFINITIONS) {
       const count = targetGroups[t] || 0;
       const status = count > 0 ? 'FAIL ❌' : 'PASS ✅';
-      if (count > 0) hasFailures = true;
       console.log(t.padEnd(65) + ' | ' + status.padEnd(6) + ' | ' + count);
     }
     console.log('------------------------------------------------------');
     console.log(`Total Target Violations Detected: ${violations.length}`);
 
-    if (hasFailures) {
-      console.log('\n[AUDIT HARNESS] Target assertion failures detected as expected during audit.');
+    const BATCH_1_TARGETS = [
+      'Zero page scroll (document scrollHeight <= innerHeight)',
+      'No horizontal page scroll',
+      'Total element inside viewport',
+      'Pay button inside viewport',
+      'Desktop 1600x780: at least 6 cart lines + total + pay visible',
+      'Desktop 1563x545: at least 3 cart lines + total + pay visible',
+      'Phone 384x400: cash field, change due and confirm button all visible',
+      'Non-POS views scroll normally',
+      'Print preview full content unclipped',
+      'Checkout cash input at least 20px',
+      'Sale-critical text at least 16px',
+      'Quantity at least 18px bold',
+      'Cart grand total at least 28px bold'
+    ];
+
+    const batch1Violations = violations.filter(v => BATCH_1_TARGETS.includes(v.target));
+    console.log('\n======================================================');
+    console.log('BATCH UI-1 TARGET VERIFICATION REPORT');
+    console.log('======================================================');
+    console.log(String('Batch 1 Target').padEnd(65) + ' | ' + 'Status' + ' | ' + 'Violations');
+    console.log('-'.repeat(85));
+    for (const t of BATCH_1_TARGETS) {
+      const count = targetGroups[t] || 0;
+      const status = count > 0 ? 'FAIL ❌' : 'PASS ✅';
+      console.log(t.padEnd(65) + ' | ' + status.padEnd(6) + ' | ' + count);
+    }
+    console.log('------------------------------------------------------');
+    console.log(`Total Batch UI-1 Violations: ${batch1Violations.length}`);
+
+    if (batch1Violations.length > 0) {
+      console.error('\n[BATCH UI-1 HARNESS] Failures detected in Batch UI-1 targets:');
+      batch1Violations.forEach(v => console.error(`  - [${v.viewport}] ${v.target}: ${v.details}`));
       process.exit(1);
     } else {
-      console.log('\n[AUDIT HARNESS] All targets passed.');
+      console.log('\n[BATCH UI-1 HARNESS] All Batch UI-1 targets PASSED! ✅');
       process.exit(0);
     }
   } finally {

@@ -104,7 +104,7 @@ export const DeliveryNotePrintModal: React.FC<DeliveryNotePrintModalProps> = ({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 overflow-y-auto print:p-0 print:bg-white print:static print:overflow-visible">
-      <div className="bg-white rounded-2xl shadow-2xl max-w-3xl w-full overflow-hidden flex flex-col border border-slate-200 max-h-[90vh] print:border-none print:shadow-none print:w-full print:max-w-none print:max-h-none">
+      <div className="bg-white rounded-2xl shadow-2xl max-w-3xl w-full overflow-hidden flex flex-col border border-slate-200 max-h-[90vh] print:border-none print:shadow-none print:w-full print:max-w-none print:max-h-none print:overflow-visible print:h-auto">
         {/* Modal Toolbar */}
         <div className="bg-slate-900 text-white px-6 py-4 flex items-center justify-between print:hidden">
           <div className="flex items-center gap-2">
