@@ -2,6 +2,7 @@ import { Router, Request, Response } from 'express';
 import crypto from 'crypto';
 import { getDb } from '../db/index.js';
 import { round3 } from '../utils/money.js';
+import { tunisDayRangeUTC, isFilterDay } from '../utils/businessDate.js';
 
 export const inventoryRouter = Router();
 
@@ -29,8 +30,15 @@ inventoryRouter.get('/adjustments', (req: Request, res: Response) => {
   }
 
   if (date) {
-    query += ` AND date(ia.date) = date(?)`;
-    params.push(String(date));
+    const day = String(date);
+    if (isFilterDay(day)) {
+      const range = tunisDayRangeUTC(day);
+      query += ` AND ia.date >= ? AND ia.date < ?`;
+      params.push(range.start, range.end);
+    } else {
+      query += ` AND date(ia.date) = date(?)`;
+      params.push(day);
+    }
   }
 
   query += ` ORDER BY ia.date DESC, ia.created_at DESC`;
@@ -64,7 +72,7 @@ const handleAdjust = (req: Request, res: Response) => {
   }
 
   const delta = Number(quantity_delta);
-  if (isNaN(delta) || delta === 0) {
+  if (!Number.isFinite(delta) || delta === 0) {
     res.status(400).json({ error: 'quantity_delta must be a non-zero number' });
     return;
   }
