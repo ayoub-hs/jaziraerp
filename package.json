@@ -7,7 +7,7 @@
     "dev:server": "tsx watch server/index.ts",
     "dev:client": "vite",
     "dev": "vite",
-    "build": "tsc -b && vite build",
+    "build": "node scripts/generate-build-id.js && tsc -b && vite build",
     "start": "tsx server/index.ts",
     "test": "vitest run"
   },

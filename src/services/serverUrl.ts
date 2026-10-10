@@ -12,6 +12,37 @@ import { Capacitor } from '@capacitor/core';
 const STORAGE_KEY = 'erp_server_url';
 export const DEFAULT_SERVER_URL = 'https://jazicloud.fossa-wrasse.ts.net';
 
+export function validateServerUrl(rawUrl: string): { valid: boolean; error?: string } {
+  const trimmed = (rawUrl || '').trim().replace(/\/+$/, '');
+  if (!trimmed) {
+    return {
+      valid: false,
+      error: "Veuillez saisir l'adresse du serveur."
+    };
+  }
+  if (!trimmed.startsWith('https://')) {
+    return {
+      valid: false,
+      error: `L'adresse du serveur doit obligatoirement commencer par https:// (connexion sécurisée requise). Exemple: ${DEFAULT_SERVER_URL}`
+    };
+  }
+  try {
+    const parsed = new URL(trimmed);
+    if (parsed.protocol !== 'https:' || !parsed.hostname) {
+      return {
+        valid: false,
+        error: `Adresse invalide. L'adresse doit commencer par https://. Exemple: ${DEFAULT_SERVER_URL}`
+      };
+    }
+  } catch {
+    return {
+      valid: false,
+      error: `Format d'adresse invalide. Exemple: ${DEFAULT_SERVER_URL}`
+    };
+  }
+  return { valid: true };
+}
+
 export function isNativeApp(): boolean {
   if (typeof window === 'undefined') return false;
   try {

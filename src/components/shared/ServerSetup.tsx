@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Server, Check, Loader2 } from 'lucide-react';
-import { setServerUrl, DEFAULT_SERVER_URL } from '../../services/serverUrl.js';
+import { setServerUrl, validateServerUrl, DEFAULT_SERVER_URL } from '../../services/serverUrl.js';
 
 interface ServerSetupProps {
   onSaved: (url: string) => void;
@@ -20,8 +20,9 @@ export const ServerSetup: React.FC<ServerSetupProps> = ({ onSaved }) => {
 
   const handleSave = async () => {
     setError(null);
-    if (!/^https?:\/\/.+/.test(normalized)) {
-      setError(`Adresse invalide. Exemple: ${DEFAULT_SERVER_URL}`);
+    const validation = validateServerUrl(url);
+    if (!validation.valid) {
+      setError(validation.error || `Adresse invalide. Exemple: ${DEFAULT_SERVER_URL}`);
       return;
     }
     setTesting(true);

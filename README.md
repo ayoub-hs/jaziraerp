@@ -34,4 +34,11 @@ existing WebBluetooth ESC/POS path works unchanged (verified with MPT-II).
   inside `android/`. APK:
   `android/app/build/outputs/apk/debug/app-debug.apk` (debug-signed).
 - Server must be reachable from the phone (`HOST=0.0.0.0` or Tailscale IP);
-  CORS already allowlists the app origin, manifest allows LAN cleartext.
+  CORS already allowlists the app origin (`https://localhost`), traffic uses HTTPS over Tailscale.
+
+## Release & Update Workflow
+
+- **After every client change**:
+  1. Run `npm run build` (this automatically computes a new build ID from git + timestamp, injects `VITE_BUILD_ID` into the client bundle, and records `dist/build-id.txt`).
+  2. Restart the server (`npm start` or systemd service) so `/api/version` serves the new build ID.
+  3. Rebuild and reinstall the Android APK **only if native code changed** (the APK bundles the web UI, so an older installed APK will see the non-blocking update banner pointing to the new server build until updated).

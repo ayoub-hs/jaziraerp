@@ -16,12 +16,26 @@ try {
   // fallback
 }
 
-export const SERVER_BUILD_ID = process.env.BUILD_ID || `build-${packageVersion}`;
+export function getServerBuildId(): string {
+  if (process.env.BUILD_ID && process.env.BUILD_ID.trim()) {
+    return process.env.BUILD_ID.trim();
+  }
+  try {
+    const buildFilePath = path.resolve(__dirname, '../../dist/build-id.txt');
+    if (fs.existsSync(buildFilePath)) {
+      const fileId = fs.readFileSync(buildFilePath, 'utf8').trim();
+      if (fileId) return fileId;
+    }
+  } catch {}
+  return `build-${packageVersion}`;
+}
+
+export const SERVER_BUILD_ID = getServerBuildId();
 
 versionRouter.get('/', (req, res) => {
   res.json({
     version: packageVersion,
-    build_id: SERVER_BUILD_ID,
+    build_id: getServerBuildId(),
     timestamp: new Date().toISOString()
   });
 });

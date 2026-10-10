@@ -18,4 +18,8 @@ describe('Step 6: AndroidManifest.xml Configuration', () => {
   it('leaves hardwareAccelerated at default', () => {
     expect(content).not.toContain('android:hardwareAccelerated');
   });
+
+  it('does NOT allow cleartext traffic (usesCleartextTraffic="true")', () => {
+    expect(content).not.toContain('android:usesCleartextTraffic');
+  });
 });
