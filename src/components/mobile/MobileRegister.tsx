@@ -101,6 +101,7 @@ export const MobileRegister: React.FC<MobileRegisterProps> = ({
   const [editWholesalePrice, setEditWholesalePrice] = useState('');
   const [editStock, setEditStock] = useState('');
   const [editSuccessMsg, setEditSuccessMsg] = useState<string | null>(null);
+  const [editErrorMsg, setEditErrorMsg] = useState<string | null>(null);
   const [isSubmittingQuickEdit, setIsSubmittingQuickEdit] = useState(false);
   const isSubmittingQuickEditRef = useRef(false);
 
@@ -509,8 +510,11 @@ export const MobileRegister: React.FC<MobileRegisterProps> = ({
       setEditWholesalePrice(Number(found.wholesale_price || 0).toFixed(3));
       setEditStock(found.stock_quantity.toString());
       setEditSuccessMsg(null);
+      setEditErrorMsg(null);
     } else {
       setEditProduct(null);
+      setEditSuccessMsg(null);
+      setEditErrorMsg(null);
     }
   };
 
@@ -519,6 +523,7 @@ export const MobileRegister: React.FC<MobileRegisterProps> = ({
     isSubmittingQuickEditRef.current = true;
     setIsSubmittingQuickEdit(true);
     setEditSuccessMsg(null);
+    setEditErrorMsg(null);
     try {
       const res = await fetch(`/api/products/${editProduct.id}`, {
         method: 'PUT',
@@ -531,13 +536,16 @@ export const MobileRegister: React.FC<MobileRegisterProps> = ({
       });
       if (res.ok) {
         setEditSuccessMsg('Price & Stock updated successfully!');
+        setEditErrorMsg(null);
         onRefreshData();
       } else {
         const data = await res.json().catch(() => ({}));
-        setEditSuccessMsg(data.error || `Erreur mise à jour (${res.status})`);
+        setEditErrorMsg(data.error || `Erreur mise à jour (${res.status})`);
+        setEditSuccessMsg(null);
       }
     } catch (err: any) {
-      setEditSuccessMsg(err.message || 'Quick edit save failed');
+      setEditErrorMsg(err.message || 'Quick edit save failed');
+      setEditSuccessMsg(null);
     } finally {
       isSubmittingQuickEditRef.current = false;
       setIsSubmittingQuickEdit(false);
@@ -1014,8 +1022,15 @@ export const MobileRegister: React.FC<MobileRegisterProps> = ({
 
               {editSuccessMsg && (
                 <div className="p-2.5 bg-emerald-50 text-emerald-800 rounded-xl text-xs font-bold flex items-center gap-2">
-                  <CheckCircle className="w-4 h-4" />
+                  <CheckCircle className="w-4 h-4 shrink-0 text-emerald-600" />
                   <span>{editSuccessMsg}</span>
+                </div>
+              )}
+
+              {editErrorMsg && (
+                <div className="p-2.5 bg-rose-50 text-rose-800 border border-rose-200 rounded-xl text-xs font-bold flex items-center gap-2">
+                  <AlertCircle className="w-4 h-4 shrink-0 text-rose-600" />
+                  <span>{editErrorMsg}</span>
                 </div>
               )}
 

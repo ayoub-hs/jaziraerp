@@ -130,6 +130,11 @@ export function isUniqueViolation(err: any): boolean {
 
 export function cleanupOldSettings(db: DatabaseType): void {
   try {
+    const cleanedRow = db.prepare("SELECT value FROM settings WHERE key = 'cleaned_placeholder_defaults_v1'").get() as { value: string } | undefined;
+    if (cleanedRow?.value === '1') {
+      return;
+    }
+
     const oldPlaceholders = [
       'Route de Gabès Km 3.5, Sfax, Tunisie',
       '+216 74 000 000',
@@ -140,6 +145,7 @@ export function cleanupOldSettings(db: DatabaseType): void {
       update.run(ph);
     }
     db.prepare("INSERT OR IGNORE INTO settings (key, value) VALUES ('shop_subtitle', '')").run();
+    db.prepare("INSERT OR REPLACE INTO settings (key, value) VALUES ('cleaned_placeholder_defaults_v1', '1')").run();
   } catch {}
 }
 

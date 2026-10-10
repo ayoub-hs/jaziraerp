@@ -80,6 +80,11 @@ categoriesRouter.post('/', (req: Request, res: Response) => {
     res.status(400).json({ error: 'Category name is required.' });
     return;
   }
+  const cleanType = String(type || 'PRODUCT').toUpperCase();
+  if (!['PRODUCT', 'MATERIAL', 'BOTH'].includes(cleanType)) {
+    res.status(400).json({ error: 'Category type must be PRODUCT, MATERIAL, or BOTH.' });
+    return;
+  }
   const cleanName = name.trim();
   const db = getDb();
   const existing: any = db.prepare('SELECT * FROM categories WHERE LOWER(name) = LOWER(?)').get(cleanName);

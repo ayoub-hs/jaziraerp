@@ -162,8 +162,8 @@ materialsRouter.post('/', (req: Request, res: Response) => {
     low_stock_threshold = 0
   } = req.body;
 
-  if (!name || !category || !unit) {
-    res.status(400).json({ error: 'Name, category, and unit are required.' });
+  if (!name?.trim() || !category?.trim() || !unit?.trim()) {
+    res.status(400).json({ error: 'Name, category, and unit are required and cannot be empty.' });
     return;
   }
 
