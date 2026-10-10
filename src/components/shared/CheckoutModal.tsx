@@ -68,6 +68,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
   const [completedSale, setCompletedSale] = useState<{ sale_id: string; receipt_number: string } | null>(null);
   const [isPrintingDirect, setIsPrintingDirect] = useState(false);
   const [printSuccessMessage, setPrintSuccessMessage] = useState<string | null>(null);
+  const [highChangeConfirmed, setHighChangeConfirmed] = useState<boolean>(false);
 
   // Initialize tender when modal opens & auto-focus
   useEffect(() => {
@@ -80,6 +81,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
       setIsSubmitting(false);
       isSubmittingRef.current = false;
       setCompletedSale(null);
+      setHighChangeConfirmed(false);
       setTimeout(() => {
         cashInputRef.current?.focus();
         cashInputRef.current?.select();
@@ -119,15 +121,18 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
     const wallet = parseFloat(walletPaid) || 0;
     const credit = parseFloat(creditAmount) || 0;
 
-    const res = validateSplitPayment(totalTTC, cash, wallet, credit, customer);
+    const res = validateSplitPayment(totalTTC, cash, wallet, credit, customer, {
+      rawCashString: cashPaid,
+      highChangeConfirmed
+    });
     if (!res.valid) {
       setValidationError(res.error || 'Invalid payment amounts');
-      setChangeDue(0);
+      setChangeDue(res.changeDue || 0);
     } else {
       setValidationError(null);
       setChangeDue(res.changeDue);
     }
-  }, [cashPaid, walletPaid, creditAmount, totalTTC, customer, isOpen, completedSale]);
+  }, [cashPaid, walletPaid, creditAmount, totalTTC, customer, isOpen, completedSale, highChangeConfirmed]);
 
   // Dynamic banknote options for quick cash tender
   const currentWallet = parseFloat(walletPaid) || 0;
@@ -162,9 +167,28 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
           e.preventDefault();
           onSaleDone?.();
           onClose();
-        } else if (!validationError && !isSubmittingRef.current && (!activeSession || activeSession.status === 'OPEN')) {
-          e.preventDefault();
-          handleSubmit();
+        } else {
+          // Guard: if integer part has > 7 digits, clear input, preventDefault, show error, do not submit
+          const intPart = cashPaid.split('.')[0].replace(/^[-+]/, '').replace(/^0+/, '') || '0';
+          if (intPart.length > 7) {
+            e.preventDefault();
+            setCashPaid('');
+            setValidationError('Montant espèces invalide - code-barres scanné ?');
+            return;
+          }
+
+          // Guard: if cash exceeds maxAllowedCash
+          const cash = parseFloat(cashPaid) || 0;
+          if (cash > Math.max(100 * totalTTC, 1000)) {
+            e.preventDefault();
+            setValidationError('Montant espèces invalide - code-barres scanné ?');
+            return;
+          }
+
+          if (!validationError && !isSubmittingRef.current && (!activeSession || activeSession.status === 'OPEN')) {
+            e.preventDefault();
+            handleSubmit();
+          }
         }
       } else if (e.key === 'Escape' && !isSubmittingRef.current) {
         if (!completedSale) {
@@ -175,13 +199,14 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
     };
     window.addEventListener('keydown', handleModalKeyDown);
     return () => window.removeEventListener('keydown', handleModalKeyDown);
-  }, [isOpen, completedSale, validationError, activeSession, cashPaid, walletPaid, creditAmount, totalTTC]);
+  }, [isOpen, completedSale, validationError, activeSession, cashPaid, walletPaid, creditAmount, totalTTC, highChangeConfirmed]);
 
   if (!isOpen) return null;
 
   const handleQuickCash = (amount: number) => {
     setCashPaid(amount.toFixed(3));
     setCreditAmount('0.000');
+    setHighChangeConfirmed(false);
   };
 
   const handleApplyMaxWallet = () => {
@@ -198,6 +223,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
       setCashPaid(remainder.toFixed(3));
       setCreditAmount('0.000');
     }
+    setHighChangeConfirmed(false);
   };
 
   const handleApplyCredit = () => {
@@ -206,15 +232,31 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
     const remaining = Math.max(0, roundMoney(totalTTC - currentW));
     setCreditAmount(remaining.toFixed(3));
     setCashPaid('0.000');
+    setHighChangeConfirmed(false);
   };
 
   const handleSubmit = async () => {
     if (isSubmittingRef.current) return;
+    const intPart = cashPaid.split('.')[0].replace(/^[-+]/, '').replace(/^0+/, '') || '0';
+    if (intPart.length > 7) {
+      setCashPaid('');
+      setValidationError('Montant espèces invalide - code-barres scanné ?');
+      return;
+    }
+
     const cash = parseFloat(cashPaid) || 0;
+    if (cash > Math.max(100 * totalTTC, 1000)) {
+      setValidationError('Montant espèces invalide - code-barres scanné ?');
+      return;
+    }
+
     const wallet = parseFloat(walletPaid) || 0;
     const credit = parseFloat(creditAmount) || 0;
 
-    const res = validateSplitPayment(totalTTC, cash, wallet, credit, customer);
+    const res = validateSplitPayment(totalTTC, cash, wallet, credit, customer, {
+      rawCashString: cashPaid,
+      highChangeConfirmed
+    });
     if (!res.valid) {
       setValidationError(res.error || 'Validation failed');
       return;
@@ -555,7 +597,10 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
                     min="0"
                     value={cashPaid}
                     onFocus={e => e.target.select()}
-                    onChange={e => setCashPaid(e.target.value)}
+                    onChange={e => {
+                      setCashPaid(e.target.value);
+                      setHighChangeConfirmed(false);
+                    }}
                     className="w-full text-lg font-bold font-mono px-3 py-2 border border-slate-300 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:outline-none"
                     placeholder="0.000"
                   />
@@ -635,6 +680,27 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
                   {formatMoney(changeDue)}
                 </span>
               </div>
+
+              {/* High Change Due Confirmation */}
+              {changeDue > 500 && (
+                <div className="bg-amber-50 border border-amber-300 rounded-xl p-3 text-xs text-amber-900 flex items-center justify-between gap-2">
+                  <div className="flex items-center gap-2">
+                    <AlertCircle className="w-5 h-5 text-amber-600 shrink-0" />
+                    <span>
+                      <strong>Rendu de monnaie élevé ({formatMoney(changeDue)} &gt; 500 DT)</strong> : veuillez confirmer ce montant.
+                    </span>
+                  </div>
+                  <label className="flex items-center gap-1.5 font-bold cursor-pointer bg-white px-2.5 py-1.5 rounded-lg border border-amber-300 shadow-xs shrink-0 select-none hover:bg-amber-100/50">
+                    <input
+                      type="checkbox"
+                      checked={highChangeConfirmed}
+                      onChange={e => setHighChangeConfirmed(e.target.checked)}
+                      className="w-4 h-4 text-amber-600 rounded"
+                    />
+                    <span>Confirmer</span>
+                  </label>
+                </div>
+              )}
 
               {/* Validation Error */}
               {validationError && (

@@ -227,6 +227,50 @@ describe('Cart Utilities', () => {
       expect(res.changeDue).toBe(10.000);
     });
 
+    it('rejects cash tender exceeding max(100 * totalTTC, 1000) (POS-02)', () => {
+      // Total 10 DT: max = 1000 DT. Cash 1001 DT should be rejected
+      const res1 = validateSplitPayment(10.000, 1001.000, 0, 0, null);
+      expect(res1.valid).toBe(false);
+      expect(res1.error).toBe('Montant espèces invalide - code-barres scanné ?');
+
+      // Total 20 DT: max = 2000 DT. Cash 2000 DT allowed (with change confirmation), 2001 DT rejected
+      const res2 = validateSplitPayment(20.000, 2001.000, 0, 0, null);
+      expect(res2.valid).toBe(false);
+      expect(res2.error).toBe('Montant espèces invalide - code-barres scanné ?');
+    });
+
+    it('rejects outright when integer part of cash has more than 7 digits (POS-02)', () => {
+      // 8-digit integer e.g. 10000000 DT
+      const res1 = validateSplitPayment(100000.000, 10000000.000, 0, 0, null, { rawCashString: '10000000' });
+      expect(res1.valid).toBe(false);
+      expect(res1.error).toBe('Montant espèces invalide - code-barres scanné ?');
+
+      // EAN-13 barcode scanned into cash input: 619000100101
+      const resBarcode = validateSplitPayment(1500.000, 619000100101, 0, 0, null, { rawCashString: '619000100101' });
+      expect(resBarcode.valid).toBe(false);
+      expect(resBarcode.error).toBe('Montant espèces invalide - code-barres scanné ?');
+    });
+
+    it('requires explicit confirmation when change due exceeds 500.000 DT (POS-02)', () => {
+      // Total 10 DT, cash 600 DT -> change due 590 DT > 500 DT
+      const resUnconfirmed = validateSplitPayment(10.000, 600.000, 0, 0, null);
+      expect(resUnconfirmed.valid).toBe(false);
+      expect(resUnconfirmed.changeDue).toBe(590.000);
+      expect(resUnconfirmed.requiresHighChangeConfirmation).toBe(true);
+      expect(resUnconfirmed.error).toContain('Rendu monnaie supérieur à 500 DT');
+
+      // When explicitly confirmed
+      const resConfirmed = validateSplitPayment(10.000, 600.000, 0, 0, null, { highChangeConfirmed: true });
+      expect(resConfirmed.valid).toBe(true);
+      expect(resConfirmed.changeDue).toBe(590.000);
+
+      // Change due exactly 500 DT (e.g. Total 10 DT, Cash 510 DT) does not require confirmation
+      const res500 = validateSplitPayment(10.000, 510.000, 0, 0, null);
+      expect(res500.valid).toBe(true);
+      expect(res500.changeDue).toBe(500.000);
+      expect(res500.requiresHighChangeConfirmation).toBeFalsy();
+    });
+
     it('handles exact split across Cash, Wallet, and Credit', () => {
       // Total 50 DT: 10 Cash, 15 Wallet, 25 Credit
       const res = validateSplitPayment(50.000, 10.000, 15.000, 25.000, customerWithWallet);

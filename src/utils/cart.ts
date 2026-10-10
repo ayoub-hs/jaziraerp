@@ -140,6 +140,18 @@ export function buildPaymentPayload(
   };
 }
 
+export interface SplitPaymentOptions {
+  rawCashString?: string;
+  highChangeConfirmed?: boolean;
+}
+
+export interface SplitPaymentResult {
+  valid: boolean;
+  error?: string;
+  changeDue: number;
+  requiresHighChangeConfirmation?: boolean;
+}
+
 /**
  * Validates split payment amounts against total due and customer limits.
  */
@@ -148,11 +160,35 @@ export function validateSplitPayment(
   cashPaid: number,
   walletPaid: number,
   creditAmount: number,
-  customer?: Customer | null
-): { valid: boolean; error?: string; changeDue: number } {
+  customer?: Customer | null,
+  options?: SplitPaymentOptions
+): SplitPaymentResult {
   const cash = roundMoney(Math.max(0, cashPaid || 0));
   const wallet = roundMoney(Math.max(0, walletPaid || 0));
   const credit = roundMoney(Math.max(0, creditAmount || 0));
+
+  // 1. Guard against barcode scanned into cash input: integer part > 7 digits
+  const rawCashStr = options?.rawCashString !== undefined
+    ? String(options.rawCashString).trim()
+    : String(cashPaid).trim();
+  const intPart = rawCashStr.split('.')[0].replace(/^[-+]/, '').replace(/^0+/, '') || '0';
+  if (intPart.length > 7) {
+    return {
+      valid: false,
+      error: 'Montant espèces invalide - code-barres scanné ?',
+      changeDue: 0
+    };
+  }
+
+  // 2. Guard against extreme cash tender: cash > max(100 * totalTTC, 1000)
+  const maxAllowedCash = Math.max(100 * totalTTC, 1000);
+  if (cash > maxAllowedCash) {
+    return {
+      valid: false,
+      error: 'Montant espèces invalide - code-barres scanné ?',
+      changeDue: 0
+    };
+  }
 
   // Wallet payment pre-validation: cannot exceed customer's current wallet balance
   if (wallet > 0) {
@@ -195,6 +231,16 @@ export function validateSplitPayment(
   }
 
   const changeDue = roundMoney(Math.max(0, cash - cashNeeded));
+
+  // 3. If change due is over 500.000 DT, require explicit confirmation
+  if (changeDue > 500 && !options?.highChangeConfirmed) {
+    return {
+      valid: false,
+      error: 'Rendu monnaie supérieur à 500 DT : confirmation requise',
+      changeDue,
+      requiresHighChangeConfirmation: true
+    };
+  }
 
   return {
     valid: true,
