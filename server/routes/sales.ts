@@ -103,16 +103,14 @@ salesRouter.get('/', (req: Request, res: Response) => {
 
   query += ` ORDER BY s.date DESC, s.created_at DESC`;
 
-  const limitParam = req.query.limit !== undefined ? parseInt(String(req.query.limit), 10) : 25;
-  if (!isNaN(limitParam) && limitParam > 0) {
-    query += ` LIMIT ${limitParam}`;
-  }
+  const rawLimit = req.query.limit !== undefined ? parseInt(String(req.query.limit), 10) : 25;
+  const limit = (!isNaN(rawLimit) && rawLimit > 0) ? Math.min(rawLimit, 500) : 25;
+  query += ` LIMIT ${limit}`;
 
-  if (req.query.offset) {
-    const offsetParam = parseInt(String(req.query.offset), 10);
-    if (!isNaN(offsetParam) && offsetParam >= 0) {
-      query += ` OFFSET ${offsetParam}`;
-    }
+  if (req.query.offset !== undefined) {
+    const rawOffset = parseInt(String(req.query.offset), 10);
+    const offset = (!isNaN(rawOffset) && rawOffset >= 0) ? rawOffset : 0;
+    query += ` OFFSET ${offset}`;
   }
 
   const sales = db.prepare(query).all(...params);
@@ -308,13 +306,24 @@ salesRouter.post('/', (req: Request, res: Response) => {
 
   for (const item of items) {
     const qty = Number(item.quantity);
-    if (qty <= 0) {
+    if (!Number.isFinite(qty) || qty <= 0) {
       res.status(400).json({ error: 'Quantity must be greater than 0' });
       return;
     }
 
-    let unitPrice = round3(Number(item.unit_price));
-    const discountAmount = round3(Number(item.discount_amount) || 0);
+    const unitPriceRaw = Number(item.unit_price);
+    if (!Number.isFinite(unitPriceRaw) || unitPriceRaw < 0) {
+      res.status(400).json({ error: 'unit_price must be a finite non-negative number' });
+      return;
+    }
+    let unitPrice = round3(unitPriceRaw);
+
+    const discountRaw = Number(item.discount_amount) || 0;
+    if (!Number.isFinite(discountRaw) || discountRaw < 0) {
+      res.status(400).json({ error: 'discount_amount must be a finite non-negative number' });
+      return;
+    }
+    const discountAmount = round3(discountRaw);
     const lineTotal = round3(multiplyMoney(unitPrice, qty) - discountAmount);
 
     if (lineTotal < 0) {
@@ -742,6 +751,7 @@ export function processRefund(saleId: string, req: Request, res: Response) {
     session_id: directSessionId = null,
     register_session_id = null,
     items = [],
+    refund_method: reqRefundMethod = null,
     cash_refunded,
     wallet_refunded,
     credit_reduced,
@@ -848,17 +858,17 @@ export function processRefund(saleId: string, req: Request, res: Response) {
   let creditReduction = credit_reduced !== undefined ? round3(Number(credit_reduced) || 0) : null;
 
   if (cashPayout === null && walletPayout === null && creditReduction === null) {
-    if (req.body.refund_to_credit_debt || (sale.credit_amount > 0 && sale.cash_paid === 0)) {
+    if (reqRefundMethod === 'CREDIT_REDUCTION' || req.body.refund_to_credit_debt || (!reqRefundMethod && sale.credit_amount > 0 && sale.cash_paid === 0)) {
       creditReduction = totalRefunded;
       cashPayout = 0;
       walletPayout = 0;
-    } else if (sale.cash_paid > 0) {
-      cashPayout = totalRefunded;
-      walletPayout = 0;
-      creditReduction = 0;
-    } else if (sale.wallet_paid > 0) {
+    } else if (reqRefundMethod === 'WALLET' || (!reqRefundMethod && sale.wallet_paid > 0 && sale.cash_paid === 0)) {
       walletPayout = totalRefunded;
       cashPayout = 0;
+      creditReduction = 0;
+    } else if (reqRefundMethod === 'CASH' || (!reqRefundMethod && sale.cash_paid > 0)) {
+      cashPayout = totalRefunded;
+      walletPayout = 0;
       creditReduction = 0;
     } else {
       cashPayout = totalRefunded;

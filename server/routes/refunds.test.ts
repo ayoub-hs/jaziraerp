@@ -394,5 +394,48 @@ describe('Returns & Line-Item Partial Refunds Module — Real HTTP Integration T
     const status2Final = await request(app).get('/api/register/sessions/ses-mobile');
     expect(status2Final.body.live_cash_breakdown.expected_cash).toBe(30.000);
   });
+
+  it('honors refund_method CREDIT_REDUCTION to reduce open debt ticket on mixed cash+credit sale', async () => {
+    const db = getDb();
+
+    // 1. Create a mixed sale: 2x Degreaser @ 15.000 = 30 DT total (10 DT cash, 20 DT credit)
+    const saleRes = await request(app)
+      .post('/api/sales')
+      .send({
+        customer_id: 'cust-refund-test',
+        items: [{ product_id: 'prod-degreaser', quantity: 2, unit_price: 15.000 }],
+        cash_paid: 10.000,
+        cash_tendered: 10.000,
+        credit_amount: 20.000
+      });
+
+    expect(saleRes.status).toBe(201);
+    const saleId = saleRes.body.id;
+
+    // Verify debt ticket was created with 20 DT remaining
+    const ticketBefore: any = db.prepare('SELECT * FROM customer_debt_tickets WHERE sale_id = ?').get(saleId);
+    expect(ticketBefore).toBeDefined();
+    expect(ticketBefore.remaining_amount).toBe(20.000);
+
+    const degreaserItem: any = db.prepare('SELECT id FROM sale_items WHERE sale_id = ?').get(saleId);
+
+    // 2. Process refund for 1 unit (15 DT) selecting refund_method: 'CREDIT_REDUCTION'
+    const refundRes = await request(app)
+      .post(`/api/sales/${saleId}/refund`)
+      .send({
+        refund_method: 'CREDIT_REDUCTION',
+        items: [{ sale_item_id: degreaserItem.id, quantity: 1 }],
+        reason: 'Client requested credit balance reduction'
+      });
+
+    expect(refundRes.status).toBe(201);
+    expect(refundRes.body.credit_reduced).toBe(15.000);
+    expect(refundRes.body.cash_refunded).toBe(0);
+
+    // 3. Verify debt ticket remaining amount reduced from 20 DT to 5 DT
+    const ticketAfter: any = db.prepare('SELECT * FROM customer_debt_tickets WHERE sale_id = ?').get(saleId);
+    expect(ticketAfter.remaining_amount).toBe(5.000);
+    expect(ticketAfter.status).toBe('PARTIALLY_PAID');
+  });
 });
 

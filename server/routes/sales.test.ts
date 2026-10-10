@@ -828,6 +828,53 @@ describe('POS Sales & Checkout Module — Real HTTP Integration Tests', () => {
     const resPaginated = await request(app).get('/api/sales?limit=2&offset=1');
     expect(resPaginated.status).toBe(200);
     expect(resPaginated.body.length).toBe(2);
+
+    // 6. Safe pagination default when limit is invalid string (no unbounded scan)
+    const resSafeLimit = await request(app).get('/api/sales?limit=notanumber');
+    expect(resSafeLimit.status).toBe(200);
+    expect(resSafeLimit.body.length).toBeLessThanOrEqual(25);
+  });
+
+  it('rejects online sale items with NaN, non-finite, or negative quantity or prices', async () => {
+    // 1. NaN quantity
+    const resNanQty = await request(app)
+      .post('/api/sales')
+      .send({
+        items: [{ product_id: 'prod-clean-1l', quantity: 'not-a-number', unit_price: 3.000 }],
+        cash_paid: 3.000
+      });
+    expect(resNanQty.status).toBe(400);
+    expect(resNanQty.body.error).toMatch(/Quantity must be greater than 0/i);
+
+    // 2. NaN unit_price
+    const resNanPrice = await request(app)
+      .post('/api/sales')
+      .send({
+        items: [{ product_id: 'prod-clean-1l', quantity: 1, unit_price: 'invalid' }],
+        cash_paid: 3.000
+      });
+    expect(resNanPrice.status).toBe(400);
+    expect(resNanPrice.body.error).toMatch(/unit_price must be a finite non-negative number/i);
+
+    // 3. Negative unit_price
+    const resNegPrice = await request(app)
+      .post('/api/sales')
+      .send({
+        items: [{ product_id: 'prod-clean-1l', quantity: 1, unit_price: -5.000 }],
+        cash_paid: 3.000
+      });
+    expect(resNegPrice.status).toBe(400);
+    expect(resNegPrice.body.error).toMatch(/unit_price must be a finite non-negative number/i);
+
+    // 4. Negative or NaN discount
+    const resNegDiscount = await request(app)
+      .post('/api/sales')
+      .send({
+        items: [{ product_id: 'prod-clean-1l', quantity: 1, unit_price: 3.000, discount_amount: -2.000 }],
+        cash_paid: 3.000
+      });
+    expect(resNegDiscount.status).toBe(400);
+    expect(resNegDiscount.body.error).toMatch(/discount_amount must be a finite non-negative number/i);
   });
 });
 

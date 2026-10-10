@@ -172,6 +172,7 @@ export const RefundModal: React.FC<RefundModalProps> = ({
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           refund_method: refundMethod,
+          refund_to_credit_debt: refundMethod === 'CREDIT_REDUCTION',
           reason,
           session_id: refundMethod === 'CASH' ? selectedSessionId || undefined : undefined,
           items: [
