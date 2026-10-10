@@ -13,7 +13,7 @@ reportsRouter.get('/sales-by-customer', (req: Request, res: Response) => {
   const db = getDb();
   const { start_date, end_date, customer_id } = req.query;
 
-  let whereClause = "WHERE s.status IN ('COMPLETED', 'PARTIALLY_REFUNDED')";
+  let whereClause = "WHERE s.status IN ('COMPLETED', 'PARTIALLY_REFUNDED', 'FULLY_REFUNDED')";
   const params: any[] = [];
 
   if (start_date) {
@@ -53,8 +53,14 @@ reportsRouter.get('/sales-by-customer', (req: Request, res: Response) => {
       COALESCE(c.name, 'Walk-in Customer') as customer_name,
       c.phone as customer_phone,
       COUNT(s.id) as sale_count,
-      ROUND(SUM(s.subtotal_ht), 3) as total_ht,
-      ROUND(SUM(s.tva_amount), 3) as total_tva,
+      ROUND(SUM(s.subtotal_ht), 3) as gross_ht,
+      ROUND(SUM(COALESCE(r.refunded_ht, 0)), 3) as refunded_ht,
+      ROUND(SUM(s.subtotal_ht) - SUM(COALESCE(r.refunded_ht, 0)), 3) as net_ht,
+      ROUND(SUM(s.subtotal_ht) - SUM(COALESCE(r.refunded_ht, 0)), 3) as total_ht,
+      ROUND(SUM(s.tva_amount), 3) as gross_tva,
+      ROUND(SUM(COALESCE(r.refunded_tva, 0)), 3) as refunded_tva,
+      ROUND(SUM(s.tva_amount) - SUM(COALESCE(r.refunded_tva, 0)), 3) as net_tva,
+      ROUND(SUM(s.tva_amount) - SUM(COALESCE(r.refunded_tva, 0)), 3) as total_tva,
       ROUND(SUM(s.total_ttc), 3) as gross_ttc,
       ROUND(SUM(COALESCE(r.total_refunded, 0)), 3) as refunded_amount,
       ROUND(SUM(s.total_ttc) - SUM(COALESCE(r.total_refunded, 0)), 3) as net_ttc,
@@ -73,6 +79,8 @@ reportsRouter.get('/sales-by-customer', (req: Request, res: Response) => {
       SELECT 
         sale_id,
         SUM(total_refunded) as total_refunded,
+        SUM(ROUND(total_refunded / 1.19, 3)) as refunded_ht,
+        SUM(total_refunded - ROUND(total_refunded / 1.19, 3)) as refunded_tva,
         SUM(cash_refunded) as cash_refunded,
         SUM(wallet_refunded) as wallet_refunded,
         SUM(credit_reduced) as credit_reduced
@@ -88,6 +96,12 @@ reportsRouter.get('/sales-by-customer', (req: Request, res: Response) => {
   const rows: any[] = db.prepare(query).all(...params);
 
   // Summary totals
+  let grandGrossHt = 0;
+  let grandRefundedHt = 0;
+  let grandNetHt = 0;
+  let grandGrossTva = 0;
+  let grandRefundedTva = 0;
+  let grandNetTva = 0;
   let grandGrossTtc = 0;
   let grandRefunded = 0;
   let grandNetTtc = 0;
@@ -97,6 +111,12 @@ reportsRouter.get('/sales-by-customer', (req: Request, res: Response) => {
   let grandCount = 0;
 
   for (const r of rows) {
+    grandGrossHt += r.gross_ht || 0;
+    grandRefundedHt += r.refunded_ht || 0;
+    grandNetHt += r.net_ht || 0;
+    grandGrossTva += r.gross_tva || 0;
+    grandRefundedTva += r.refunded_tva || 0;
+    grandNetTva += r.net_tva || 0;
     grandGrossTtc += r.gross_ttc || 0;
     grandRefunded += r.refunded_amount || 0;
     grandNetTtc += r.net_ttc || 0;
@@ -112,6 +132,14 @@ reportsRouter.get('/sales-by-customer', (req: Request, res: Response) => {
     customer_sales: rows,
     summary: {
       total_sales_count: grandCount,
+      total_gross_ht: round3(grandGrossHt),
+      total_refunded_ht: round3(grandRefundedHt),
+      total_net_ht: round3(grandNetHt),
+      total_ht: round3(grandNetHt),
+      total_gross_tva: round3(grandGrossTva),
+      total_refunded_tva: round3(grandRefundedTva),
+      total_net_tva: round3(grandNetTva),
+      total_tva: round3(grandNetTva),
       total_gross_ttc: round3(grandGrossTtc),
       total_refunded: round3(grandRefunded),
       total_net_ttc: round3(grandNetTtc),
@@ -130,7 +158,7 @@ reportsRouter.get('/sales-by-register', (req: Request, res: Response) => {
   const db = getDb();
   const { start_date, end_date, counter_name } = req.query;
 
-  let whereClause = "WHERE s.status IN ('COMPLETED', 'PARTIALLY_REFUNDED')";
+  let whereClause = "WHERE s.status IN ('COMPLETED', 'PARTIALLY_REFUNDED', 'FULLY_REFUNDED')";
   const params: any[] = [];
 
   if (start_date) {
@@ -164,8 +192,14 @@ reportsRouter.get('/sales-by-register', (req: Request, res: Response) => {
       COALESCE(rs.counter_name, 'Countertop') as counter_name,
       COUNT(DISTINCT s.session_id) as session_count,
       COUNT(s.id) as sale_count,
-      ROUND(SUM(s.subtotal_ht), 3) as total_ht,
-      ROUND(SUM(s.tva_amount), 3) as total_tva,
+      ROUND(SUM(s.subtotal_ht), 3) as gross_ht,
+      ROUND(SUM(COALESCE(r.refunded_ht, 0)), 3) as refunded_ht,
+      ROUND(SUM(s.subtotal_ht) - SUM(COALESCE(r.refunded_ht, 0)), 3) as net_ht,
+      ROUND(SUM(s.subtotal_ht) - SUM(COALESCE(r.refunded_ht, 0)), 3) as total_ht,
+      ROUND(SUM(s.tva_amount), 3) as gross_tva,
+      ROUND(SUM(COALESCE(r.refunded_tva, 0)), 3) as refunded_tva,
+      ROUND(SUM(s.tva_amount) - SUM(COALESCE(r.refunded_tva, 0)), 3) as net_tva,
+      ROUND(SUM(s.tva_amount) - SUM(COALESCE(r.refunded_tva, 0)), 3) as total_tva,
       ROUND(SUM(s.total_ttc), 3) as gross_ttc,
       ROUND(SUM(COALESCE(r.total_refunded, 0)), 3) as refunded_amount,
       ROUND(SUM(s.total_ttc) - SUM(COALESCE(r.total_refunded, 0)), 3) as net_ttc,
@@ -184,6 +218,8 @@ reportsRouter.get('/sales-by-register', (req: Request, res: Response) => {
       SELECT 
         sale_id,
         SUM(total_refunded) as total_refunded,
+        SUM(ROUND(total_refunded / 1.19, 3)) as refunded_ht,
+        SUM(total_refunded - ROUND(total_refunded / 1.19, 3)) as refunded_tva,
         SUM(cash_refunded) as cash_refunded,
         SUM(wallet_refunded) as wallet_refunded,
         SUM(credit_reduced) as credit_reduced
@@ -198,6 +234,12 @@ reportsRouter.get('/sales-by-register', (req: Request, res: Response) => {
 
   const rows: any[] = db.prepare(query).all(...params);
 
+  let grandGrossHt = 0;
+  let grandRefundedHt = 0;
+  let grandNetHt = 0;
+  let grandGrossTva = 0;
+  let grandRefundedTva = 0;
+  let grandNetTva = 0;
   let grandGrossTtc = 0;
   let grandRefunded = 0;
   let grandNetTtc = 0;
@@ -207,6 +249,12 @@ reportsRouter.get('/sales-by-register', (req: Request, res: Response) => {
   let grandCount = 0;
 
   for (const r of rows) {
+    grandGrossHt += r.gross_ht || 0;
+    grandRefundedHt += r.refunded_ht || 0;
+    grandNetHt += r.net_ht || 0;
+    grandGrossTva += r.gross_tva || 0;
+    grandRefundedTva += r.refunded_tva || 0;
+    grandNetTva += r.net_tva || 0;
     grandGrossTtc += r.gross_ttc || 0;
     grandRefunded += r.refunded_amount || 0;
     grandNetTtc += r.net_ttc || 0;
@@ -222,6 +270,14 @@ reportsRouter.get('/sales-by-register', (req: Request, res: Response) => {
     register_sales: rows,
     summary: {
       total_sales_count: grandCount,
+      total_gross_ht: round3(grandGrossHt),
+      total_refunded_ht: round3(grandRefundedHt),
+      total_net_ht: round3(grandNetHt),
+      total_ht: round3(grandNetHt),
+      total_gross_tva: round3(grandGrossTva),
+      total_refunded_tva: round3(grandRefundedTva),
+      total_net_tva: round3(grandNetTva),
+      total_tva: round3(grandNetTva),
       total_gross_ttc: round3(grandGrossTtc),
       total_refunded: round3(grandRefunded),
       total_net_ttc: round3(grandNetTtc),

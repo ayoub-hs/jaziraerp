@@ -294,4 +294,137 @@ describe('Reports API Endpoints', () => {
     expect(regRow.cash_paid).toBe(30.000);
     expect(regRow.credit_amount).toBe(20.000);
   });
+
+  it('decomposes refunds per refund row across all sales reports (3 refunds on 1 sale, refunds across 2 sales) (REP-01)', async () => {
+    // 0. Open register
+    await request(app)
+      .post('/api/register/open')
+      .send({ counter_name: 'Countertop', opening_cash: 200 });
+
+    // 1. Create 2 customers
+    const cust1 = (await request(app).post('/api/customers').send({ name: 'Client TripleRefund', phone: '98000001' })).body;
+    const cust2 = (await request(app).post('/api/customers').send({ name: 'Client SingleRefund', phone: '98000002' })).body;
+
+    // 2. Sale 1 for Customer 1: 3 items of 15.000 DT = 45.000 DT TTC
+    // HT = round3(45 / 1.19) = 37.815, TVA = 7.185
+    const sale1Res = await request(app).post('/api/sales').send({
+      customer_id: cust1.id,
+      date: '2026-09-10T10:00:00Z',
+      items: [
+        { is_quick_add: 1, quick_add_name: 'Item A', quantity: 1, unit_price: 15.000 },
+        { is_quick_add: 1, quick_add_name: 'Item B', quantity: 1, unit_price: 15.000 },
+        { is_quick_add: 1, quick_add_name: 'Item C', quantity: 1, unit_price: 15.000 }
+      ],
+      subtotal_ht: 37.815,
+      tva_rate: 0.19,
+      tva_amount: 7.185,
+      total_ttc: 45.000,
+      cash_paid: 45.000
+    });
+    expect(sale1Res.status).toBe(201);
+    const sale1 = sale1Res.body.sale;
+
+    // 3. Sale 2 for Customer 2: 2 items of 20.000 DT = 40.000 DT TTC
+    // HT = round3(40 / 1.19) = 33.613, TVA = 6.387
+    const sale2Res = await request(app).post('/api/sales').send({
+      customer_id: cust2.id,
+      date: '2026-09-10T11:00:00Z',
+      items: [
+        { is_quick_add: 1, quick_add_name: 'Item D', quantity: 1, unit_price: 20.000 },
+        { is_quick_add: 1, quick_add_name: 'Item E', quantity: 1, unit_price: 20.000 }
+      ],
+      subtotal_ht: 33.613,
+      tva_rate: 0.19,
+      tva_amount: 6.387,
+      total_ttc: 40.000,
+      cash_paid: 40.000
+    });
+    expect(sale2Res.status).toBe(201);
+    const sale2 = sale2Res.body.sale;
+
+    // 4. Perform 3 partial refunds on Sale 1:
+    // Refund 1: Item A (15.000 DT) -> HT = round3(15/1.19) = 12.605, TVA = 2.395
+    const ref1_1 = await request(app).post(`/api/sales/${sale1.id}/refund`).send({
+      items: [{ sale_item_id: sale1.items[0].id, quantity: 1 }],
+      cash_refunded: 15.000,
+      reason: 'Refund item A'
+    });
+    expect(ref1_1.status).toBe(201);
+
+    // Refund 2: Item B (15.000 DT) -> HT = 12.605, TVA = 2.395
+    const ref1_2 = await request(app).post(`/api/sales/${sale1.id}/refund`).send({
+      items: [{ sale_item_id: sale1.items[1].id, quantity: 1 }],
+      cash_refunded: 15.000,
+      reason: 'Refund item B'
+    });
+    expect(ref1_2.status).toBe(201);
+
+    // Refund 3: Item C (15.000 DT) -> HT = 12.605, TVA = 2.395
+    // Sum of 3 refunded HTs = 37.815, sum of 3 refunded TVAs = 7.185 (Total = 45.000)
+    const ref1_3 = await request(app).post(`/api/sales/${sale1.id}/refund`).send({
+      items: [{ sale_item_id: sale1.items[2].id, quantity: 1 }],
+      cash_refunded: 15.000,
+      reason: 'Refund item C'
+    });
+    expect(ref1_3.status).toBe(201);
+
+    // 5. Perform 1 partial refund on Sale 2:
+    // Item D (20.000 DT) -> HT = round3(20/1.19) = 16.807, TVA = 3.193
+    const ref2_1 = await request(app).post(`/api/sales/${sale2.id}/refund`).send({
+      items: [{ sale_item_id: sale2.items[0].id, quantity: 1 }],
+      cash_refunded: 20.000,
+      reason: 'Refund item D'
+    });
+    expect(ref2_1.status).toBe(201);
+
+    // 6. Test GET /api/reports/sales-by-customer
+    const custReport = await request(app).get('/api/reports/sales-by-customer?start_date=2026-09-01&end_date=2026-09-30');
+    expect(custReport.status).toBe(200);
+
+    const rowCust1 = custReport.body.customer_sales.find((c: any) => c.customer_id === cust1.id);
+    expect(rowCust1).toBeDefined();
+    expect(rowCust1.gross_ttc).toBe(45.000);
+    expect(rowCust1.refunded_amount).toBe(45.000);
+    expect(rowCust1.net_ttc).toBe(0.000);
+    // Net HT + Net TVA == Net TTC
+    expect(rowCust1.net_ht + rowCust1.net_tva).toBe(rowCust1.net_ttc);
+    expect(rowCust1.total_ht + rowCust1.total_tva).toBe(rowCust1.total_ttc);
+    expect(rowCust1.net_ht).toBe(0.000);
+    expect(rowCust1.net_tva).toBe(0.000);
+
+    const rowCust2 = custReport.body.customer_sales.find((c: any) => c.customer_id === cust2.id);
+    expect(rowCust2).toBeDefined();
+    expect(rowCust2.gross_ttc).toBe(40.000);
+    expect(rowCust2.refunded_amount).toBe(20.000);
+    expect(rowCust2.net_ttc).toBe(20.000);
+    // Net HT + Net TVA == Net TTC
+    expect(rowCust2.net_ht + rowCust2.net_tva).toBe(rowCust2.net_ttc);
+    expect(rowCust2.total_ht + rowCust2.total_tva).toBe(rowCust2.total_ttc);
+    expect(rowCust2.net_ht).toBe(16.806); // 33.613 - 16.807 = 16.806
+    expect(rowCust2.net_tva).toBe(3.194); // 6.387 - 3.193 = 3.194
+
+    // Check summary in sales-by-customer
+    const custSummary = custReport.body.summary;
+    expect(custSummary.total_net_ht + custSummary.total_net_tva).toBe(custSummary.total_net_ttc);
+    expect(custSummary.total_ht + custSummary.total_tva).toBe(custSummary.total_ttc);
+    expect(custSummary.total_net_ttc).toBe(20.000);
+
+    // 7. Test GET /api/reports/sales-by-register
+    const regReport = await request(app).get('/api/reports/sales-by-register?start_date=2026-09-01&end_date=2026-09-30');
+    expect(regReport.status).toBe(200);
+
+    const regRow = regReport.body.register_sales[0];
+    expect(regRow).toBeDefined();
+    expect(regRow.gross_ttc).toBe(85.000); // 45 + 40
+    expect(regRow.refunded_amount).toBe(65.000); // 45 + 20
+    expect(regRow.net_ttc).toBe(20.000);
+    expect(regRow.net_ht + regRow.net_tva).toBe(regRow.net_ttc);
+    expect(regRow.total_ht + regRow.total_tva).toBe(regRow.total_ttc);
+
+    const regSummary = regReport.body.summary;
+    expect(regSummary.total_net_ht + regSummary.total_net_tva).toBe(regSummary.total_net_ttc);
+    expect(regSummary.total_ht + regSummary.total_tva).toBe(regSummary.total_ttc);
+    expect(regSummary.total_net_ttc).toBe(20.000);
+  });
 });
+
