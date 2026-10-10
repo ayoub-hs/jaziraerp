@@ -3,11 +3,12 @@ import crypto from 'crypto';
 import { getDb, isUniqueViolation } from '../db/index.js';
 import { round3 } from '../utils/money.js';
 import { calculateSessionExpectedCash } from '../services/registerService.js';
+import { businessDateKey } from '../utils/businessDate.js';
 
 export const registerRouter = Router();
 
 function generateSessionNumber(db: any): string {
-  const dateStr = new Date().toISOString().slice(0, 10).replace(/-/g, '');
+  const dateStr = businessDateKey();
   const prefix = `SES-${dateStr}-`;
   const countRow: any = db.prepare(`
     SELECT COUNT(*) as cnt FROM register_sessions WHERE session_number LIKE ?

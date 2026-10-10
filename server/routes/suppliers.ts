@@ -4,13 +4,14 @@ import { getDb, isUniqueViolation } from '../db/index.js';
 import { round3, addMoney, multiplyMoney } from '../utils/money.js';
 import { recordMaterialPriceHistory } from './materials.js';
 import { allocateSupplierPayment } from '../services/debtService.js';
+import { businessDateKey } from '../utils/businessDate.js';
 
 export const suppliersRouter = Router();
 export const purchasesRouter = Router();
 suppliersRouter.use('/purchases', purchasesRouter);
 
 function generatePurchaseNumber(db: any): string {
-  const dateStr = new Date().toISOString().slice(0, 10).replace(/-/g, '');
+  const dateStr = businessDateKey();
   const prefix = `PO-${dateStr}-`;
   const countRow: any = db.prepare(`
     SELECT COUNT(*) as cnt FROM purchases WHERE purchase_number LIKE ?
@@ -20,7 +21,7 @@ function generatePurchaseNumber(db: any): string {
 }
 
 function generateSupplierTicketNumber(db: any): string {
-  const dateStr = new Date().toISOString().slice(0, 10).replace(/-/g, '');
+  const dateStr = businessDateKey();
   const prefix = `STKT-${dateStr}-`;
   const countRow: any = db.prepare(`
     SELECT COUNT(*) as cnt FROM supplier_debt_tickets WHERE ticket_number LIKE ?
