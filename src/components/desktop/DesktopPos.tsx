@@ -30,7 +30,7 @@ import type {
   RegisterSession,
   PackSize
 } from '../../types/index.js';
-import { calculateCartTotals, getProductPriceForCustomer, getProductPackPrice, calculateContainersNeeded, recalculateCartForCustomer } from '../../utils/cart.js';
+import { calculateCartTotals, getProductPriceForCustomer, getProductPackPrice, calculateContainersNeeded, recalculateCartForCustomer, getPriceSourceLabel } from '../../utils/cart.js';
 import { formatMoney, roundMoney } from '../../utils/formatters.js';
 import { playBeep, playErrorBeep, vibrateError } from '../../utils/audio.js';
 import { QuickAddModal } from '../shared/QuickAddModal.js';
@@ -809,11 +809,20 @@ export const DesktopPos: React.FC<DesktopPosProps> = ({
                       title="Modifier le prix unitaire"
                     />
                     <span className="text-[9px] text-slate-400 font-mono">DT</span>
-                    {item.price_overridden && (
-                      <span className="bg-amber-100 text-amber-800 text-[9px] font-semibold px-1 py-0.2 rounded border border-amber-200" title="Prix modifié manuellement">
-                        Modifié
-                      </span>
-                    )}
+                    <span
+                      className={`text-[9px] font-semibold px-1 py-0.2 rounded border ${
+                        item.price_overridden
+                          ? 'bg-amber-100 text-amber-800 border-amber-200'
+                          : selectedCustomer?.type === 'RESELLER'
+                          ? 'bg-purple-100 text-purple-800 border-purple-200'
+                          : selectedCustomer?.type === 'WHOLESALE'
+                          ? 'bg-blue-100 text-blue-800 border-blue-200'
+                          : 'bg-slate-100 text-slate-700 border-slate-200'
+                      }`}
+                      title={`Tarification : ${getPriceSourceLabel(item, selectedCustomer)}`}
+                    >
+                      {getPriceSourceLabel(item, selectedCustomer)}
+                    </span>
                     {item.size_label && (
                       <span className="bg-slate-100 px-1 rounded font-semibold">{item.size_label}</span>
                     )}

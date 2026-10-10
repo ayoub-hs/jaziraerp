@@ -343,4 +343,28 @@ export function recalculateCartForCustomer(
   });
 }
 
+/**
+ * Returns a short price-source tag for a cart line:
+ * - "Modifié" if unit price was manually edited
+ * - "-X% Revendeur" if customer is RESELLER (using their discount percentage)
+ * - "Gros" if customer is WHOLESALE
+ * - "Détail" for RETAIL, walk-in, or default
+ */
+export function getPriceSourceLabel(item: CartItem, customer?: Customer | null): string {
+  if (item.price_overridden) {
+    return 'Modifié';
+  }
+  if (!customer || customer.type === 'RETAIL') {
+    return 'Détail';
+  }
+  if (customer.type === 'WHOLESALE') {
+    return 'Gros';
+  }
+  if (customer.type === 'RESELLER') {
+    const pct = customer.reseller_discount_percent ?? 0;
+    return `-${pct}% Revendeur`;
+  }
+  return 'Détail';
+}
+
 

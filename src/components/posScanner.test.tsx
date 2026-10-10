@@ -200,4 +200,73 @@ describe('Component tests for scanner bursts and checkout cash guards (Batch 3 I
     // Cart now has the item
     expect(screen.getByText(/Articles \(1 items \/ 1 pcs\)/i)).toBeTruthy();
   });
+
+  it('A3: cart line displays correct price-source tag per customer type (Détail, Gros, -X% Revendeur, Modifié)', () => {
+    const retailCustomer: Customer = {
+      id: 'cust-retail',
+      name: 'Client Détail',
+      type: 'RETAIL',
+      reseller_discount_percent: 0,
+      wallet_balance: 0,
+      total_debt: 0
+    };
+    const wholesaleCustomer: Customer = {
+      id: 'cust-ws',
+      name: 'Client Gros',
+      type: 'WHOLESALE',
+      reseller_discount_percent: 0,
+      wallet_balance: 0,
+      total_debt: 0
+    };
+    const resellerCustomer: Customer = {
+      id: 'cust-res',
+      name: 'Client Revendeur',
+      type: 'RESELLER',
+      reseller_discount_percent: 10,
+      wallet_balance: 0,
+      total_debt: 0
+    };
+
+    const { rerender } = render(
+      <DesktopPos
+        products={[mockProduct]}
+        families={[mockFamily]}
+        customers={[retailCustomer, wholesaleCustomer, resellerCustomer]}
+        activeSession={mockSession}
+        onRefreshData={vi.fn()}
+        onPopDrawer={vi.fn()}
+        onProcessSale={vi.fn()}
+        onPrintReceipt={vi.fn()}
+        onPrintInvoice={vi.fn()}
+      />
+    );
+
+    // 1. Add item to cart for retail customer
+    act(() => {
+      scannerService.triggerScan('619000333001');
+    });
+
+    // Tag should be "Détail"
+    expect(screen.getByText('Détail')).toBeTruthy();
+
+    // 2. Switch to Wholesale customer
+    const custSearchInput = screen.getByPlaceholderText(/Rechercher client/i);
+    fireEvent.focus(custSearchInput);
+    fireEvent.click(screen.getByText('Client Gros'));
+    expect(screen.getByText('Gros')).toBeTruthy();
+
+    // 3. Switch to Reseller customer (10% discount)
+    fireEvent.click(screen.getByTitle(/Désélectionner le client/i));
+    fireEvent.focus(screen.getByPlaceholderText(/Rechercher client/i));
+    fireEvent.click(screen.getByText('Client Revendeur'));
+    expect(screen.getByText('-10% Revendeur')).toBeTruthy();
+
+    // 4. Manually override price
+    const priceInput = screen.getByTitle('Modifier le prix unitaire');
+    fireEvent.change(priceInput, { target: { value: '4.500' } });
+    fireEvent.blur(priceInput);
+
+    // Tag should now be "Modifié"
+    expect(screen.getByText('Modifié')).toBeTruthy();
+  });
 });

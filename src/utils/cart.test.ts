@@ -7,7 +7,8 @@ import {
   buildPaymentPayload,
   parseSizeToLiters,
   calculateContainersNeeded,
-  recalculateCartForCustomer
+  recalculateCartForCustomer,
+  getPriceSourceLabel
 } from './cart.js';
 import type { Customer, Product, CartItem, PackSize } from '../types/index.js';
 
@@ -439,6 +440,82 @@ describe('Cart Utilities', () => {
 
       // Non-overridden item 2 must flip to wholesale price 3.800
       expect(updated[1].unit_price).toBe(3.800);
+    });
+  });
+
+  describe('getPriceSourceLabel (Batch 2 Item A3)', () => {
+    it('returns "Modifié" when price_overridden is true regardless of customer type', () => {
+      const item: CartItem = {
+        cart_item_id: 'i-1',
+        name: 'Item 1',
+        unit_price: 3.000,
+        quantity: 1,
+        pack_multiplier: 1,
+        price_overridden: true
+      };
+      const reseller: Customer = {
+        id: 'c-res',
+        name: 'Reseller',
+        type: 'RESELLER',
+        reseller_discount_percent: 10,
+        wallet_balance: 0
+      };
+      expect(getPriceSourceLabel(item, reseller)).toBe('Modifié');
+    });
+
+    it('returns "-X% Revendeur" for RESELLER customer when not overridden', () => {
+      const item: CartItem = {
+        cart_item_id: 'i-1',
+        name: 'Item 1',
+        unit_price: 2.520,
+        quantity: 1,
+        pack_multiplier: 1
+      };
+      const reseller: Customer = {
+        id: 'c-res',
+        name: 'Reseller',
+        type: 'RESELLER',
+        reseller_discount_percent: 15,
+        wallet_balance: 0
+      };
+      expect(getPriceSourceLabel(item, reseller)).toBe('-15% Revendeur');
+    });
+
+    it('returns "Gros" for WHOLESALE customer when not overridden', () => {
+      const item: CartItem = {
+        cart_item_id: 'i-1',
+        name: 'Item 1',
+        unit_price: 2.800,
+        quantity: 1,
+        pack_multiplier: 1
+      };
+      const wholesale: Customer = {
+        id: 'c-ws',
+        name: 'Wholesale',
+        type: 'WHOLESALE',
+        reseller_discount_percent: 0,
+        wallet_balance: 0
+      };
+      expect(getPriceSourceLabel(item, wholesale)).toBe('Gros');
+    });
+
+    it('returns "Détail" for RETAIL customer or null/walk-in when not overridden', () => {
+      const item: CartItem = {
+        cart_item_id: 'i-1',
+        name: 'Item 1',
+        unit_price: 3.500,
+        quantity: 1,
+        pack_multiplier: 1
+      };
+      const retail: Customer = {
+        id: 'c-ret',
+        name: 'Retail',
+        type: 'RETAIL',
+        reseller_discount_percent: 0,
+        wallet_balance: 0
+      };
+      expect(getPriceSourceLabel(item, null)).toBe('Détail');
+      expect(getPriceSourceLabel(item, retail)).toBe('Détail');
     });
   });
 });
