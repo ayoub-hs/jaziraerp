@@ -330,6 +330,68 @@ describe('Persistent Register / Counter Management API', () => {
     const allNames = allRes.body.map((c: any) => c.name);
     expect(allNames).toContain('Drive Thru');
   });
+
+  it('closes register session, returning movements and cash audit breakdown for thermal Z-report slip', async () => {
+    // 1. Open session
+    const openRes = await request(app)
+      .post('/api/register/open')
+      .send({ counter_name: 'Countertop', opening_cash: 80.000, notes: 'Morning shift' });
+    expect(openRes.status).toBe(201);
+    const sessionId = openRes.body.id;
+
+    // 2. Add cash movements
+    await request(app)
+      .post('/api/register/movement')
+      .send({
+        session_id: sessionId,
+        type: 'CASH_IN',
+        amount: 25.000,
+        reason: 'Change coins replenishment'
+      });
+
+    await request(app)
+      .post('/api/register/movement')
+      .send({
+        session_id: sessionId,
+        type: 'CASH_OUT',
+        amount: 10.000,
+        reason: 'Coffee and milk supplies'
+      });
+
+    // 3. Close session with 95.000 DT counted (expected: 80 + 25 - 10 = 95.000)
+    const closeRes = await request(app)
+      .post('/api/register/close')
+      .send({
+        session_id: sessionId,
+        counted_cash: 95.000,
+        notes: 'End of shift reconciliation'
+      });
+
+    expect(closeRes.status).toBe(200);
+    expect(closeRes.body.status).toBe('CLOSED');
+    expect(closeRes.body.expected_cash).toBe(95.000);
+    expect(closeRes.body.counted_cash).toBe(95.000);
+    expect(closeRes.body.difference).toBe(0);
+
+    // Verify movements breakdown included for Z-report thermal slip
+    expect(Array.isArray(closeRes.body.movements)).toBe(true);
+    expect(closeRes.body.movements.length).toBe(2);
+    expect(closeRes.body.movements[0].reason).toBe('Change coins replenishment');
+    expect(closeRes.body.movements[1].reason).toBe('Coffee and milk supplies');
+
+    // Verify audit breakdown included
+    expect(closeRes.body.audit_breakdown).toBeDefined();
+    expect(closeRes.body.audit_breakdown.opening_cash).toBe(80.000);
+    expect(closeRes.body.audit_breakdown.cash_in).toBe(25.000);
+    expect(closeRes.body.audit_breakdown.cash_out).toBe(10.000);
+    expect(closeRes.body.audit_breakdown.expected_cash).toBe(95.000);
+
+    // Also verify GET /api/register/sessions/:id returns full data
+    const getRes = await request(app).get(`/api/register/sessions/${sessionId}`);
+    expect(getRes.status).toBe(200);
+    expect(getRes.body.session.status).toBe('CLOSED');
+    expect(getRes.body.movements.length).toBe(2);
+  });
 });
 
 

@@ -1,9 +1,11 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { X, Lock, Unlock, AlertTriangle, CheckCircle } from 'lucide-react';
+import { X, Lock, Unlock, AlertTriangle, CheckCircle, Printer } from 'lucide-react';
 import type { RegisterSession } from '../../types/index.js';
 import { formatMoney, roundMoney } from '../../utils/formatters.js';
 import { useBackButton } from '../../utils/backButton.js';
 import { useModalScanPause } from '../../hooks/useModalScanPause.js';
+import { printZReportThermal } from '../../services/hardware/zReportPrinter.js';
+import type { ZReportSessionData } from '../../services/hardware/escpos.js';
 
 interface SessionModalProps {
   isOpen: boolean;
@@ -44,6 +46,10 @@ export const SessionModal: React.FC<SessionModalProps> = ({
   const [openSessions, setOpenSessions] = useState<RegisterSession[]>([]);
   const [selectedSessionToCloseId, setSelectedSessionToCloseId] = useState<string>('');
 
+  // Post-close Z-report display and reprint state
+  const [closedReportData, setClosedReportData] = useState<ZReportSessionData | null>(null);
+  const [printFeedback, setPrintFeedback] = useState<string | null>(null);
+
   useBackButton(() => {
     onClose();
     return true;
@@ -73,6 +79,8 @@ export const SessionModal: React.FC<SessionModalProps> = ({
       setSubmitting(false);
       setIsAddingCounter(false);
       setNewCounterName('');
+      setClosedReportData(null);
+      setPrintFeedback(null);
 
       // Load registered counters
       fetch('/api/register/counters')
@@ -212,8 +220,41 @@ export const SessionModal: React.FC<SessionModalProps> = ({
         throw new Error(data.error || 'Failed to close register session');
       }
 
+      const closed = await res.json();
+      const zData: ZReportSessionData = {
+        session_number: closed.session_number,
+        counter_name: closed.counter_name,
+        opened_at: closed.opened_at,
+        closed_at: closed.closed_at,
+        opening_cash: closed.audit_breakdown?.opening_cash ?? closed.opening_cash ?? 0,
+        cash_sales: closed.audit_breakdown?.cash_sales ?? 0,
+        cash_refunds: closed.audit_breakdown?.cash_refunds ?? 0,
+        net_sales_cash: closed.audit_breakdown?.net_sales_cash,
+        cash_in: closed.audit_breakdown?.cash_in ?? 0,
+        cash_out: closed.audit_breakdown?.cash_out ?? 0,
+        expected_cash: closed.expected_cash ?? closed.audit_breakdown?.expected_cash ?? 0,
+        closing_cash_counted: closed.counted_cash,
+        counted_cash: closed.counted_cash,
+        variance: closed.difference,
+        difference: closed.difference,
+        movements: closed.movements || []
+      };
+
+      setClosedReportData(zData);
       onSessionUpdated();
-      onClose();
+
+      // Safe auto-print trigger: hardware print failures never block close
+      try {
+        const printRes = await printZReportThermal(zData);
+        if (printRes.success) {
+          setPrintFeedback('Rapport Z imprimé sur ticket thermique.');
+        } else {
+          setPrintFeedback(printRes.error || 'Impression non disponible');
+        }
+      } catch (printErr: any) {
+        console.warn('Auto-print Z-report failed safely:', printErr);
+        setPrintFeedback('Échec d\'impression du ticket');
+      }
     } catch (err: any) {
       setError(err.message || 'Error closing session');
     } finally {
@@ -226,13 +267,19 @@ export const SessionModal: React.FC<SessionModalProps> = ({
       <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full overflow-hidden border border-slate-200">
         <div className="bg-slate-900 text-white px-5 py-4 flex items-center justify-between">
           <div className="flex items-center gap-2">
-            {mode === 'OPEN' ? (
+            {closedReportData ? (
+              <CheckCircle className="w-5 h-5 text-emerald-400" />
+            ) : mode === 'OPEN' ? (
               <Unlock className="w-5 h-5 text-emerald-400" />
             ) : (
               <Lock className="w-5 h-5 text-rose-400" />
             )}
             <h2 className="text-base font-bold">
-              {mode === 'OPEN' ? 'Open Register Session' : 'Close Session & Cash Audit'}
+              {closedReportData
+                ? 'Session Clôturée — Rapport Z'
+                : mode === 'OPEN'
+                ? 'Open Register Session'
+                : 'Close Session & Cash Audit'}
             </h2>
           </div>
           <button
@@ -243,7 +290,92 @@ export const SessionModal: React.FC<SessionModalProps> = ({
           </button>
         </div>
 
-        {mode === 'OPEN' ? (
+        {closedReportData ? (
+          <div className="p-5 space-y-4">
+            <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-3 flex items-start gap-3">
+              <CheckCircle className="w-5 h-5 text-emerald-600 flex-shrink-0 mt-0.5" />
+              <div>
+                <h4 className="text-xs font-bold text-emerald-900">Session de caisse clôturée avec succès</h4>
+                <p className="text-[11px] text-emerald-700 mt-0.5">
+                  {closedReportData.counter_name} — {closedReportData.session_number}
+                </p>
+              </div>
+            </div>
+
+            <div className="bg-slate-50 border border-slate-200 rounded-xl p-3 space-y-1.5 text-xs">
+              <div className="flex justify-between text-slate-600">
+                <span>Fond initial:</span>
+                <span className="font-mono font-bold text-slate-900">{formatMoney(closedReportData.opening_cash)}</span>
+              </div>
+              <div className="flex justify-between text-slate-600">
+                <span>Ventes espèces:</span>
+                <span className="font-mono font-bold text-slate-900">{formatMoney(closedReportData.cash_sales)}</span>
+              </div>
+              {closedReportData.cash_refunds > 0 && (
+                <div className="flex justify-between text-slate-600">
+                  <span>Remboursements espèces:</span>
+                  <span className="font-mono font-bold text-rose-700">-{formatMoney(closedReportData.cash_refunds)}</span>
+                </div>
+              )}
+              {(closedReportData.cash_in > 0 || closedReportData.cash_out > 0) && (
+                <div className="flex justify-between text-slate-600">
+                  <span>Mouvements manuels (In / Out):</span>
+                  <span className="font-mono font-bold text-slate-900">
+                    +{formatMoney(closedReportData.cash_in)} / -{formatMoney(closedReportData.cash_out)}
+                  </span>
+                </div>
+              )}
+              <div className="border-t border-slate-200 pt-1.5 flex justify-between text-slate-600">
+                <span>Espèces attendues:</span>
+                <span className="font-mono font-bold text-slate-900">{formatMoney(closedReportData.expected_cash)}</span>
+              </div>
+              <div className="flex justify-between text-slate-600">
+                <span>Espèces comptées:</span>
+                <span className="font-mono font-bold text-slate-900">{formatMoney(closedReportData.counted_cash)}</span>
+              </div>
+              <div className="border-t border-slate-200 pt-1.5 flex justify-between font-bold">
+                <span className="text-slate-700">Écart / Variance:</span>
+                <span className={`font-mono ${
+                  (closedReportData.variance ?? 0) === 0 ? 'text-emerald-700' : (closedReportData.variance ?? 0) > 0 ? 'text-blue-700' : 'text-rose-700'
+                }`}>
+                  {formatMoney(closedReportData.variance)}
+                </span>
+              </div>
+            </div>
+
+            {printFeedback && (
+              <p className="text-[11px] text-slate-600 bg-slate-100 p-2 rounded-lg font-medium text-center">
+                {printFeedback}
+              </p>
+            )}
+
+            <div className="pt-2 flex gap-3">
+              <button
+                type="button"
+                onClick={async () => {
+                  setPrintFeedback('Impression en cours...');
+                  const res = await printZReportThermal(closedReportData);
+                  if (res.success) {
+                    setPrintFeedback('Rapport Z réimprimé avec succès.');
+                  } else {
+                    setPrintFeedback(res.error || 'Erreur lors de la réimpression');
+                  }
+                }}
+                className="flex-1 py-2.5 bg-slate-900 hover:bg-slate-800 text-white font-bold rounded-xl text-xs inline-flex items-center justify-center gap-2 transition-colors shadow"
+              >
+                <Printer className="w-4 h-4 text-emerald-400" />
+                Réimprimer Rapport Z
+              </button>
+              <button
+                type="button"
+                onClick={onClose}
+                className="flex-1 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl text-xs transition-colors"
+              >
+                Terminer & Fermer
+              </button>
+            </div>
+          </div>
+        ) : mode === 'OPEN' ? (
           <form onSubmit={handleOpenSubmit} className="p-5 space-y-4">
             <div>
               <label className="block text-xs font-bold text-slate-700 mb-1">

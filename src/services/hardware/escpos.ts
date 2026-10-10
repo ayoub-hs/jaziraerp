@@ -19,9 +19,15 @@ export function buildDrawerKickCommand(pin: 0 | 1 = 0): Uint8Array {
  */
 export class EscPosBuilder {
   private buffer: number[] = [];
+  private width: number;
 
-  constructor() {
+  constructor(width: 58 | 80 = 58) {
+    this.width = width === 80 ? 48 : 32;
     this.init();
+  }
+
+  public getLineWidth(): number {
+    return this.width;
   }
 
   public init(): this {
@@ -69,20 +75,21 @@ export class EscPosBuilder {
     return this;
   }
 
-  public divider(char: string = '-'): this {
-    return this.line(char.repeat(32));
+  public divider(char: string = '-', len?: number): this {
+    return this.line(char.repeat(len ?? this.width));
   }
 
   /**
-   * Formats a 2-column row justified to 32 characters
+   * Formats a 2-column row justified to line width (default 32 for 58mm, 48 for 80mm)
    * e.g. "Total TTC:             15.500 DT"
    */
-  public twoColumns(left: string, right: string, maxLen: number = 32): this {
-    const spaceNeeded = maxLen - left.length - right.length;
+  public twoColumns(left: string, right: string, maxLen?: number): this {
+    const colLen = maxLen ?? this.width;
+    const spaceNeeded = colLen - left.length - right.length;
     if (spaceNeeded > 0) {
       this.line(left + ' '.repeat(spaceNeeded) + right);
     } else {
-      this.line(left.slice(0, maxLen - right.length - 1) + ' ' + right);
+      this.line(left.slice(0, Math.max(0, colLen - right.length - 1)) + ' ' + right);
     }
     return this;
   }
@@ -236,3 +243,157 @@ export function buildReceiptEscPos(
 
   return builder.toUint8Array();
 }
+
+export interface ZReportSessionData {
+  session_number: string;
+  counter_name: string;
+  opened_at: string;
+  closed_at?: string | null;
+  opening_cash: number;
+  cash_sales: number;
+  cash_refunds: number;
+  net_sales_cash?: number;
+  cash_in: number;
+  cash_out: number;
+  expected_cash: number;
+  closing_cash_counted?: number | null;
+  counted_cash?: number | null;
+  variance?: number | null;
+  difference?: number | null;
+  movements?: Array<{
+    type: 'CASH_IN' | 'CASH_OUT';
+    amount: number;
+    reason: string;
+    date?: string;
+  }>;
+  printed_at?: string;
+}
+
+/**
+ * Formats a thermal Z-Report (clôture de caisse) slip for 58mm or 80mm printers.
+ * Built ONLY from figures registerService already returns.
+ */
+export function formatZReport(
+  sessionData: ZReportSessionData,
+  width: 58 | 80 = 58,
+  shopInfo?: EscPosShopInfo
+): Uint8Array {
+  const currentShop = getShopInfo();
+  const info = {
+    name: shopInfo?.name !== undefined ? shopInfo.name : currentShop.shop_name,
+    subtitle: shopInfo?.subtitle !== undefined ? shopInfo.subtitle : currentShop.shop_subtitle,
+    address: shopInfo?.address !== undefined ? shopInfo.address : currentShop.shop_address,
+    phone: shopInfo?.phone !== undefined ? shopInfo.phone : currentShop.shop_phone,
+    taxId: shopInfo?.taxId !== undefined ? shopInfo.taxId : currentShop.tax_id
+  };
+
+  const builder = new EscPosBuilder(width);
+  const lineWidth = builder.getLineWidth();
+
+  // Shop Header (Center)
+  builder.alignCenter();
+  if (info.name && info.name.trim()) {
+    builder
+      .bold(true)
+      .doubleHeight(true)
+      .line(info.name.trim())
+      .doubleHeight(false)
+      .bold(false);
+  }
+  if (info.subtitle && info.subtitle.trim()) {
+    builder.line(info.subtitle.trim());
+  }
+  if (info.address && info.address.trim()) {
+    builder.line(info.address.trim());
+  }
+  if (info.phone && info.phone.trim()) {
+    builder.line(info.phone.trim());
+  }
+  if (info.taxId && info.taxId.trim()) {
+    const taxLine = info.taxId.trim().startsWith('MF:') ? info.taxId.trim() : `MF: ${info.taxId.trim()}`;
+    builder.line(taxLine);
+  }
+  builder.divider('=');
+
+  // Title
+  builder
+    .bold(true)
+    .line('RAPPORT Z - CLOTURE DE CAISSE')
+    .bold(false)
+    .divider('-');
+
+  // Session info
+  const printedTime = sessionData.printed_at || new Date().toISOString();
+  builder
+    .alignLeft()
+    .twoColumns('Session N:', sessionData.session_number)
+    .twoColumns('Caisse:', sessionData.counter_name)
+    .twoColumns('Ouverture:', formatDateTime(sessionData.opened_at))
+    .twoColumns('Cloture:', sessionData.closed_at ? formatDateTime(sessionData.closed_at) : 'En cours')
+    .twoColumns('Imprime le:', formatDateTime(printedTime))
+    .divider('-');
+
+  // Figures section: built ONLY from figures registerService already returns
+  const openingFloat = Number(sessionData.opening_cash) || 0;
+  const cashSales = Number(sessionData.cash_sales) || 0;
+  const cashRefunds = Number(sessionData.cash_refunds) || 0;
+  const cashIn = Number(sessionData.cash_in) || 0;
+  const cashOut = Number(sessionData.cash_out) || 0;
+  const expectedCash = Number(sessionData.expected_cash) || 0;
+  const countedCash = sessionData.closing_cash_counted !== null && sessionData.closing_cash_counted !== undefined
+    ? Number(sessionData.closing_cash_counted)
+    : (sessionData.counted_cash !== null && sessionData.counted_cash !== undefined ? Number(sessionData.counted_cash) : 0);
+  const variance = sessionData.variance !== null && sessionData.variance !== undefined
+    ? Number(sessionData.variance)
+    : (sessionData.difference !== null && sessionData.difference !== undefined ? Number(sessionData.difference) : roundMoney(countedCash - expectedCash));
+
+  builder
+    .twoColumns('Fond initial:', formatMoney(openingFloat))
+    .twoColumns('Ventes especes:', formatMoney(cashSales))
+    .twoColumns('Remboursements esp.:', `-${formatMoney(cashRefunds)}`)
+    .twoColumns('Entrees caisse (In):', `+${formatMoney(cashIn)}`)
+    .twoColumns('Sorties caisse (Out):', `-${formatMoney(cashOut)}`);
+
+  // Cash movements listing with reasons
+  if (sessionData.movements && sessionData.movements.length > 0) {
+    builder.divider('.');
+    builder.bold(true).line('Mouvements de caisse:').bold(false);
+    for (const m of sessionData.movements) {
+      const prefix = m.type === 'CASH_IN' ? '[IN] ' : '[OUT] ';
+      const sign = m.type === 'CASH_IN' ? '+' : '-';
+      const right = `${sign}${formatMoney(m.amount)}`;
+      const left = `  ${prefix}${m.reason || 'Mouvement'}`;
+      if (left.length + right.length + 1 <= lineWidth) {
+        builder.twoColumns(left, right);
+      } else {
+        builder.line(left);
+        builder.twoColumns('    Montant:', right);
+      }
+    }
+  }
+
+  builder.divider('-');
+
+  // Audit totals & Variance
+  builder
+    .twoColumns('Especes attendues:', formatMoney(expectedCash))
+    .twoColumns('Especes comptees:', formatMoney(countedCash))
+    .divider('-')
+    .bold(true)
+    .twoColumns('Ecart / Variance:', formatMoney(variance))
+    .bold(false)
+    .divider('=');
+
+  // Signature box & Footer
+  builder
+    .alignCenter()
+    .feed(1)
+    .line('Signature Responsable :')
+    .feed(2)
+    .divider('.')
+    .feed(3)
+    .cut(true);
+
+  return builder.toUint8Array();
+}
+

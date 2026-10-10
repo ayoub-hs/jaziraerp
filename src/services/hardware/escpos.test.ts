@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { buildDrawerKickCommand, EscPosBuilder, buildReceiptEscPos, ESC, GS } from './escpos.js';
+import { buildDrawerKickCommand, EscPosBuilder, buildReceiptEscPos, formatZReport, ESC, GS } from './escpos.js';
 import type { SaleSummary } from '../../types/index.js';
 
 describe('ESC/POS Thermal & Drawer Kick Hardware Service', () => {
@@ -163,5 +163,77 @@ describe('ESC/POS Thermal & Drawer Kick Hardware Service', () => {
     expect(filledText).toContain('Avenue Habib Bourguiba');
     expect(filledText).toContain('+216 71 222 333');
     expect(filledText).toContain('MF: 1234567/Z/A/000');
+  });
+
+  describe('formatZReport (Batch 2 Item B1)', () => {
+    const mockZSessionData: any = {
+      session_number: 'SES-20261010-0042',
+      counter_name: 'Caisse Principale',
+      opened_at: '2026-10-10T08:00:00Z',
+      closed_at: '2026-10-10T18:00:00Z',
+      opening_cash: 100.000,
+      cash_sales: 250.000,
+      cash_refunds: 20.000,
+      cash_in: 50.000,
+      cash_out: 30.000,
+      expected_cash: 350.000,
+      closing_cash_counted: 345.000,
+      variance: -5.000,
+      movements: [
+        { type: 'CASH_IN', amount: 50.000, reason: 'Apport monnaie' },
+        { type: 'CASH_OUT', amount: 30.000, reason: 'Paiement coursier' }
+      ],
+      printed_at: '2026-10-10T18:01:00Z'
+    };
+
+    it('formats 58mm Z-report with all session figures matching registerService', () => {
+      const bytes = formatZReport(mockZSessionData, 58, {
+        name: 'Al Jazira SHSP',
+        address: 'Djerba Midoun',
+        phone: '75 123 456',
+        taxId: '1234567/A/M/000'
+      });
+
+      const text = new TextDecoder().decode(bytes);
+
+      // Shop header
+      expect(text).toContain('Al Jazira SHSP');
+      expect(text).toContain('Djerba Midoun');
+      expect(text).toContain('75 123 456');
+
+      // Title & identifiers
+      expect(text).toContain('RAPPORT Z');
+      expect(text).toContain('SES-20261010-0042');
+      expect(text).toContain('Caisse Principale');
+
+      // Figures matching registerService
+      expect(text).toContain('100.000 DT'); // Opening float
+      expect(text).toContain('250.000 DT'); // Cash sales
+      expect(text).toContain('20.000 DT');  // Cash refunds
+      expect(text).toContain('50.000 DT');  // Cash in
+      expect(text).toContain('30.000 DT');  // Cash out
+      expect(text).toContain('350.000 DT'); // Expected cash
+      expect(text).toContain('345.000 DT'); // Counted cash
+      expect(text).toContain('-5.000 DT');  // Variance
+
+      // Movements with reasons
+      expect(text).toContain('Apport monnaie');
+      expect(text).toContain('Paiement coursier');
+
+      // Contains cut command (GS V 1)
+      expect(bytes[bytes.length - 3]).toBe(GS);
+      expect(bytes[bytes.length - 2]).toBe(0x56);
+      expect(bytes[bytes.length - 1]).toBe(0x01); // partial cut
+    });
+
+    it('formats 80mm Z-report with 48-char dividers', () => {
+      const bytes = formatZReport(mockZSessionData, 80);
+      const text = new TextDecoder().decode(bytes);
+
+      expect(text).toContain('-'.repeat(48));
+      expect(text).toContain('SES-20261010-0042');
+      expect(text).toContain('350.000 DT');
+      expect(text).toContain('345.000 DT');
+    });
   });
 });

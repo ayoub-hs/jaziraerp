@@ -66,6 +66,8 @@ import { SalesHistoryTab } from './SalesHistoryTab.js';
 import { CustomerStatementModal } from './CustomerStatementModal.js';
 import { PurchaseDetailModal } from './PurchaseDetailModal.js';
 import { BatchDetailModal } from './BatchDetailModal.js';
+import { printZReportThermal } from '../../services/hardware/zReportPrinter.js';
+import type { ZReportSessionData } from '../../services/hardware/escpos.js';
 
 interface BackofficeProps {
   products: Product[];
@@ -356,6 +358,37 @@ export const Backoffice: React.FC<BackofficeProps> = ({
       console.warn('Failed to load session detail:', err);
     } finally {
       setLoadingSessionDetail(false);
+    }
+  };
+
+  const handlePrintZReport = async (session: any) => {
+    if (!session || !session.id) return;
+    try {
+      const res = await fetch(`/api/register/sessions/${session.id}`);
+      if (res.ok) {
+        const data = await res.json();
+        const zData: ZReportSessionData = {
+          session_number: data.session?.session_number || data.session_number,
+          counter_name: data.session?.counter_name || data.counter_name,
+          opened_at: data.session?.opened_at || data.opened_at,
+          closed_at: data.session?.closed_at || data.closed_at,
+          opening_cash: data.live_cash_breakdown?.opening_cash ?? data.session?.opening_cash ?? data.opening_cash ?? 0,
+          cash_sales: data.live_cash_breakdown?.cash_sales ?? data.cash_sales ?? 0,
+          cash_refunds: data.live_cash_breakdown?.cash_refunds ?? data.cash_refunds ?? 0,
+          net_sales_cash: data.live_cash_breakdown?.net_sales_cash,
+          cash_in: data.live_cash_breakdown?.cash_in ?? data.cash_in ?? 0,
+          cash_out: data.live_cash_breakdown?.cash_out ?? data.cash_out ?? 0,
+          expected_cash: data.live_cash_breakdown?.expected_cash ?? data.session?.expected_cash ?? data.expected_cash ?? 0,
+          closing_cash_counted: data.session?.closing_cash_counted ?? data.closing_cash_counted ?? data.session?.counted_cash ?? data.counted_cash,
+          counted_cash: data.session?.closing_cash_counted ?? data.closing_cash_counted ?? data.session?.counted_cash ?? data.counted_cash,
+          variance: data.session?.variance ?? data.variance ?? data.session?.difference ?? data.difference,
+          difference: data.session?.variance ?? data.variance ?? data.session?.difference ?? data.difference,
+          movements: data.movements || []
+        };
+        await printZReportThermal(zData);
+      }
+    } catch (err) {
+      console.warn('Failed to print Z-report:', err);
     }
   };
 
@@ -2563,13 +2596,23 @@ export const Backoffice: React.FC<BackofficeProps> = ({
                         </span>
                       </td>
                       <td className="p-3 text-right">
-                        <button
-                          onClick={() => handleOpenSessionDetail(s)}
-                          className="px-2.5 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-lg text-[11px] inline-flex items-center gap-1 transition-colors"
-                        >
-                          <Eye className="w-3.5 h-3.5 text-slate-500" />
-                          Details
-                        </button>
+                        <div className="flex items-center justify-end gap-1.5">
+                          <button
+                            onClick={() => handlePrintZReport(s)}
+                            className="px-2.5 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-lg text-[11px] inline-flex items-center gap-1 transition-colors"
+                            title="Imprimer / Réimprimer Rapport Z"
+                          >
+                            <Printer className="w-3.5 h-3.5 text-slate-500" />
+                            Rapport Z
+                          </button>
+                          <button
+                            onClick={() => handleOpenSessionDetail(s)}
+                            className="px-2.5 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-lg text-[11px] inline-flex items-center gap-1 transition-colors"
+                          >
+                            <Eye className="w-3.5 h-3.5 text-slate-500" />
+                            Details
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   ))}
@@ -2598,12 +2641,21 @@ export const Backoffice: React.FC<BackofficeProps> = ({
                         {selectedSessionDetail?.session?.counter_name || selectedSessionDetail?.counter_name} • Opened: {formatDateTime(selectedSessionDetail?.session?.opened_at || selectedSessionDetail?.opened_at)}
                       </p>
                     </div>
-                    <button
-                      onClick={() => setIsSessionDetailOpen(false)}
-                      className="p-1 rounded-lg hover:bg-slate-200 text-slate-400 hover:text-slate-600 transition-colors"
-                    >
-                      <X className="w-4 h-4" />
-                    </button>
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={() => handlePrintZReport(selectedSessionDetail?.session || selectedSessionDetail)}
+                        className="px-2.5 py-1.5 bg-slate-800 hover:bg-slate-900 text-white rounded-lg text-xs font-bold inline-flex items-center gap-1.5 transition-colors"
+                      >
+                        <Printer className="w-3.5 h-3.5 text-emerald-400" />
+                        Réimprimer Rapport Z
+                      </button>
+                      <button
+                        onClick={() => setIsSessionDetailOpen(false)}
+                        className="p-1 rounded-lg hover:bg-slate-200 text-slate-400 hover:text-slate-600 transition-colors"
+                      >
+                        <X className="w-4 h-4" />
+                      </button>
+                    </div>
                   </div>
 
                   <div className="p-5 overflow-y-auto space-y-4">

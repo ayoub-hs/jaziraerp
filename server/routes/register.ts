@@ -322,8 +322,10 @@ registerRouter.post('/close', (req: Request, res: Response) => {
   );
 
   const closedSession = db.prepare('SELECT * FROM register_sessions WHERE id = ?').get(session_id) as any;
+  const movements = db.prepare('SELECT * FROM register_cash_movements WHERE session_id = ? ORDER BY date ASC').all(session_id);
   res.json({
     ...closedSession,
+    movements,
     audit_breakdown: cashAudit
   });
 });

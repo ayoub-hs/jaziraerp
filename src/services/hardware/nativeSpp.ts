@@ -187,42 +187,43 @@ export class NativeSppPrinterService {
   }
 
   /**
-   * Serialized print queue execution. Calls are chained to prevent interleaving.
-   * Single automatic retry on write failure with reconnect.
+   * Transmits raw ESC/POS binary buffer to the connected Bluetooth SPP printer.
    */
-  public printReceipt(sale: SaleSummary): Promise<void> {
+  public sendRaw(bytes: Uint8Array): Promise<void> {
     const job = async () => {
-      await this.executePrintWithRetry(sale);
+      const data = this.toBase64(bytes);
+      if (!this.connectedName) {
+        await this.autoConnect();
+      }
+      try {
+        await this.withTimeout(
+          this.plugin.write({ data }),
+          6000,
+          'Délai d’impression Bluetooth dépassé (6s)'
+        );
+      } catch (firstErr) {
+        console.warn('[SPP] Print attempt 1 failed; reconnecting and retrying once...', firstErr);
+        await this.disconnect();
+        await this.autoConnect();
+        await this.withTimeout(
+          this.plugin.write({ data }),
+          6000,
+          'Délai d’impression Bluetooth dépassé (6s)'
+        );
+      }
     };
     const next = this.printQueue.then(job, job);
     this.printQueue = next;
     return next;
   }
 
-  private async executePrintWithRetry(sale: SaleSummary): Promise<void> {
+  /**
+   * Serialized print queue execution. Calls are chained to prevent interleaving.
+   * Single automatic retry on write failure with reconnect.
+   */
+  public printReceipt(sale: SaleSummary): Promise<void> {
     const bytes = buildReceiptEscPos(sale);
-    const data = this.toBase64(bytes);
-
-    if (!this.connectedName) {
-      await this.autoConnect();
-    }
-
-    try {
-      await this.withTimeout(
-        this.plugin.write({ data }),
-        6000,
-        'Délai d’impression Bluetooth dépassé (6s)'
-      );
-    } catch (firstErr) {
-      console.warn('[SPP] Print attempt 1 failed; reconnecting and retrying once...', firstErr);
-      await this.disconnect();
-      await this.autoConnect();
-      await this.withTimeout(
-        this.plugin.write({ data }),
-        6000,
-        'Délai d’impression Bluetooth dépassé (6s)'
-      );
-    }
+    return this.sendRaw(bytes);
   }
 
   public async kickDrawer(): Promise<boolean> {
