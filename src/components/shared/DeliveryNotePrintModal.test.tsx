@@ -142,4 +142,87 @@ describe('DeliveryNotePrintModal (Batch 2 Item B3)', () => {
 
     expect(printSpy).toHaveBeenCalledTimes(1);
   });
+
+  it('fetches or creates delivery note via POST /api/sales/:id/delivery-note if missing from sale', async () => {
+    const saleWithoutBL = {
+      ...fakeSale,
+      delivery_note: null
+    };
+
+    const postSpy = vi.fn();
+
+    vi.spyOn(globalThis, 'fetch').mockImplementation(async (url, init) => {
+      const urlStr = String(url);
+      if (urlStr.endsWith('/api/sales/sale-test-bl')) {
+        return {
+          ok: true,
+          json: async () => saleWithoutBL
+        } as Response;
+      }
+      if (urlStr.endsWith('/delivery-note') && init?.method === 'POST') {
+        postSpy();
+        return {
+          ok: true,
+          json: async () => ({
+            id: 'bl-new-1',
+            sale_id: 'sale-test-bl',
+            number: 'BL-20261010-0099',
+            created_at: '2026-10-10T12:00:00.000Z'
+          })
+        } as Response;
+      }
+      return { ok: false } as Response;
+    });
+
+    render(
+      <DeliveryNotePrintModal
+        isOpen={true}
+        onClose={vi.fn()}
+        saleId="sale-test-bl"
+      />
+    );
+
+    await waitFor(() => {
+      expect(screen.getByText('BL-20261010-0099')).toBeTruthy();
+    });
+
+    expect(postSpy).toHaveBeenCalledTimes(1);
+    expect(screen.queryByText('En cours...')).toBeNull();
+  });
+
+  it('gracefully falls back to receipt-derived BL number without getting stuck on "En cours..." if endpoint fails', async () => {
+    const saleWithoutBL = {
+      ...fakeSale,
+      receipt_number: 'REC-20261010-0088',
+      delivery_note: null
+    };
+
+    vi.spyOn(globalThis, 'fetch').mockImplementation(async (url, init) => {
+      const urlStr = String(url);
+      if (urlStr.endsWith('/api/sales/sale-test-bl')) {
+        return {
+          ok: true,
+          json: async () => saleWithoutBL
+        } as Response;
+      }
+      if (urlStr.endsWith('/delivery-note')) {
+        return { ok: false, status: 500 } as Response;
+      }
+      return { ok: false } as Response;
+    });
+
+    render(
+      <DeliveryNotePrintModal
+        isOpen={true}
+        onClose={vi.fn()}
+        saleId="sale-test-bl"
+      />
+    );
+
+    await waitFor(() => {
+      expect(screen.getByText('BL-20261010-0088')).toBeTruthy();
+    });
+
+    expect(screen.queryByText('En cours...')).toBeNull();
+  });
 });

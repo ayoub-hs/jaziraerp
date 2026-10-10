@@ -50,15 +50,36 @@ export const DeliveryNotePrintModal: React.FC<DeliveryNotePrintModalProps> = ({
       setSale(saleData);
 
       // If delivery note already attached, use it; otherwise create or fetch via POST
-      if (saleData.delivery_note) {
+      if (saleData.delivery_note && saleData.delivery_note.number) {
         setDeliveryNote(saleData.delivery_note);
       } else {
-        const blRes = await fetch(`/api/sales/${id}/delivery-note`, {
-          method: 'POST'
-        });
-        if (blRes.ok) {
-          const blData = await blRes.json();
-          setDeliveryNote(blData);
+        try {
+          const blRes = await fetch(`/api/sales/${id}/delivery-note`, {
+            method: 'POST'
+          });
+          if (blRes.ok) {
+            const blData = await blRes.json();
+            setDeliveryNote(blData);
+          } else {
+            // Fallback derived from receipt number if endpoint is unreachable or in offline mode
+            setDeliveryNote({
+              id: `bl-${id}`,
+              sale_id: id,
+              number: saleData.receipt_number
+                ? `BL-${saleData.receipt_number.replace(/^REC-/, '')}`
+                : `BL-${Date.now()}`,
+              created_at: new Date().toISOString()
+            });
+          }
+        } catch {
+          setDeliveryNote({
+            id: `bl-${id}`,
+            sale_id: id,
+            number: saleData.receipt_number
+              ? `BL-${saleData.receipt_number.replace(/^REC-/, '')}`
+              : `BL-${Date.now()}`,
+            created_at: new Date().toISOString()
+          });
         }
       }
     } catch (err) {
@@ -136,7 +157,12 @@ export const DeliveryNotePrintModal: React.FC<DeliveryNotePrintModalProps> = ({
                       BON DE LIVRAISON
                     </div>
                     <div className="text-[11px] text-slate-700 font-mono space-y-0.5">
-                      <div>N° BL: <span className="font-bold text-slate-900">{deliveryNote?.number || 'En cours...'}</span></div>
+                      <div>
+                        N° BL:{' '}
+                        <span className="font-bold text-slate-900">
+                          {deliveryNote?.number || (sale.receipt_number ? `BL-${sale.receipt_number.replace(/^REC-/, '')}` : 'En cours...')}
+                        </span>
+                      </div>
                       <div>Date: {formatDate(sale.date)}</div>
                       <div className="text-[10px] text-slate-500">Réf. Vente: {sale.receipt_number}</div>
                     </div>
