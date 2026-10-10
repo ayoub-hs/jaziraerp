@@ -11,30 +11,36 @@ export const salesRouter = Router();
 function generateReceiptNumber(db: any): string {
   const dateStr = businessDateKey();
   const prefix = `REC-${dateStr}-`;
-  const countRow: any = db.prepare(`
-    SELECT COUNT(*) as cnt FROM sales WHERE receipt_number LIKE ?
-  `).get(`${prefix}%`);
-  const seq = ((countRow?.cnt || 0) + 1).toString().padStart(4, '0');
+  const maxRow: any = db.prepare(`
+    SELECT MAX(CAST(SUBSTR(receipt_number, ?) AS INTEGER)) as max_seq
+    FROM sales
+    WHERE receipt_number LIKE ?
+  `).get(prefix.length + 1, `${prefix}%`);
+  const seq = ((Number(maxRow?.max_seq) || 0) + 1).toString().padStart(4, '0');
   return `${prefix}${seq}`;
 }
 
 function generateTicketNumber(db: any): string {
   const dateStr = businessDateKey();
   const prefix = `TKT-${dateStr}-`;
-  const countRow: any = db.prepare(`
-    SELECT COUNT(*) as cnt FROM customer_debt_tickets WHERE ticket_number LIKE ?
-  `).get(`${prefix}%`);
-  const seq = ((countRow?.cnt || 0) + 1).toString().padStart(4, '0');
+  const maxRow: any = db.prepare(`
+    SELECT MAX(CAST(SUBSTR(ticket_number, ?) AS INTEGER)) as max_seq
+    FROM customer_debt_tickets
+    WHERE ticket_number LIKE ?
+  `).get(prefix.length + 1, `${prefix}%`);
+  const seq = ((Number(maxRow?.max_seq) || 0) + 1).toString().padStart(4, '0');
   return `${prefix}${seq}`;
 }
 
 export function generateDeliveryNoteNumber(db: any): string {
   const dateStr = businessDateKey();
   const prefix = `BL-${dateStr}-`;
-  const countRow: any = db.prepare(`
-    SELECT COUNT(*) as cnt FROM delivery_notes WHERE number LIKE ?
-  `).get(`${prefix}%`);
-  const seq = ((countRow?.cnt || 0) + 1).toString().padStart(4, '0');
+  const maxRow: any = db.prepare(`
+    SELECT MAX(CAST(SUBSTR(number, ?) AS INTEGER)) as max_seq
+    FROM delivery_notes
+    WHERE number LIKE ?
+  `).get(prefix.length + 1, `${prefix}%`);
+  const seq = ((Number(maxRow?.max_seq) || 0) + 1).toString().padStart(4, '0');
   return `${prefix}${seq}`;
 }
 

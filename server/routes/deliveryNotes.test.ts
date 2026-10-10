@@ -98,4 +98,51 @@ describe('Delivery Notes (Bon de Livraison) API (Batch 2 Item B3)', () => {
     const res = await request(app).post('/api/sales/unknown-sale-id/delivery-note');
     expect(res.status).toBe(404);
   });
+
+  it('computes next sequence from highest existing sequence (not COUNT(*)+1) even after middle sale deletion', async () => {
+    // Create sale 3
+    const resSale3 = await request(app).post('/api/sales').send({
+      customer_id: 'cust-bl-1',
+      items: [{ product_id: 'prod-bl-1', quantity: 1, unit_price: 3.500 }],
+      cash_paid: 3.500
+    });
+    const saleId3 = resSale3.body.id;
+
+    // Create 3 delivery notes
+    const note1 = await request(app).post(`/api/sales/${saleId1}/delivery-note`);
+    const note2 = await request(app).post(`/api/sales/${saleId2}/delivery-note`);
+    const note3 = await request(app).post(`/api/sales/${saleId3}/delivery-note`);
+    expect(note1.status).toBe(201);
+    expect(note2.status).toBe(201);
+    expect(note3.status).toBe(201);
+
+    const seq1 = parseInt(note1.body.number.slice(-4), 10);
+    const seq2 = parseInt(note2.body.number.slice(-4), 10);
+    const seq3 = parseInt(note3.body.number.slice(-4), 10);
+    expect(seq2).toBe(seq1 + 1);
+    expect(seq3).toBe(seq2 + 1);
+
+    // Delete the sale of the middle one (sale 2)
+    const db = getDb();
+    db.prepare('DELETE FROM sales WHERE id = ?').run(saleId2);
+
+    // Create a 4th sale
+    const resSale4 = await request(app).post('/api/sales').send({
+      customer_id: 'cust-bl-1',
+      items: [{ product_id: 'prod-bl-1', quantity: 2, unit_price: 3.500 }],
+      cash_paid: 7.000
+    });
+    const saleId4 = resSale4.body.id;
+
+    // Generate note for sale 4
+    const note4 = await request(app).post(`/api/sales/${saleId4}/delivery-note`);
+    expect(note4.status).toBe(201);
+
+    const seq4 = parseInt(note4.body.number.slice(-4), 10);
+    // Must be seq3 + 1 (i.e. highest sequence + 1), and must not repeat any existing number
+    expect(seq4).toBe(seq3 + 1);
+    expect(note4.body.number).not.toBe(note1.body.number);
+    expect(note4.body.number).not.toBe(note2.body.number);
+    expect(note4.body.number).not.toBe(note3.body.number);
+  });
 });

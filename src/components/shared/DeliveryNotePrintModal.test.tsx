@@ -190,12 +190,13 @@ describe('DeliveryNotePrintModal (Batch 2 Item B3)', () => {
     expect(screen.queryByText('En cours...')).toBeNull();
   });
 
-  it('gracefully falls back to receipt-derived BL number without getting stuck on "En cours..." if endpoint fails', async () => {
+  it('when POST returns 500 or request rejects, shows no BL number, disables print, and shows server number after retry', async () => {
     const saleWithoutBL = {
       ...fakeSale,
-      receipt_number: 'REC-20261010-0088',
       delivery_note: null
     };
+
+    let postAttempts = 0;
 
     vi.spyOn(globalThis, 'fetch').mockImplementation(async (url, init) => {
       const urlStr = String(url);
@@ -206,7 +207,20 @@ describe('DeliveryNotePrintModal (Batch 2 Item B3)', () => {
         } as Response;
       }
       if (urlStr.endsWith('/delivery-note')) {
-        return { ok: false, status: 500 } as Response;
+        postAttempts++;
+        if (postAttempts === 1) {
+          return { ok: false, status: 500 } as Response;
+        }
+        return {
+          ok: true,
+          status: 201,
+          json: async () => ({
+            id: 'bl-recovered-1',
+            sale_id: 'sale-test-bl',
+            number: 'BL-20261010-0077',
+            created_at: '2026-10-10T12:00:00.000Z'
+          })
+        } as Response;
       }
       return { ok: false } as Response;
     });
@@ -219,10 +233,45 @@ describe('DeliveryNotePrintModal (Batch 2 Item B3)', () => {
       />
     );
 
+    // Initial load failed on POST
     await waitFor(() => {
-      expect(screen.getByText('BL-20261010-0088')).toBeTruthy();
+      expect(screen.getByText(/Serveur indisponible, réessayer/i)).toBeTruthy();
     });
 
-    expect(screen.queryByText('En cours...')).toBeNull();
+    // Modal shows no BL number
+    expect(screen.queryByText(/BL-20261010-0077/)).toBeNull();
+    expect(screen.queryByText(/BL-20261010-0001/)).toBeNull();
+
+    // Print button is disabled
+    const printBtn = screen.getByRole('button', { name: /Imprimer Bon de Livraison/i });
+    expect((printBtn as HTMLButtonElement).disabled).toBe(true);
+
+    // Click Retry button
+    const retryBtn = screen.getByRole('button', { name: /réessayer/i });
+    fireEvent.click(retryBtn);
+
+    // After retry, shows server number and print button is enabled
+    await waitFor(() => {
+      expect(screen.getByText('BL-20261010-0077')).toBeTruthy();
+    });
+    expect((printBtn as HTMLButtonElement).disabled).toBe(false);
+  });
+
+  it('shows "Disponible après synchronisation" and disables print when sale is unsynced', async () => {
+    render(
+      <DeliveryNotePrintModal
+        isOpen={true}
+        onClose={vi.fn()}
+        saleId="temp_1791650000000"
+      />
+    );
+
+    await waitFor(() => {
+      expect(screen.getByText(/Disponible après synchronisation/i)).toBeTruthy();
+    });
+
+    const printBtn = screen.getByRole('button', { name: /Imprimer Bon de Livraison/i });
+    expect((printBtn as HTMLButtonElement).disabled).toBe(true);
+    expect(screen.queryByText(/BL-2026/)).toBeNull();
   });
 });

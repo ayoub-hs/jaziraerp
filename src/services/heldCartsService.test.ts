@@ -154,4 +154,58 @@ describe('heldCartsService (Batch 2 Item B4)', () => {
     const discrepancies = heldCartsService.checkPriceDiscrepancies(held, updatedProducts);
     expect(discrepancies).toHaveLength(0);
   });
+
+  it('held carts survive page reload and preserve manual / overridden prices after resume', () => {
+    const manualItem: CartItem = {
+      cart_item_id: 'cart-manual-1',
+      product_id: 'prod-1',
+      name: 'Javel 5L (Tarif Négocié)',
+      unit_price: 4.250, // Catalog price is 6.000 / 5.000
+      quantity: 5,
+      pack_multiplier: 1,
+      price_overridden: true
+    };
+
+    const held = heldCartsService.holdCart([manualItem], dummyCustomer, 1.500, 'Commande Téléphonique');
+
+    // Simulate page reload: raw localStorage check
+    const rawStorage = localStorage.getItem('jazira_held_carts');
+    expect(rawStorage).toBeTruthy();
+    const parsed = JSON.parse(rawStorage!);
+    expect(parsed).toHaveLength(1);
+    expect(parsed[0].id).toBe(held.id);
+
+    // Retrieve and resume after simulated reload
+    const heldListAfterReload = heldCartsService.getHeldCarts();
+    expect(heldListAfterReload).toHaveLength(1);
+
+    const resumed = heldCartsService.resumeCart(held.id);
+    expect(resumed).not.toBeNull();
+    expect(resumed!.items).toHaveLength(1);
+
+    const resumedItem = resumed!.items[0];
+    expect(resumedItem.unit_price).toBe(4.250); // Exact manual price kept!
+    expect(resumedItem.price_overridden).toBe(true);
+    expect(resumed!.saleDiscount).toBe(1.500);
+    expect(resumed!.customer?.id).toBe('cust-1');
+
+    // After resume, held carts list in localStorage is cleared
+    expect(heldCartsService.getHeldCartCount()).toBe(0);
+  });
+
+  it('strictly respects the limit of 10 held carts and rejects the 11th', () => {
+    // Fill up to 10 carts
+    for (let i = 1; i <= 10; i++) {
+      heldCartsService.holdCart([dummyItem], null, 0, `Client en attente ${i}`);
+    }
+    expect(heldCartsService.getHeldCartCount()).toBe(10);
+
+    // 11th must throw error with maximum limit message
+    expect(() => {
+      heldCartsService.holdCart([dummyItem], null, 0, 'Client 11');
+    }).toThrow(/limite de 10 paniers/i);
+
+    // Count remains exactly 10
+    expect(heldCartsService.getHeldCartCount()).toBe(10);
+  });
 });

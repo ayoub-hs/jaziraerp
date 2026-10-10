@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { X, Truck, Printer, Eye, EyeOff } from 'lucide-react';
+import { X, Truck, Printer, Eye, EyeOff, AlertTriangle, RefreshCw } from 'lucide-react';
 import type { SaleSummary, DeliveryNote } from '../../types/index.js';
 import { formatMoney, formatDate } from '../../utils/formatters.js';
 import { calculateTaxBreakdown } from '../../utils/tax.js';
@@ -23,6 +23,7 @@ export const DeliveryNotePrintModal: React.FC<DeliveryNotePrintModalProps> = ({
   const [sale, setSale] = useState<SaleSummary | null>(null);
   const [deliveryNote, setDeliveryNote] = useState<DeliveryNote | null>(null);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const [showPrices, setShowPrices] = useState(true);
   const shop = getShopInfo();
 
@@ -37,21 +38,36 @@ export const DeliveryNotePrintModal: React.FC<DeliveryNotePrintModalProps> = ({
     } else {
       setSale(null);
       setDeliveryNote(null);
+      setError(null);
     }
   }, [isOpen, saleId]);
 
   const loadDeliveryNote = async (id: string) => {
     try {
       setLoading(true);
+      setError(null);
+
+      if (id.startsWith('temp_')) {
+        setError('Disponible après synchronisation');
+        setDeliveryNote(null);
+        setSale(null);
+        return;
+      }
+
       // Fetch full sale
       const saleRes = await fetch(`/api/sales/${id}`);
-      if (!saleRes.ok) throw new Error('Failed to load sale');
+      if (!saleRes.ok) {
+        setError('Serveur indisponible, réessayer');
+        setDeliveryNote(null);
+        return;
+      }
       const saleData = await saleRes.json();
       setSale(saleData);
 
       // If delivery note already attached, use it; otherwise create or fetch via POST
       if (saleData.delivery_note && saleData.delivery_note.number) {
         setDeliveryNote(saleData.delivery_note);
+        setError(null);
       } else {
         try {
           const blRes = await fetch(`/api/sales/${id}/delivery-note`, {
@@ -60,36 +76,27 @@ export const DeliveryNotePrintModal: React.FC<DeliveryNotePrintModalProps> = ({
           if (blRes.ok) {
             const blData = await blRes.json();
             setDeliveryNote(blData);
+            setError(null);
           } else {
-            // Fallback derived from receipt number if endpoint is unreachable or in offline mode
-            setDeliveryNote({
-              id: `bl-${id}`,
-              sale_id: id,
-              number: saleData.receipt_number
-                ? `BL-${saleData.receipt_number.replace(/^REC-/, '')}`
-                : `BL-${Date.now()}`,
-              created_at: new Date().toISOString()
-            });
+            setError('Serveur indisponible, réessayer');
+            setDeliveryNote(null);
           }
         } catch {
-          setDeliveryNote({
-            id: `bl-${id}`,
-            sale_id: id,
-            number: saleData.receipt_number
-              ? `BL-${saleData.receipt_number.replace(/^REC-/, '')}`
-              : `BL-${Date.now()}`,
-            created_at: new Date().toISOString()
-          });
+          setError('Serveur indisponible, réessayer');
+          setDeliveryNote(null);
         }
       }
     } catch (err) {
       console.warn('Failed to load delivery note:', err);
+      setError('Serveur indisponible, réessayer');
+      setDeliveryNote(null);
     } finally {
       setLoading(false);
     }
   };
 
   const handlePrint = () => {
+    if (!deliveryNote?.number) return;
     window.print();
   };
 
@@ -129,8 +136,29 @@ export const DeliveryNotePrintModal: React.FC<DeliveryNotePrintModalProps> = ({
 
         {/* Printable Page Content */}
         <div className="p-8 overflow-y-auto flex-1 bg-slate-100 flex flex-col items-center print:p-0 print:bg-white print:overflow-visible">
-          {loading || !sale ? (
+          {error && (
+            <div className="w-full max-w-2xl mb-4 bg-amber-50 border border-amber-200 text-amber-800 px-4 py-3 rounded-xl flex items-center justify-between gap-3 text-xs print:hidden">
+              <div className="flex items-center gap-2">
+                <AlertTriangle className="w-4 h-4 text-amber-600 flex-shrink-0" />
+                <span>{error}</span>
+              </div>
+              <button
+                type="button"
+                onClick={() => saleId && loadDeliveryNote(saleId)}
+                className="px-3 py-1 bg-amber-200 hover:bg-amber-300 text-amber-900 font-bold rounded-lg transition-colors flex items-center gap-1"
+              >
+                <RefreshCw className="w-3 h-3" />
+                Réessayer
+              </button>
+            </div>
+          )}
+
+          {loading ? (
             <div className="py-16 text-center text-sm text-slate-500">Chargement du bon de livraison...</div>
+          ) : !sale ? (
+            <div className="py-16 text-center text-sm text-slate-400 italic">
+              Aucun détail de vente à afficher.
+            </div>
           ) : (
             <div className="bg-white p-8 shadow-md border border-slate-300 w-full max-w-2xl text-slate-800 text-xs flex flex-col justify-between min-h-[700px] print:w-full print:max-w-none print:shadow-none print:border-none print:p-0">
               <div>
@@ -160,7 +188,7 @@ export const DeliveryNotePrintModal: React.FC<DeliveryNotePrintModalProps> = ({
                       <div>
                         N° BL:{' '}
                         <span className="font-bold text-slate-900">
-                          {deliveryNote?.number || (sale.receipt_number ? `BL-${sale.receipt_number.replace(/^REC-/, '')}` : 'En cours...')}
+                          {deliveryNote?.number || '—'}
                         </span>
                       </div>
                       <div>Date: {formatDate(sale.date)}</div>
@@ -310,7 +338,8 @@ export const DeliveryNotePrintModal: React.FC<DeliveryNotePrintModalProps> = ({
             <button
               type="button"
               onClick={handlePrint}
-              className="py-2.5 px-5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl text-xs shadow transition-colors flex items-center gap-2"
+              disabled={!deliveryNote?.number || loading}
+              className="py-2.5 px-5 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-emerald-600 text-white font-bold rounded-xl text-xs shadow transition-colors flex items-center gap-2"
             >
               <Printer className="w-4 h-4" />
               Imprimer Bon de Livraison

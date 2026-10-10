@@ -125,6 +125,33 @@ describe('CustomerStatementModal (Batch 2 Item B2)', () => {
     expect(screen.getAllByText('TOP_UP').length).toBeGreaterThan(0);
   });
 
+  it('renders the exact financial figures returned by /api/customers/:id/statement in tables and summary cards', async () => {
+    render(
+      <CustomerStatementModal
+        isOpen={true}
+        onClose={vi.fn()}
+        customer={mockCustomer}
+      />
+    );
+
+    await waitFor(() => {
+      // Summary cards exact figures
+      expect(screen.getAllByText('50.000 DT').length).toBeGreaterThan(0); // Final debt
+      expect(screen.getAllByText('20.000 DT').length).toBeGreaterThan(0); // Final wallet
+      expect(screen.getAllByText('30.000 DT').length).toBeGreaterThan(0); // Net position: 50.000 - 20.000 = 30.000
+    });
+
+    // Debt table exact line items: debit 100.000, credits 40.000 and 10.000, running balances 100.000, 60.000, 50.000
+    expect(screen.getAllByText('100.000 DT').length).toBeGreaterThan(0);
+    expect(screen.getAllByText('40.000 DT').length).toBeGreaterThan(0);
+    expect(screen.getAllByText('10.000 DT').length).toBeGreaterThan(0);
+    expect(screen.getAllByText('60.000 DT').length).toBeGreaterThan(0);
+
+    // Wallet table line items: credit 30.000, debit 10.000, balances 30.000, 20.000
+    expect(screen.getAllByText('Paiement vente REC-009').length).toBeGreaterThan(0);
+    expect(screen.getAllByText('Recharge initiale').length).toBeGreaterThan(0);
+  });
+
   it('triggers window.print() when "Imprimer / PDF" button is clicked', async () => {
     const originalPrint = window.print;
     const printSpy = vi.fn();
