@@ -428,3 +428,10 @@ CREATE INDEX IF NOT EXISTS idx_general_expenses_date ON general_expenses(date);
 CREATE INDEX IF NOT EXISTS idx_customer_payments_date ON customer_payments(date);
 CREATE INDEX IF NOT EXISTS idx_supplier_payments_date ON supplier_payments(date);
 CREATE INDEX IF NOT EXISTS idx_refunds_date ON refunds(date);
+
+-- 13. Unified Sync Idempotency Table
+CREATE TABLE IF NOT EXISTS sync_processed (
+    client_id TEXT PRIMARY KEY,
+    action_type TEXT NOT NULL,
+    processed_at TEXT NOT NULL
+);

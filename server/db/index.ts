@@ -60,6 +60,13 @@ export function getDb(customPath?: string): DatabaseType {
     db.exec('CREATE INDEX IF NOT EXISTS idx_customer_payments_date ON customer_payments(date)');
     db.exec('CREATE INDEX IF NOT EXISTS idx_supplier_payments_date ON supplier_payments(date)');
     db.exec('CREATE INDEX IF NOT EXISTS idx_refunds_date ON refunds(date)');
+    db.exec(`
+      CREATE TABLE IF NOT EXISTS sync_processed (
+        client_id TEXT PRIMARY KEY,
+        action_type TEXT NOT NULL,
+        processed_at TEXT NOT NULL
+      );
+    `);
     // One open session per counter, enforced at the DB level so concurrent
     // POST /api/register/open calls cannot both succeed (check-then-insert race).
     // Pre-existing duplicate OPENs (from before the index) are reconciled first:

@@ -497,6 +497,10 @@ syncRouter.post('/flush', (req: Request, res: Response) => {
           }
         }
 
+        if (clientId) {
+          db.prepare('INSERT OR IGNORE INTO sync_processed (client_id, action_type, processed_at) VALUES (?, ?, ?)').run(clientId, 'SALE', now);
+        }
+
         reconciled.push({
           temp_client_id,
           action_type: 'SALE',
@@ -506,6 +510,19 @@ syncRouter.post('/flush', (req: Request, res: Response) => {
           status: 'SYNCED'
         });
       } else if (action_type === 'CASH_MOVEMENT') {
+        const clientId = temp_client_id || payload?.temp_client_id;
+        if (clientId) {
+          const already: any = db.prepare('SELECT client_id FROM sync_processed WHERE client_id = ?').get(clientId);
+          if (already) {
+            reconciled.push({
+              temp_client_id: clientId,
+              action_type: 'CASH_MOVEMENT',
+              status: 'SYNCED'
+            });
+            return;
+          }
+        }
+
         const failMovement = (reason: string) => {
           failed.push({ temp_client_id, action_type: 'CASH_MOVEMENT', reason });
           return;
@@ -555,6 +572,10 @@ syncRouter.post('/flush', (req: Request, res: Response) => {
           now
         );
 
+        if (clientId) {
+          db.prepare('INSERT OR IGNORE INTO sync_processed (client_id, action_type, processed_at) VALUES (?, ?, ?)').run(clientId, 'CASH_MOVEMENT', now);
+        }
+
         reconciled.push({
           temp_client_id,
           action_type: 'CASH_MOVEMENT',
@@ -562,6 +583,19 @@ syncRouter.post('/flush', (req: Request, res: Response) => {
           status: 'SYNCED'
         });
       } else if (action_type === 'CONTAINER_TRANSACTION') {
+        const clientId = temp_client_id || payload?.temp_client_id;
+        if (clientId) {
+          const already: any = db.prepare('SELECT client_id FROM sync_processed WHERE client_id = ?').get(clientId);
+          if (already) {
+            reconciled.push({
+              temp_client_id: clientId,
+              action_type: 'CONTAINER_TRANSACTION',
+              status: 'SYNCED'
+            });
+            return;
+          }
+        }
+
         const txId = crypto.randomUUID();
         const { customer_id, container_type_id, action, quantity, notes, correction } = payload;
         const qty = parseInt(quantity, 10);
@@ -605,6 +639,10 @@ syncRouter.post('/flush', (req: Request, res: Response) => {
           `).run(crypto.randomUUID(), customer_id, container_type_id, qty);
         }
 
+        if (clientId) {
+          db.prepare('INSERT OR IGNORE INTO sync_processed (client_id, action_type, processed_at) VALUES (?, ?, ?)').run(clientId, 'CONTAINER_TRANSACTION', now);
+        }
+
         reconciled.push({
           temp_client_id,
           action_type: 'CONTAINER_TRANSACTION',
@@ -612,6 +650,20 @@ syncRouter.post('/flush', (req: Request, res: Response) => {
           status: 'SYNCED'
         });
       } else if (action_type === 'PRICE_STOCK_EDIT') {
+        const clientId = temp_client_id || payload?.temp_client_id;
+        if (clientId) {
+          const already: any = db.prepare('SELECT client_id FROM sync_processed WHERE client_id = ?').get(clientId);
+          if (already) {
+            reconciled.push({
+              temp_client_id: clientId,
+              action_type: 'PRICE_STOCK_EDIT',
+              product_id: payload?.product_id,
+              status: 'SYNCED'
+            });
+            return;
+          }
+        }
+
         const { product_id, retail_price, wholesale_price, stock_quantity } = payload || {};
         if (!product_id) {
           failed.push({ temp_client_id, action_type, reason: 'product_id is required' });
@@ -679,6 +731,10 @@ syncRouter.post('/flush', (req: Request, res: Response) => {
               VALUES (?, ?, 'PRODUCT', NULL, ?, ?, 'SYNC_PRICE_STOCK_EDIT', ?)
             `).run(crypto.randomUUID(), payload.date || now, product_id, delta, now);
           }
+        }
+
+        if (clientId) {
+          db.prepare('INSERT OR IGNORE INTO sync_processed (client_id, action_type, processed_at) VALUES (?, ?, ?)').run(clientId, 'PRICE_STOCK_EDIT', now);
         }
 
         reconciled.push({

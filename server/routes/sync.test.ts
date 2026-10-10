@@ -671,6 +671,122 @@ describe('Offline Storage & Sync Engine Module (HTTP Routes)', () => {
     expect(prod.wholesale_price).toBe(5.000);
     expect(prod.stock_quantity).toBe(120);
   });
+
+  it('SYNC-01: replaying the same sync batch 3 times yields identical state to once across ALL action types', async () => {
+    const db = getDb();
+
+    // 1. Setup seed records
+    db.prepare(`
+      INSERT INTO customers (id, name, type, wallet_balance, created_at, updated_at)
+      VALUES ('cust-sync-replay', 'Replay Customer', 'RETAIL', 0, '2026-09-07', '2026-09-07')
+    `).run();
+
+    db.prepare(`
+      INSERT INTO product_families (id, name, category, type, created_at, updated_at)
+      VALUES ('fam-sync-replay', 'Replay Family', 'General', 'MANUFACTURED', '2026-09-07', '2026-09-07')
+    `).run();
+
+    db.prepare(`
+      INSERT INTO products (id, family_id, name, stock_quantity, retail_price, wholesale_price, created_at, updated_at)
+      VALUES ('prod-sync-replay', 'fam-sync-replay', 'Replay Product', 50, 10.000, 8.000, '2026-09-07', '2026-09-07')
+    `).run();
+
+    db.prepare(`
+      INSERT INTO container_types (id, name, capacity_liters, stock_quantity, created_at)
+      VALUES ('cont-sync-replay', 'Replay 5L Bidon', 5, 100, '2026-09-07')
+    `).run();
+
+    db.prepare(`
+      INSERT INTO register_sessions (id, session_number, counter_name, opened_at, opening_cash, status)
+      VALUES ('ses-sync-replay', 'SES-REPLAY-01', 'Countertop', '2026-09-07 08:00:00', 100.000, 'OPEN')
+    `).run();
+
+    // Batch containing EVERY action type in sync.ts:
+    const replayBatch = {
+      operations: [
+        {
+          temp_client_id: 'replay-op-sale-1',
+          action_type: 'SALE',
+          payload: {
+            customer_id: 'cust-sync-replay',
+            session_id: 'ses-sync-replay',
+            items: [{ product_id: 'prod-sync-replay', quantity: 2, unit_price: 10.000 }],
+            cash_paid: 20.000,
+            cash_tendered: 20.000
+          }
+        },
+        {
+          temp_client_id: 'replay-op-cash-1',
+          action_type: 'CASH_MOVEMENT',
+          payload: {
+            type: 'CASH_IN',
+            amount: 30.000,
+            reason: 'Add float to register',
+            session_id: 'ses-sync-replay'
+          }
+        },
+        {
+          temp_client_id: 'replay-op-container-1',
+          action_type: 'CONTAINER_TRANSACTION',
+          payload: {
+            customer_id: 'cust-sync-replay',
+            container_type_id: 'cont-sync-replay',
+            action: 'GIVE',
+            quantity: 4
+          }
+        },
+        {
+          temp_client_id: 'replay-op-edit-1',
+          action_type: 'PRICE_STOCK_EDIT',
+          payload: {
+            product_id: 'prod-sync-replay',
+            retail_price: 12.000,
+            wholesale_price: 9.000,
+            stock_quantity: 85
+          }
+        }
+      ]
+    };
+
+    // 1st flush
+    const res1 = await request(app).post('/api/sync/flush').send(replayBatch);
+    expect(res1.status).toBe(200);
+    expect(res1.body.reconciled).toHaveLength(4);
+    expect(res1.body.failed).toHaveLength(0);
+
+    // 2nd flush (replay)
+    const res2 = await request(app).post('/api/sync/flush').send(replayBatch);
+    expect(res2.status).toBe(200);
+    expect(res2.body.reconciled).toHaveLength(4);
+    expect(res2.body.failed).toHaveLength(0);
+
+    // 3rd flush (replay)
+    const res3 = await request(app).post('/api/sync/flush').send(replayBatch);
+    expect(res3.status).toBe(200);
+    expect(res3.body.reconciled).toHaveLength(4);
+    expect(res3.body.failed).toHaveLength(0);
+
+    // Assert DB state after 3 flushes is identical to state after 1 flush:
+    const salesCount: any = db.prepare('SELECT COUNT(*) as count FROM sales WHERE customer_id = ?').get('cust-sync-replay');
+    expect(salesCount.count).toBe(1);
+
+    const movRows: any[] = db.prepare('SELECT * FROM register_cash_movements WHERE session_id = ?').all('ses-sync-replay');
+    expect(movRows).toHaveLength(1);
+    expect(movRows[0].amount).toBe(30.000);
+
+    const contRows: any[] = db.prepare('SELECT * FROM container_transactions WHERE customer_id = ?').all('cust-sync-replay');
+    expect(contRows).toHaveLength(1);
+    expect(contRows[0].quantity).toBe(4);
+
+    const loanRow: any = db.prepare('SELECT quantity_owed FROM customer_container_loans WHERE customer_id = ?').get('cust-sync-replay');
+    expect(loanRow.quantity_owed).toBe(4);
+
+    const contType: any = db.prepare('SELECT stock_quantity FROM container_types WHERE id = ?').get('cont-sync-replay');
+    expect(contType.stock_quantity).toBe(96); // 100 - 4 = 96 (not 100 - 12 = 88)
+
+    const adjustRows: any[] = db.prepare("SELECT * FROM inventory_adjustments WHERE reason = 'SYNC_PRICE_STOCK_EDIT' AND product_id = ?").all('prod-sync-replay');
+    expect(adjustRows).toHaveLength(1);
+  });
 });
 
 
