@@ -123,6 +123,46 @@ authRouter.post('/setup', (req: Request, res: Response) => {
   });
 });
 
+const MAX_FAILED_ATTEMPTS = 5;
+
+export function checkAuthLockout(db: any): { isLocked: boolean; retryAfterSeconds: number } {
+  const lockRow = db.prepare("SELECT value FROM settings WHERE key = 'auth_locked_until'").get() as { value: string } | undefined;
+  if (lockRow?.value) {
+    const lockedUntil = new Date(lockRow.value).getTime();
+    const now = Date.now();
+    if (now < lockedUntil) {
+      const retryAfterSeconds = Math.max(1, Math.ceil((lockedUntil - now) / 1000));
+      return { isLocked: true, retryAfterSeconds };
+    }
+  }
+  return { isLocked: false, retryAfterSeconds: 0 };
+}
+
+export function recordAuthFailure(db: any): { attempts: number; locked: boolean; retryAfterSeconds: number } {
+  const countRow = db.prepare("SELECT value FROM settings WHERE key = 'auth_failed_attempts'").get() as { value: string } | undefined;
+  const currentAttempts = parseInt(countRow?.value || '0', 10) || 0;
+  const newAttempts = currentAttempts + 1;
+  db.prepare("INSERT OR REPLACE INTO settings (key, value) VALUES ('auth_failed_attempts', ?)").run(String(newAttempts));
+
+  if (newAttempts >= MAX_FAILED_ATTEMPTS) {
+    let lockSeconds = 30;
+    if (newAttempts === 6) lockSeconds = 60;
+    else if (newAttempts === 7) lockSeconds = 300;
+    else if (newAttempts >= 8) lockSeconds = 900;
+
+    const lockedUntil = new Date(Date.now() + lockSeconds * 1000).toISOString();
+    db.prepare("INSERT OR REPLACE INTO settings (key, value) VALUES ('auth_locked_until', ?)").run(lockedUntil);
+    return { attempts: newAttempts, locked: true, retryAfterSeconds: lockSeconds };
+  }
+
+  return { attempts: newAttempts, locked: false, retryAfterSeconds: 0 };
+}
+
+export function clearAuthFailure(db: any): void {
+  db.prepare("INSERT OR REPLACE INTO settings (key, value) VALUES ('auth_failed_attempts', '0')").run();
+  db.prepare("INSERT OR REPLACE INTO settings (key, value) VALUES ('auth_locked_until', '')").run();
+}
+
 /**
  * POST /api/auth/unlock
  * Verifies 4-digit PIN or master password to unlock register
@@ -138,6 +178,16 @@ authRouter.post('/unlock', (req: Request, res: Response) => {
   }
 
   const db = getDb();
+
+  const { isLocked, retryAfterSeconds } = checkAuthLockout(db);
+  if (isLocked) {
+    res.status(429).json({
+      error: `Trop de tentatives échouées. Veuillez patienter ${retryAfterSeconds} secondes.`,
+      retry_after_seconds: retryAfterSeconds
+    });
+    return;
+  }
+
   const pinHashRow = db.prepare(`SELECT value FROM settings WHERE key = 'pin_hash'`).get() as { value: string } | undefined;
   const masterHashRow = db.prepare(`SELECT value FROM settings WHERE key = 'master_password_hash'`).get() as { value: string } | undefined;
   const shopNameRow = db.prepare(`SELECT value FROM settings WHERE key = 'shop_name'`).get() as { value: string } | undefined;
@@ -159,9 +209,22 @@ authRouter.post('/unlock', (req: Request, res: Response) => {
   }
 
   if (!isValid) {
-    res.status(401).json({ error: 'Invalid PIN or Master Password' });
+    const failure = recordAuthFailure(db);
+    if (failure.locked) {
+      res.status(429).json({
+        error: `Trop de tentatives échouées. Verrouillé pour ${failure.retryAfterSeconds} secondes.`,
+        retry_after_seconds: failure.retryAfterSeconds
+      });
+    } else {
+      res.status(401).json({
+        error: 'Invalid PIN or Master Password',
+        attempts_left: MAX_FAILED_ATTEMPTS - failure.attempts
+      });
+    }
     return;
   }
+
+  clearAuthFailure(db);
 
   // Update locked status
   db.prepare(`INSERT OR REPLACE INTO settings (key, value) VALUES ('is_locked', 'false')`).run();
@@ -198,6 +261,16 @@ authRouter.post('/change', (req: Request, res: Response) => {
   }
 
   const db = getDb();
+
+  const { isLocked, retryAfterSeconds } = checkAuthLockout(db);
+  if (isLocked) {
+    res.status(429).json({
+      error: `Trop de tentatives échouées. Veuillez patienter ${retryAfterSeconds} secondes.`,
+      retry_after_seconds: retryAfterSeconds
+    });
+    return;
+  }
+
   const salt = getInstallSalt(db);
   const pinHashRow = db.prepare(`SELECT value FROM settings WHERE key = 'pin_hash'`).get() as { value: string } | undefined;
   const masterHashRow = db.prepare(`SELECT value FROM settings WHERE key = 'master_password_hash'`).get() as { value: string } | undefined;
@@ -206,9 +279,19 @@ authRouter.post('/change', (req: Request, res: Response) => {
                        (masterHashRow && verifySecret(String(current_secret), masterHashRow.value, salt));
 
   if (!isAuthorized) {
-    res.status(401).json({ error: 'Current credential is incorrect' });
+    const failure = recordAuthFailure(db);
+    if (failure.locked) {
+      res.status(429).json({
+        error: `Trop de tentatives échouées. Verrouillé pour ${failure.retryAfterSeconds} secondes.`,
+        retry_after_seconds: failure.retryAfterSeconds
+      });
+    } else {
+      res.status(401).json({ error: 'Current credential is incorrect' });
+    }
     return;
   }
+
+  clearAuthFailure(db);
 
   if (new_pin) {
     if (!/^\d{4}$/.test(String(new_pin).trim())) {

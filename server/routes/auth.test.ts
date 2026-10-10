@@ -173,4 +173,44 @@ describe('Auth Router — Real HTTP Integration Tests & scrypt Hardening', () =>
     const newAttempt = await request(app).post('/api/auth/unlock').send({ pin: '9988' });
     expect(newAttempt.status).toBe(200);
   });
+
+  it('triggers HTTP 429 lockout after 5 consecutive failed unlock attempts', async () => {
+    // 1. Initial setup
+    await request(app)
+      .post('/api/auth/setup')
+      .send({ pin: '7788', password: 'secureMasterKey123' });
+
+    // 2. Lock session
+    await request(app).post('/api/auth/lock');
+
+    // 3. Make 4 wrong attempts -> each returns 401 with attempts_left
+    for (let i = 1; i <= 4; i++) {
+      const res = await request(app).post('/api/auth/unlock').send({ pin: '0000' });
+      expect(res.status).toBe(401);
+      expect(res.body.attempts_left).toBe(5 - i);
+    }
+
+    // 4. 5th wrong attempt triggers lockout -> 429
+    const resLockout = await request(app).post('/api/auth/unlock').send({ pin: '0000' });
+    expect(resLockout.status).toBe(429);
+    expect(resLockout.body.retry_after_seconds).toBeGreaterThan(0);
+
+    // 5. Even providing the correct PIN during lockout returns 429
+    const resDuringLockout = await request(app).post('/api/auth/unlock').send({ pin: '7788' });
+    expect(resDuringLockout.status).toBe(429);
+
+    // 6. Fast-forward lockout in DB settings to test recovery
+    const db = getDb();
+    db.prepare("INSERT OR REPLACE INTO settings (key, value) VALUES ('auth_locked_until', ?)").run(
+      new Date(Date.now() - 1000).toISOString()
+    );
+
+    // 7. Now correct PIN unlocks successfully and resets failures
+    const resUnlocked = await request(app).post('/api/auth/unlock').send({ pin: '7788' });
+    expect(resUnlocked.status).toBe(200);
+    expect(resUnlocked.body.unlocked).toBe(true);
+
+    const failRow: any = db.prepare("SELECT value FROM settings WHERE key = 'auth_failed_attempts'").get();
+    expect(failRow?.value).toBe('0');
+  });
 });
