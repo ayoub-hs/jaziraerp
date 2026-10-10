@@ -14,6 +14,7 @@ import {
   Search, 
   DollarSign, 
   Printer, 
+  Download,
   Calendar,
   CreditCard,
   Wallet,
@@ -1865,10 +1866,19 @@ export const Backoffice: React.FC<BackofficeProps> = ({
                             type="button"
                             onClick={() => setIsCustomerStatementOpen(true)}
                             className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 text-xs font-bold transition-colors cursor-pointer"
-                            title="Consulter le relevé de compte complet (grand livre et historique des dettes/portefeuille)"
+                            title="Consulter et imprimer le relevé de compte complet (A4 / PDF)"
                           >
-                            <FileText className="w-3.5 h-3.5" />
-                            <span>Relevé</span>
+                            <Printer className="w-3.5 h-3.5" />
+                            <span>Imprimer / PDF</span>
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setIsCustomerStatementOpen(true)}
+                            className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200 text-xs font-bold transition-colors cursor-pointer"
+                            title="Exporter le relevé au format CSV"
+                          >
+                            <Download className="w-3.5 h-3.5" />
+                            <span>Exporter CSV</span>
                           </button>
                         </div>
                         <p className="text-xs text-slate-500">{selectedCustomer.phone || 'No phone'} • {selectedCustomer.address || 'No address'}</p>
