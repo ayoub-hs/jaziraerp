@@ -4,6 +4,7 @@ import type { Customer } from '../../types/index.js';
 import { formatMoney, formatDateTime, formatDate } from '../../utils/formatters.js';
 import { exportToCsv } from '../../utils/csv.js';
 import { useBackButton } from '../../utils/backButton.js';
+import { useModalScanPause } from '../../hooks/useModalScanPause.js';
 
 interface StatementEntry {
   id: string;
@@ -33,6 +34,8 @@ export const CustomerStatementModal: React.FC<CustomerStatementModalProps> = ({
   onClose,
   customer
 }) => {
+  useModalScanPause(isOpen);
+
   const [debt, setDebt] = useState<Ledger>({ entries: [], final_balance: 0 });
   const [wallet, setWallet] = useState<Ledger>({ entries: [], final_balance: 0 });
   const [isLoading, setIsLoading] = useState(false);

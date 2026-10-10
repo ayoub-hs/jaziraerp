@@ -2,6 +2,7 @@ import React, { useState, useMemo } from 'react';
 import { X, Scale, AlertCircle } from 'lucide-react';
 import type { RawMaterial, Product } from '../../types/index.js';
 import { useBackButton } from '../../utils/backButton.js';
+import { useModalScanPause } from '../../hooks/useModalScanPause.js';
 
 interface InventoryAdjustmentModalProps {
   isOpen: boolean;
@@ -20,6 +21,8 @@ export const InventoryAdjustmentModal: React.FC<InventoryAdjustmentModalProps> =
   products,
   initialType = 'PRODUCT'
 }) => {
+  useModalScanPause(isOpen);
+
   const [itemType, setItemType] = useState<'RAW_MATERIAL' | 'PRODUCT'>(initialType);
   const [selectedItemId, setSelectedItemId] = useState('');
   const [quantityDelta, setQuantityDelta] = useState('-1');

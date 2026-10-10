@@ -13,10 +13,44 @@ export class KeyboardWedgeScanner {
   private isListening: boolean = false;
   private maxIntervalMs: number = 60; // Max ms between keystrokes for hardware scanner
   private minBarcodeLength: number = 3;
+  private pauseCount: number = 0;
 
   constructor(maxIntervalMs: number = 60) {
     this.maxIntervalMs = maxIntervalMs;
     this.handleKeyDown = this.handleKeyDown.bind(this);
+  }
+
+  /**
+   * Increment pause counter and drop active buffer. Returns an unpause function
+   * for safe, idempotent cleanup when modals close or unmount.
+   */
+  public pause(): () => void {
+    this.pauseCount++;
+    this.buffer = '';
+    let resumed = false;
+    return () => {
+      if (!resumed) {
+        resumed = true;
+        this.resume();
+      }
+    };
+  }
+
+  public resume(): void {
+    this.pauseCount = Math.max(0, this.pauseCount - 1);
+  }
+
+  public isPaused(): boolean {
+    return this.pauseCount > 0;
+  }
+
+  public getPauseCount(): number {
+    return this.pauseCount;
+  }
+
+  public resetPause(): void {
+    this.pauseCount = 0;
+    this.buffer = '';
   }
 
   public start(): void {
@@ -40,6 +74,11 @@ export class KeyboardWedgeScanner {
   }
 
   public handleKeyDown(e: KeyboardEvent): void {
+    if (this.isPaused()) {
+      this.buffer = '';
+      return;
+    }
+
     const target = e.target as HTMLElement | null;
     const isInput = target && (
       target.tagName === 'INPUT' ||
@@ -86,6 +125,9 @@ export class KeyboardWedgeScanner {
    * Directly simulate barcode scan (useful for camera scanner and testing)
    */
   public triggerScan(barcode: string): void {
+    if (this.isPaused()) {
+      return;
+    }
     if (barcode && barcode.length >= this.minBarcodeLength) {
       this.notify(barcode.trim());
     }

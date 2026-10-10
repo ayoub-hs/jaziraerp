@@ -19,6 +19,7 @@ import { webUsbPrinter } from '../../services/hardware/webusb.js';
 import { webBluetoothPrinter } from '../../services/hardware/webbluetooth.js';
 import { nativeSppPrinter } from '../../services/hardware/nativeSpp.js';
 import { registerBackHandler } from '../../utils/backButton.js';
+import { useModalScanPause } from '../../hooks/useModalScanPause.js';
 
 interface CheckoutModalProps {
   isOpen: boolean;
@@ -53,6 +54,8 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
   onPrintReceipt,
   onPrintInvoice
 }) => {
+  useModalScanPause(isOpen);
+
   const totals = calculateCartTotals(items, saleDiscount);
   const totalTTC = totals.totalTTC;
 

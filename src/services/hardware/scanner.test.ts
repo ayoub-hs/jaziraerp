@@ -88,5 +88,68 @@ describe('Keyboard Wedge Barcode Scanner Service', () => {
     expect(mockCallback).toHaveBeenCalledTimes(1);
     expect(mockCallback).toHaveBeenCalledWith('619999999999');
   });
+
+  it('manages pause/resume counter correctly and ignores scans while paused (Batch 2 Item A1)', () => {
+    const scanner = new KeyboardWedgeScanner(50);
+    const mockCallback = vi.fn();
+    scanner.onScan(mockCallback);
+
+    expect(scanner.isPaused()).toBe(false);
+    expect(scanner.getPauseCount()).toBe(0);
+
+    // Pause first modal
+    const unpause1 = scanner.pause();
+    expect(scanner.isPaused()).toBe(true);
+    expect(scanner.getPauseCount()).toBe(1);
+
+    // Pause second nested modal
+    const unpause2 = scanner.pause();
+    expect(scanner.isPaused()).toBe(true);
+    expect(scanner.getPauseCount()).toBe(2);
+
+    // Scans are ignored while paused (both key strokes and triggerScan)
+    scanner.triggerScan('619000100101');
+    expect(mockCallback).not.toHaveBeenCalled();
+
+    for (const char of '619000100101') {
+      scanner.handleKeyDown({
+        key: char,
+        target: { tagName: 'BODY' } as unknown as HTMLElement,
+        defaultPrevented: false,
+        preventDefault: vi.fn()
+      } as unknown as KeyboardEvent);
+    }
+    scanner.handleKeyDown({
+      key: 'Enter',
+      target: { tagName: 'BODY' } as unknown as HTMLElement,
+      defaultPrevented: false,
+      preventDefault: vi.fn()
+    } as unknown as KeyboardEvent);
+
+    expect(mockCallback).not.toHaveBeenCalled();
+
+    // Close second modal
+    unpause2();
+    expect(scanner.isPaused()).toBe(true);
+    expect(scanner.getPauseCount()).toBe(1);
+
+    // Idempotent unpause does not decrement twice
+    unpause2();
+    expect(scanner.getPauseCount()).toBe(1);
+
+    // Close first modal
+    unpause1();
+    expect(scanner.isPaused()).toBe(false);
+    expect(scanner.getPauseCount()).toBe(0);
+
+    // Resume when count is 0 does not go negative
+    scanner.resume();
+    expect(scanner.getPauseCount()).toBe(0);
+
+    // Now scans succeed normally
+    scanner.triggerScan('619000100101');
+    expect(mockCallback).toHaveBeenCalledTimes(1);
+    expect(mockCallback).toHaveBeenCalledWith('619000100101');
+  });
 });
 

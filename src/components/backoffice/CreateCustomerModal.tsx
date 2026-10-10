@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { X, Users, AlertCircle } from 'lucide-react';
 import type { Customer } from '../../types/index.js';
 import { useBackButton } from '../../utils/backButton.js';
+import { useModalScanPause } from '../../hooks/useModalScanPause.js';
 
 interface CreateCustomerModalProps {
   isOpen: boolean;
@@ -16,6 +17,8 @@ export const CreateCustomerModal: React.FC<CreateCustomerModalProps> = ({
   onSuccess,
   customerToEdit
 }) => {
+  useModalScanPause(isOpen);
+
   const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
   const [address, setAddress] = useState('');

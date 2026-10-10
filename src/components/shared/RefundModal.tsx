@@ -3,6 +3,7 @@ import { X, RotateCcw, Search, AlertCircle, CheckCircle, ArrowRight } from 'luci
 import type { SaleSummary } from '../../types/index.js';
 import { formatMoney, formatDateTime } from '../../utils/formatters.js';
 import { useBackButton } from '../../utils/backButton.js';
+import { useModalScanPause } from '../../hooks/useModalScanPause.js';
 
 interface RefundModalProps {
   isOpen: boolean;
@@ -19,6 +20,8 @@ export const RefundModal: React.FC<RefundModalProps> = ({
   initialSaleId,
   activeSessionId
 }) => {
+  useModalScanPause(isOpen);
+
   const [searchReceipt, setSearchReceipt] = useState('');
   const [recentSales, setRecentSales] = useState<SaleSummary[]>([]);
   const [selectedSale, setSelectedSale] = useState<SaleSummary | null>(null);

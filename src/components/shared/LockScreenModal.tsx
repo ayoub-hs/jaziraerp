@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Lock, Unlock, KeyRound, AlertCircle, Shield, ArrowRight, RefreshCw } from 'lucide-react';
 import { authService } from '../../services/authService.js';
 import { AuthCredentialsModal } from './AuthCredentialsModal.js';
+import { useModalScanPause } from '../../hooks/useModalScanPause.js';
 
 interface LockScreenModalProps {
   isLocked: boolean;
@@ -14,6 +15,8 @@ export const LockScreenModal: React.FC<LockScreenModalProps> = ({
   onUnlocked,
   shopName
 }) => {
+  useModalScanPause(isLocked);
+
   const effectiveShopName = shopName || authService.getShopName();
   const [pin, setPin] = useState<string>('');
   const [error, setError] = useState<string | null>(null);

@@ -4,6 +4,7 @@ import type { Product, Customer, PackSize } from '../../types/index.js';
 import { getProductPriceForCustomer, getProductPackPrice } from '../../utils/cart.js';
 import { formatMoney } from '../../utils/formatters.js';
 import { useBackButton } from '../../utils/backButton.js';
+import { useModalScanPause } from '../../hooks/useModalScanPause.js';
 
 interface FamilySizesModalProps {
   isOpen: boolean;
@@ -22,6 +23,8 @@ export const FamilySizesModal: React.FC<FamilySizesModalProps> = ({
   customer,
   onSelectProduct
 }) => {
+  useModalScanPause(isOpen);
+
   useBackButton(() => {
     onClose();
     return true;

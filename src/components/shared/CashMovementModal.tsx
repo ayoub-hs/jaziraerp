@@ -3,6 +3,7 @@ import { X, ArrowDownRight, ArrowUpRight, AlertCircle, Check } from 'lucide-reac
 import type { RegisterSession } from '../../types/index.js';
 import { syncManager } from '../../services/syncManager.js';
 import { useBackButton } from '../../utils/backButton.js';
+import { useModalScanPause } from '../../hooks/useModalScanPause.js';
 
 interface CashMovementModalProps {
   isOpen: boolean;
@@ -17,6 +18,8 @@ export const CashMovementModal: React.FC<CashMovementModalProps> = ({
   activeSession,
   onSuccess
 }) => {
+  useModalScanPause(isOpen);
+
   const [type, setType] = useState<'CASH_IN' | 'CASH_OUT'>('CASH_OUT');
   const [amount, setAmount] = useState('');
   const [reason, setReason] = useState('');

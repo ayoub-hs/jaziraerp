@@ -5,6 +5,7 @@ import { formatMoney, formatDate } from '../../utils/formatters.js';
 import { calculateTaxBreakdown } from '../../utils/tax.js';
 import { getShopInfo } from '../../services/shopInfo.js';
 import { useBackButton } from '../../utils/backButton.js';
+import { useModalScanPause } from '../../hooks/useModalScanPause.js';
 
 interface InvoicePrintModalProps {
   isOpen: boolean;
@@ -17,6 +18,8 @@ export const InvoicePrintModal: React.FC<InvoicePrintModalProps> = ({
   onClose,
   saleId
 }) => {
+  useModalScanPause(isOpen);
+
   const [sale, setSale] = useState<SaleSummary | null>(null);
   const [loading, setLoading] = useState(false);
   const shop = getShopInfo();

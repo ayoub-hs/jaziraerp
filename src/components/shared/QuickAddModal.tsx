@@ -3,6 +3,7 @@ import { X, Plus, Tag } from 'lucide-react';
 import type { CartItem } from '../../types/index.js';
 import { roundMoney } from '../../utils/formatters.js';
 import { useBackButton } from '../../utils/backButton.js';
+import { useModalScanPause } from '../../hooks/useModalScanPause.js';
 
 interface QuickAddModalProps {
   isOpen: boolean;
@@ -15,6 +16,8 @@ export const QuickAddModal: React.FC<QuickAddModalProps> = ({
   onClose,
   onAddItem
 }) => {
+  useModalScanPause(isOpen);
+
   const [name, setName] = useState('');
   const [price, setPrice] = useState('');
   const [quantity, setQuantity] = useState('1');

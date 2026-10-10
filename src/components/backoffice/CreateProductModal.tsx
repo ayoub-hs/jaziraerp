@@ -3,6 +3,7 @@ import { X, Package, AlertCircle, Plus, Edit2, Trash2 } from 'lucide-react';
 import type { Product, ProductFamily, Formulation, ContainerType, PackSize } from '../../types/index.js';
 import { formatMoney } from '../../utils/formatters.js';
 import { useBackButton } from '../../utils/backButton.js';
+import { useModalScanPause } from '../../hooks/useModalScanPause.js';
 
 interface CreateProductModalProps {
   isOpen: boolean;
@@ -38,6 +39,8 @@ export const CreateProductModal: React.FC<CreateProductModalProps> = ({
   productToEdit,
   onSwitchToEdit
 }) => {
+  useModalScanPause(isOpen);
+
   // Mode: create a brand new product family + initial SKU, or add a new SKU to an existing family
   const [mode, setMode] = useState<'NEW_FAMILY' | 'EXISTING_FAMILY'>('NEW_FAMILY');
 

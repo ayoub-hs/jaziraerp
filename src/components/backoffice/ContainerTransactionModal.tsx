@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { X, ArrowUpRight, ArrowDownLeft, AlertCircle, Package } from 'lucide-react';
 import type { Customer, ContainerType } from '../../types/index.js';
 import { useBackButton } from '../../utils/backButton.js';
+import { useModalScanPause } from '../../hooks/useModalScanPause.js';
 
 interface ContainerTransactionModalProps {
   isOpen: boolean;
@@ -24,6 +25,8 @@ export const ContainerTransactionModal: React.FC<ContainerTransactionModalProps>
   initialCustomerId = null,
   initialContainerTypeId = null
 }) => {
+  useModalScanPause(isOpen);
+
   const [action, setAction] = useState<'GIVE' | 'RETURN'>(initialAction);
   const [customerId, setCustomerId] = useState<string>(initialCustomerId || '');
   const [containerTypeId, setContainerTypeId] = useState<string>(initialContainerTypeId || '');

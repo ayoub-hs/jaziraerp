@@ -3,6 +3,7 @@ import { X, Lock, Unlock, AlertTriangle, CheckCircle } from 'lucide-react';
 import type { RegisterSession } from '../../types/index.js';
 import { formatMoney, roundMoney } from '../../utils/formatters.js';
 import { useBackButton } from '../../utils/backButton.js';
+import { useModalScanPause } from '../../hooks/useModalScanPause.js';
 
 interface SessionModalProps {
   isOpen: boolean;
@@ -23,6 +24,8 @@ export const SessionModal: React.FC<SessionModalProps> = ({
   currentView,
   onSelectSession
 }) => {
+  useModalScanPause(isOpen);
+
   const [counterName, setCounterName] = useState('Countertop');
   const [counters, setCounters] = useState<{ id: string; name: string }[]>([]);
   const [isAddingCounter, setIsAddingCounter] = useState(false);

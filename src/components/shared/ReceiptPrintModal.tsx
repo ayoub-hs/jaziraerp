@@ -9,6 +9,7 @@ import { nativeSppPrinter } from '../../services/hardware/nativeSpp.js';
 import { clientDb } from '../../db/clientDb.js';
 import { getShopInfo } from '../../services/shopInfo.js';
 import { useBackButton } from '../../utils/backButton.js';
+import { useModalScanPause } from '../../hooks/useModalScanPause.js';
 
 interface ReceiptPrintModalProps {
   isOpen: boolean;
@@ -21,6 +22,8 @@ export const ReceiptPrintModal: React.FC<ReceiptPrintModalProps> = ({
   onClose,
   saleId
 }) => {
+  useModalScanPause(isOpen);
+
   const [sale, setSale] = useState<SaleSummary | null>(null);
   const [loading, setLoading] = useState(false);
   const printRef = useRef<HTMLDivElement>(null);

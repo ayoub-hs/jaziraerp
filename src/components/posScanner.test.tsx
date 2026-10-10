@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import React from 'react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, fireEvent } from '@testing-library/react';
+import { render, screen, fireEvent, act } from '@testing-library/react';
 import { DesktopPos } from './desktop/DesktopPos';
 import { MobileRegister } from './mobile/MobileRegister';
 import { CheckoutModal } from './shared/CheckoutModal';
@@ -156,5 +156,48 @@ describe('Component tests for scanner bursts and checkout cash guards (Batch 3 I
     expect(cashInput.value).toBe('');
     // Should display validation error
     expect(screen.getByText(/code-barres scanné/i)).toBeTruthy();
+  });
+
+  it('A1: while a modal is open, scanner scans do NOT add items to the cart; after closing, scan adds item', () => {
+    render(
+      <DesktopPos
+        products={[mockProduct]}
+        families={[mockFamily]}
+        customers={[mockCustomer]}
+        activeSession={mockSession}
+        onRefreshData={vi.fn()}
+        onPopDrawer={vi.fn()}
+        onProcessSale={vi.fn()}
+        onPrintReceipt={vi.fn()}
+        onPrintInvoice={vi.fn()}
+      />
+    );
+
+    // Initial cart is empty
+    expect(screen.getByText(/Articles \(0 items \/ 0 pcs\)/i)).toBeTruthy();
+
+    // Open Quick Add modal
+    fireEvent.click(screen.getByText(/Quick Add/i));
+    expect(screen.getByText(/Quick-Add Uncataloged Item/i)).toBeTruthy();
+
+    // Trigger a scan while modal is open
+    act(() => {
+      scannerService.triggerScan('619000333001');
+    });
+
+    // Cart behind modal MUST remain empty
+    expect(screen.getByText(/Articles \(0 items \/ 0 pcs\)/i)).toBeTruthy();
+
+    // Close the modal
+    fireEvent.click(screen.getByText('Cancel'));
+    expect(screen.queryByText(/Quick-Add Uncataloged Item/i)).toBeNull();
+
+    // Trigger scan now that modal is closed
+    act(() => {
+      scannerService.triggerScan('619000333001');
+    });
+
+    // Cart now has the item
+    expect(screen.getByText(/Articles \(1 items \/ 1 pcs\)/i)).toBeTruthy();
   });
 });

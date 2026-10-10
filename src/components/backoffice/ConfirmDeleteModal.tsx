@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { AlertTriangle, X } from 'lucide-react';
 import { useBackButton } from '../../utils/backButton.js';
+import { useModalScanPause } from '../../hooks/useModalScanPause.js';
 
 interface ConfirmDeleteModalProps {
   isOpen: boolean;
@@ -21,6 +22,8 @@ export const ConfirmDeleteModal: React.FC<ConfirmDeleteModalProps> = ({
   itemName,
   confirmButtonText = 'Delete'
 }) => {
+  useModalScanPause(isOpen);
+
   const [isDeleting, setIsDeleting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
