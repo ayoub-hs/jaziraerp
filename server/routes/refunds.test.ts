@@ -661,6 +661,58 @@ describe('Returns & Line-Item Partial Refunds Module — Real HTTP Integration T
       const custFinal: any = db.prepare('SELECT wallet_balance FROM customers WHERE id = ?').get('cust-refund-test');
       expect(custFinal.wallet_balance).toBe(5.000);
     });
+
+    it('rejects duplicate sale_item_ids in refund request when merged quantity exceeds available (Item 1)', async () => {
+      const db = getDb();
+
+      // 1. Create a sale with quantity = 3 of prod-bleach + 1 of prod-degreaser (total 21.000 DT)
+      const saleRes = await request(app)
+        .post('/api/sales')
+        .send({
+          session_id: 'ses-refund-test',
+          customer_id: 'cust-refund-test',
+          items: [
+            { product_id: 'prod-bleach', quantity: 3, unit_price: 2.000 },
+            { product_id: 'prod-degreaser', quantity: 1, unit_price: 15.000 }
+          ],
+          cash_paid: 21.000,
+          cash_tendered: 21.000
+        });
+
+      expect(saleRes.status).toBe(201);
+      const saleId = saleRes.body.id;
+      const itemId = saleRes.body.items[0].id;
+
+      // Initial state before refund attempt
+      const prodBefore: any = db.prepare('SELECT stock_quantity FROM products WHERE id = ?').get('prod-bleach');
+      const stockBefore = prodBefore.stock_quantity;
+      const sesBefore: any = db.prepare('SELECT expected_cash FROM register_sessions WHERE id = ?').get('ses-refund-test');
+      const cashBefore = sesBefore.expected_cash;
+
+      // 2. Attempt refund with same line twice: 2 + 2 = 4 on a quantity of 3
+      const dupRefRes = await request(app)
+        .post(`/api/sales/${saleId}/refund`)
+        .send({
+          session_id: 'ses-refund-test',
+          items: [
+            { sale_item_id: itemId, quantity: 2 },
+            { sale_item_id: itemId, quantity: 2 }
+          ]
+        });
+
+      // Must be rejected with HTTP 400
+      expect(dupRefRes.status).toBe(400);
+
+      // Verify stock, quantity_refunded and cash remain unchanged
+      const prodAfter: any = db.prepare('SELECT stock_quantity FROM products WHERE id = ?').get('prod-bleach');
+      expect(prodAfter.stock_quantity).toBe(stockBefore);
+
+      const itemAfter: any = db.prepare('SELECT quantity_refunded FROM sale_items WHERE id = ?').get(itemId);
+      expect(itemAfter.quantity_refunded).toBe(0);
+
+      const sesAfter: any = db.prepare('SELECT expected_cash FROM register_sessions WHERE id = ?').get('ses-refund-test');
+      expect(sesAfter.expected_cash).toBe(cashBefore);
+    });
   });
 });
 

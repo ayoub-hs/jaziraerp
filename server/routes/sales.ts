@@ -840,43 +840,77 @@ export function processRefund(saleId: string, req: Request, res: Response) {
   let totalRefunded = 0;
   const processedRefundItems: any[] = [];
 
+  // Check for duplicate sale_item_ids in refund request
+  const seenSaleItemIds = new Set<string>();
+  for (const item of items) {
+    if (!item || typeof item !== 'object' || !item.sale_item_id) {
+      res.status(400).json({ error: 'Valid sale_item_id is required for every refund item' });
+      return;
+    }
+    if (seenSaleItemIds.has(item.sale_item_id)) {
+      res.status(400).json({ error: `Duplicate sale_item_id in refund request: ${item.sale_item_id}` });
+      return;
+    }
+    seenSaleItemIds.add(item.sale_item_id);
+  }
+
   for (const item of items) {
     const saleItem: any = allSaleItems.find(si => si.id === item.sale_item_id);
 
     if (!saleItem) {
-      res.status(404).json({ error: `Sale line item not found: ${item.sale_item_id}` });
+      res.status(400).json({ error: `Sale line item not found: ${item.sale_item_id}` });
       return;
     }
 
     const qtyToRefund = Number(item.quantity);
+    if (!Number.isFinite(qtyToRefund) || qtyToRefund <= 0) {
+      res.status(400).json({
+        error: `Invalid refund quantity for item ${saleItem.id}: ${item.quantity}`
+      });
+      return;
+    }
+
     const availableToRefund = saleItem.quantity - saleItem.quantity_refunded;
 
-    if (qtyToRefund <= 0 || qtyToRefund > availableToRefund) {
+    if (qtyToRefund > availableToRefund) {
       res.status(400).json({
         error: `Invalid refund quantity for item ${saleItem.id}. Requested: ${qtyToRefund}, Max available: ${availableToRefund}`
       });
       return;
     }
 
+    if (Number.isInteger(saleItem.quantity) && !Number.isInteger(qtyToRefund)) {
+      res.status(400).json({
+        error: `Fractional refund quantity (${qtyToRefund}) is not allowed for integer-quantity item ${saleItem.id}`
+      });
+      return;
+    }
+
     const netLineTotal = netLineTotals.get(saleItem.id) ?? round3(Number(saleItem.line_total) || 0);
+
+    const alreadyRefundedRow: any = db.prepare(`
+      SELECT COALESCE(SUM(amount_refunded), 0) as already_refunded
+      FROM refund_items
+      WHERE sale_item_id = ?
+    `).get(saleItem.id);
+    const alreadyRefunded = round3(alreadyRefundedRow?.already_refunded || 0);
 
     // For the last remaining quantity of a line, amountRefunded = netLineTotal - already_refunded; otherwise effective net unit price
     let amountRefunded: number;
     if (qtyToRefund === availableToRefund) {
-      const alreadyRefundedRow: any = db.prepare(`
-        SELECT COALESCE(SUM(amount_refunded), 0) as already_refunded
-        FROM refund_items
-        WHERE sale_item_id = ?
-      `).get(saleItem.id);
-      const alreadyRefundedDb = round3(alreadyRefundedRow?.already_refunded || 0);
-      const processedForThisLine = processedRefundItems
-        .filter(p => p.sale_item.id === saleItem.id)
-        .reduce((sum, p) => sum + p.amount_refunded, 0);
-      const alreadyRefunded = round3(alreadyRefundedDb + processedForThisLine);
-      amountRefunded = round3(netLineTotal - alreadyRefunded);
+      amountRefunded = Math.max(0, round3(netLineTotal - alreadyRefunded));
     } else {
       const effectiveUnitPrice = netLineTotal / saleItem.quantity;
       amountRefunded = round3(effectiveUnitPrice * qtyToRefund);
+      const maxPossibleForLine = Math.max(0, round3(netLineTotal - alreadyRefunded));
+      if (amountRefunded > maxPossibleForLine) {
+        amountRefunded = maxPossibleForLine;
+      }
+    }
+
+    // Cap cumulative amount_refunded on each line at net line total
+    if (addMoney(alreadyRefunded, amountRefunded) > netLineTotal) {
+      amountRefunded = Math.max(0, round3(netLineTotal - alreadyRefunded));
     }
 
     totalRefunded = addMoney(totalRefunded, amountRefunded);
