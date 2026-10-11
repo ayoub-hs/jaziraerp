@@ -163,10 +163,10 @@ export const HeldCartsModal: React.FC<HeldCartsModalProps> = ({
         {/* Cart List */}
         <div className="flex-1 min-h-0 p-4 overflow-y-auto divide-y divide-slate-100 space-y-3">
           {heldCarts.length === 0 ? (
-            <div className="py-12 text-center text-slate-400 space-y-2">
+            <div className="py-12 text-center text-slate-600 space-y-2">
               <ShoppingBag className="w-10 h-10 mx-auto stroke-1 text-slate-300" />
               <p className="text-sm font-semibold">Aucun panier en attente</p>
-              <p className="text-xs text-slate-400">
+              <p className="text-xs text-slate-600">
                 Utilisez le bouton « Mettre en attente » pour suspendre une vente.
               </p>
             </div>

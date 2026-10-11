@@ -130,7 +130,7 @@ export const QuickPriceLookupModal: React.FC<QuickPriceLookupModalProps> = ({
                   F3 / Ctrl+L / Esc
                 </span>
               </div>
-              <p className="text-xs text-slate-400">
+              <p className="text-xs text-slate-600">
                 Consultez instantanément les prix détaillés, remises et stocks sans modifier le panier en cours.
               </p>
             </div>
@@ -196,7 +196,7 @@ export const QuickPriceLookupModal: React.FC<QuickPriceLookupModalProps> = ({
             <div className="py-16 text-center space-y-2">
               <Package className="w-12 h-12 text-slate-300 mx-auto" />
               <p className="text-sm font-bold text-slate-600">Aucun produit trouvé</p>
-              <p className="text-xs text-slate-400">
+              <p className="text-xs text-slate-600">
                 Vérifiez le code-barres ou modifiez les termes de recherche.
               </p>
             </div>

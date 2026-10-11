@@ -397,14 +397,14 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
             <h2 className="text-base sm:text-lg font-bold">
               {completedSale ? 'Vente finalisée' : 'Encaisser'}
             </h2>
-            <p className="text-xs text-slate-400">
+            <p className="text-xs text-slate-600">
               {customer ? `${customer.name} (${customer.type})` : 'Client Passager'}
             </p>
           </div>
           {!completedSale && (
             <div className="flex items-center gap-3">
               <div className="text-right">
-                <span className="text-pos-badge text-slate-400 uppercase tracking-wider block font-semibold leading-none">TOTAL À PAYER</span>
+                <span className="text-pos-badge text-slate-600 uppercase tracking-wider block font-semibold leading-none">TOTAL À PAYER</span>
                 <span className="text-xl sm:text-2xl font-black text-emerald-400 font-mono leading-tight">{formatMoney(totalTTC)}</span>
               </div>
               <button
@@ -491,7 +491,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
                 <button
                   type="button"
                   onClick={() => onPrintReceipt(completedSale.sale_id)}
-                  className="text-slate-400 hover:text-slate-600 underline"
+                  className="text-slate-600 hover:text-slate-600 underline"
                 >
                   Aperçu du ticket
                 </button>

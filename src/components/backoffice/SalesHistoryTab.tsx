@@ -187,7 +187,7 @@ export const SalesHistoryTab: React.FC<SalesHistoryTabProps> = ({
               className="bg-transparent text-slate-700 text-xs focus:outline-none"
               title="Date de début"
             />
-            <span className="text-slate-400">à</span>
+            <span className="text-slate-600">à</span>
             <input
               type="date"
               value={toDate}
@@ -253,7 +253,7 @@ export const SalesHistoryTab: React.FC<SalesHistoryTabProps> = ({
                       {formatDateTime(s.date)}
                     </td>
                     <td className="py-2 px-3 font-medium text-slate-900 text-pos-body">
-                      {s.customer_name || <span className="text-slate-400 italic">Passager</span>}
+                      {s.customer_name || <span className="text-slate-600 italic">Passager</span>}
                     </td>
                     <td className="py-2 px-3 text-slate-600 text-pos-body">
                       {s.counter_name || s.session_number || '—'}
@@ -263,9 +263,9 @@ export const SalesHistoryTab: React.FC<SalesHistoryTabProps> = ({
                     </td>
                     <td className="py-2 px-3 text-right font-mono text-pos-badge text-slate-700 whitespace-nowrap tabular-nums">
                       <span>{formatMoney(s.cash_paid || 0)}</span>
-                      <span className="text-slate-400 mx-1">/</span>
+                      <span className="text-slate-600 mx-1">/</span>
                       <span className="text-purple-800 font-bold">{formatMoney(s.wallet_paid || 0)}</span>
-                      <span className="text-slate-400 mx-1">/</span>
+                      <span className="text-slate-600 mx-1">/</span>
                       <span className="text-amber-800 font-bold">{formatMoney(s.credit_amount || 0)}</span>
                     </td>
                     <td className="py-2 px-3 text-center">
@@ -338,7 +338,7 @@ export const SalesHistoryTab: React.FC<SalesHistoryTabProps> = ({
         </div>
 
         {sales.length === 0 && !loading && (
-          <div className="py-12 text-center text-slate-400 text-xs">
+          <div className="py-12 text-center text-slate-600 text-xs">
             Aucune vente trouvée avec ces filtres.
           </div>
         )}
@@ -383,7 +383,7 @@ export const SalesHistoryTab: React.FC<SalesHistoryTabProps> = ({
 
             <div className="p-5 overflow-y-auto space-y-4 text-xs flex-1 min-h-0">
               {loadingDetail && (
-                <div className="py-8 text-center text-slate-400">
+                <div className="py-8 text-center text-slate-600">
                   <RefreshCw className="w-5 h-5 animate-spin mx-auto mb-2 text-slate-400" />
                   Chargement des lignes et remboursements...
                 </div>

@@ -117,7 +117,7 @@ export const BatchDetailModal: React.FC<BatchDetailModalProps> = ({
                   </span>
                 )}
               </div>
-              <p className="text-xs text-slate-400 mt-0.5">
+              <p className="text-xs text-slate-600 mt-0.5">
                 {batch ? `${batch.formulation_name} → ${batch.target_product_name}${batch.size_label ? ` (${batch.size_label})` : ''}` : 'Chargement du lot...'}
               </p>
             </div>
@@ -159,7 +159,7 @@ export const BatchDetailModal: React.FC<BatchDetailModalProps> = ({
               <p className="text-sm font-semibold text-slate-500">Chargement des détails du lot...</p>
             </div>
           ) : !batch ? (
-            <div className="py-16 text-center text-slate-400">
+            <div className="py-16 text-center text-slate-600">
               <p className="text-sm font-semibold">Aucun détail disponible.</p>
             </div>
           ) : (

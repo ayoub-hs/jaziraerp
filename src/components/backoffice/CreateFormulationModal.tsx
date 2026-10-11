@@ -442,7 +442,7 @@ export const CreateFormulationModal: React.FC<CreateFormulationModalProps> = ({
                             <button
                               type="button"
                               onClick={() => handleRemoveIngredient(item.id)}
-                              className="text-slate-400 hover:text-rose-600 p-1 transition-colors"
+                              className="text-slate-600 hover:text-rose-600 p-1 transition-colors"
                               title="Supprimer l'ingrédient"
                             >
                               <Trash2 className="w-4 h-4" />

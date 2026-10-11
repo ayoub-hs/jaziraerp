@@ -156,7 +156,7 @@ export const ContainerTransactionModal: React.FC<ContainerTransactionModalProps>
                 onClick={() => setAction('RETURN')}
                 className={`py-2.5 px-3 rounded-xl font-bold text-xs flex items-center justify-center gap-2 border transition-all ${
                   action === 'RETURN'
-                    ? 'bg-emerald-600 text-white border-emerald-600 shadow-sm'
+                    ? 'bg-emerald-700 text-white border-emerald-700 shadow-sm'
                     : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100'
                 }`}
               >

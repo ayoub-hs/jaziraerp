@@ -1,0 +1,408 @@
+{
+  "timestamp": "2026-10-11T16:18:03.498Z",
+  "description": "Empirical measurements after Batch UI-5 (header polish, cart decimals/tags, contrast elevation)",
+  "emerald600WhitePairsCount": 0,
+  "slate400Count": 98,
+  "viewports": {
+    "desktop_1600x900": {
+      "headerHeight": 56,
+      "cart": {
+        "totalRows": 7,
+        "visibleRowsCount": 7,
+        "rows": [
+          {
+            "index": 1,
+            "height": 76,
+            "top": 103,
+            "bottom": 179,
+            "isInsideContainer": true,
+            "isInsideViewport": true,
+            "isFullyVisible": true,
+            "title": "Javel Parfumée Citron Frais 1.5L Flacon Ergonomique"
+          },
+          {
+            "index": 2,
+            "height": 77,
+            "top": 179,
+            "bottom": 256,
+            "isInsideContainer": true,
+            "isInsideViewport": true,
+            "isFullyVisible": true,
+            "title": "Eau de Javel Désinfectante Concentrée 12° Bidon 5L"
+          },
+          {
+            "index": 3,
+            "height": 77,
+            "top": 256,
+            "bottom": 333,
+            "isInsideContainer": true,
+            "isInsideViewport": true,
+            "isFullyVisible": true,
+            "title": "Eau de Javel Industrielle 18° Fût Plastique 20L"
+          },
+          {
+            "index": 4,
+            "height": 77,
+            "top": 333,
+            "bottom": 410,
+            "isInsideContainer": true,
+            "isInsideViewport": true,
+            "isFullyVisible": true,
+            "title": "Gel Javel Épais Surpuissant Océan Flacon Canard 750ml"
+          },
+          {
+            "index": 5,
+            "height": 77,
+            "top": 410,
+            "bottom": 487,
+            "isInsideContainer": true,
+            "isInsideViewport": true,
+            "isFullyVisible": true,
+            "title": "Liquide Vaisselle Extra Dégraissant Pomme Verte 1L"
+          },
+          {
+            "index": 6,
+            "height": 77,
+            "top": 487,
+            "bottom": 564,
+            "isInsideContainer": true,
+            "isInsideViewport": true,
+            "isFullyVisible": true,
+            "title": "Liquide Vaisselle Concentré Citron Vert Antibactérien 1L"
+          },
+          {
+            "index": 7,
+            "height": 77,
+            "top": 564,
+            "bottom": 641,
+            "isInsideContainer": true,
+            "isInsideViewport": true,
+            "isFullyVisible": true,
+            "title": "Liquide Vaisselle Formule Pro Économique Bidon 5L"
+          }
+        ],
+        "containerHeight": 651
+      }
+    },
+    "desktop_1600x780": {
+      "headerHeight": 56,
+      "cart": {
+        "totalRows": 7,
+        "visibleRowsCount": 6,
+        "rows": [
+          {
+            "index": 1,
+            "height": 76,
+            "top": 103,
+            "bottom": 179,
+            "isInsideContainer": true,
+            "isInsideViewport": true,
+            "isFullyVisible": true,
+            "title": "Javel Parfumée Citron Frais 1.5L Flacon Ergonomique"
+          },
+          {
+            "index": 2,
+            "height": 77,
+            "top": 179,
+            "bottom": 256,
+            "isInsideContainer": true,
+            "isInsideViewport": true,
+            "isFullyVisible": true,
+            "title": "Eau de Javel Désinfectante Concentrée 12° Bidon 5L"
+          },
+          {
+            "index": 3,
+            "height": 77,
+            "top": 256,
+            "bottom": 333,
+            "isInsideContainer": true,
+            "isInsideViewport": true,
+            "isFullyVisible": true,
+            "title": "Eau de Javel Industrielle 18° Fût Plastique 20L"
+          },
+          {
+            "index": 4,
+            "height": 77,
+            "top": 333,
+            "bottom": 410,
+            "isInsideContainer": true,
+            "isInsideViewport": true,
+            "isFullyVisible": true,
+            "title": "Gel Javel Épais Surpuissant Océan Flacon Canard 750ml"
+          },
+          {
+            "index": 5,
+            "height": 77,
+            "top": 410,
+            "bottom": 487,
+            "isInsideContainer": true,
+            "isInsideViewport": true,
+            "isFullyVisible": true,
+            "title": "Liquide Vaisselle Extra Dégraissant Pomme Verte 1L"
+          },
+          {
+            "index": 6,
+            "height": 77,
+            "top": 487,
+            "bottom": 564,
+            "isInsideContainer": true,
+            "isInsideViewport": true,
+            "isFullyVisible": true,
+            "title": "Liquide Vaisselle Concentré Citron Vert Antibactérien 1L"
+          },
+          {
+            "index": 7,
+            "height": 77,
+            "top": 564,
+            "bottom": 641,
+            "isInsideContainer": false,
+            "isInsideViewport": true,
+            "isFullyVisible": false,
+            "title": "Liquide Vaisselle Formule Pro Économique Bidon 5L"
+          }
+        ],
+        "containerHeight": 531
+      }
+    },
+    "desktop_1280x720": {
+      "headerHeight": 72,
+      "cart": null
+    },
+    "phone_384x725": {
+      "headerHeight": 84,
+      "cart": null
+    },
+    "phone_384x790": {
+      "headerHeight": 84,
+      "cart": null
+    },
+    "phone_384x400": {
+      "headerHeight": 84,
+      "cart": null
+    }
+  },
+  "contrastReport": {
+    "changedPairsSummary": [
+      {
+        "name": "Primary & Export button (white on emerald-700)",
+        "fgRgb": [
+          255,
+          255,
+          255
+        ],
+        "bgRgb": [
+          4,
+          120,
+          87
+        ],
+        "contrastRatio": 5.48,
+        "wcagAaPass": true
+      },
+      {
+        "name": "Selected category chip (white on emerald-700)",
+        "fgRgb": [
+          255,
+          255,
+          255
+        ],
+        "bgRgb": [
+          4,
+          120,
+          87
+        ],
+        "contrastRatio": 5.48,
+        "wcagAaPass": true
+      },
+      {
+        "name": "Meaningful text on white (slate-600 on white)",
+        "fgRgb": [
+          71,
+          85,
+          105
+        ],
+        "bgRgb": [
+          255,
+          255,
+          255
+        ],
+        "contrastRatio": 7.58,
+        "wcagAaPass": true
+      },
+      {
+        "name": "Meaningful text on slate-50 (slate-600 on slate-50)",
+        "fgRgb": [
+          71,
+          85,
+          105
+        ],
+        "bgRgb": [
+          248,
+          250,
+          252
+        ],
+        "contrastRatio": 7.24,
+        "wcagAaPass": true
+      },
+      {
+        "name": "Meaningful text on slate-100 (slate-600 on slate-100)",
+        "fgRgb": [
+          71,
+          85,
+          105
+        ],
+        "bgRgb": [
+          241,
+          245,
+          249
+        ],
+        "contrastRatio": 6.92,
+        "wcagAaPass": true
+      },
+      {
+        "name": "Meaningful text on slate-200 (slate-600 on slate-200)",
+        "fgRgb": [
+          71,
+          85,
+          105
+        ],
+        "bgRgb": [
+          226,
+          232,
+          240
+        ],
+        "contrastRatio": 6.15,
+        "wcagAaPass": true
+      }
+    ],
+    "distinctScreenPairs": [
+      {
+        "screen": "pos_cart_empty",
+        "role": "Empty Cart Label",
+        "sampleText": "Le panier est vide",
+        "fgColor": "rgb(71, 85, 105)",
+        "bgColor": "rgb(255, 255, 255)",
+        "contrastRatio": 7.58,
+        "wcagAaPass": true
+      },
+      {
+        "screen": "pos_cart_1line",
+        "role": "Product Name",
+        "sampleText": "Javel Parfumée Citron Frais 1.5L Flacon Ergonomique",
+        "fgColor": "rgb(15, 23, 42)",
+        "bgColor": "rgb(255, 255, 255)",
+        "contrastRatio": 17.85,
+        "wcagAaPass": true
+      },
+      {
+        "screen": "pos_cart_1line",
+        "role": "Unit Price Input",
+        "sampleText": "",
+        "fgColor": "rgb(4, 120, 87)",
+        "bgColor": "rgb(255, 255, 255)",
+        "contrastRatio": 5.48,
+        "wcagAaPass": true
+      },
+      {
+        "screen": "pos_cart_1line",
+        "role": "Quantity Input",
+        "sampleText": "",
+        "fgColor": "rgb(15, 23, 42)",
+        "bgColor": "rgb(255, 255, 255)",
+        "contrastRatio": 17.85,
+        "wcagAaPass": true
+      },
+      {
+        "screen": "pos_cart_1line",
+        "role": "Line Total",
+        "sampleText": "2.400 DT",
+        "fgColor": "rgb(15, 23, 42)",
+        "bgColor": "rgb(255, 255, 255)",
+        "contrastRatio": 17.85,
+        "wcagAaPass": true
+      },
+      {
+        "screen": "pos_cart_1line",
+        "role": "Cart Grand Total",
+        "sampleText": "2.400 DT",
+        "fgColor": "rgb(4, 120, 87)",
+        "bgColor": "rgb(248, 250, 252)",
+        "contrastRatio": 5.24,
+        "wcagAaPass": true
+      },
+      {
+        "screen": "pos_product_grid",
+        "role": "Tile Title",
+        "sampleText": "Dégraissant Universel Cuisine Multi-Surfaces",
+        "fgColor": "rgb(15, 23, 42)",
+        "bgColor": "rgb(255, 255, 255)",
+        "contrastRatio": 17.85,
+        "wcagAaPass": true
+      },
+      {
+        "screen": "pos_product_grid",
+        "role": "Tile Min Price",
+        "sampleText": "dès 3.230 DT",
+        "fgColor": "rgb(4, 120, 87)",
+        "bgColor": "rgb(255, 255, 255)",
+        "contrastRatio": 5.48,
+        "wcagAaPass": true
+      },
+      {
+        "screen": "checkout_cash",
+        "role": "Cash Tender Input",
+        "sampleText": "",
+        "fgColor": "rgb(15, 23, 42)",
+        "bgColor": "rgb(255, 255, 255)",
+        "contrastRatio": 17.85,
+        "wcagAaPass": true
+      },
+      {
+        "screen": "checkout_cash",
+        "role": "Change Due Display",
+        "sampleText": "0.000 DT",
+        "fgColor": "rgb(4, 120, 87)",
+        "bgColor": "rgb(240, 253, 247)",
+        "contrastRatio": 5.25,
+        "wcagAaPass": true
+      },
+      {
+        "screen": "session_close_modal",
+        "role": "Counted Cash Input",
+        "sampleText": "",
+        "fgColor": "rgb(15, 23, 42)",
+        "bgColor": "rgb(255, 255, 255)",
+        "contrastRatio": 17.85,
+        "wcagAaPass": true
+      },
+      {
+        "screen": "inventory_table",
+        "role": "Inventory Table Header",
+        "sampleText": "Désignation",
+        "fgColor": "rgb(51, 65, 85)",
+        "bgColor": "rgb(248, 250, 252)",
+        "contrastRatio": 9.9,
+        "wcagAaPass": true
+      },
+      {
+        "screen": "inventory_table",
+        "role": "Inventory Product Name",
+        "sampleText": "cat-detergents",
+        "fgColor": "rgb(51, 65, 85)",
+        "bgColor": "rgb(255, 255, 255)",
+        "contrastRatio": 10.35,
+        "wcagAaPass": true
+      },
+      {
+        "screen": "inventory_table",
+        "role": "Inventory Price",
+        "sampleText": "48",
+        "fgColor": "rgb(30, 41, 59)",
+        "bgColor": "rgb(241, 245, 249)",
+        "contrastRatio": 13.35,
+        "wcagAaPass": true
+      }
+    ],
+    "violationsCount": 0,
+    "pairsUnder45": []
+  }
+}

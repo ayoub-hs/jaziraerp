@@ -194,7 +194,7 @@ export const ReportsTab: React.FC = () => {
         <button
           type="button"
           onClick={handleExportCsv}
-          className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl text-xs flex items-center gap-1.5 shadow-sm transition-colors shrink-0"
+          className="px-4 py-2 bg-emerald-700 hover:bg-emerald-800 text-white font-bold rounded-xl text-xs flex items-center gap-1.5 shadow-sm transition-colors shrink-0"
         >
           <Download className="w-4 h-4" />
           <span>Exporter CSV</span>
@@ -271,7 +271,7 @@ export const ReportsTab: React.FC = () => {
               onChange={e => setStartDate(e.target.value)}
               className="px-2.5 py-1.5 border border-slate-300 rounded-lg text-xs font-semibold outline-none focus:ring-2 focus:ring-blue-500 bg-slate-50/50"
             />
-            <span className="text-slate-400 font-bold">au</span>
+            <span className="text-slate-600 font-bold">au</span>
             <input
               type="date"
               value={endDate}
@@ -467,7 +467,7 @@ export const ReportsTab: React.FC = () => {
                   ))}
                 {(!salesByCustomerData?.customer_sales || salesByCustomerData.customer_sales.length === 0) && (
                   <tr>
-                    <td colSpan={11} className="p-8 text-center text-slate-400">
+                    <td colSpan={11} className="p-8 text-center text-slate-600">
                       Aucune vente trouvée pour la période sélectionnée.
                     </td>
                   </tr>
@@ -516,7 +516,7 @@ export const ReportsTab: React.FC = () => {
                   ))}
                 {(!salesByRegisterData?.register_sales || salesByRegisterData.register_sales.length === 0) && (
                   <tr>
-                    <td colSpan={11} className="p-8 text-center text-slate-400">
+                    <td colSpan={11} className="p-8 text-center text-slate-600">
                       Aucune vente de caisse trouvée pour la période sélectionnée.
                     </td>
                   </tr>
@@ -555,7 +555,7 @@ export const ReportsTab: React.FC = () => {
                   ))}
                 {(!debtPaymentsData?.payments || debtPaymentsData.payments.length === 0) && (
                   <tr>
-                    <td colSpan={6} className="p-8 text-center text-slate-400">
+                    <td colSpan={6} className="p-8 text-center text-slate-600">
                       Aucun règlement de créance trouvé sur cette période.
                     </td>
                   </tr>
@@ -617,14 +617,14 @@ export const ReportsTab: React.FC = () => {
                       <td className="py-2 px-3 text-center font-mono font-bold text-slate-800 text-pos-body">{m.stock_quantity} {m.unit}</td>
                       <td className="py-2 px-3 text-right font-mono text-pos-body tabular-nums">{formatMoney(m.unit_cost)}</td>
                       <td className="py-2 px-3 text-right font-mono font-bold text-emerald-800 text-pos-body tabular-nums">{formatMoney(m.line_cost_valuation)}</td>
-                      <td className="py-2 px-3 text-right font-mono text-slate-400">—</td>
-                      <td className="py-2 px-3 text-right font-mono text-slate-400">—</td>
+                      <td className="py-2 px-3 text-right font-mono text-slate-600">—</td>
+                      <td className="py-2 px-3 text-right font-mono text-slate-600">—</td>
                     </tr>
                   ))}
 
                 {(!inventoryValuationData?.products || (inventoryValuationData.products.length === 0 && inventoryValuationData.materials?.length === 0)) && (
                   <tr>
-                    <td colSpan={8} className="p-8 text-center text-slate-400">
+                    <td colSpan={8} className="p-8 text-center text-slate-600">
                       Aucun élément de stock trouvé.
                     </td>
                   </tr>

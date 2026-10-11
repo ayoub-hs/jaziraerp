@@ -662,7 +662,7 @@ export const MobileRegister: React.FC<MobileRegisterProps> = ({
           className={`fixed top-14 inset-x-3 z-50 flex items-center justify-between p-3.5 rounded-2xl shadow-2xl border text-xs font-bold animate-in fade-in slide-in-from-top-3 duration-200 ${
             scanAlert.type === 'error'
               ? 'bg-rose-600 text-white border-rose-400'
-              : 'bg-emerald-600 text-white border-emerald-400'
+              : 'bg-emerald-700 text-white border-emerald-500'
           }`}
         >
           <div className="flex items-center gap-2.5">
@@ -768,7 +768,7 @@ export const MobileRegister: React.FC<MobileRegisterProps> = ({
                   onClick={() => setSelectedCategory(cat)}
                   className={`px-3 py-1 rounded-lg font-semibold whitespace-nowrap text-xs transition-colors ${
                     selectedCategory === cat
-                      ? 'bg-emerald-600 text-white shadow-sm'
+                      ? 'bg-emerald-700 text-white shadow-sm'
                       : 'bg-slate-100 text-slate-700'
                   }`}
                 >
@@ -824,7 +824,7 @@ export const MobileRegister: React.FC<MobileRegisterProps> = ({
             ))}
 
             {familyGroups.length === 0 && (
-              <div className="col-span-full py-16 text-center text-slate-400 text-xs">
+              <div className="col-span-full py-16 text-center text-slate-600 text-xs">
                 Aucun produit trouvé.
               </div>
             )}
@@ -838,7 +838,7 @@ export const MobileRegister: React.FC<MobileRegisterProps> = ({
             }}
             className={`fixed ${
               cart.length > 0 ? 'bottom-32' : 'bottom-16'
-            } right-4 z-20 bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white p-3.5 rounded-full shadow-2xl flex items-center justify-center transition-all border-2 border-white`}
+            } right-4 z-20 bg-emerald-700 hover:bg-emerald-800 active:scale-95 text-white p-3.5 rounded-full shadow-2xl flex items-center justify-center transition-all border-2 border-white`}
             title="Scanner code-barres caméra"
           >
             <Camera className="w-5 h-5" />
@@ -851,7 +851,7 @@ export const MobileRegister: React.FC<MobileRegisterProps> = ({
               className="absolute bottom-16 inset-x-3 bg-slate-900 text-white p-3.5 rounded-2xl shadow-xl flex items-center justify-between cursor-pointer active:scale-[0.99] transition-transform z-20"
             >
               <div className="flex items-center gap-2.5">
-                <div className="w-8 h-8 rounded-xl bg-emerald-600 flex items-center justify-center font-bold text-xs">
+                <div className="w-8 h-8 rounded-xl bg-emerald-700 flex items-center justify-center font-bold text-xs">
                   {totals.totalPieces}
                 </div>
                 <div>
@@ -925,7 +925,7 @@ export const MobileRegister: React.FC<MobileRegisterProps> = ({
             <div className="bg-white p-5 rounded-2xl shadow-md border border-emerald-500 space-y-4">
               <div className="flex justify-between items-start">
                 <div>
-                  <span className="text-xs font-bold text-slate-400 uppercase">
+                  <span className="text-xs font-bold text-slate-600 uppercase">
                     {lookupProduct.category}
                   </span>
                   <h3 className="text-lg font-black text-slate-900 mt-0.5">
@@ -976,7 +976,7 @@ export const MobileRegister: React.FC<MobileRegisterProps> = ({
                   setActiveTab('REGISTER');
                   setIsCartDrawerOpen(true);
                 }}
-                className="w-full py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl flex items-center justify-center gap-2 shadow-sm transition-colors text-sm"
+                className="w-full py-3 bg-emerald-700 hover:bg-emerald-800 text-white font-bold rounded-xl flex items-center justify-center gap-2 shadow-sm transition-colors text-sm"
               >
                 <Plus className="w-4 h-4" />
                 Ajouter au Panier & Voir Caisse
@@ -991,7 +991,7 @@ export const MobileRegister: React.FC<MobileRegisterProps> = ({
               </p>
             </div>
           ) : (
-            <div className="py-16 text-center text-slate-400 text-xs">
+            <div className="py-16 text-center text-slate-600 text-xs">
               Scan barcode to view product details instantly without touching cart.
             </div>
           )}
@@ -1089,7 +1089,7 @@ export const MobileRegister: React.FC<MobileRegisterProps> = ({
               <button
                 onClick={handleSaveQuickEdit}
                 disabled={isSubmittingQuickEdit}
-                className="w-full py-3 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white font-bold rounded-xl shadow text-sm transition-colors"
+                className="w-full py-3 bg-emerald-700 hover:bg-emerald-800 disabled:opacity-50 text-white font-bold rounded-xl shadow text-sm transition-colors"
               >
                 {isSubmittingQuickEdit ? 'Saving...' : 'Save & Update'}
               </button>
@@ -1106,7 +1106,7 @@ export const MobileRegister: React.FC<MobileRegisterProps> = ({
               <h2 className="text-sm font-bold text-slate-900">Customers & Debt Ledger</h2>
               <button
                 onClick={() => setIsCreateCustomerOpen(true)}
-                className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold flex items-center gap-1 shadow-sm transition-colors"
+                className="px-3 py-1.5 bg-emerald-700 hover:bg-emerald-800 text-white rounded-xl text-xs font-bold flex items-center gap-1 shadow-sm transition-colors"
               >
                 <UserPlus className="w-3.5 h-3.5" />
                 <span>+ Client</span>
@@ -1142,8 +1142,8 @@ export const MobileRegister: React.FC<MobileRegisterProps> = ({
                         </span>
                       </div>
                       <div className="text-right">
-                        <span className="text-xs text-slate-400 block font-semibold">Total Dû:</span>
-                        <span className={`text-base font-black font-mono ${hasDebt ? 'text-amber-700' : 'text-slate-400'}`}>
+                        <span className="text-xs text-slate-600 block font-semibold">Total Dû:</span>
+                        <span className={`text-base font-black font-mono ${hasDebt ? 'text-amber-700' : 'text-slate-600'}`}>
                           {formatMoney(customer.total_debt)}
                         </span>
                       </div>
@@ -1166,7 +1166,7 @@ export const MobileRegister: React.FC<MobileRegisterProps> = ({
                         <button
                           disabled={isSubmittingPayment}
                           onClick={() => handleRecordCustomerPayment(customer)}
-                          className="bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white font-bold px-3 py-1.5 rounded-lg text-xs shrink-0 transition-colors"
+                          className="bg-emerald-700 hover:bg-emerald-800 disabled:opacity-50 text-white font-bold px-3 py-1.5 rounded-lg text-xs shrink-0 transition-colors"
                         >
                           {isSubmittingPayment && selectedCustDetails?.id === customer.id ? 'Paiement...' : 'Payer (FIFO)'}
                         </button>
@@ -1203,7 +1203,7 @@ export const MobileRegister: React.FC<MobileRegisterProps> = ({
             <div className="px-4 py-2 bg-slate-900 text-white flex items-center justify-between shrink-0">
               <div>
                 <h3 className="font-bold text-sm">Panier d'achat ({totals.itemCount} articles)</h3>
-                <p className="text-xs text-slate-400">
+                <p className="text-xs text-slate-600">
                   {selectedCustomer ? selectedCustomer.name : 'Client Passager'}
                 </p>
               </div>
@@ -1342,7 +1342,7 @@ export const MobileRegister: React.FC<MobileRegisterProps> = ({
                     {/* Unit price & line total (both 16px mono) */}
                     <div className="flex flex-col items-end min-w-[65px] shrink-0 leading-tight">
                       {(item.discount_amount || 0) > 0 && (
-                        <span className="text-pos-badge line-through text-slate-400 font-mono">
+                        <span className="text-pos-badge line-through text-slate-600 font-mono">
                           {formatMoney(item.unit_price * item.quantity)}
                         </span>
                       )}
@@ -1492,12 +1492,12 @@ export const MobileRegister: React.FC<MobileRegisterProps> = ({
                 <div className="flex items-center gap-1.5 flex-wrap">
                   <span className="font-semibold text-slate-700">Articles ({totals.itemCount} / {totals.totalPieces} pcs):</span>
                   <span className="font-mono">{formatMoney(totals.subtotalHT)} HT</span>
-                  <span className="text-slate-400">|</span>
+                  <span className="text-slate-600">|</span>
                   <span>TVA:</span>
                   <span className="font-mono">{formatMoney(totals.tvaAmount)}</span>
                   {totals.totalDiscount > 0 && (
                     <>
-                      <span className="text-slate-400">|</span>
+                      <span className="text-slate-600">|</span>
                       <span className="text-rose-600 font-semibold font-mono">-{formatMoney(totals.totalDiscount)}</span>
                     </>
                   )}
@@ -1650,7 +1650,7 @@ export const MobileRegister: React.FC<MobileRegisterProps> = ({
                 type="button"
                 disabled={isSubmittingContainer}
                 onClick={handleContainerTransaction}
-                className="flex-1 py-2 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 font-bold rounded-xl text-xs text-white transition-colors"
+                className="flex-1 py-2 bg-emerald-700 hover:bg-emerald-800 disabled:opacity-50 font-bold rounded-xl text-xs text-white transition-colors"
               >
                 {isSubmittingContainer ? 'Enregistrement...' : 'Enregistrer'}
               </button>

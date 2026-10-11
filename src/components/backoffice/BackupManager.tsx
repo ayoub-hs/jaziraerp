@@ -232,9 +232,9 @@ export const BackupManager: React.FC = () => {
       {/* Snapshot List Table */}
       <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden flex flex-col max-h-[calc(100vh-280px)]">
         {loading && backups.length === 0 ? (
-          <div className="p-8 text-center text-slate-400 text-xs">Chargement des instantanés de la base de données...</div>
+          <div className="p-8 text-center text-slate-600 text-xs">Chargement des instantanés de la base de données...</div>
         ) : backups.length === 0 ? (
-          <div className="p-8 text-center text-slate-400 text-xs">
+          <div className="p-8 text-center text-slate-600 text-xs">
             Aucune sauvegarde trouvée. Cliquez sur « Créer une Sauvegarde Maintenant » pour générer un instantané immédiat.
           </div>
         ) : (

@@ -837,7 +837,7 @@ export const Backoffice: React.FC<BackofficeProps> = ({
       {/* Sidebar Navigation */}
       <aside className="w-full md:w-56 bg-slate-900 text-slate-300 flex md:flex-col shrink-0 overflow-x-auto border-r border-slate-800">
         <div className="p-3 border-b border-slate-800 hidden md:block">
-          <span className="text-pos-badge font-bold text-slate-400 uppercase tracking-wider">
+          <span className="text-pos-badge font-bold text-slate-600 uppercase tracking-wider">
             Administration
           </span>
         </div>
@@ -1027,7 +1027,7 @@ export const Backoffice: React.FC<BackofficeProps> = ({
                   <button
                     type="button"
                     onClick={() => setCatalogSearch('')}
-                    className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 p-0.5"
+                    className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-600 hover:text-slate-600 p-0.5"
                   >
                     <X className="w-3.5 h-3.5" />
                   </button>
@@ -1184,13 +1184,13 @@ export const Backoffice: React.FC<BackofficeProps> = ({
                   ))}
                   {products.length === 0 ? (
                     <tr>
-                      <td colSpan={9} className="p-8 text-center text-slate-400">
+                      <td colSpan={9} className="p-8 text-center text-slate-600">
                         Aucun produit dans le catalogue. Cliquez sur « + Nouvel Article » ci-dessus pour en créer un.
                       </td>
                     </tr>
                   ) : filteredProducts.length === 0 ? (
                     <tr>
-                      <td colSpan={9} className="p-8 text-center text-slate-400">
+                      <td colSpan={9} className="p-8 text-center text-slate-600">
                         Aucun résultat pour cette recherche
                       </td>
                     </tr>
@@ -1264,7 +1264,7 @@ export const Backoffice: React.FC<BackofficeProps> = ({
                   <button
                     type="button"
                     onClick={() => setMaterialsSearch('')}
-                    className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 p-0.5"
+                    className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-600 hover:text-slate-600 p-0.5"
                   >
                     <X className="w-3.5 h-3.5" />
                   </button>
@@ -1353,13 +1353,13 @@ export const Backoffice: React.FC<BackofficeProps> = ({
                   })}
                   {materials.length === 0 ? (
                     <tr>
-                      <td colSpan={7} className="p-8 text-center text-slate-400">
+                      <td colSpan={7} className="p-8 text-center text-slate-600">
                         Aucune matière première enregistrée. Cliquez sur « + Nouvelle Matière » pour en ajouter une.
                       </td>
                     </tr>
                   ) : filteredMaterials.length === 0 ? (
                     <tr>
-                      <td colSpan={7} className="p-8 text-center text-slate-400">
+                      <td colSpan={7} className="p-8 text-center text-slate-600">
                         Aucun résultat pour cette recherche
                       </td>
                     </tr>
@@ -1422,7 +1422,7 @@ export const Backoffice: React.FC<BackofficeProps> = ({
                     ))}
                     {inventoryAdjustments.length === 0 && (
                       <tr>
-                        <td colSpan={6} className="p-6 text-center text-slate-400">
+                        <td colSpan={6} className="p-6 text-center text-slate-600">
                           Aucun ajustement de stock enregistré.
                         </td>
                       </tr>
@@ -1626,7 +1626,7 @@ export const Backoffice: React.FC<BackofficeProps> = ({
                     )}
                   </div>
                 )) : (
-                  <div className="text-center text-slate-400 text-xs py-12">
+                  <div className="text-center text-slate-600 text-xs py-12">
                     Remplissez le formulaire à gauche pour lancer une production.
                   </div>
                 )}
@@ -1663,7 +1663,7 @@ export const Backoffice: React.FC<BackofficeProps> = ({
                   </div>
                 ))}
                 {formulations.length === 0 && (
-                  <div className="col-span-3 text-center py-6 text-slate-400 text-xs">
+                  <div className="col-span-3 text-center py-6 text-slate-600 text-xs">
                     Aucune recette configurée. Cliquez sur « + Nouvelle Recette » pour en créer une.
                   </div>
                 )}
@@ -1714,7 +1714,7 @@ export const Backoffice: React.FC<BackofficeProps> = ({
                     ))}
                     {productionBatches.length === 0 && (
                       <tr>
-                        <td colSpan={8} className="p-8 text-center text-slate-400">
+                        <td colSpan={8} className="p-8 text-center text-slate-600">
                           Aucun lot de production enregistré. Lancez un lot via l'assistant ci-dessus.
                         </td>
                       </tr>
@@ -1755,7 +1755,7 @@ export const Backoffice: React.FC<BackofficeProps> = ({
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
               {/* Customer Directory */}
               <div className="lg:col-span-1 bg-white rounded-2xl shadow-sm border border-slate-200 p-3 space-y-2 max-h-96 overflow-y-auto">
-                <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wide px-1">
+                <h3 className="text-xs font-bold text-slate-600 uppercase tracking-wide px-1">
                   Répertoire Clients
                 </h3>
                 <div className="flex items-center gap-2 mb-2">
@@ -1772,7 +1772,7 @@ export const Backoffice: React.FC<BackofficeProps> = ({
                       <button
                         type="button"
                         onClick={() => setCustomersSearch('')}
-                        className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                        className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-600 hover:text-slate-600"
                       >
                         <X className="w-3.5 h-3.5" />
                       </button>
@@ -1824,7 +1824,7 @@ export const Backoffice: React.FC<BackofficeProps> = ({
                             setCustomerToEdit(c);
                             setIsCreateCustomerOpen(true);
                           }}
-                          className="p-1 text-slate-400 hover:text-slate-700 hover:bg-slate-200/60 rounded-lg transition-colors"
+                          className="p-1 text-slate-600 hover:text-slate-700 hover:bg-slate-200/60 rounded-lg transition-colors"
                           title="Modifier le client"
                         >
                           <Edit2 className="w-3.5 h-3.5" />
@@ -1851,7 +1851,7 @@ export const Backoffice: React.FC<BackofficeProps> = ({
                   </div>
                 ))}
                 {filteredCustomers.length === 0 && (
-                  <div className="p-6 text-center text-slate-400 text-xs">
+                  <div className="p-6 text-center text-slate-600 text-xs">
                     Aucun résultat pour cette recherche
                   </div>
                 )}
@@ -1983,7 +1983,7 @@ export const Backoffice: React.FC<BackofficeProps> = ({
                             ))}
                             {customerTickets.length === 0 && (
                               <tr>
-                                <td colSpan={5} className="p-4 text-center text-slate-400">
+                                <td colSpan={5} className="p-4 text-center text-slate-600">
                                   Aucun billet de dette ouvert pour ce client.
                                 </td>
                               </tr>
@@ -1994,7 +1994,7 @@ export const Backoffice: React.FC<BackofficeProps> = ({
                     </div>
                   </>
                 ) : (
-                  <div className="py-24 text-center text-slate-400 text-xs">
+                  <div className="py-24 text-center text-slate-600 text-xs">
                     Sélectionnez un client à gauche pour consulter ses billets et enregistrer des règlements.
                   </div>
                 )}
@@ -2041,7 +2041,7 @@ export const Backoffice: React.FC<BackofficeProps> = ({
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
               {/* Supplier Directory */}
               <div className="lg:col-span-1 bg-white rounded-2xl shadow-sm border border-slate-200 p-3 space-y-2 max-h-96 overflow-y-auto">
-                <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wide px-1">
+                <h3 className="text-xs font-bold text-slate-600 uppercase tracking-wide px-1">
                   Répertoire Fournisseurs
                 </h3>
                 <div className="relative mb-2">
@@ -2057,7 +2057,7 @@ export const Backoffice: React.FC<BackofficeProps> = ({
                     <button
                       type="button"
                       onClick={() => setSuppliersSearch('')}
-                      className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                      className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-600 hover:text-slate-600"
                     >
                       <X className="w-3 h-3" />
                     </button>
@@ -2090,7 +2090,7 @@ export const Backoffice: React.FC<BackofficeProps> = ({
                             setSupplierToEdit(s);
                             setIsCreateSupplierOpen(true);
                           }}
-                          className="p-1 text-slate-400 hover:text-slate-700 hover:bg-slate-200/60 rounded-lg transition-colors"
+                          className="p-1 text-slate-600 hover:text-slate-700 hover:bg-slate-200/60 rounded-lg transition-colors"
                           title="Modifier le fournisseur"
                         >
                           <Edit2 className="w-3.5 h-3.5" />
@@ -2117,11 +2117,11 @@ export const Backoffice: React.FC<BackofficeProps> = ({
                   </div>
                 ))}
                 {suppliers.length === 0 ? (
-                  <div className="p-4 text-center text-slate-400 text-xs">
+                  <div className="p-4 text-center text-slate-600 text-xs">
                     Aucun fournisseur enregistré. Cliquez sur « + Nouveau Fournisseur » pour en créer un.
                   </div>
                 ) : filteredSuppliers.length === 0 ? (
-                  <div className="p-6 text-center text-slate-400 text-xs">
+                  <div className="p-6 text-center text-slate-600 text-xs">
                     Aucun résultat pour cette recherche
                   </div>
                 ) : null}
@@ -2206,7 +2206,7 @@ export const Backoffice: React.FC<BackofficeProps> = ({
                             ))}
                             {supplierTickets.length === 0 && (
                               <tr>
-                                <td colSpan={6} className="p-4 text-center text-slate-400">
+                                <td colSpan={6} className="p-4 text-center text-slate-600">
                                   Aucun billet de dette ouvert pour ce fournisseur.
                                 </td>
                               </tr>
@@ -2217,7 +2217,7 @@ export const Backoffice: React.FC<BackofficeProps> = ({
                     </div>
                   </>
                 ) : (
-                  <div className="py-24 text-center text-slate-400 text-xs">
+                  <div className="py-24 text-center text-slate-600 text-xs">
                     Sélectionnez un fournisseur à gauche pour consulter son grand livre et enregistrer des paiements.
                   </div>
                 )}
@@ -2246,7 +2246,7 @@ export const Backoffice: React.FC<BackofficeProps> = ({
                     <button
                       type="button"
                       onClick={() => setPurchasesSearch('')}
-                      className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                      className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-600 hover:text-slate-600"
                     >
                       <X className="w-3 h-3" />
                     </button>
@@ -2293,13 +2293,13 @@ export const Backoffice: React.FC<BackofficeProps> = ({
                     ))}
                     {purchasesHistory.length === 0 ? (
                       <tr>
-                        <td colSpan={8} className="p-8 text-center text-slate-400">
+                        <td colSpan={8} className="p-8 text-center text-slate-600">
                           Aucun achat enregistré. Cliquez sur « + Nouvel Achat » ci-dessus pour saisir une facture.
                         </td>
                       </tr>
                     ) : filteredPurchases.length === 0 ? (
                       <tr>
-                        <td colSpan={8} className="p-8 text-center text-slate-400">
+                        <td colSpan={8} className="p-8 text-center text-slate-600">
                           Aucun résultat pour cette recherche
                         </td>
                       </tr>
@@ -2382,7 +2382,7 @@ export const Backoffice: React.FC<BackofficeProps> = ({
                             setContainerTypeToEdit(ct);
                             setIsCreateContainerOpen(true);
                           }}
-                          className="p-1 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-lg transition-colors"
+                          className="p-1 text-slate-600 hover:text-slate-700 hover:bg-slate-100 rounded-lg transition-colors"
                           title="Modifier le type de contenant"
                         >
                           <Edit2 className="w-3.5 h-3.5" />
@@ -2432,7 +2432,7 @@ export const Backoffice: React.FC<BackofficeProps> = ({
                 </div>
               ))}
               {containerTypes.length === 0 && (
-                <div className="sm:col-span-3 p-8 text-center text-slate-400 text-xs bg-white rounded-2xl border border-slate-200">
+                <div className="sm:col-span-3 p-8 text-center text-slate-600 text-xs bg-white rounded-2xl border border-slate-200">
                   Aucun type de contenant défini. Cliquez sur « + Nouveau Type de Contenant » ci-dessus pour en ajouter un.
                 </div>
               )}
@@ -2449,7 +2449,7 @@ export const Backoffice: React.FC<BackofficeProps> = ({
                 </div>
               </div>
               {customerContainerLoans.length === 0 ? (
-                <div className="p-6 text-center text-xs text-slate-400">
+                <div className="p-6 text-center text-xs text-slate-600">
                   Aucun prêt de contenant en cours. Tous les contenants sont restitués.
                 </div>
               ) : (
@@ -2502,7 +2502,7 @@ export const Backoffice: React.FC<BackofficeProps> = ({
                 </div>
               </div>
               {containerTransactions.length === 0 ? (
-                <div className="p-6 text-center text-xs text-slate-400">
+                <div className="p-6 text-center text-xs text-slate-600">
                   Aucun mouvement de consigne enregistré.
                 </div>
               ) : (
@@ -2631,7 +2631,7 @@ export const Backoffice: React.FC<BackofficeProps> = ({
                   ))}
                   {sessions.length === 0 && (
                     <tr>
-                      <td colSpan={11} className="p-8 text-center text-slate-400">
+                      <td colSpan={11} className="p-8 text-center text-slate-600">
                         Aucune session de caisse enregistrée pour le moment.
                       </td>
                     </tr>
@@ -2673,7 +2673,7 @@ export const Backoffice: React.FC<BackofficeProps> = ({
 
                   <div className="p-3 sm:p-5 overflow-y-auto min-h-0 flex-1 space-y-4">
                     {loadingSessionDetail ? (
-                      <div className="text-center py-12 text-slate-400 text-xs">Chargement des données de session...</div>
+                      <div className="text-center py-12 text-slate-600 text-xs">Chargement des données de session...</div>
                     ) : selectedSessionDetail ? (
                       <>
                         {/* Live Cash Breakdown Cards */}
@@ -2744,7 +2744,7 @@ export const Backoffice: React.FC<BackofficeProps> = ({
                                 ))}
                                 {(!selectedSessionDetail.sales || selectedSessionDetail.sales.length === 0) && (
                                   <tr>
-                                    <td colSpan={6} className="p-4 text-center text-slate-400 text-xs">
+                                    <td colSpan={6} className="p-4 text-center text-slate-600 text-xs">
                                       Aucune vente enregistrée durant cette session.
                                     </td>
                                   </tr>
@@ -2880,7 +2880,7 @@ export const Backoffice: React.FC<BackofficeProps> = ({
                           ))}
                           {counters.length === 0 && (
                             <tr>
-                              <td colSpan={3} className="p-4 text-center text-slate-400">
+                              <td colSpan={3} className="p-4 text-center text-slate-600">
                                 Aucune caisse configurée.
                               </td>
                             </tr>
@@ -3053,7 +3053,7 @@ export const Backoffice: React.FC<BackofficeProps> = ({
                     ))}
                     {expensesHistory.length === 0 && (
                       <tr>
-                        <td colSpan={6} className="p-8 text-center text-slate-400">
+                        <td colSpan={6} className="p-8 text-center text-slate-600">
                           Aucune dépense générale enregistrée pour le moment. Cliquez sur « + Nouvelle Dépense » pour enregistrer le loyer, l'électricité ou les fournitures.
                         </td>
                       </tr>

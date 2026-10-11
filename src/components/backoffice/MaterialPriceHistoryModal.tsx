@@ -94,11 +94,11 @@ export const MaterialPriceHistoryModal: React.FC<MaterialPriceHistoryModalProps>
           )}
 
           {loading ? (
-            <div className="py-12 text-center text-slate-400 text-xs">
+            <div className="py-12 text-center text-slate-600 text-xs">
               Chargement de l'historique des prix...
             </div>
           ) : history.length === 0 ? (
-            <div className="py-12 text-center text-slate-400 text-xs">
+            <div className="py-12 text-center text-slate-600 text-xs">
               Aucun historique de prix trouvé pour cette matière.
             </div>
           ) : (
@@ -141,7 +141,7 @@ export const MaterialPriceHistoryModal: React.FC<MaterialPriceHistoryModalProps>
                               <TrendingDown className="w-3 h-3" /> {formatMoney(diff)}
                             </span>
                           ) : (
-                            <span className="text-pos-badge text-slate-400 font-mono">—</span>
+                            <span className="text-pos-badge text-slate-600 font-mono">—</span>
                           )}
                         </td>
                       </tr>

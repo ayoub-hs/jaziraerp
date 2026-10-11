@@ -269,7 +269,7 @@ export const CustomerStatementModal: React.FC<CustomerStatementModalProps> = ({
                   {customer.type}
                 </span>
               </div>
-              <p className="text-xs text-slate-400 mt-0.5">
+              <p className="text-xs text-slate-600 mt-0.5">
                 {customer.name} {customer.phone ? `• ${customer.phone}` : ''}
               </p>
             </div>
@@ -544,7 +544,7 @@ export const CustomerStatementModal: React.FC<CustomerStatementModalProps> = ({
               <span className="text-xs font-bold text-slate-600 uppercase">
                 Cachet et Signature Société
               </span>
-              <span className="text-xs text-slate-400 italic">Pour Al Jazira SHSP</span>
+              <span className="text-xs text-slate-600 italic">Pour Al Jazira SHSP</span>
             </div>
           </div>
         </div>

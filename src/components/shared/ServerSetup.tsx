@@ -68,7 +68,7 @@ export const ServerSetup: React.FC<ServerSetupProps> = ({ onSaved }) => {
         <button
           onClick={handleSave}
           disabled={testing}
-          className="w-full py-3 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white font-bold rounded-xl shadow text-sm transition-colors flex items-center justify-center gap-2"
+          className="w-full py-3 bg-emerald-700 hover:bg-emerald-800 disabled:opacity-50 text-white font-bold rounded-xl shadow text-sm transition-colors flex items-center justify-center gap-2"
         >
           {testing ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />}
           {testing ? 'Test de connexion...' : 'Tester & Enregistrer'}

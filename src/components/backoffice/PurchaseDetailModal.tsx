@@ -124,7 +124,7 @@ export const PurchaseDetailModal: React.FC<PurchaseDetailModalProps> = ({
                   </span>
                 )}
               </div>
-              <p className="text-xs text-slate-400 mt-0.5">
+              <p className="text-xs text-slate-600 mt-0.5">
                 {purchase?.supplier_name || 'Chargement fournisseur...'}
               </p>
             </div>
@@ -166,7 +166,7 @@ export const PurchaseDetailModal: React.FC<PurchaseDetailModalProps> = ({
               <p className="text-sm font-semibold text-slate-500">Chargement des détails de l'achat...</p>
             </div>
           ) : !purchase ? (
-            <div className="py-16 text-center text-slate-400">
+            <div className="py-16 text-center text-slate-600">
               <p className="text-sm font-semibold">Aucun détail disponible.</p>
             </div>
           ) : (

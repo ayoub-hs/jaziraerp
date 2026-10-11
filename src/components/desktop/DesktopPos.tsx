@@ -545,7 +545,7 @@ export const DesktopPos: React.FC<DesktopPosProps> = ({
           className={`fixed top-14 left-1/2 -translate-x-1/2 z-50 flex items-center gap-3 px-5 py-3 rounded-2xl shadow-2xl border text-xs sm:text-sm font-bold animate-in fade-in slide-in-from-top-3 duration-200 ${
             scanAlert.type === 'error'
               ? 'bg-rose-600 text-white border-rose-400'
-              : 'bg-emerald-600 text-white border-emerald-400'
+              : 'bg-emerald-700 text-white border-emerald-500'
           }`}
         >
           {scanAlert.type === 'error' ? (
@@ -635,7 +635,7 @@ export const DesktopPos: React.FC<DesktopPosProps> = ({
                 onClick={() => setSelectedCategory(cat)}
                 className={`px-3 py-1 rounded-lg font-semibold whitespace-nowrap transition-colors ${
                   selectedCategory === cat
-                    ? 'bg-emerald-600 text-white shadow-sm'
+                    ? 'bg-emerald-700 text-white shadow-sm'
                     : 'bg-white border border-slate-200 text-slate-600 hover:bg-slate-100'
                 }`}
               >
@@ -697,7 +697,7 @@ export const DesktopPos: React.FC<DesktopPosProps> = ({
           })}
 
           {familyGroups.length === 0 && (
-            <div className="col-span-full py-16 text-center text-slate-400 text-xs">
+            <div className="col-span-full py-16 text-center text-slate-600 text-xs">
               Aucun produit correspondant trouvé.
             </div>
           )}
@@ -765,10 +765,10 @@ export const DesktopPos: React.FC<DesktopPosProps> = ({
                       className="p-2.5 text-xs font-semibold hover:bg-slate-50 cursor-pointer flex items-center justify-between text-slate-600 bg-slate-50/50"
                     >
                       <span>Passager / Vente au détail</span>
-                      <span className="text-xs text-slate-400">Sans compte</span>
+                      <span className="text-xs text-slate-600">Sans compte</span>
                     </div>
                     {filteredCustomers.length === 0 ? (
-                      <div className="p-4 text-xs text-slate-400 text-center">
+                      <div className="p-4 text-xs text-slate-600 text-center">
                         Aucun client trouvé
                       </div>
                     ) : (
@@ -931,7 +931,7 @@ export const DesktopPos: React.FC<DesktopPosProps> = ({
                   <div className="text-right flex items-center gap-1.5">
                     <div className="flex flex-col items-end min-w-[65px]">
                       {(item.discount_amount || 0) > 0 && (
-                        <span className="text-pos-badge line-through text-slate-400 font-mono">
+                        <span className="text-pos-badge line-through text-slate-600 font-mono">
                           {formatMoney(item.unit_price * item.quantity)}
                         </span>
                       )}
@@ -964,7 +964,7 @@ export const DesktopPos: React.FC<DesktopPosProps> = ({
                     className="w-24 px-1.5 py-0.5 text-pos-price font-mono font-bold text-emerald-700 bg-white border border-slate-200 rounded focus:border-emerald-500 focus:outline-none"
                     title="Modifier le prix unitaire"
                   />
-                  <span className="text-pos-badge font-mono text-slate-400">DT</span>
+                  <span className="text-pos-badge font-mono text-slate-600">DT</span>
                   <span
                     className={`text-pos-badge font-bold px-1.5 py-0.5 rounded border ${
                       item.price_overridden
@@ -1099,10 +1099,10 @@ export const DesktopPos: React.FC<DesktopPosProps> = ({
           ))}
 
           {cart.length === 0 && (
-            <div className="h-full flex flex-col items-center justify-center text-slate-400 py-12">
+            <div className="h-full flex flex-col items-center justify-center text-slate-600 py-12">
               <Package className="w-8 h-8 stroke-1 text-slate-300 mb-2" />
               <p className="text-xs font-medium">Le panier est vide</p>
-              <p className="text-xs text-slate-400">Scannez un code-barres ou sélectionnez un article</p>
+              <p className="text-xs text-slate-600">Scannez un code-barres ou sélectionnez un article</p>
             </div>
           )}
         </div>

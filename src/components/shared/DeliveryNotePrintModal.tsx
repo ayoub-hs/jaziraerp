@@ -156,7 +156,7 @@ export const DeliveryNotePrintModal: React.FC<DeliveryNotePrintModalProps> = ({
           {loading ? (
             <div className="py-16 text-center text-sm text-slate-500">Chargement du bon de livraison...</div>
           ) : !sale ? (
-            <div className="py-16 text-center text-sm text-slate-400 italic">
+            <div className="py-16 text-center text-sm text-slate-600 italic">
               Aucun détail de vente à afficher.
             </div>
           ) : (

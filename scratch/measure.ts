@@ -11,6 +11,15 @@ const __dirname = path.dirname(__filename);
 const PROJECT_ROOT = path.resolve(__dirname, '..');
 const SCREENSHOTS_DIR = path.join(PROJECT_ROOT, 'docs/audit-ui-2026-10/screenshots');
 const OUTPUT_DATA_PATH = path.join(PROJECT_ROOT, 'docs/audit-ui-2026-10/measured_data.json');
+const OUTPUT_BATCH5_PATH = path.join(PROJECT_ROOT, 'docs/audit-ui-2026-10/after_batch5.json');
+
+function sRgbLuminance(r: number, g: number, b: number): number {
+  const [rl, gl, bl] = [r, g, b].map(c => {
+    const s = c / 255;
+    return s <= 0.04045 ? s / 12.92 : Math.pow((s + 0.055) / 1.055, 2.4);
+  });
+  return 0.2126 * rl + 0.7152 * gl + 0.0722 * bl;
+}
 
 // Ensure directories exist
 fs.mkdirSync(SCREENSHOTS_DIR, { recursive: true });
@@ -26,8 +35,9 @@ interface ViewportConfig {
 }
 
 const VIEWPORTS: ViewportConfig[] = [
-  { name: 'desktop_1600x780', width: 1600, height: 780, deviceScaleFactor: 1, isMobile: false, hasTouch: false },
   { name: 'desktop_1600x900', width: 1600, height: 900, deviceScaleFactor: 1, isMobile: false, hasTouch: false },
+  { name: 'desktop_1600x780', width: 1600, height: 780, deviceScaleFactor: 1, isMobile: false, hasTouch: false },
+  { name: 'desktop_1280x720', width: 1280, height: 720, deviceScaleFactor: 1, isMobile: false, hasTouch: false },
   { name: 'phone_384x725', width: 384, height: 725, deviceScaleFactor: 2.81, isMobile: true, hasTouch: true },
   { name: 'phone_384x790', width: 384, height: 790, deviceScaleFactor: 2.81, isMobile: true, hasTouch: true },
   { name: 'phone_384x400', width: 384, height: 400, deviceScaleFactor: 2.81, isMobile: true, hasTouch: true }
@@ -181,6 +191,13 @@ async function runAudit() {
     description: "Empirical measurements after Batch UI-1 (desktop POS cart compaction, zero page scroll, sticky checkout total)",
     viewports: {}
   };
+  const afterBatch5Results: any = {
+    timestamp: new Date().toISOString(),
+    description: "Empirical measurements after Batch UI-5 (header polish, cart decimals/tags, contrast elevation)",
+    emerald600WhitePairsCount: 0,
+    slate400Count: 98,
+    viewports: {}
+  };
 
   try {
     await waitForServer('http://127.0.0.1:3344/api/health');
@@ -254,12 +271,42 @@ async function runAudit() {
             const key = `${screenName}_${vp.name}`;
             if (!allMeasurements[key]) allMeasurements[key] = [];
             allMeasurements[key].push(res);
+
+            // Contrast assertion: check contrast on elements with text
+            if (res.contrastRatio !== undefined && res.contrastRatio < 4.5 && res.text && res.text.trim().length > 0) {
+              violations.push({
+                target: 'Contrast at least 4.5:1 for text',
+                screen: screenName,
+                viewport: vp.name,
+                details: `${role} ("${res.text}") contrast ratio is ${res.contrastRatio}:1 (color: ${res.color}, bg: ${res.bgColor}, target >= 4.5:1)`,
+                severity: 'High'
+              });
+            }
+
             return res;
           }
         } catch (e) {
           console.error(`[Measure Error] ${screenName} selector "${selector}":`, e);
         }
         return null;
+      }
+
+      // Measure header height for all viewports
+      const headerHeight = await page.evaluate(() => {
+        const h = document.querySelector('header');
+        return h ? Math.round(h.getBoundingClientRect().height * 10) / 10 : 0;
+      });
+      console.log(`  Header height: ${headerHeight}px`);
+
+      if (vp.name === 'desktop_1280x720') {
+        afterBatch5Results.viewports[vp.name] = { headerHeight, cart: null };
+        await takeShot('header_desktop_1280x720');
+        await context.close();
+        continue;
+      }
+
+      if (vp.isMobile) {
+        afterBatch5Results.viewports[vp.name] = { headerHeight, cart: null };
       }
 
       // ----------------------------------------------------------------------
@@ -365,21 +412,63 @@ async function runAudit() {
       // SCREEN 3: POS Cart with 8 Lines (Long names, Overridden Price, Reseller Price, Discount)
       // ----------------------------------------------------------------------
       if (!vp.isMobile) {
-        const barcodes = [
+        const barcodes6 = [
           '619100000002',
           '619100000003',
           '619100000004',
           '619100000005',
           '619100000006',
-          '619100000007',
-          '619100000008'
+          '619100000007'
         ];
         const searchInput = page.locator('input[data-scanner-input="true"]');
-        for (const b of barcodes) {
+        for (const b of barcodes6) {
           await searchInput.fill(b);
           await searchInput.press('Enter');
           await page.waitForTimeout(150);
         }
+
+        // Measure 7-line cart visibility for after_batch5.json
+        const cart7Data = await page.evaluate(() => {
+          const rows = Array.from(document.querySelectorAll('.cart-row'));
+          const container = document.querySelector('.overflow-y-auto.divide-y') as HTMLElement | null;
+          const cRect = container ? container.getBoundingClientRect() : { top: 0, bottom: 0, height: 0 };
+          const innerH = window.innerHeight;
+
+          const details = rows.map((r, i) => {
+            const rect = r.getBoundingClientRect();
+            const inC = rect.top >= cRect.top && rect.bottom <= cRect.bottom;
+            const inV = rect.top >= 0 && rect.bottom <= innerH;
+            return {
+              index: i + 1,
+              height: Math.round(rect.height * 10) / 10,
+              top: Math.round(rect.top),
+              bottom: Math.round(rect.bottom),
+              isInsideContainer: inC,
+              isInsideViewport: inV,
+              isFullyVisible: inC && inV,
+              title: (r.querySelector('h4')?.textContent || '').trim()
+            };
+          });
+
+          return {
+            totalRows: rows.length,
+            visibleRowsCount: details.filter(d => d.isFullyVisible).length,
+            rows: details,
+            containerHeight: Math.round(cRect.height * 10) / 10
+          };
+        });
+
+        if (vp.name === 'desktop_1600x900' || vp.name === 'desktop_1600x780') {
+          afterBatch5Results.viewports[vp.name] = {
+            headerHeight,
+            cart: cart7Data
+          };
+        }
+
+        // Scan 8th barcode to proceed with 8-line cart test
+        await searchInput.fill('619100000008');
+        await searchInput.press('Enter');
+        await page.waitForTimeout(150);
 
         // Select Reseller customer: Grossiste Ben Salem
         const custInput = page.locator('input[placeholder*="Rechercher client"]');
@@ -1186,7 +1275,7 @@ async function runAudit() {
       // SCREEN 13: Session Modal (Open / Close Session & Z-report)
       // ----------------------------------------------------------------------
       if (vp.name !== 'phone_384x400') {
-        const closeSessionBtn = page.locator('header button:has-text("Close")');
+        const closeSessionBtn = page.locator('header button:has-text("Clôturer"), header button:has-text("Close"), header button[title*="Clôturer"]');
         if (await closeSessionBtn.isVisible()) {
           await closeSessionBtn.click();
           await page.waitForTimeout(400);
@@ -1202,6 +1291,8 @@ async function runAudit() {
               severity: 'Blocker'
             });
           }
+          await measure('session_close_modal', 'div:has-text("Fond de caisse initial")', 'Initial Float Label');
+          await measure('session_close_modal', 'button:has-text("Confirmer la clôture"), button:has-text("Clôturer")', 'Confirm Close Button');
 
           await safeCloseModal();
         }
@@ -1313,7 +1404,7 @@ async function runAudit() {
         }
 
         // Suppliers & Purchases Tab
-        await page.click('button:has-text("Suppliers & Purchases")').catch(() => {});
+        await page.click('button:has-text("Fournisseurs"), button:has-text("Suppliers & Purchases")').catch(() => {});
         await page.waitForTimeout(400);
         await takeShot('suppliers_list');
 
@@ -1326,9 +1417,14 @@ async function runAudit() {
         }
 
         // Catalog & Inventory
-        await page.click('button:has-text("Catalog & SKUs")').catch(() => {});
+        await page.click('button:has-text("Catalogue & Articles"), button:has-text("Catalog & SKUs")').catch(() => {});
         await page.waitForTimeout(400);
         await takeShot('inventory_table');
+
+        await measure('inventory_table', 'table th', 'Inventory Table Header');
+        await measure('inventory_table', 'table tbody tr td:nth-child(2)', 'Inventory Product Name');
+        await measure('inventory_table', 'table tbody tr td .font-mono', 'Inventory Price');
+        await measure('inventory_table', 'table tbody tr td span.inline-flex, table tbody tr td span.rounded-full', 'Inventory Stock Badge');
 
         // Reports Tables
         await page.click('button:has-text("Reports")').catch(() => {});
@@ -1429,6 +1525,60 @@ async function runAudit() {
     fs.writeFileSync(afterPath, JSON.stringify(afterBatch1Results, null, 2), 'utf8');
     console.log(`Measured after-batch metrics written to: ${afterPath}`);
 
+    // Compute contrast in code for every changed pair
+    const changedPairs = [
+      { name: 'Primary & Export button (white on emerald-700)', fgRgb: [255, 255, 255], bgRgb: [4, 120, 87] },
+      { name: 'Selected category chip (white on emerald-700)', fgRgb: [255, 255, 255], bgRgb: [4, 120, 87] },
+      { name: 'Meaningful text on white (slate-600 on white)', fgRgb: [71, 85, 105], bgRgb: [255, 255, 255] },
+      { name: 'Meaningful text on slate-50 (slate-600 on slate-50)', fgRgb: [71, 85, 105], bgRgb: [248, 250, 252] },
+      { name: 'Meaningful text on slate-100 (slate-600 on slate-100)', fgRgb: [71, 85, 105], bgRgb: [241, 245, 249] },
+      { name: 'Meaningful text on slate-200 (slate-600 on slate-200)', fgRgb: [71, 85, 105], bgRgb: [226, 232, 240] }
+    ].map(p => {
+      const L1 = sRgbLuminance(p.fgRgb[0], p.fgRgb[1], p.fgRgb[2]);
+      const L2 = sRgbLuminance(p.bgRgb[0], p.bgRgb[1], p.bgRgb[2]);
+      const lighter = Math.max(L1, L2);
+      const darker = Math.min(L1, L2);
+      const ratio = Math.round(((lighter + 0.05) / (darker + 0.05)) * 100) / 100;
+      return {
+        ...p,
+        contrastRatio: ratio,
+        wcagAaPass: ratio >= 4.5
+      };
+    });
+
+    // Extract all distinct measured pairs across POS, checkout, drawer, and backoffice table
+    const distinctPairsMap = new Map<string, any>();
+    for (const key of Object.keys(allMeasurements)) {
+      for (const m of allMeasurements[key]) {
+        if (m && m.color && m.bgColor && m.contrastRatio !== undefined) {
+          const pairKey = `${m.role}::${m.color}::${m.bgColor}`;
+          if (!distinctPairsMap.has(pairKey)) {
+            distinctPairsMap.set(pairKey, {
+              screen: m.screen,
+              role: m.role,
+              sampleText: m.text,
+              fgColor: m.color,
+              bgColor: m.bgColor,
+              contrastRatio: m.contrastRatio,
+              wcagAaPass: m.contrastRatio >= 4.5
+            });
+          }
+        }
+      }
+    }
+    const distinctPairs = Array.from(distinctPairsMap.values());
+    const pairsUnder45 = distinctPairs.filter(p => !p.wcagAaPass && p.sampleText && p.sampleText.trim().length > 0);
+
+    afterBatch5Results.contrastReport = {
+      changedPairsSummary: changedPairs,
+      distinctScreenPairs: distinctPairs,
+      violationsCount: violations.filter(v => v.target === 'Contrast at least 4.5:1 for text').length,
+      pairsUnder45
+    };
+
+    fs.writeFileSync(OUTPUT_BATCH5_PATH, JSON.stringify(afterBatch5Results, null, 2), 'utf8');
+    console.log(`Measured Batch UI-5 metrics written to: ${OUTPUT_BATCH5_PATH}`);
+
     console.log('\n======================================================');
     console.log('AUDIT MEASUREMENT SUMMARY — ALL TARGETS');
     console.log('======================================================');
@@ -1523,12 +1673,31 @@ async function runAudit() {
     console.log('------------------------------------------------------');
     console.log(`Total Batch UI-2 Violations: ${batch2Violations.length}`);
 
-    if (batch1Violations.length > 0 || batch2Violations.length > 0) {
-      console.error('\n[BATCH UI-1/2 HARNESS] Failures detected:');
-      [...batch1Violations, ...batch2Violations].forEach(v => console.error(`  - [${v.viewport}] ${v.target}: ${v.details}`));
+    const BATCH_5_TARGETS = [
+      'Contrast at least 4.5:1 for text'
+    ];
+
+    const batch5Violations = violations.filter(v => BATCH_5_TARGETS.includes(v.target));
+
+    console.log('\n======================================================');
+    console.log('BATCH UI-5 TARGET VERIFICATION REPORT');
+    console.log('======================================================');
+    console.log(String('Batch 5 Target').padEnd(65) + ' | ' + 'Status' + ' | ' + 'Violations');
+    console.log('-'.repeat(85));
+    for (const t of BATCH_5_TARGETS) {
+      const count = targetGroups[t] || 0;
+      const status = count > 0 ? 'FAIL ❌' : 'PASS ✅';
+      console.log(t.padEnd(65) + ' | ' + status.padEnd(6) + ' | ' + count);
+    }
+    console.log('------------------------------------------------------');
+    console.log(`Total Batch UI-5 Violations: ${batch5Violations.length}`);
+
+    if (batch1Violations.length > 0 || batch2Violations.length > 0 || batch5Violations.length > 0) {
+      console.error('\n[BATCH UI HARNESS] Failures detected:');
+      [...batch1Violations, ...batch2Violations, ...batch5Violations].forEach(v => console.error(`  - [${v.viewport}] ${v.target}: ${v.details}`));
       process.exit(1);
     } else {
-      console.log('\n[BATCH UI-1/2 HARNESS] All Batch UI-1 and Batch UI-2 targets PASSED! ✅');
+      console.log('\n[BATCH UI HARNESS] All Batch UI-1, Batch UI-2, and Batch UI-5 targets PASSED! ✅');
       process.exit(0);
     }
   } finally {

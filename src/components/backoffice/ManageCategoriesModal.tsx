@@ -245,9 +245,9 @@ export const ManageCategoriesModal: React.FC<ManageCategoriesModalProps> = ({
 
             <div className="divide-y divide-slate-100">
               {loading ? (
-                <div className="p-8 text-center text-slate-400 text-xs">Chargement des catégories...</div>
+                <div className="p-8 text-center text-slate-600 text-xs">Chargement des catégories...</div>
               ) : categories.length === 0 ? (
-                <div className="p-8 text-center text-slate-400 text-xs">Aucune catégorie trouvée.</div>
+                <div className="p-8 text-center text-slate-600 text-xs">Aucune catégorie trouvée.</div>
               ) : (
                 categories.map(cat => (
                   <div key={cat.id || cat.name} className="p-3 hover:bg-slate-50 flex items-center justify-between gap-3 text-xs">

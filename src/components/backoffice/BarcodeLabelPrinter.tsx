@@ -146,7 +146,7 @@ export const BarcodeLabelPrinter: React.FC<BarcodeLabelPrinterProps> = ({
               ))}
             </div>
           ) : (
-            <div className="py-12 text-center text-xs text-slate-400">
+            <div className="py-12 text-center text-xs text-slate-600">
               Sélectionnez un article ci-dessus pour générer les étiquettes.
             </div>
           )}
