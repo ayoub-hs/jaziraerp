@@ -92,11 +92,11 @@ export const LockScreenModal: React.FC<LockScreenModalProps> = ({
         setPin('');
         onUnlocked();
       } else {
-        setError('Incorrect PIN. Please try again.');
+        setError('Code PIN incorrect. Veuillez réessayer.');
         setPin('');
       }
     } catch {
-      setError('Unlock failed. Please try again.');
+      setError('Échec du déverrouillage. Veuillez réessayer.');
       setPin('');
     } finally {
       setIsVerifying(false);
@@ -116,10 +116,10 @@ export const LockScreenModal: React.FC<LockScreenModalProps> = ({
         setIsMasterMode(false);
         onUnlocked();
       } else {
-        setError('Incorrect Master Password.');
+        setError('Mot de passe maître incorrect.');
       }
     } catch {
-      setError('Master Password verification failed.');
+      setError('Échec de la vérification du mot de passe maître.');
     } finally {
       setIsVerifying(false);
     }
@@ -159,7 +159,7 @@ export const LockScreenModal: React.FC<LockScreenModalProps> = ({
 
         <h2 className="text-base sm:text-lg font-black text-white">{effectiveShopName}</h2>
         <p className="text-xs text-slate-400 mt-0.5">
-          {isMasterMode ? 'Master Password Unlock' : 'Enter 4-Digit Counter PIN'}
+          {isMasterMode ? 'Déverrouillage par mot de passe maître' : 'Saisir le code PIN caisse (4 chiffres)'}
         </p>
 
         {/* Error Alert */}
@@ -209,7 +209,7 @@ export const LockScreenModal: React.FC<LockScreenModalProps> = ({
                 disabled={isVerifying || pin.length === 0}
                 className="h-10 sm:h-14 rounded-xl sm:rounded-2xl bg-slate-800/40 hover:bg-slate-700/60 text-slate-400 font-bold text-xs border border-slate-800 transition-colors flex items-center justify-center active:scale-95"
               >
-                Clear
+                Effacer
               </button>
               <button
                 type="button"
@@ -225,7 +225,7 @@ export const LockScreenModal: React.FC<LockScreenModalProps> = ({
                 disabled={isVerifying || pin.length === 0}
                 className="h-10 sm:h-14 rounded-xl sm:rounded-2xl bg-slate-800/40 hover:bg-slate-700/60 text-slate-400 font-bold text-xs border border-slate-800 transition-colors flex items-center justify-center active:scale-95"
               >
-                Del
+                Suppr
               </button>
             </div>
 
@@ -240,7 +240,7 @@ export const LockScreenModal: React.FC<LockScreenModalProps> = ({
                 className="text-xs text-slate-400 hover:text-emerald-400 font-semibold transition-colors flex items-center justify-center gap-1 mx-auto"
               >
                 <KeyRound className="w-3.5 h-3.5" />
-                Forgot PIN? Use Master Password
+                PIN oublié ? Utiliser le mot de passe maître
               </button>
             </div>
           </div>
@@ -250,7 +250,7 @@ export const LockScreenModal: React.FC<LockScreenModalProps> = ({
             <div>
               <input
                 type="password"
-                placeholder="Enter Master Password..."
+                placeholder="Saisir le mot de passe maître..."
                 value={masterPassword}
                 onChange={e => setMasterPassword(e.target.value)}
                 autoFocus
@@ -266,12 +266,12 @@ export const LockScreenModal: React.FC<LockScreenModalProps> = ({
               {isVerifying ? (
                 <>
                   <RefreshCw className="w-4 h-4 animate-spin" />
-                  Verifying...
+                  Vérification...
                 </>
               ) : (
                 <>
                   <Unlock className="w-4 h-4" />
-                  Unlock with Password
+                  Déverrouiller avec le mot de passe
                 </>
               )}
             </button>
@@ -284,14 +284,14 @@ export const LockScreenModal: React.FC<LockScreenModalProps> = ({
               }}
               className="w-full py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 font-semibold rounded-xl text-xs transition-colors"
             >
-              Back to PIN Pad
+              Retour au clavier PIN
             </button>
           </form>
         )}
 
         {/* Offline indicator note */}
         <div className="mt-2 sm:mt-3 text-pos-badge text-slate-500">
-          Single-User Secure Unlock • Works 100% Offline
+          Déverrouillage sécurisé • Fonctionne 100% hors-ligne
         </div>
       </div>
     </div>

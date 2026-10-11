@@ -1,0 +1,1853 @@
+{
+  "timestamp": "2026-10-11T11:55:47.896Z",
+  "description": "Post-implementation audit measurements for Batch UI-4 (backoffice readability, contrast, tables, modals, French terminology)",
+  "staticCodeGrep": {
+    "sub12ByFile": {},
+    "totalSub12Count": 0,
+    "emerald600Occurrences": 16
+  },
+  "viewports": {
+    "desktop_1600x780": {
+      "views": {
+        "catalog": {
+          "innerH": 780,
+          "innerW": 1600,
+          "docH": 780,
+          "docW": 1600,
+          "pageScrolls": false,
+          "tables": [
+            {
+              "tableRowsCount": 40,
+              "meanRowHeight": 57,
+              "rowsOver48": 39,
+              "containerScrollHeight": 2320,
+              "containerClientHeight": 498,
+              "containerScrolls": true,
+              "containerOverflowY": "auto"
+            }
+          ],
+          "typography": {
+            "headersMean": 13,
+            "headersMin": 13,
+            "cellsMean": 13.8,
+            "cellsMin": 12,
+            "labelsMin": 0,
+            "inputsMin": 12,
+            "buttonsMin": 12
+          },
+          "smallTextNodesCount": 0,
+          "smallTextSamples": [],
+          "modals": [],
+          "lowContrastSampleCount": 1,
+          "lowContrastSamples": [
+            {
+              "tag": "p",
+              "text": "Gestion des articles fabriqués",
+              "contrastRatio": 4.34,
+              "color": "rgb(100, 116, 139)",
+              "bg": "rgb(241,245,249)"
+            }
+          ]
+        },
+        "suppliers": {
+          "innerH": 780,
+          "innerW": 1600,
+          "docH": 780,
+          "docW": 1600,
+          "pageScrolls": false,
+          "tables": [
+            {
+              "tableRowsCount": 1,
+              "meanRowHeight": 37,
+              "rowsOver48": 0,
+              "containerScrollHeight": 75,
+              "containerClientHeight": 75,
+              "containerScrolls": false,
+              "containerOverflowY": "auto"
+            }
+          ],
+          "typography": {
+            "headersMean": 13,
+            "headersMin": 13,
+            "cellsMean": 13.8,
+            "cellsMin": 12,
+            "labelsMin": 0,
+            "inputsMin": 12,
+            "buttonsMin": 12
+          },
+          "smallTextNodesCount": 0,
+          "smallTextSamples": [],
+          "modals": [],
+          "lowContrastSampleCount": 2,
+          "lowContrastSamples": [
+            {
+              "tag": "p",
+              "text": "Enregistrer les réceptions d'a",
+              "contrastRatio": 4.34,
+              "color": "rgb(100, 116, 139)",
+              "bg": "rgb(241,245,249)"
+            },
+            {
+              "tag": "h3",
+              "text": "Répertoire Fournisseurs",
+              "contrastRatio": 2.56,
+              "color": "rgb(148, 163, 184)",
+              "bg": "rgb(255,255,255)"
+            }
+          ]
+        },
+        "customers": {
+          "innerH": 780,
+          "innerW": 1600,
+          "docH": 780,
+          "docW": 1600,
+          "pageScrolls": false,
+          "tables": [],
+          "typography": {
+            "headersMean": 0,
+            "headersMin": 0,
+            "cellsMean": 0,
+            "cellsMin": 0,
+            "labelsMin": 0,
+            "inputsMin": 12,
+            "buttonsMin": 12
+          },
+          "smallTextNodesCount": 0,
+          "smallTextSamples": [],
+          "modals": [],
+          "lowContrastSampleCount": 2,
+          "lowContrastSamples": [
+            {
+              "tag": "p",
+              "text": "Gestion des comptes clients, r",
+              "contrastRatio": 4.34,
+              "color": "rgb(100, 116, 139)",
+              "bg": "rgb(241,245,249)"
+            },
+            {
+              "tag": "h3",
+              "text": "Répertoire Clients",
+              "contrastRatio": 2.56,
+              "color": "rgb(148, 163, 184)",
+              "bg": "rgb(255,255,255)"
+            }
+          ]
+        },
+        "sales": {
+          "innerH": 780,
+          "innerW": 1600,
+          "docH": 780,
+          "docW": 1600,
+          "pageScrolls": false,
+          "tables": [
+            {
+              "tableRowsCount": 1,
+              "meanRowHeight": 43,
+              "rowsOver48": 0,
+              "containerScrollHeight": 81,
+              "containerClientHeight": 81,
+              "containerScrolls": false,
+              "containerOverflowY": "auto"
+            }
+          ],
+          "typography": {
+            "headersMean": 13,
+            "headersMin": 13,
+            "cellsMean": 13.3,
+            "cellsMin": 12,
+            "labelsMin": 0,
+            "inputsMin": 12,
+            "buttonsMin": 12
+          },
+          "smallTextNodesCount": 0,
+          "smallTextSamples": [],
+          "modals": [],
+          "lowContrastSampleCount": 1,
+          "lowContrastSamples": [
+            {
+              "tag": "p",
+              "text": "Rechercher les reçus, réimprim",
+              "contrastRatio": 4.34,
+              "color": "rgb(100, 116, 139)",
+              "bg": "rgb(241,245,249)"
+            }
+          ]
+        },
+        "reports": {
+          "innerH": 780,
+          "innerW": 1600,
+          "docH": 780,
+          "docW": 1600,
+          "pageScrolls": false,
+          "tables": [
+            {
+              "tableRowsCount": 1,
+              "meanRowHeight": 57,
+              "rowsOver48": 1,
+              "containerScrollHeight": 113,
+              "containerClientHeight": 113,
+              "containerScrolls": false,
+              "containerOverflowY": "auto"
+            }
+          ],
+          "typography": {
+            "headersMean": 13,
+            "headersMin": 13,
+            "cellsMean": 14,
+            "cellsMin": 14,
+            "labelsMin": 0,
+            "inputsMin": 12,
+            "buttonsMin": 12
+          },
+          "smallTextNodesCount": 0,
+          "smallTextSamples": [],
+          "modals": [],
+          "lowContrastSampleCount": 3,
+          "lowContrastSamples": [
+            {
+              "tag": "button",
+              "text": "Exporter CSV",
+              "contrastRatio": 3.77,
+              "color": "rgb(255, 255, 255)",
+              "bg": "rgb(5,150,105)"
+            },
+            {
+              "tag": "span",
+              "text": "Exporter CSV",
+              "contrastRatio": 3.77,
+              "color": "rgb(255, 255, 255)",
+              "bg": "rgb(5,150,105)"
+            },
+            {
+              "tag": "span",
+              "text": "au",
+              "contrastRatio": 2.56,
+              "color": "rgb(148, 163, 184)",
+              "bg": "rgb(255,255,255)"
+            }
+          ]
+        },
+        "settings": {
+          "innerH": 780,
+          "innerW": 1600,
+          "docH": 780,
+          "docW": 1600,
+          "pageScrolls": false,
+          "tables": [],
+          "typography": {
+            "headersMean": 0,
+            "headersMin": 0,
+            "cellsMean": 0,
+            "cellsMin": 0,
+            "labelsMin": 12,
+            "inputsMin": 12,
+            "buttonsMin": 12
+          },
+          "smallTextNodesCount": 0,
+          "smallTextSamples": [],
+          "modals": [],
+          "lowContrastSampleCount": 0,
+          "lowContrastSamples": []
+        }
+      },
+      "modals": {
+        "CreateProductModal": {
+          "innerH": 780,
+          "innerW": 1600,
+          "docH": 780,
+          "docW": 1600,
+          "pageScrolls": false,
+          "tables": [
+            {
+              "tableRowsCount": 40,
+              "meanRowHeight": 57,
+              "rowsOver48": 39,
+              "containerScrollHeight": 2320,
+              "containerClientHeight": 498,
+              "containerScrolls": true,
+              "containerOverflowY": "auto"
+            }
+          ],
+          "typography": {
+            "headersMean": 13,
+            "headersMin": 13,
+            "cellsMean": 13.8,
+            "cellsMin": 12,
+            "labelsMin": 12,
+            "inputsMin": 12,
+            "buttonsMin": 12
+          },
+          "smallTextNodesCount": 0,
+          "smallTextSamples": [],
+          "modals": [
+            {
+              "boxHeight": 748,
+              "boxWidth": 576,
+              "viewportH": 780,
+              "viewportW": 1600,
+              "exceedsViewportH": false,
+              "exceedsViewportW": false,
+              "hasScrollableBody": true,
+              "stickyFooterPresent": true
+            }
+          ],
+          "lowContrastSampleCount": 3,
+          "lowContrastSamples": [
+            {
+              "tag": "p",
+              "text": "Gestion des articles fabriqués",
+              "contrastRatio": 4.34,
+              "color": "rgb(100, 116, 139)",
+              "bg": "rgb(241,245,249)"
+            },
+            {
+              "tag": "button",
+              "text": "Suggérer",
+              "contrastRatio": 3.86,
+              "color": "rgb(100, 116, 139)",
+              "bg": "rgb(226,232,240)"
+            },
+            {
+              "tag": "button",
+              "text": "Suggérer",
+              "contrastRatio": 3.86,
+              "color": "rgb(100, 116, 139)",
+              "bg": "rgb(226,232,240)"
+            }
+          ]
+        },
+        "CreatePurchaseModal": {
+          "innerH": 780,
+          "innerW": 1600,
+          "docH": 780,
+          "docW": 1600,
+          "pageScrolls": false,
+          "tables": [
+            {
+              "tableRowsCount": 1,
+              "meanRowHeight": 37,
+              "rowsOver48": 0,
+              "containerScrollHeight": 75,
+              "containerClientHeight": 75,
+              "containerScrolls": false,
+              "containerOverflowY": "auto"
+            },
+            {
+              "tableRowsCount": 1,
+              "meanRowHeight": 50,
+              "rowsOver48": 1,
+              "containerScrollHeight": 106,
+              "containerClientHeight": 106,
+              "containerScrolls": false,
+              "containerOverflowY": "auto"
+            }
+          ],
+          "typography": {
+            "headersMean": 13,
+            "headersMin": 13,
+            "cellsMean": 13,
+            "cellsMin": 12,
+            "labelsMin": 12,
+            "inputsMin": 12,
+            "buttonsMin": 12
+          },
+          "smallTextNodesCount": 0,
+          "smallTextSamples": [],
+          "modals": [
+            {
+              "boxHeight": 616,
+              "boxWidth": 768,
+              "viewportH": 780,
+              "viewportW": 1600,
+              "exceedsViewportH": false,
+              "exceedsViewportW": false,
+              "hasScrollableBody": false,
+              "stickyFooterPresent": true
+            }
+          ],
+          "lowContrastSampleCount": 2,
+          "lowContrastSamples": [
+            {
+              "tag": "p",
+              "text": "Enregistrer les réceptions d'a",
+              "contrastRatio": 4.34,
+              "color": "rgb(100, 116, 139)",
+              "bg": "rgb(241,245,249)"
+            },
+            {
+              "tag": "h3",
+              "text": "Répertoire Fournisseurs",
+              "contrastRatio": 2.56,
+              "color": "rgb(148, 163, 184)",
+              "bg": "rgb(255,255,255)"
+            }
+          ]
+        },
+        "PurchaseDetailModal": {
+          "innerH": 780,
+          "innerW": 1600,
+          "docH": 780,
+          "docW": 1600,
+          "pageScrolls": false,
+          "tables": [
+            {
+              "tableRowsCount": 1,
+              "meanRowHeight": 37,
+              "rowsOver48": 0,
+              "containerScrollHeight": 75,
+              "containerClientHeight": 75,
+              "containerScrolls": false,
+              "containerOverflowY": "auto"
+            }
+          ],
+          "typography": {
+            "headersMean": 13,
+            "headersMin": 13,
+            "cellsMean": 13.8,
+            "cellsMin": 12,
+            "labelsMin": 0,
+            "inputsMin": 12,
+            "buttonsMin": 12
+          },
+          "smallTextNodesCount": 0,
+          "smallTextSamples": [],
+          "modals": [],
+          "lowContrastSampleCount": 2,
+          "lowContrastSamples": [
+            {
+              "tag": "p",
+              "text": "Enregistrer les réceptions d'a",
+              "contrastRatio": 4.34,
+              "color": "rgb(100, 116, 139)",
+              "bg": "rgb(241,245,249)"
+            },
+            {
+              "tag": "h3",
+              "text": "Répertoire Fournisseurs",
+              "contrastRatio": 2.56,
+              "color": "rgb(148, 163, 184)",
+              "bg": "rgb(255,255,255)"
+            }
+          ]
+        },
+        "CreateMaterialModal": {
+          "innerH": 780,
+          "innerW": 1600,
+          "docH": 780,
+          "docW": 1600,
+          "pageScrolls": false,
+          "tables": [
+            {
+              "tableRowsCount": 4,
+              "meanRowHeight": 41,
+              "rowsOver48": 0,
+              "containerScrollHeight": 202,
+              "containerClientHeight": 202,
+              "containerScrolls": false,
+              "containerOverflowY": "auto"
+            },
+            {
+              "tableRowsCount": 1,
+              "meanRowHeight": 69,
+              "rowsOver48": 1,
+              "containerScrollHeight": 107,
+              "containerClientHeight": 107,
+              "containerScrolls": false,
+              "containerOverflowY": "auto"
+            }
+          ],
+          "typography": {
+            "headersMean": 13,
+            "headersMin": 13,
+            "cellsMean": 14,
+            "cellsMin": 14,
+            "labelsMin": 12,
+            "inputsMin": 12,
+            "buttonsMin": 12
+          },
+          "smallTextNodesCount": 0,
+          "smallTextSamples": [],
+          "modals": [
+            {
+              "boxHeight": 558,
+              "boxWidth": 512,
+              "viewportH": 780,
+              "viewportW": 1600,
+              "exceedsViewportH": false,
+              "exceedsViewportW": false,
+              "hasScrollableBody": false,
+              "stickyFooterPresent": true
+            }
+          ],
+          "lowContrastSampleCount": 2,
+          "lowContrastSamples": [
+            {
+              "tag": "p",
+              "text": "Suivi des produits chimiques, ",
+              "contrastRatio": 4.34,
+              "color": "rgb(100, 116, 139)",
+              "bg": "rgb(241,245,249)"
+            },
+            {
+              "tag": "td",
+              "text": "Aucun ajustement de stock enre",
+              "contrastRatio": 2.56,
+              "color": "rgb(148, 163, 184)",
+              "bg": "rgb(255,255,255)"
+            }
+          ]
+        },
+        "AuthCredentialsModal": {
+          "innerH": 780,
+          "innerW": 1600,
+          "docH": 780,
+          "docW": 1600,
+          "pageScrolls": false,
+          "tables": [
+            {
+              "tableRowsCount": 4,
+              "meanRowHeight": 41,
+              "rowsOver48": 0,
+              "containerScrollHeight": 202,
+              "containerClientHeight": 202,
+              "containerScrolls": false,
+              "containerOverflowY": "auto"
+            },
+            {
+              "tableRowsCount": 1,
+              "meanRowHeight": 69,
+              "rowsOver48": 1,
+              "containerScrollHeight": 107,
+              "containerClientHeight": 107,
+              "containerScrolls": false,
+              "containerOverflowY": "auto"
+            }
+          ],
+          "typography": {
+            "headersMean": 13,
+            "headersMin": 13,
+            "cellsMean": 14,
+            "cellsMin": 14,
+            "labelsMin": 12,
+            "inputsMin": 12,
+            "buttonsMin": 12
+          },
+          "smallTextNodesCount": 0,
+          "smallTextSamples": [],
+          "modals": [
+            {
+              "boxHeight": 385,
+              "boxWidth": 448,
+              "viewportH": 780,
+              "viewportW": 1600,
+              "exceedsViewportH": false,
+              "exceedsViewportW": false,
+              "hasScrollableBody": false,
+              "stickyFooterPresent": true
+            }
+          ],
+          "lowContrastSampleCount": 3,
+          "lowContrastSamples": [
+            {
+              "tag": "button",
+              "text": "Modifier le Code PIN",
+              "contrastRatio": 3.77,
+              "color": "rgb(5, 150, 105)",
+              "bg": "rgb(255,255,255)"
+            },
+            {
+              "tag": "p",
+              "text": "Suivi des produits chimiques, ",
+              "contrastRatio": 4.34,
+              "color": "rgb(100, 116, 139)",
+              "bg": "rgb(241,245,249)"
+            },
+            {
+              "tag": "td",
+              "text": "Aucun ajustement de stock enre",
+              "contrastRatio": 2.56,
+              "color": "rgb(148, 163, 184)",
+              "bg": "rgb(255,255,255)"
+            }
+          ]
+        },
+        "CameraScannerModal": {
+          "innerH": 780,
+          "innerW": 1600,
+          "docH": 780,
+          "docW": 1600,
+          "pageScrolls": false,
+          "tables": [],
+          "typography": {
+            "headersMean": 0,
+            "headersMin": 0,
+            "cellsMean": 0,
+            "cellsMin": 0,
+            "labelsMin": 0,
+            "inputsMin": 12,
+            "buttonsMin": 12
+          },
+          "smallTextNodesCount": 0,
+          "smallTextSamples": [],
+          "modals": [
+            {
+              "boxHeight": 302,
+              "boxWidth": 384,
+              "viewportH": 780,
+              "viewportW": 1600,
+              "exceedsViewportH": false,
+              "exceedsViewportW": false,
+              "hasScrollableBody": false,
+              "stickyFooterPresent": true
+            }
+          ],
+          "lowContrastSampleCount": 5,
+          "lowContrastSamples": [
+            {
+              "tag": "button",
+              "text": "ALL",
+              "contrastRatio": 3.77,
+              "color": "rgb(255, 255, 255)",
+              "bg": "rgb(5,150,105)"
+            },
+            {
+              "tag": "p",
+              "text": "Le panier est vide",
+              "contrastRatio": 2.56,
+              "color": "rgb(148, 163, 184)",
+              "bg": "rgb(255,255,255)"
+            },
+            {
+              "tag": "p",
+              "text": "Scannez un code-barres ou séle",
+              "contrastRatio": 2.56,
+              "color": "rgb(148, 163, 184)",
+              "bg": "rgb(255,255,255)"
+            },
+            {
+              "tag": "button",
+              "text": "Encaisser",
+              "contrastRatio": 1.48,
+              "color": "rgb(255, 255, 255)",
+              "bg": "rgb(203,213,225)"
+            },
+            {
+              "tag": "span",
+              "text": "Encaisser",
+              "contrastRatio": 1.48,
+              "color": "rgb(255, 255, 255)",
+              "bg": "rgb(203,213,225)"
+            }
+          ]
+        },
+        "LockScreenModal": {
+          "innerH": 780,
+          "innerW": 1600,
+          "docH": 780,
+          "docW": 1600,
+          "pageScrolls": false,
+          "tables": [],
+          "typography": {
+            "headersMean": 0,
+            "headersMin": 0,
+            "cellsMean": 0,
+            "cellsMin": 0,
+            "labelsMin": 0,
+            "inputsMin": 12,
+            "buttonsMin": 12
+          },
+          "smallTextNodesCount": 0,
+          "smallTextSamples": [],
+          "modals": [
+            {
+              "boxHeight": 555,
+              "boxWidth": 384,
+              "viewportH": 780,
+              "viewportW": 1600,
+              "exceedsViewportH": false,
+              "exceedsViewportW": false,
+              "hasScrollableBody": false,
+              "stickyFooterPresent": false
+            }
+          ],
+          "lowContrastSampleCount": 5,
+          "lowContrastSamples": [
+            {
+              "tag": "button",
+              "text": "ALL",
+              "contrastRatio": 3.77,
+              "color": "rgb(255, 255, 255)",
+              "bg": "rgb(5,150,105)"
+            },
+            {
+              "tag": "p",
+              "text": "Le panier est vide",
+              "contrastRatio": 2.56,
+              "color": "rgb(148, 163, 184)",
+              "bg": "rgb(255,255,255)"
+            },
+            {
+              "tag": "p",
+              "text": "Scannez un code-barres ou séle",
+              "contrastRatio": 2.56,
+              "color": "rgb(148, 163, 184)",
+              "bg": "rgb(255,255,255)"
+            },
+            {
+              "tag": "button",
+              "text": "Encaisser",
+              "contrastRatio": 1.48,
+              "color": "rgb(255, 255, 255)",
+              "bg": "rgb(203,213,225)"
+            },
+            {
+              "tag": "span",
+              "text": "Encaisser",
+              "contrastRatio": 1.48,
+              "color": "rgb(255, 255, 255)",
+              "bg": "rgb(203,213,225)"
+            }
+          ]
+        }
+      }
+    },
+    "phone_384x725": {
+      "views": {
+        "catalog": {
+          "innerH": 725,
+          "innerW": 384,
+          "docH": 725,
+          "docW": 384,
+          "pageScrolls": false,
+          "tables": [
+            {
+              "tableRowsCount": 40,
+              "meanRowHeight": 104,
+              "rowsOver48": 40,
+              "containerScrollHeight": 4254,
+              "containerClientHeight": 443,
+              "containerScrolls": true,
+              "containerOverflowY": "auto"
+            }
+          ],
+          "typography": {
+            "headersMean": 13,
+            "headersMin": 13,
+            "cellsMean": 13.8,
+            "cellsMin": 12,
+            "labelsMin": 0,
+            "inputsMin": 12,
+            "buttonsMin": 12
+          },
+          "smallTextNodesCount": 0,
+          "smallTextSamples": [],
+          "modals": [],
+          "lowContrastSampleCount": 1,
+          "lowContrastSamples": [
+            {
+              "tag": "p",
+              "text": "Gestion des articles fabriqués",
+              "contrastRatio": 4.34,
+              "color": "rgb(100, 116, 139)",
+              "bg": "rgb(241,245,249)"
+            }
+          ]
+        },
+        "suppliers": {
+          "innerH": 725,
+          "innerW": 384,
+          "docH": 725,
+          "docW": 384,
+          "pageScrolls": false,
+          "tables": [
+            {
+              "tableRowsCount": 1,
+              "meanRowHeight": 97,
+              "rowsOver48": 1,
+              "containerScrollHeight": 153,
+              "containerClientHeight": 153,
+              "containerScrolls": false,
+              "containerOverflowY": "auto"
+            }
+          ],
+          "typography": {
+            "headersMean": 13,
+            "headersMin": 13,
+            "cellsMean": 13.8,
+            "cellsMin": 12,
+            "labelsMin": 0,
+            "inputsMin": 12,
+            "buttonsMin": 12
+          },
+          "smallTextNodesCount": 0,
+          "smallTextSamples": [],
+          "modals": [],
+          "lowContrastSampleCount": 2,
+          "lowContrastSamples": [
+            {
+              "tag": "p",
+              "text": "Enregistrer les réceptions d'a",
+              "contrastRatio": 4.34,
+              "color": "rgb(100, 116, 139)",
+              "bg": "rgb(241,245,249)"
+            },
+            {
+              "tag": "h3",
+              "text": "Répertoire Fournisseurs",
+              "contrastRatio": 2.56,
+              "color": "rgb(148, 163, 184)",
+              "bg": "rgb(255,255,255)"
+            }
+          ]
+        },
+        "customers": {
+          "innerH": 725,
+          "innerW": 384,
+          "docH": 725,
+          "docW": 384,
+          "pageScrolls": false,
+          "tables": [],
+          "typography": {
+            "headersMean": 0,
+            "headersMin": 0,
+            "cellsMean": 0,
+            "cellsMin": 0,
+            "labelsMin": 0,
+            "inputsMin": 12,
+            "buttonsMin": 12
+          },
+          "smallTextNodesCount": 0,
+          "smallTextSamples": [],
+          "modals": [],
+          "lowContrastSampleCount": 2,
+          "lowContrastSamples": [
+            {
+              "tag": "p",
+              "text": "Gestion des comptes clients, r",
+              "contrastRatio": 4.34,
+              "color": "rgb(100, 116, 139)",
+              "bg": "rgb(241,245,249)"
+            },
+            {
+              "tag": "h3",
+              "text": "Répertoire Clients",
+              "contrastRatio": 2.56,
+              "color": "rgb(148, 163, 184)",
+              "bg": "rgb(255,255,255)"
+            }
+          ]
+        },
+        "sales": {
+          "innerH": 725,
+          "innerW": 384,
+          "docH": 725,
+          "docW": 384,
+          "pageScrolls": false,
+          "tables": [
+            {
+              "tableRowsCount": 1,
+              "meanRowHeight": 97,
+              "rowsOver48": 1,
+              "containerScrollHeight": 135,
+              "containerClientHeight": 135,
+              "containerScrolls": false,
+              "containerOverflowY": "auto"
+            }
+          ],
+          "typography": {
+            "headersMean": 13,
+            "headersMin": 13,
+            "cellsMean": 13.3,
+            "cellsMin": 12,
+            "labelsMin": 0,
+            "inputsMin": 12,
+            "buttonsMin": 12
+          },
+          "smallTextNodesCount": 0,
+          "smallTextSamples": [],
+          "modals": [],
+          "lowContrastSampleCount": 1,
+          "lowContrastSamples": [
+            {
+              "tag": "p",
+              "text": "Rechercher les reçus, réimprim",
+              "contrastRatio": 4.34,
+              "color": "rgb(100, 116, 139)",
+              "bg": "rgb(241,245,249)"
+            }
+          ]
+        },
+        "reports": {
+          "innerH": 725,
+          "innerW": 384,
+          "docH": 725,
+          "docW": 384,
+          "pageScrolls": false,
+          "tables": [
+            {
+              "tableRowsCount": 1,
+              "meanRowHeight": 97,
+              "rowsOver48": 1,
+              "containerScrollHeight": 171,
+              "containerClientHeight": 171,
+              "containerScrolls": false,
+              "containerOverflowY": "auto"
+            }
+          ],
+          "typography": {
+            "headersMean": 13,
+            "headersMin": 13,
+            "cellsMean": 14,
+            "cellsMin": 14,
+            "labelsMin": 0,
+            "inputsMin": 12,
+            "buttonsMin": 12
+          },
+          "smallTextNodesCount": 0,
+          "smallTextSamples": [],
+          "modals": [],
+          "lowContrastSampleCount": 3,
+          "lowContrastSamples": [
+            {
+              "tag": "button",
+              "text": "Exporter CSV",
+              "contrastRatio": 3.77,
+              "color": "rgb(255, 255, 255)",
+              "bg": "rgb(5,150,105)"
+            },
+            {
+              "tag": "span",
+              "text": "Exporter CSV",
+              "contrastRatio": 3.77,
+              "color": "rgb(255, 255, 255)",
+              "bg": "rgb(5,150,105)"
+            },
+            {
+              "tag": "span",
+              "text": "au",
+              "contrastRatio": 2.56,
+              "color": "rgb(148, 163, 184)",
+              "bg": "rgb(255,255,255)"
+            }
+          ]
+        },
+        "settings": {
+          "innerH": 725,
+          "innerW": 384,
+          "docH": 725,
+          "docW": 384,
+          "pageScrolls": false,
+          "tables": [],
+          "typography": {
+            "headersMean": 0,
+            "headersMin": 0,
+            "cellsMean": 0,
+            "cellsMin": 0,
+            "labelsMin": 12,
+            "inputsMin": 12,
+            "buttonsMin": 12
+          },
+          "smallTextNodesCount": 0,
+          "smallTextSamples": [],
+          "modals": [],
+          "lowContrastSampleCount": 0,
+          "lowContrastSamples": []
+        }
+      },
+      "modals": {
+        "CreateProductModal": {
+          "innerH": 725,
+          "innerW": 384,
+          "docH": 725,
+          "docW": 384,
+          "pageScrolls": false,
+          "tables": [
+            {
+              "tableRowsCount": 40,
+              "meanRowHeight": 104,
+              "rowsOver48": 40,
+              "containerScrollHeight": 4254,
+              "containerClientHeight": 443,
+              "containerScrolls": true,
+              "containerOverflowY": "auto"
+            }
+          ],
+          "typography": {
+            "headersMean": 13,
+            "headersMin": 13,
+            "cellsMean": 13.8,
+            "cellsMin": 12,
+            "labelsMin": 12,
+            "inputsMin": 12,
+            "buttonsMin": 12
+          },
+          "smallTextNodesCount": 0,
+          "smallTextSamples": [],
+          "modals": [
+            {
+              "boxHeight": 709,
+              "boxWidth": 368,
+              "viewportH": 725,
+              "viewportW": 384,
+              "exceedsViewportH": false,
+              "exceedsViewportW": false,
+              "hasScrollableBody": true,
+              "stickyFooterPresent": true
+            }
+          ],
+          "lowContrastSampleCount": 3,
+          "lowContrastSamples": [
+            {
+              "tag": "p",
+              "text": "Gestion des articles fabriqués",
+              "contrastRatio": 4.34,
+              "color": "rgb(100, 116, 139)",
+              "bg": "rgb(241,245,249)"
+            },
+            {
+              "tag": "button",
+              "text": "Suggérer",
+              "contrastRatio": 3.86,
+              "color": "rgb(100, 116, 139)",
+              "bg": "rgb(226,232,240)"
+            },
+            {
+              "tag": "button",
+              "text": "Suggérer",
+              "contrastRatio": 3.86,
+              "color": "rgb(100, 116, 139)",
+              "bg": "rgb(226,232,240)"
+            }
+          ]
+        },
+        "CreatePurchaseModal": {
+          "innerH": 725,
+          "innerW": 384,
+          "docH": 725,
+          "docW": 384,
+          "pageScrolls": false,
+          "tables": [
+            {
+              "tableRowsCount": 1,
+              "meanRowHeight": 97,
+              "rowsOver48": 1,
+              "containerScrollHeight": 153,
+              "containerClientHeight": 153,
+              "containerScrolls": false,
+              "containerOverflowY": "auto"
+            },
+            {
+              "tableRowsCount": 1,
+              "meanRowHeight": 50,
+              "rowsOver48": 1,
+              "containerScrollHeight": 124,
+              "containerClientHeight": 124,
+              "containerScrolls": false,
+              "containerOverflowY": "auto"
+            }
+          ],
+          "typography": {
+            "headersMean": 13,
+            "headersMin": 13,
+            "cellsMean": 13,
+            "cellsMin": 12,
+            "labelsMin": 12,
+            "inputsMin": 12,
+            "buttonsMin": 12
+          },
+          "smallTextNodesCount": 0,
+          "smallTextSamples": [],
+          "modals": [
+            {
+              "boxHeight": 709,
+              "boxWidth": 368,
+              "viewportH": 725,
+              "viewportW": 384,
+              "exceedsViewportH": false,
+              "exceedsViewportW": false,
+              "hasScrollableBody": true,
+              "stickyFooterPresent": true
+            }
+          ],
+          "lowContrastSampleCount": 2,
+          "lowContrastSamples": [
+            {
+              "tag": "p",
+              "text": "Enregistrer les réceptions d'a",
+              "contrastRatio": 4.34,
+              "color": "rgb(100, 116, 139)",
+              "bg": "rgb(241,245,249)"
+            },
+            {
+              "tag": "h3",
+              "text": "Répertoire Fournisseurs",
+              "contrastRatio": 2.56,
+              "color": "rgb(148, 163, 184)",
+              "bg": "rgb(255,255,255)"
+            }
+          ]
+        },
+        "PurchaseDetailModal": {
+          "innerH": 725,
+          "innerW": 384,
+          "docH": 725,
+          "docW": 384,
+          "pageScrolls": false,
+          "tables": [
+            {
+              "tableRowsCount": 1,
+              "meanRowHeight": 97,
+              "rowsOver48": 1,
+              "containerScrollHeight": 153,
+              "containerClientHeight": 153,
+              "containerScrolls": false,
+              "containerOverflowY": "auto"
+            },
+            {
+              "tableRowsCount": 0,
+              "meanRowHeight": 0,
+              "rowsOver48": 0,
+              "containerScrollHeight": 93,
+              "containerClientHeight": 93,
+              "containerScrolls": false,
+              "containerOverflowY": "auto"
+            }
+          ],
+          "typography": {
+            "headersMean": 13,
+            "headersMin": 13,
+            "cellsMean": 13.4,
+            "cellsMin": 12,
+            "labelsMin": 0,
+            "inputsMin": 12,
+            "buttonsMin": 12
+          },
+          "smallTextNodesCount": 0,
+          "smallTextSamples": [],
+          "modals": [
+            {
+              "boxHeight": 572,
+              "boxWidth": 368,
+              "viewportH": 725,
+              "viewportW": 384,
+              "exceedsViewportH": false,
+              "exceedsViewportW": false,
+              "hasScrollableBody": false,
+              "stickyFooterPresent": false
+            }
+          ],
+          "lowContrastSampleCount": 3,
+          "lowContrastSamples": [
+            {
+              "tag": "p",
+              "text": "Enregistrer les réceptions d'a",
+              "contrastRatio": 4.34,
+              "color": "rgb(100, 116, 139)",
+              "bg": "rgb(241,245,249)"
+            },
+            {
+              "tag": "h3",
+              "text": "Répertoire Fournisseurs",
+              "contrastRatio": 2.56,
+              "color": "rgb(148, 163, 184)",
+              "bg": "rgb(255,255,255)"
+            },
+            {
+              "tag": "span",
+              "text": "Total: 1200.000 DT",
+              "contrastRatio": 4.46,
+              "color": "rgb(100, 116, 139)",
+              "bg": "rgb(245,248,251)"
+            }
+          ]
+        },
+        "CreateMaterialModal": {
+          "innerH": 725,
+          "innerW": 384,
+          "docH": 725,
+          "docW": 384,
+          "pageScrolls": false,
+          "tables": [
+            {
+              "tableRowsCount": 4,
+              "meanRowHeight": 102,
+              "rowsOver48": 4,
+              "containerScrollHeight": 464,
+              "containerClientHeight": 443,
+              "containerScrolls": true,
+              "containerOverflowY": "auto"
+            },
+            {
+              "tableRowsCount": 1,
+              "meanRowHeight": 69,
+              "rowsOver48": 1,
+              "containerScrollHeight": 107,
+              "containerClientHeight": 107,
+              "containerScrolls": false,
+              "containerOverflowY": "auto"
+            }
+          ],
+          "typography": {
+            "headersMean": 13,
+            "headersMin": 13,
+            "cellsMean": 14,
+            "cellsMin": 14,
+            "labelsMin": 12,
+            "inputsMin": 12,
+            "buttonsMin": 12
+          },
+          "smallTextNodesCount": 0,
+          "smallTextSamples": [],
+          "modals": [
+            {
+              "boxHeight": 622,
+              "boxWidth": 368,
+              "viewportH": 725,
+              "viewportW": 384,
+              "exceedsViewportH": false,
+              "exceedsViewportW": false,
+              "hasScrollableBody": false,
+              "stickyFooterPresent": true
+            }
+          ],
+          "lowContrastSampleCount": 2,
+          "lowContrastSamples": [
+            {
+              "tag": "p",
+              "text": "Suivi des produits chimiques, ",
+              "contrastRatio": 4.34,
+              "color": "rgb(100, 116, 139)",
+              "bg": "rgb(241,245,249)"
+            },
+            {
+              "tag": "td",
+              "text": "Aucun ajustement de stock enre",
+              "contrastRatio": 2.56,
+              "color": "rgb(148, 163, 184)",
+              "bg": "rgb(255,255,255)"
+            }
+          ]
+        },
+        "AuthCredentialsModal": {
+          "innerH": 725,
+          "innerW": 384,
+          "docH": 725,
+          "docW": 384,
+          "pageScrolls": false,
+          "tables": [
+            {
+              "tableRowsCount": 4,
+              "meanRowHeight": 102,
+              "rowsOver48": 4,
+              "containerScrollHeight": 464,
+              "containerClientHeight": 443,
+              "containerScrolls": true,
+              "containerOverflowY": "auto"
+            },
+            {
+              "tableRowsCount": 1,
+              "meanRowHeight": 69,
+              "rowsOver48": 1,
+              "containerScrollHeight": 107,
+              "containerClientHeight": 107,
+              "containerScrolls": false,
+              "containerOverflowY": "auto"
+            }
+          ],
+          "typography": {
+            "headersMean": 13,
+            "headersMin": 13,
+            "cellsMean": 14,
+            "cellsMin": 14,
+            "labelsMin": 12,
+            "inputsMin": 12,
+            "buttonsMin": 12
+          },
+          "smallTextNodesCount": 0,
+          "smallTextSamples": [],
+          "modals": [
+            {
+              "boxHeight": 409,
+              "boxWidth": 368,
+              "viewportH": 725,
+              "viewportW": 384,
+              "exceedsViewportH": false,
+              "exceedsViewportW": false,
+              "hasScrollableBody": false,
+              "stickyFooterPresent": true
+            }
+          ],
+          "lowContrastSampleCount": 3,
+          "lowContrastSamples": [
+            {
+              "tag": "button",
+              "text": "Modifier le Code PIN",
+              "contrastRatio": 3.77,
+              "color": "rgb(5, 150, 105)",
+              "bg": "rgb(255,255,255)"
+            },
+            {
+              "tag": "p",
+              "text": "Suivi des produits chimiques, ",
+              "contrastRatio": 4.34,
+              "color": "rgb(100, 116, 139)",
+              "bg": "rgb(241,245,249)"
+            },
+            {
+              "tag": "td",
+              "text": "Aucun ajustement de stock enre",
+              "contrastRatio": 2.56,
+              "color": "rgb(148, 163, 184)",
+              "bg": "rgb(255,255,255)"
+            }
+          ]
+        },
+        "CameraScannerModal": {
+          "innerH": 725,
+          "innerW": 384,
+          "docH": 725,
+          "docW": 384,
+          "pageScrolls": false,
+          "tables": [],
+          "typography": {
+            "headersMean": 0,
+            "headersMin": 0,
+            "cellsMean": 0,
+            "cellsMin": 0,
+            "labelsMin": 0,
+            "inputsMin": 12,
+            "buttonsMin": 12
+          },
+          "smallTextNodesCount": 0,
+          "smallTextSamples": [],
+          "modals": [
+            {
+              "boxHeight": 294,
+              "boxWidth": 368,
+              "viewportH": 725,
+              "viewportW": 384,
+              "exceedsViewportH": false,
+              "exceedsViewportW": false,
+              "hasScrollableBody": false,
+              "stickyFooterPresent": true
+            }
+          ],
+          "lowContrastSampleCount": 5,
+          "lowContrastSamples": [
+            {
+              "tag": "button",
+              "text": "ALL",
+              "contrastRatio": 3.77,
+              "color": "rgb(255, 255, 255)",
+              "bg": "rgb(5,150,105)"
+            },
+            {
+              "tag": "p",
+              "text": "Le panier est vide",
+              "contrastRatio": 2.56,
+              "color": "rgb(148, 163, 184)",
+              "bg": "rgb(255,255,255)"
+            },
+            {
+              "tag": "p",
+              "text": "Scannez un code-barres ou séle",
+              "contrastRatio": 2.56,
+              "color": "rgb(148, 163, 184)",
+              "bg": "rgb(255,255,255)"
+            },
+            {
+              "tag": "button",
+              "text": "Encaisser",
+              "contrastRatio": 1.48,
+              "color": "rgb(255, 255, 255)",
+              "bg": "rgb(203,213,225)"
+            },
+            {
+              "tag": "span",
+              "text": "Encaisser",
+              "contrastRatio": 1.48,
+              "color": "rgb(255, 255, 255)",
+              "bg": "rgb(203,213,225)"
+            }
+          ]
+        },
+        "LockScreenModal": {
+          "innerH": 725,
+          "innerW": 384,
+          "docH": 725,
+          "docW": 384,
+          "pageScrolls": false,
+          "tables": [],
+          "typography": {
+            "headersMean": 0,
+            "headersMin": 0,
+            "cellsMean": 0,
+            "cellsMin": 0,
+            "labelsMin": 0,
+            "inputsMin": 12,
+            "buttonsMin": 12
+          },
+          "smallTextNodesCount": 0,
+          "smallTextSamples": [],
+          "modals": [
+            {
+              "boxHeight": 397,
+              "boxWidth": 368,
+              "viewportH": 725,
+              "viewportW": 384,
+              "exceedsViewportH": false,
+              "exceedsViewportW": false,
+              "hasScrollableBody": false,
+              "stickyFooterPresent": false
+            }
+          ],
+          "lowContrastSampleCount": 1,
+          "lowContrastSamples": [
+            {
+              "tag": "button",
+              "text": "ALL",
+              "contrastRatio": 3.77,
+              "color": "rgb(255, 255, 255)",
+              "bg": "rgb(5,150,105)"
+            }
+          ]
+        }
+      }
+    },
+    "phone_384x400": {
+      "views": {},
+      "modals": {
+        "CreateProductModal": {
+          "innerH": 400,
+          "innerW": 384,
+          "docH": 400,
+          "docW": 384,
+          "pageScrolls": false,
+          "tables": [
+            {
+              "tableRowsCount": 40,
+              "meanRowHeight": 104,
+              "rowsOver48": 40,
+              "containerScrollHeight": 4254,
+              "containerClientHeight": 118,
+              "containerScrolls": true,
+              "containerOverflowY": "auto"
+            }
+          ],
+          "typography": {
+            "headersMean": 13,
+            "headersMin": 13,
+            "cellsMean": 13.8,
+            "cellsMin": 12,
+            "labelsMin": 12,
+            "inputsMin": 12,
+            "buttonsMin": 12
+          },
+          "smallTextNodesCount": 0,
+          "smallTextSamples": [],
+          "modals": [
+            {
+              "boxHeight": 384,
+              "boxWidth": 368,
+              "viewportH": 400,
+              "viewportW": 384,
+              "exceedsViewportH": false,
+              "exceedsViewportW": false,
+              "hasScrollableBody": true,
+              "stickyFooterPresent": true
+            }
+          ],
+          "lowContrastSampleCount": 3,
+          "lowContrastSamples": [
+            {
+              "tag": "p",
+              "text": "Gestion des articles fabriqués",
+              "contrastRatio": 4.34,
+              "color": "rgb(100, 116, 139)",
+              "bg": "rgb(241,245,249)"
+            },
+            {
+              "tag": "button",
+              "text": "Suggérer",
+              "contrastRatio": 3.86,
+              "color": "rgb(100, 116, 139)",
+              "bg": "rgb(226,232,240)"
+            },
+            {
+              "tag": "button",
+              "text": "Suggérer",
+              "contrastRatio": 3.86,
+              "color": "rgb(100, 116, 139)",
+              "bg": "rgb(226,232,240)"
+            }
+          ]
+        },
+        "CreatePurchaseModal": {
+          "innerH": 400,
+          "innerW": 384,
+          "docH": 400,
+          "docW": 384,
+          "pageScrolls": false,
+          "tables": [
+            {
+              "tableRowsCount": 1,
+              "meanRowHeight": 97,
+              "rowsOver48": 1,
+              "containerScrollHeight": 153,
+              "containerClientHeight": 31,
+              "containerScrolls": true,
+              "containerOverflowY": "auto"
+            },
+            {
+              "tableRowsCount": 1,
+              "meanRowHeight": 50,
+              "rowsOver48": 1,
+              "containerScrollHeight": 124,
+              "containerClientHeight": 124,
+              "containerScrolls": false,
+              "containerOverflowY": "auto"
+            }
+          ],
+          "typography": {
+            "headersMean": 13,
+            "headersMin": 13,
+            "cellsMean": 13,
+            "cellsMin": 12,
+            "labelsMin": 12,
+            "inputsMin": 12,
+            "buttonsMin": 12
+          },
+          "smallTextNodesCount": 0,
+          "smallTextSamples": [],
+          "modals": [
+            {
+              "boxHeight": 384,
+              "boxWidth": 368,
+              "viewportH": 400,
+              "viewportW": 384,
+              "exceedsViewportH": false,
+              "exceedsViewportW": false,
+              "hasScrollableBody": true,
+              "stickyFooterPresent": true
+            }
+          ],
+          "lowContrastSampleCount": 2,
+          "lowContrastSamples": [
+            {
+              "tag": "p",
+              "text": "Enregistrer les réceptions d'a",
+              "contrastRatio": 4.34,
+              "color": "rgb(100, 116, 139)",
+              "bg": "rgb(241,245,249)"
+            },
+            {
+              "tag": "h3",
+              "text": "Répertoire Fournisseurs",
+              "contrastRatio": 2.56,
+              "color": "rgb(148, 163, 184)",
+              "bg": "rgb(255,255,255)"
+            }
+          ]
+        },
+        "PurchaseDetailModal": {
+          "innerH": 400,
+          "innerW": 384,
+          "docH": 400,
+          "docW": 384,
+          "pageScrolls": false,
+          "tables": [
+            {
+              "tableRowsCount": 1,
+              "meanRowHeight": 97,
+              "rowsOver48": 1,
+              "containerScrollHeight": 153,
+              "containerClientHeight": 31,
+              "containerScrolls": true,
+              "containerOverflowY": "auto"
+            }
+          ],
+          "typography": {
+            "headersMean": 13,
+            "headersMin": 13,
+            "cellsMean": 13.8,
+            "cellsMin": 12,
+            "labelsMin": 0,
+            "inputsMin": 12,
+            "buttonsMin": 12
+          },
+          "smallTextNodesCount": 0,
+          "smallTextSamples": [],
+          "modals": [],
+          "lowContrastSampleCount": 2,
+          "lowContrastSamples": [
+            {
+              "tag": "p",
+              "text": "Enregistrer les réceptions d'a",
+              "contrastRatio": 4.34,
+              "color": "rgb(100, 116, 139)",
+              "bg": "rgb(241,245,249)"
+            },
+            {
+              "tag": "h3",
+              "text": "Répertoire Fournisseurs",
+              "contrastRatio": 2.56,
+              "color": "rgb(148, 163, 184)",
+              "bg": "rgb(255,255,255)"
+            }
+          ]
+        },
+        "CreateMaterialModal": {
+          "innerH": 400,
+          "innerW": 384,
+          "docH": 400,
+          "docW": 384,
+          "pageScrolls": false,
+          "tables": [
+            {
+              "tableRowsCount": 4,
+              "meanRowHeight": 102,
+              "rowsOver48": 4,
+              "containerScrollHeight": 464,
+              "containerClientHeight": 118,
+              "containerScrolls": true,
+              "containerOverflowY": "auto"
+            },
+            {
+              "tableRowsCount": 1,
+              "meanRowHeight": 69,
+              "rowsOver48": 1,
+              "containerScrollHeight": 107,
+              "containerClientHeight": 107,
+              "containerScrolls": false,
+              "containerOverflowY": "auto"
+            }
+          ],
+          "typography": {
+            "headersMean": 13,
+            "headersMin": 13,
+            "cellsMean": 14,
+            "cellsMin": 14,
+            "labelsMin": 12,
+            "inputsMin": 12,
+            "buttonsMin": 12
+          },
+          "smallTextNodesCount": 0,
+          "smallTextSamples": [],
+          "modals": [
+            {
+              "boxHeight": 384,
+              "boxWidth": 368,
+              "viewportH": 400,
+              "viewportW": 384,
+              "exceedsViewportH": false,
+              "exceedsViewportW": false,
+              "hasScrollableBody": true,
+              "stickyFooterPresent": true
+            }
+          ],
+          "lowContrastSampleCount": 2,
+          "lowContrastSamples": [
+            {
+              "tag": "p",
+              "text": "Suivi des produits chimiques, ",
+              "contrastRatio": 4.34,
+              "color": "rgb(100, 116, 139)",
+              "bg": "rgb(241,245,249)"
+            },
+            {
+              "tag": "td",
+              "text": "Aucun ajustement de stock enre",
+              "contrastRatio": 2.56,
+              "color": "rgb(148, 163, 184)",
+              "bg": "rgb(255,255,255)"
+            }
+          ]
+        },
+        "AuthCredentialsModal": {
+          "innerH": 400,
+          "innerW": 384,
+          "docH": 400,
+          "docW": 384,
+          "pageScrolls": false,
+          "tables": [
+            {
+              "tableRowsCount": 4,
+              "meanRowHeight": 102,
+              "rowsOver48": 4,
+              "containerScrollHeight": 464,
+              "containerClientHeight": 118,
+              "containerScrolls": true,
+              "containerOverflowY": "auto"
+            },
+            {
+              "tableRowsCount": 1,
+              "meanRowHeight": 69,
+              "rowsOver48": 1,
+              "containerScrollHeight": 107,
+              "containerClientHeight": 107,
+              "containerScrolls": false,
+              "containerOverflowY": "auto"
+            }
+          ],
+          "typography": {
+            "headersMean": 13,
+            "headersMin": 13,
+            "cellsMean": 14,
+            "cellsMin": 14,
+            "labelsMin": 12,
+            "inputsMin": 12,
+            "buttonsMin": 12
+          },
+          "smallTextNodesCount": 0,
+          "smallTextSamples": [],
+          "modals": [
+            {
+              "boxHeight": 384,
+              "boxWidth": 368,
+              "viewportH": 400,
+              "viewportW": 384,
+              "exceedsViewportH": false,
+              "exceedsViewportW": false,
+              "hasScrollableBody": true,
+              "stickyFooterPresent": true
+            }
+          ],
+          "lowContrastSampleCount": 3,
+          "lowContrastSamples": [
+            {
+              "tag": "button",
+              "text": "Modifier le Code PIN",
+              "contrastRatio": 3.77,
+              "color": "rgb(5, 150, 105)",
+              "bg": "rgb(255,255,255)"
+            },
+            {
+              "tag": "p",
+              "text": "Suivi des produits chimiques, ",
+              "contrastRatio": 4.34,
+              "color": "rgb(100, 116, 139)",
+              "bg": "rgb(241,245,249)"
+            },
+            {
+              "tag": "td",
+              "text": "Aucun ajustement de stock enre",
+              "contrastRatio": 2.56,
+              "color": "rgb(148, 163, 184)",
+              "bg": "rgb(255,255,255)"
+            }
+          ]
+        },
+        "CameraScannerModal": {
+          "innerH": 400,
+          "innerW": 384,
+          "docH": 400,
+          "docW": 384,
+          "pageScrolls": false,
+          "tables": [],
+          "typography": {
+            "headersMean": 0,
+            "headersMin": 0,
+            "cellsMean": 0,
+            "cellsMin": 0,
+            "labelsMin": 0,
+            "inputsMin": 12,
+            "buttonsMin": 12
+          },
+          "smallTextNodesCount": 0,
+          "smallTextSamples": [],
+          "modals": [
+            {
+              "boxHeight": 294,
+              "boxWidth": 368,
+              "viewportH": 400,
+              "viewportW": 384,
+              "exceedsViewportH": false,
+              "exceedsViewportW": false,
+              "hasScrollableBody": false,
+              "stickyFooterPresent": true
+            }
+          ],
+          "lowContrastSampleCount": 5,
+          "lowContrastSamples": [
+            {
+              "tag": "button",
+              "text": "ALL",
+              "contrastRatio": 3.77,
+              "color": "rgb(255, 255, 255)",
+              "bg": "rgb(5,150,105)"
+            },
+            {
+              "tag": "p",
+              "text": "Le panier est vide",
+              "contrastRatio": 2.56,
+              "color": "rgb(148, 163, 184)",
+              "bg": "rgb(255,255,255)"
+            },
+            {
+              "tag": "p",
+              "text": "Scannez un code-barres ou séle",
+              "contrastRatio": 2.56,
+              "color": "rgb(148, 163, 184)",
+              "bg": "rgb(255,255,255)"
+            },
+            {
+              "tag": "button",
+              "text": "Encaisser",
+              "contrastRatio": 1.48,
+              "color": "rgb(255, 255, 255)",
+              "bg": "rgb(203,213,225)"
+            },
+            {
+              "tag": "span",
+              "text": "Encaisser",
+              "contrastRatio": 1.48,
+              "color": "rgb(255, 255, 255)",
+              "bg": "rgb(203,213,225)"
+            }
+          ]
+        },
+        "LockScreenModal": {
+          "innerH": 400,
+          "innerW": 384,
+          "docH": 400,
+          "docW": 384,
+          "pageScrolls": false,
+          "tables": [],
+          "typography": {
+            "headersMean": 0,
+            "headersMin": 0,
+            "cellsMean": 0,
+            "cellsMin": 0,
+            "labelsMin": 0,
+            "inputsMin": 12,
+            "buttonsMin": 12
+          },
+          "smallTextNodesCount": 0,
+          "smallTextSamples": [],
+          "modals": [
+            {
+              "boxHeight": 384,
+              "boxWidth": 368,
+              "viewportH": 400,
+              "viewportW": 384,
+              "exceedsViewportH": false,
+              "exceedsViewportW": false,
+              "hasScrollableBody": false,
+              "stickyFooterPresent": false
+            }
+          ],
+          "lowContrastSampleCount": 1,
+          "lowContrastSamples": [
+            {
+              "tag": "button",
+              "text": "ALL",
+              "contrastRatio": 3.77,
+              "color": "rgb(255, 255, 255)",
+              "bg": "rgb(5,150,105)"
+            }
+          ]
+        }
+      }
+    }
+  }
+}

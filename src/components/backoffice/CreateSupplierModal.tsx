@@ -51,7 +51,7 @@ export const CreateSupplierModal: React.FC<CreateSupplierModalProps> = ({
 
     const finalName = name.trim();
     if (!finalName) {
-      setError('Supplier name is required');
+      setError('Le nom du fournisseur est requis');
       return;
     }
 
@@ -72,13 +72,13 @@ export const CreateSupplierModal: React.FC<CreateSupplierModalProps> = ({
 
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
-        throw new Error(data.error || `Failed to ${supplierToEdit ? 'update' : 'create'} supplier`);
+        throw new Error(data.error || `Échec de la ${supplierToEdit ? 'mise à jour' : 'création'} du fournisseur`);
       }
 
       onSuccess();
       onClose();
     } catch (err: any) {
-      setError(err.message || 'Error saving supplier');
+      setError(err.message || "Erreur lors de l'enregistrement du fournisseur");
     } finally {
       setIsSubmitting(false);
     }
@@ -95,10 +95,10 @@ export const CreateSupplierModal: React.FC<CreateSupplierModalProps> = ({
             </div>
             <div>
               <h3 className="text-sm font-black text-slate-900">
-                {supplierToEdit ? 'Edit Supplier' : 'Add Supplier'}
+                {supplierToEdit ? 'Modifier le Fournisseur' : 'Ajouter un Fournisseur'}
               </h3>
               <p className="text-pos-badge text-slate-600">
-                {supplierToEdit ? 'Update vendor details and contact' : 'Register chemical distributor or packaging vendor'}
+                {supplierToEdit ? 'Mettre à jour les coordonnées du fournisseur' : "Enregistrer un distributeur chimique ou fournisseur d'emballage"}
               </p>
             </div>
           </div>
@@ -121,11 +121,11 @@ export const CreateSupplierModal: React.FC<CreateSupplierModalProps> = ({
             )}
 
             <div>
-              <label className="block font-bold text-slate-700 mb-1">Supplier Company Name *</label>
+              <label className="block font-bold text-slate-700 mb-1">Raison sociale / Nom du fournisseur *</label>
               <input
                 type="text"
                 required
-                placeholder="e.g. Chimique Tunisie, PlastPack Sfax..."
+                placeholder="ex: Chimique Tunisie, PlastPack Sfax..."
                 value={name}
                 onChange={e => setName(e.target.value)}
                 className="w-full font-semibold px-3 py-2 border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none"
@@ -133,10 +133,10 @@ export const CreateSupplierModal: React.FC<CreateSupplierModalProps> = ({
             </div>
 
             <div>
-              <label className="block font-bold text-slate-700 mb-1">Phone Number</label>
+              <label className="block font-bold text-slate-700 mb-1">Numéro de téléphone</label>
               <input
                 type="tel"
-                placeholder="e.g. +216 74 200 100"
+                placeholder="ex: +216 74 200 100"
                 value={phone}
                 onChange={e => setPhone(e.target.value)}
                 className="w-full font-semibold px-3 py-2 border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none"
@@ -144,10 +144,10 @@ export const CreateSupplierModal: React.FC<CreateSupplierModalProps> = ({
             </div>
 
             <div>
-              <label className="block font-bold text-slate-700 mb-1">Address / Location</label>
+              <label className="block font-bold text-slate-700 mb-1">Adresse / Localisation</label>
               <input
                 type="text"
-                placeholder="e.g. Route de Gabès Km 3, Sfax"
+                placeholder="ex: Route de Gabès Km 3, Sfax"
                 value={address}
                 onChange={e => setAddress(e.target.value)}
                 className="w-full font-semibold px-3 py-2 border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none"
@@ -162,7 +162,7 @@ export const CreateSupplierModal: React.FC<CreateSupplierModalProps> = ({
               onClick={onClose}
               className="flex-1 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl transition-colors"
             >
-              Cancel
+              Annuler
             </button>
             <button
               type="submit"
@@ -170,7 +170,7 @@ export const CreateSupplierModal: React.FC<CreateSupplierModalProps> = ({
               className="flex-1 py-2.5 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white font-bold rounded-xl shadow-sm transition-colors flex items-center justify-center gap-1.5"
             >
               <Truck className="w-4 h-4" />
-              <span>{isSubmitting ? 'Saving...' : (supplierToEdit ? 'Save Changes' : 'Create Supplier')}</span>
+              <span>{isSubmitting ? 'Enregistrement...' : (supplierToEdit ? 'Enregistrer' : 'Créer le Fournisseur')}</span>
             </button>
           </div>
         </form>

@@ -110,7 +110,7 @@ describe('SessionModal Z-Report Thermal Slip', () => {
     fireEvent.change(countedInput, { target: { value: '250.000' } });
 
     // Submit close form
-    const submitBtn = screen.getByRole('button', { name: /Clôturer|Close Session/i });
+    const submitBtn = screen.getByRole('button', { name: /Clôturer/i });
     fireEvent.click(submitBtn);
 
     // Verify session close called and updated callback fired

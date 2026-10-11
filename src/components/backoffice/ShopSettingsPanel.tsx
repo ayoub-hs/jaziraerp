@@ -93,7 +93,7 @@ export const ShopSettingsPanel: React.FC = () => {
 
       setStatusMsg({
         type: 'success',
-        text: 'Paramètres enregistrés avec succès / Settings saved successfully'
+        text: 'Paramètres enregistrés avec succès'
       });
     } catch (err: any) {
       setStatusMsg({
@@ -115,7 +115,7 @@ export const ShopSettingsPanel: React.FC = () => {
             <Store className="w-6 h-6" />
           </div>
           <div>
-            <h1 className="text-xl font-black text-slate-900">Paramètres de l'entreprise / Shop Settings</h1>
+            <h1 className="text-xl font-black text-slate-900">Paramètres de l'entreprise</h1>
             <p className="text-xs text-slate-500 font-medium mt-0.5">
               Coordonnées et mentions légales figurant sur les reçus thermiques et factures A4.
             </p>
@@ -155,7 +155,7 @@ export const ShopSettingsPanel: React.FC = () => {
         {/* Shop Name */}
         <div>
           <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
-            Nom de l'entreprise / Shop Name *
+            Nom de l'entreprise *
           </label>
           <input
             type="text"
@@ -173,7 +173,7 @@ export const ShopSettingsPanel: React.FC = () => {
         {/* Shop Subtitle */}
         <div>
           <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
-            Sous-titre / Subtitle
+            Sous-titre
           </label>
           <input
             type="text"
@@ -190,7 +190,7 @@ export const ShopSettingsPanel: React.FC = () => {
         {/* Address */}
         <div>
           <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
-            Adresse / Shop Address
+            Adresse
           </label>
           <input
             type="text"
@@ -209,7 +209,7 @@ export const ShopSettingsPanel: React.FC = () => {
           {/* Phone */}
           <div>
             <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
-              Téléphone / Phone Number
+              Téléphone
             </label>
             <input
               type="text"
@@ -226,7 +226,7 @@ export const ShopSettingsPanel: React.FC = () => {
           {/* Tax ID */}
           <div>
             <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
-              Matricule Fiscal / Tax ID (MF)
+              Matricule fiscal (MF)
             </label>
             <input
               type="text"
@@ -244,7 +244,7 @@ export const ShopSettingsPanel: React.FC = () => {
         {/* Default Markups for Pricing Suggestions */}
         <div className="pt-3 border-t border-slate-100">
           <h2 className="text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">
-            Marges par défaut / Default Markups (%)
+            Marges par défaut (%)
           </h2>
           <p className="text-pos-badge text-slate-600 mb-3">
             Pourcentages de marge utilisés pour suggérer les prix de vente dans le formulaire de création de produit. Laisser vide si aucune suggestion par défaut.
@@ -252,7 +252,7 @@ export const ShopSettingsPanel: React.FC = () => {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <label className="block text-xs font-bold text-slate-700 mb-1">
-                Marge Détail par défaut (%) / Default Retail Markup (%)
+                Marge détail par défaut (%)
               </label>
               <input
                 type="number"
@@ -269,7 +269,7 @@ export const ShopSettingsPanel: React.FC = () => {
             </div>
             <div>
               <label className="block text-xs font-bold text-slate-700 mb-1">
-                Marge Gros par défaut (%) / Default Wholesale Markup (%)
+                Marge gros par défaut (%)
               </label>
               <input
                 type="number"
@@ -299,7 +299,7 @@ export const ShopSettingsPanel: React.FC = () => {
             ) : (
               <Save className="w-4 h-4" />
             )}
-            <span>Enregistrer / Save</span>
+            <span>Enregistrer</span>
           </button>
         </div>
       </form>

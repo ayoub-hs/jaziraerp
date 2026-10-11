@@ -47,12 +47,12 @@ export const MaterialPriceHistoryModal: React.FC<MaterialPriceHistoryModalProps>
       setError(null);
       const res = await fetch(`/api/materials/${material.id}/history`);
       if (!res.ok) {
-        throw new Error('Failed to load price history');
+        throw new Error("Échec du chargement de l'historique des prix");
       }
       const data = await res.json();
       setHistory(data);
     } catch (err: any) {
-      setError(err.message || 'Error loading history');
+      setError(err.message || "Erreur lors du chargement de l'historique");
     } finally {
       setLoading(false);
     }
@@ -70,7 +70,7 @@ export const MaterialPriceHistoryModal: React.FC<MaterialPriceHistoryModalProps>
               <History className="w-5 h-5" />
             </div>
             <div>
-              <h3 className="text-base font-bold text-slate-900">Price History</h3>
+              <h3 className="text-base font-bold text-slate-900">Historique des Prix</h3>
               <p className="text-xs text-slate-500 font-mono">
                 {material.name} ({material.unit})
               </p>
@@ -95,11 +95,11 @@ export const MaterialPriceHistoryModal: React.FC<MaterialPriceHistoryModalProps>
 
           {loading ? (
             <div className="py-12 text-center text-slate-400 text-xs">
-              Loading price history records...
+              Chargement de l'historique des prix...
             </div>
           ) : history.length === 0 ? (
             <div className="py-12 text-center text-slate-400 text-xs">
-              No historical price records found for this material.
+              Aucun historique de prix trouvé pour cette matière.
             </div>
           ) : (
             <div className="border border-slate-200 rounded-xl overflow-hidden shadow-xs">
@@ -107,9 +107,9 @@ export const MaterialPriceHistoryModal: React.FC<MaterialPriceHistoryModalProps>
                 <thead>
                   <tr className="bg-slate-50 border-b border-slate-200 text-pos-caption font-bold text-slate-700 uppercase">
                     <th className="py-2.5 px-3">Date</th>
-                    <th className="py-2.5 px-3">Supplier</th>
-                    <th className="py-2.5 px-3 text-right">Cost / Unit</th>
-                    <th className="py-2.5 px-3 text-center">Trend</th>
+                    <th className="py-2.5 px-3">Fournisseur</th>
+                    <th className="py-2.5 px-3 text-right">Coût / Unité</th>
+                    <th className="py-2.5 px-3 text-center">Évolution</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
@@ -160,7 +160,7 @@ export const MaterialPriceHistoryModal: React.FC<MaterialPriceHistoryModalProps>
             onClick={onClose}
             className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl text-xs transition-colors"
           >
-            Close
+            Fermer
           </button>
         </div>
       </div>

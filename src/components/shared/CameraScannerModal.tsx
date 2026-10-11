@@ -15,7 +15,7 @@ export const CameraScannerModal: React.FC<CameraScannerModalProps> = ({
   isOpen,
   onClose,
   onScan,
-  title = 'Scan Product Barcode'
+  title = 'Scanner le Code-barres'
 }) => {
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
@@ -56,7 +56,7 @@ export const CameraScannerModal: React.FC<CameraScannerModalProps> = ({
         const { Camera: CapCamera } = await import('@capacitor/camera');
         const perm = await CapCamera.requestPermissions({ permissions: ['camera'] });
         if (perm.camera !== 'granted') {
-          setError('Camera permission denied. Allow camera access in system settings.');
+          setError('Accès à la caméra refusé. Autorisez l\'accès dans les paramètres système.');
           return;
         }
       }
@@ -87,7 +87,7 @@ export const CameraScannerModal: React.FC<CameraScannerModalProps> = ({
       scanFrame();
     } catch (err: any) {
       console.warn('Camera access failed:', err);
-      setError(err.message || 'Camera permission denied or camera not found.');
+      setError(err.message || 'Accès à la caméra refusé ou caméra introuvable.');
     }
   };
 
@@ -193,7 +193,7 @@ export const CameraScannerModal: React.FC<CameraScannerModalProps> = ({
           <div className="absolute inset-x-8 inset-y-16 border-2 border-dashed border-emerald-400/80 rounded-2xl pointer-events-none flex flex-col justify-center items-center shadow-[0_0_15px_rgba(52,211,153,0.3)]">
             <div className="w-full h-0.5 bg-red-500 shadow-[0_0_8px_red] animate-pulse"></div>
             <span className="text-pos-badge font-semibold text-white/90 bg-black/60 px-2 py-0.5 rounded mt-4">
-              Align barcode within frame
+              Aligner le code-barres dans le cadre
             </span>
           </div>
 
@@ -208,7 +208,7 @@ export const CameraScannerModal: React.FC<CameraScannerModalProps> = ({
         {/* Bottom Bar & Manual Entry Fallback */}
         <div className="p-3 shrink-0 bg-slate-950 border-t border-slate-800 space-y-2">
           <p className="text-xs text-slate-300 text-center">
-            Hold steady over bottle or box barcode
+            Maintenez l'appareil stable au-dessus du code-barres
           </p>
           <form
             onSubmit={e => {
@@ -225,7 +225,7 @@ export const CameraScannerModal: React.FC<CameraScannerModalProps> = ({
           >
             <input
               type="text"
-              placeholder="Or enter barcode manually..."
+              placeholder="Ou saisir le code manuellement..."
               value={manualCode}
               onChange={e => setManualCode(e.target.value)}
               className="flex-1 bg-slate-900 border border-slate-700 rounded-xl px-2.5 py-1 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-emerald-500"
@@ -234,7 +234,7 @@ export const CameraScannerModal: React.FC<CameraScannerModalProps> = ({
               type="submit"
               className="bg-emerald-700 hover:bg-emerald-800 text-white font-bold text-xs px-3 py-1 rounded-xl transition-colors"
             >
-              Scan
+              Valider
             </button>
           </form>
         </div>

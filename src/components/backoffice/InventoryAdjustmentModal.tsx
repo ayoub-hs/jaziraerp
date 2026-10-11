@@ -86,19 +86,19 @@ export const InventoryAdjustmentModal: React.FC<InventoryAdjustmentModalProps> =
     setError(null);
 
     if (!selectedItemId) {
-      setError('Please select an item to adjust');
+      setError('Veuillez sélectionner un article à ajuster');
       return;
     }
 
     const delta = parseFloat(quantityDelta);
     if (isNaN(delta) || delta === 0) {
-      setError('Quantity delta must be a non-zero number');
+      setError("L'écart de quantité doit être un nombre non nul");
       return;
     }
 
     const finalReason = reason.trim();
     if (!finalReason) {
-      setError('Adjustment reason is required for audit trail');
+      setError("Le motif de l'ajustement est requis pour la traçabilité");
       return;
     }
 
@@ -117,7 +117,7 @@ export const InventoryAdjustmentModal: React.FC<InventoryAdjustmentModalProps> =
 
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
-        throw new Error(data.error || 'Failed to record inventory adjustment');
+        throw new Error(data.error || "Échec de l'enregistrement de l'ajustement");
       }
 
       setQuantityDelta('-1');
@@ -125,7 +125,7 @@ export const InventoryAdjustmentModal: React.FC<InventoryAdjustmentModalProps> =
       onSuccess();
       onClose();
     } catch (err: any) {
-      setError(err.message || 'Error recording adjustment');
+      setError(err.message || "Erreur lors de l'enregistrement de l'ajustement");
     } finally {
       setIsSubmitting(false);
     }
@@ -141,8 +141,8 @@ export const InventoryAdjustmentModal: React.FC<InventoryAdjustmentModalProps> =
               <Scale className="w-4 h-4" />
             </div>
             <div>
-              <h3 className="text-sm font-black text-slate-900">Manual Stock Adjustment</h3>
-              <p className="text-pos-badge text-slate-500">Record breakage, shrinkage, spill, or physical inventory count</p>
+              <h3 className="text-sm font-black text-slate-900">Ajustement Manuel de Stock</h3>
+              <p className="text-pos-badge text-slate-500">Enregistrer casse, perte, coulage ou inventaire physique</p>
             </div>
           </div>
           <button
@@ -165,7 +165,7 @@ export const InventoryAdjustmentModal: React.FC<InventoryAdjustmentModalProps> =
           )}
 
           <div>
-            <label className="block font-bold text-slate-700 mb-1">Item Category Type *</label>
+            <label className="block font-bold text-slate-700 mb-1">Type d'article *</label>
             <div className="grid grid-cols-2 gap-2">
               <button
                 type="button"
@@ -176,7 +176,7 @@ export const InventoryAdjustmentModal: React.FC<InventoryAdjustmentModalProps> =
                     : 'border-slate-200 text-slate-600 hover:bg-slate-50'
                 }`}
               >
-                Finished Product SKU
+                Produit Fini (Article)
               </button>
               <button
                 type="button"
@@ -187,13 +187,13 @@ export const InventoryAdjustmentModal: React.FC<InventoryAdjustmentModalProps> =
                     : 'border-slate-200 text-slate-600 hover:bg-slate-50'
                 }`}
               >
-                Raw Material / Packaging
+                Matière Première / Emballage
               </button>
             </div>
           </div>
 
           <div>
-            <label className="block font-bold text-slate-700 mb-1">Select Item *</label>
+            <label className="block font-bold text-slate-700 mb-1">Sélectionner l'article *</label>
             <select
               value={selectedItemId}
               onChange={e => setSelectedItemId(e.target.value)}
@@ -202,13 +202,13 @@ export const InventoryAdjustmentModal: React.FC<InventoryAdjustmentModalProps> =
               {itemType === 'PRODUCT' ? (
                 products.map(p => (
                   <option key={p.id} value={p.id}>
-                    {p.name} ({p.size_label || 'Piece'}) — Current: {p.stock_quantity}
+                    {p.name} ({p.size_label || 'Piece'}) — Stock : {p.stock_quantity}
                   </option>
                 ))
               ) : (
                 materials.map(m => (
                   <option key={m.id} value={m.id}>
-                    {m.name} ({m.category || m.type}) — Current: {m.stock_quantity} {m.unit}
+                    {m.name} ({m.category || m.type}) — Stock : {m.stock_quantity} {m.unit}
                   </option>
                 ))
               )}
@@ -218,30 +218,30 @@ export const InventoryAdjustmentModal: React.FC<InventoryAdjustmentModalProps> =
           {/* Current Stock vs Projected */}
           <div className="p-3 bg-slate-50 rounded-xl border border-slate-200/80 grid grid-cols-3 gap-2 text-center">
             <div>
-              <span className="text-pos-badge text-slate-600 font-bold block uppercase">Current</span>
+              <span className="text-pos-badge text-slate-600 font-bold block uppercase">Actuel</span>
               <span className="font-mono font-bold text-slate-800 text-sm">{currentItemInfo.currentStock}</span>
             </div>
             <div>
-              <span className="text-pos-badge text-slate-600 font-bold block uppercase">Delta</span>
+              <span className="text-pos-badge text-slate-600 font-bold block uppercase">Écart</span>
               <span className={`font-mono font-bold text-sm ${parseFloat(quantityDelta) >= 0 ? 'text-emerald-700' : 'text-rose-700'}`}>
                 {parseFloat(quantityDelta) > 0 ? `+${quantityDelta}` : quantityDelta}
               </span>
             </div>
             <div>
-              <span className="text-pos-badge text-slate-600 font-bold block uppercase">New Stock</span>
+              <span className="text-pos-badge text-slate-600 font-bold block uppercase">Nouveau Stock</span>
               <span className="font-mono font-black text-sm text-blue-700">{projectedStock}</span>
             </div>
           </div>
 
           <div>
             <label className="block font-bold text-slate-700 mb-1">
-              Quantity Delta (Negative for loss/breakage, Positive for found/correction) *
+              Écart de Quantité (Négatif pour casse/perte, Positif pour surplus) *
             </label>
             <input
               type="number"
               step="any"
               required
-              placeholder="-5 or +10"
+              placeholder="-5 ou +10"
               value={quantityDelta}
               onChange={e => setQuantityDelta(e.target.value)}
               className="w-full font-bold font-mono px-3 py-2 border border-slate-300 rounded-xl focus:ring-2 focus:ring-orange-500 outline-none"
@@ -249,11 +249,11 @@ export const InventoryAdjustmentModal: React.FC<InventoryAdjustmentModalProps> =
           </div>
 
           <div>
-            <label className="block font-bold text-slate-700 mb-1">Adjustment Reason / Audit Note *</label>
+            <label className="block font-bold text-slate-700 mb-1">Motif de l'ajustement / Remarque *</label>
             <input
               type="text"
               required
-              placeholder="e.g. Sac déchiré déchargement, Casse rayon, Écart inventaire physique..."
+              placeholder="ex: Sac déchiré déchargement, Casse rayon, Écart inventaire physique..."
               value={reason}
               onChange={e => setReason(e.target.value)}
               className="w-full font-semibold px-3 py-2 border border-slate-300 rounded-xl focus:ring-2 focus:ring-orange-500 outline-none"
@@ -268,7 +268,7 @@ export const InventoryAdjustmentModal: React.FC<InventoryAdjustmentModalProps> =
               onClick={onClose}
               className="flex-1 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl transition-colors"
             >
-              Cancel
+              Annuler
             </button>
             <button
               type="submit"
@@ -276,7 +276,7 @@ export const InventoryAdjustmentModal: React.FC<InventoryAdjustmentModalProps> =
               className="flex-1 py-2.5 bg-orange-700 hover:bg-orange-800 disabled:opacity-50 text-white font-bold rounded-xl shadow-sm transition-colors flex items-center justify-center gap-1.5"
             >
               <Scale className="w-4 h-4" />
-              <span>{isSubmitting ? 'Adjusting...' : 'Record Adjustment'}</span>
+              <span>{isSubmitting ? 'Ajustement...' : "Enregistrer l'Ajustement"}</span>
             </button>
           </div>
         </form>

@@ -110,7 +110,7 @@ export const BatchDetailModal: React.FC<BatchDetailModalProps> = ({
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <h2 className="text-base font-black">Détail du Lot / Batch Details</h2>
+                <h2 className="text-base font-black">Détail du Lot</h2>
                 {batch && (
                   <span className="font-mono text-xs font-bold text-slate-300">
                     #{batch.batch_number}

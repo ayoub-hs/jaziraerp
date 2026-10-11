@@ -63,7 +63,7 @@ export const BarcodeLabelPrinter: React.FC<BarcodeLabelPrinterProps> = ({
         <div className="shrink-0 bg-slate-900 text-white px-6 py-4 flex items-center justify-between print:hidden">
           <div className="flex items-center gap-2">
             <BarcodeIcon className="w-5 h-5 text-emerald-400" />
-            <h2 className="text-base font-bold">Print Product Code-128 Barcode Labels</h2>
+            <h2 className="text-base font-bold">Imprimer les Étiquettes Code-barres Code-128</h2>
           </div>
           <button
             onClick={onClose}
@@ -78,7 +78,7 @@ export const BarcodeLabelPrinter: React.FC<BarcodeLabelPrinterProps> = ({
         <div className="shrink-0 p-4 bg-slate-50 border-b border-slate-200 grid grid-cols-1 sm:grid-cols-2 gap-3 print:hidden">
           <div>
             <label className="block text-xs font-bold text-slate-700 mb-1">
-              Select Product SKU *
+              Sélectionner l'article *
             </label>
             <select
               value={selectedProductId}
@@ -87,7 +87,7 @@ export const BarcodeLabelPrinter: React.FC<BarcodeLabelPrinterProps> = ({
             >
               {products.map(p => (
                 <option key={p.id} value={p.id}>
-                  {p.name} ({p.size_label || 'Piece'}) — {p.barcode || 'No barcode'}
+                  {p.name} ({p.size_label || 'Pièce'}) — {p.barcode || 'Sans code-barres'}
                 </option>
               ))}
             </select>
@@ -95,7 +95,7 @@ export const BarcodeLabelPrinter: React.FC<BarcodeLabelPrinterProps> = ({
 
           <div>
             <label className="block text-xs font-bold text-slate-700 mb-1">
-              Number of Stickers to Print
+              Nombre d'étiquettes à imprimer
             </label>
             <input
               type="number"
@@ -136,7 +136,7 @@ export const BarcodeLabelPrinter: React.FC<BarcodeLabelPrinterProps> = ({
 
                   <div className="w-full flex justify-between items-center text-pos-badge border-t border-slate-100 pt-1 font-mono">
                     <span className="bg-slate-100 px-1 rounded text-pos-badge font-bold text-slate-700">
-                      {selectedProduct.size_label || 'Piece'}
+                      {selectedProduct.size_label || 'Pièce'}
                     </span>
                     <span className="font-bold text-emerald-800">
                       {formatMoney(selectedProduct.retail_price)}
@@ -147,7 +147,7 @@ export const BarcodeLabelPrinter: React.FC<BarcodeLabelPrinterProps> = ({
             </div>
           ) : (
             <div className="py-12 text-center text-xs text-slate-400">
-              Select a product above to generate sticker labels.
+              Sélectionnez un article ci-dessus pour générer les étiquettes.
             </div>
           )}
         </div>
@@ -159,7 +159,7 @@ export const BarcodeLabelPrinter: React.FC<BarcodeLabelPrinterProps> = ({
             onClick={onClose}
             className="py-2.5 px-4 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl text-xs transition-colors"
           >
-            Cancel
+            Annuler
           </button>
           <button
             type="button"
@@ -167,7 +167,7 @@ export const BarcodeLabelPrinter: React.FC<BarcodeLabelPrinterProps> = ({
             className="py-2.5 px-5 bg-emerald-700 hover:bg-emerald-800 text-white font-bold rounded-xl text-xs shadow transition-colors flex items-center gap-2"
           >
             <Printer className="w-4 h-4" />
-            Print {copies} Sticker Labels
+            Imprimer {copies} étiquettes
           </button>
         </div>
       </div>

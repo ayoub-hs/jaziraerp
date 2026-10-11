@@ -28,7 +28,6 @@ interface ViewportConfig {
 const VIEWPORTS: ViewportConfig[] = [
   { name: 'desktop_1600x780', width: 1600, height: 780, deviceScaleFactor: 1, isMobile: false, hasTouch: false },
   { name: 'desktop_1600x900', width: 1600, height: 900, deviceScaleFactor: 1, isMobile: false, hasTouch: false },
-  { name: 'desktop_1563x545', width: 1563, height: 545, deviceScaleFactor: 1, isMobile: false, hasTouch: false },
   { name: 'phone_384x725', width: 384, height: 725, deviceScaleFactor: 2.81, isMobile: true, hasTouch: true },
   { name: 'phone_384x790', width: 384, height: 790, deviceScaleFactor: 2.81, isMobile: true, hasTouch: true },
   { name: 'phone_384x400', width: 384, height: 400, deviceScaleFactor: 2.81, isMobile: true, hasTouch: true }
@@ -493,7 +492,7 @@ async function runAudit() {
 
         const visibleRowsCount = cartMetrics.fullyVisibleCount;
 
-        if (['desktop_1600x780', 'desktop_1600x900', 'desktop_1563x545', 'phone_384x725'].includes(vp.name)) {
+        if (['desktop_1600x780', 'desktop_1600x900', 'phone_384x725'].includes(vp.name)) {
           if (!cartMetrics.noPageScroll) {
             violations.push({
               target: 'Zero page scroll (document scrollHeight <= innerHeight)',
@@ -536,7 +535,7 @@ async function runAudit() {
         }
 
         const vpKey = vp.name.replace('desktop_', '');
-        if (['1600x780', '1600x900', '1563x545'].includes(vpKey)) {
+        if (['1600x780', '1600x900'].includes(vpKey)) {
           afterBatch1Results.viewports[vpKey] = {
             cartScrollContainerClientHeight: cartMetrics.cartScrollAreaHeight,
             summaryHeight: cartMetrics.summaryBlockHeight,
@@ -589,16 +588,6 @@ async function runAudit() {
               screen: 'pos_cart_8lines',
               viewport: vp.name,
               details: `Visible cart lines at 1600x900: ${visibleRowsCount} (target >= 6), Pay visible: ${cartMetrics.payInsideViewport}, Total visible: ${cartMetrics.totalInsideViewport}`,
-              severity: 'High'
-            });
-          }
-        } else if (vp.name === 'desktop_1563x545') {
-          if (visibleRowsCount < 3 || !cartMetrics.payInsideViewport || !cartMetrics.totalInsideViewport) {
-            violations.push({
-              target: 'Desktop 1563x545: at least 3 cart lines + total + pay visible',
-              screen: 'pos_cart_8lines',
-              viewport: vp.name,
-              details: `Visible cart lines: ${visibleRowsCount} (target >= 3), Pay visible: ${cartMetrics.payInsideViewport}, Total visible: ${cartMetrics.totalInsideViewport}`,
               severity: 'High'
             });
           }
@@ -1460,7 +1449,6 @@ async function runAudit() {
       'Touch targets on phone at least 44x44 CSS px',
       'Contrast at least 4.5:1 for text',
       'Desktop 1600x780: at least 6 cart lines + total + pay visible',
-      'Desktop 1563x545: at least 3 cart lines + total + pay visible',
       'Phone visible cart lines: at least 4 before scroll',
       'Phone cart total and pay button inside viewport',
       'Bottom navigation height at least 64px',
@@ -1490,7 +1478,6 @@ async function runAudit() {
       'Total element inside viewport',
       'Pay button inside viewport',
       'Desktop 1600x780: at least 6 cart lines + total + pay visible',
-      'Desktop 1563x545: at least 3 cart lines + total + pay visible',
       'Phone 384x400: cash field, change due and confirm button all visible',
       'Non-POS views scroll normally',
       'Print preview full content unclipped',

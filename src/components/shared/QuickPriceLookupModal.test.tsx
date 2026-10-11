@@ -293,7 +293,7 @@ describe('QuickPriceLookupModal (Batch 2 Item B5)', () => {
     expect(onClose).toHaveBeenCalledTimes(1);
 
     // Click close button
-    const closeBtns = screen.getAllByRole('button', { name: /fermer|close/i });
+    const closeBtns = screen.getAllByRole('button', { name: /fermer/i });
     fireEvent.click(closeBtns[0]);
     expect(onClose).toHaveBeenCalledTimes(2);
   });

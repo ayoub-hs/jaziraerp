@@ -51,10 +51,10 @@ export const ManageCategoriesModal: React.FC<ManageCategoriesModalProps> = ({
         setCategories(await res.json());
       } else {
         const data = await res.json().catch(() => ({}));
-        setError(data.error || 'Failed to load categories');
+        setError(data.error || 'Échec du chargement des catégories');
       }
     } catch (err: any) {
-      setError(err.message || 'Network error loading categories');
+      setError(err.message || 'Erreur réseau lors du chargement des catégories');
     } finally {
       setLoading(false);
     }
@@ -87,14 +87,14 @@ export const ManageCategoriesModal: React.FC<ManageCategoriesModalProps> = ({
       });
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
-        throw new Error(data.error || 'Failed to create category');
+        throw new Error(data.error || 'Échec de la création de la catégorie');
       }
       setNewCatName('');
-      setSuccessNotice(`Category "${clean}" created successfully.`);
+      setSuccessNotice(`Catégorie « ${clean} » créée avec succès.`);
       await loadCategories();
       onSuccess();
     } catch (err: any) {
-      setError(err.message || 'Error creating category');
+      setError(err.message || 'Erreur lors de la création de la catégorie');
     }
   };
 
@@ -125,16 +125,16 @@ export const ManageCategoriesModal: React.FC<ManageCategoriesModalProps> = ({
 
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
-        throw new Error(data.error || 'Failed to rename category');
+        throw new Error(data.error || 'Échec du renommage de la catégorie');
       }
 
       const result = await res.json();
-      setSuccessNotice(`Renamed "${oldName}" to "${cleanNew}" (${result.updated_product_families} product families, ${result.updated_materials} materials updated).`);
+      setSuccessNotice(`Renommée de « ${oldName} » en « ${cleanNew} » (${result.updated_product_families} familles de produits, ${result.updated_materials} matières mises à jour).`);
       setEditingCatName(null);
       await loadCategories();
       onSuccess();
     } catch (err: any) {
-      setError(err.message || 'Error renaming category');
+      setError(err.message || 'Erreur lors du renommage de la catégorie');
     } finally {
       setIsRenaming(false);
     }
@@ -142,7 +142,7 @@ export const ManageCategoriesModal: React.FC<ManageCategoriesModalProps> = ({
 
   const handleDeleteCategory = async (cat: CategoryItem) => {
     if (cat.total_count > 0) {
-      setError(`Cannot delete "${cat.name}" because it is currently used by ${cat.total_count} items. Please rename or reassign items first.`);
+      setError(`Impossible de supprimer « ${cat.name} » car elle est utilisée par ${cat.total_count} éléments. Veuillez renommer ou réassigner les éléments d'abord.`);
       return;
     }
 
@@ -155,13 +155,13 @@ export const ManageCategoriesModal: React.FC<ManageCategoriesModalProps> = ({
       });
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
-        throw new Error(data.error || 'Failed to delete category');
+        throw new Error(data.error || 'Échec de la suppression de la catégorie');
       }
-      setSuccessNotice(`Category "${cat.name}" removed.`);
+      setSuccessNotice(`Catégorie « ${cat.name} » supprimée.`);
       await loadCategories();
       onSuccess();
     } catch (err: any) {
-      setError(err.message || 'Error deleting category');
+      setError(err.message || 'Erreur lors de la suppression de la catégorie');
     }
   };
 
@@ -175,8 +175,8 @@ export const ManageCategoriesModal: React.FC<ManageCategoriesModalProps> = ({
               <Layers className="w-4 h-4" />
             </div>
             <div>
-              <h3 className="text-sm font-black text-slate-900">Central Category Management</h3>
-              <p className="text-pos-badge text-slate-500">Manage categories with cascading rename across product families and materials</p>
+              <h3 className="text-sm font-black text-slate-900">Gestion Centrale des Catégories</h3>
+              <p className="text-pos-badge text-slate-500">Gérer les catégories avec renommage en cascade sur les familles et matières</p>
             </div>
           </div>
           <button
@@ -207,13 +207,13 @@ export const ManageCategoriesModal: React.FC<ManageCategoriesModalProps> = ({
           {/* Add Category Form */}
           <form onSubmit={handleCreateCategory} className="p-3 bg-slate-50 rounded-xl border border-slate-200 space-y-2">
             <label className="block text-pos-badge font-bold uppercase text-slate-700 tracking-wider">
-              Add New Category
+              Ajouter une Nouvelle Catégorie
             </label>
             <div className="flex gap-2">
               <input
                 type="text"
                 required
-                placeholder="e.g. Laundry Care, Disinfectants, Fragrance Oils..."
+                placeholder="ex: Soin du linge, Désinfectants, Fragrances..."
                 value={newCatName}
                 onChange={e => setNewCatName(e.target.value)}
                 className="flex-1 text-xs font-semibold px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-purple-500 outline-none bg-white"
@@ -223,15 +223,15 @@ export const ManageCategoriesModal: React.FC<ManageCategoriesModalProps> = ({
                 onChange={e => setNewCatType(e.target.value as any)}
                 className="text-xs font-semibold px-2.5 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-purple-500 outline-none bg-white"
               >
-                <option value="PRODUCT">Products</option>
-                <option value="MATERIAL">Materials</option>
+                <option value="PRODUCT">Produits</option>
+                <option value="MATERIAL">Matières</option>
               </select>
               <button
                 type="submit"
                 className="px-3.5 py-2 bg-purple-700 hover:bg-purple-800 text-white font-bold rounded-lg text-xs flex items-center gap-1 shadow-sm transition-colors shrink-0"
               >
                 <Plus className="w-3.5 h-3.5" />
-                <span>Add</span>
+                <span>Ajouter</span>
               </button>
             </div>
           </form>
@@ -239,15 +239,15 @@ export const ManageCategoriesModal: React.FC<ManageCategoriesModalProps> = ({
           {/* Categories List */}
           <div className="border border-slate-200 rounded-xl overflow-hidden">
             <div className="px-3.5 py-2 bg-slate-50 border-b border-slate-200 font-bold text-pos-caption text-slate-700 uppercase flex justify-between items-center">
-              <span>All Categories ({categories.length})</span>
-              <span className="text-pos-badge text-slate-500 font-normal">Renaming cascades automatically</span>
+              <span>Toutes les Catégories ({categories.length})</span>
+              <span className="text-pos-badge text-slate-500 font-normal">Renommage en cascade automatique</span>
             </div>
 
             <div className="divide-y divide-slate-100">
               {loading ? (
-                <div className="p-8 text-center text-slate-400 text-xs">Loading categories...</div>
+                <div className="p-8 text-center text-slate-400 text-xs">Chargement des catégories...</div>
               ) : categories.length === 0 ? (
-                <div className="p-8 text-center text-slate-400 text-xs">No categories found.</div>
+                <div className="p-8 text-center text-slate-400 text-xs">Aucune catégorie trouvée.</div>
               ) : (
                 categories.map(cat => (
                   <div key={cat.id || cat.name} className="p-3 hover:bg-slate-50 flex items-center justify-between gap-3 text-xs">
@@ -267,14 +267,14 @@ export const ManageCategoriesModal: React.FC<ManageCategoriesModalProps> = ({
                           className="px-3 py-1.5 bg-emerald-700 hover:bg-emerald-800 text-white rounded-lg font-bold text-xs flex items-center gap-1 transition-colors"
                         >
                           <Check className="w-3.5 h-3.5" />
-                          <span>{isRenaming ? 'Saving...' : 'Apply'}</span>
+                          <span>{isRenaming ? 'Enregistrement...' : 'Appliquer'}</span>
                         </button>
                         <button
                           type="button"
                           onClick={() => setEditingCatName(null)}
                           className="px-2.5 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg font-semibold text-xs transition-colors"
                         >
-                          Cancel
+                          Annuler
                         </button>
                       </div>
                     ) : (
@@ -288,23 +288,23 @@ export const ManageCategoriesModal: React.FC<ManageCategoriesModalProps> = ({
                               ? 'bg-amber-100 text-amber-900'
                               : 'bg-purple-100 text-purple-900'
                           }`}>
-                            {cat.type}
+                            {cat.type === 'PRODUCT' ? 'PRODUIT' : cat.type === 'MATERIAL' ? 'MATIÈRE' : 'TOUT'}
                           </span>
                         </div>
 
                         <div className="flex items-center gap-3 text-slate-600 text-pos-badge shrink-0">
                           <span>
-                            {cat.product_count > 0 && `${cat.product_count} product${cat.product_count > 1 ? 's' : ''}`}
+                            {cat.product_count > 0 && `${cat.product_count} produit${cat.product_count > 1 ? 's' : ''}`}
                             {cat.product_count > 0 && cat.material_count > 0 && ' • '}
-                            {cat.material_count > 0 && `${cat.material_count} material${cat.material_count > 1 ? 's' : ''}`}
-                            {cat.total_count === 0 && <span className="italic text-slate-500">Unused</span>}
+                            {cat.material_count > 0 && `${cat.material_count} matière${cat.material_count > 1 ? 's' : ''}`}
+                            {cat.total_count === 0 && <span className="italic text-slate-500">Inutilisée</span>}
                           </span>
 
                           <button
                             type="button"
                             onClick={() => handleStartRename(cat)}
                             className="p-1 hover:bg-purple-50 text-slate-400 hover:text-purple-600 rounded-lg transition-colors"
-                            title="Rename & Cascade"
+                            title="Renommer en cascade"
                           >
                             <Edit2 className="w-3.5 h-3.5" />
                           </button>
@@ -314,7 +314,7 @@ export const ManageCategoriesModal: React.FC<ManageCategoriesModalProps> = ({
                               type="button"
                               onClick={() => handleDeleteCategory(cat)}
                               className="p-1 hover:bg-rose-50 text-slate-400 hover:text-rose-600 rounded-lg transition-colors"
-                              title="Delete unused category"
+                              title="Supprimer la catégorie inutilisée"
                             >
                               <Trash2 className="w-3.5 h-3.5" />
                             </button>
@@ -336,7 +336,7 @@ export const ManageCategoriesModal: React.FC<ManageCategoriesModalProps> = ({
             onClick={onClose}
             className="px-4 py-2 bg-white border border-slate-200 text-slate-700 font-bold rounded-xl text-xs hover:bg-slate-100 transition-colors"
           >
-            Close
+            Fermer
           </button>
         </div>
       </div>

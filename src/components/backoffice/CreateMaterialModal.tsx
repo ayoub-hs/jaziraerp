@@ -12,26 +12,26 @@ interface CreateMaterialModalProps {
 }
 
 const COMMON_CATEGORIES = [
-  { value: 'surfactant', label: 'Surfactant (Tensioactif)' },
-  { value: 'alkali', label: 'Alkali (Base / Soude)' },
-  { value: 'acid', label: 'Acid (Acide)' },
-  { value: 'solvent', label: 'Solvent (Solvant / Alcool)' },
-  { value: 'fragrance', label: 'Fragrance (Parfum)' },
+  { value: 'surfactant', label: 'Tensioactif (Surfactant)' },
+  { value: 'alkali', label: 'Base / Soude (Alcali)' },
+  { value: 'acid', label: 'Acide' },
+  { value: 'solvent', label: 'Solvant / Alcool' },
+  { value: 'fragrance', label: 'Parfum / Fragrance' },
   { value: 'colorant', label: 'Colorant' },
-  { value: 'preservative', label: 'Preservative (Conservateur)' },
-  { value: 'bottle', label: 'Packaging: Bottle / Bidon' },
-  { value: 'cap', label: 'Packaging: Cap / Bouchon' },
-  { value: 'label', label: 'Packaging: Label / Étiquette' },
-  { value: 'box', label: 'Packaging: Box / Carton' },
-  { value: 'other', label: 'Other' }
+  { value: 'preservative', label: 'Conservateur' },
+  { value: 'bottle', label: 'Emballage : Bouteille / Bidon' },
+  { value: 'cap', label: 'Emballage : Bouchon' },
+  { value: 'label', label: 'Emballage : Étiquette' },
+  { value: 'box', label: 'Emballage : Carton / Caisse' },
+  { value: 'other', label: 'Autre' }
 ];
 
 const COMMON_UNITS = [
-  { value: 'kg', label: 'Kilogram (kg)' },
-  { value: 'L', label: 'Liter (L)' },
-  { value: 'pcs', label: 'Piece / Unité (pcs)' },
-  { value: 'g', label: 'Gram (g)' },
-  { value: 'ml', label: 'Milliliter (ml)' }
+  { value: 'kg', label: 'Kilogramme (kg)' },
+  { value: 'L', label: 'Litre (L)' },
+  { value: 'pcs', label: 'Pièce / Unité (pcs)' },
+  { value: 'g', label: 'Gramme (g)' },
+  { value: 'ml', label: 'Millilitre (ml)' }
 ];
 
 export const CreateMaterialModal: React.FC<CreateMaterialModalProps> = ({
@@ -96,7 +96,7 @@ export const CreateMaterialModal: React.FC<CreateMaterialModalProps> = ({
 
     const finalName = name.trim();
     if (!finalName) {
-      setError('Material name is required');
+      setError('Le nom de la matière est requis');
       return;
     }
 
@@ -136,13 +136,13 @@ export const CreateMaterialModal: React.FC<CreateMaterialModalProps> = ({
 
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
-        throw new Error(data.error || `Failed to ${materialToEdit ? 'update' : 'create'} raw material`);
+        throw new Error(data.error || `Échec de ${materialToEdit ? 'la mise à jour' : 'la création'} de la matière`);
       }
 
       onSuccess();
       onClose();
     } catch (err: any) {
-      setError(err.message || 'Error saving raw material');
+      setError(err.message || "Erreur lors de l'enregistrement de la matière");
     } finally {
       setIsSubmitting(false);
     }
@@ -159,10 +159,10 @@ export const CreateMaterialModal: React.FC<CreateMaterialModalProps> = ({
             </div>
             <div>
               <h3 className="text-sm font-black text-slate-900">
-                {materialToEdit ? 'Edit Raw Material / Packaging' : 'Add Raw Material or Packaging'}
+                {materialToEdit ? 'Modifier la Matière / Emballage' : 'Ajouter une Matière ou Emballage'}
               </h3>
               <p className="text-pos-badge text-slate-600">
-                {materialToEdit ? 'Update properties and pricing' : 'Register new input ingredient, chemical, or packaging item'}
+                {materialToEdit ? 'Mettre à jour les propriétés et coûts' : 'Enregistrer une nouvelle matière première, produit chimique ou emballage'}
               </p>
             </div>
           </div>
@@ -186,12 +186,12 @@ export const CreateMaterialModal: React.FC<CreateMaterialModalProps> = ({
 
           <div>
             <label className="block text-xs font-bold text-slate-700 mb-1">
-              Material Name *
+              Nom de la Matière *
             </label>
             <input
               type="text"
               required
-              placeholder="e.g. Sulfonic Acid LABSA 96%, Flacon 1L PEHD..."
+              placeholder="ex. Acide sulfonique LABSA 96%, Flacon 1L PEHD..."
               value={name}
               onChange={e => setName(e.target.value)}
               className="w-full text-xs font-semibold px-3 py-2 border border-slate-300 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none"
@@ -201,7 +201,7 @@ export const CreateMaterialModal: React.FC<CreateMaterialModalProps> = ({
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="block text-xs font-bold text-slate-700 mb-1">
-                Category *
+                Catégorie *
               </label>
               <select
                 value={category}
@@ -216,7 +216,7 @@ export const CreateMaterialModal: React.FC<CreateMaterialModalProps> = ({
 
             <div>
               <label className="block text-xs font-bold text-slate-700 mb-1">
-                Unit of Measurement *
+                Unité de Mesure *
               </label>
               <select
                 value={unit}
@@ -233,12 +233,12 @@ export const CreateMaterialModal: React.FC<CreateMaterialModalProps> = ({
           {category === 'other' && (
             <div>
               <label className="block text-xs font-bold text-slate-700 mb-1">
-                Custom Category Name *
+                Nom de la Catégorie Personnalisée *
               </label>
               <input
                 type="text"
                 required
-                placeholder="Enter custom category"
+                placeholder="Entrez la catégorie personnalisée"
                 value={customCategory}
                 onChange={e => setCustomCategory(e.target.value)}
                 className="w-full text-xs font-semibold px-3 py-2 border border-slate-300 rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none"
@@ -249,7 +249,7 @@ export const CreateMaterialModal: React.FC<CreateMaterialModalProps> = ({
           <div className="grid grid-cols-3 gap-3">
             <div>
               <label className="block text-xs font-bold text-slate-700 mb-1">
-                {materialToEdit ? 'Current Stock' : 'Initial Stock'}
+                {materialToEdit ? 'Stock Actuel' : 'Stock Initial'}
               </label>
               {materialToEdit ? (
                 <div className="w-full text-xs font-bold font-mono px-3 py-2 border border-slate-200 rounded-xl bg-slate-50 text-slate-700 flex items-center justify-between">
@@ -270,7 +270,7 @@ export const CreateMaterialModal: React.FC<CreateMaterialModalProps> = ({
 
             <div>
               <label className="block text-xs font-bold text-slate-700 mb-1">
-                Initial / Last Purchase Cost (DT)
+                Coût d'Achat Initial / Dernier (DT)
               </label>
               <input
                 type="number"
@@ -281,13 +281,13 @@ export const CreateMaterialModal: React.FC<CreateMaterialModalProps> = ({
                 className="w-full text-xs font-bold font-mono px-3 py-2 border border-slate-300 rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none"
               />
               <p className="text-pos-badge text-slate-600 mt-1">
-                Used only when there is no purchase this year; otherwise the average of this year's purchases is used.
+                Utilisé uniquement s'il n'y a pas d'achat cette année ; sinon le coût moyen des achats est appliqué.
               </p>
             </div>
 
             <div>
               <label className="block text-xs font-bold text-slate-700 mb-1">
-                Low Alert Threshold
+                Seuil d'Alerte Stock Bas
               </label>
               <input
                 type="number"
@@ -302,14 +302,14 @@ export const CreateMaterialModal: React.FC<CreateMaterialModalProps> = ({
 
           <div>
             <label className="block text-xs font-bold text-slate-700 mb-1">
-              Supplier (Optional)
+              Fournisseur (Facultatif)
             </label>
             <select
               value={supplierId}
               onChange={e => setSupplierId(e.target.value)}
               className="w-full text-xs font-semibold px-3 py-2 border border-slate-300 rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none"
             >
-              <option value="">None / Unspecified</option>
+              <option value="">Aucun / Non spécifié</option>
               {suppliers.map(s => (
                 <option key={s.id} value={s.id}>{s.name}</option>
               ))}
@@ -324,7 +324,7 @@ export const CreateMaterialModal: React.FC<CreateMaterialModalProps> = ({
               onClick={onClose}
               className="flex-1 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl text-xs transition-colors"
             >
-              Cancel
+              Annuler
             </button>
             <button
               type="submit"
@@ -332,7 +332,7 @@ export const CreateMaterialModal: React.FC<CreateMaterialModalProps> = ({
               className="flex-1 py-2.5 bg-emerald-700 hover:bg-emerald-800 disabled:opacity-50 text-white font-bold rounded-xl text-xs shadow-sm transition-colors flex items-center justify-center gap-1.5"
             >
               <FlaskConical className="w-4 h-4" />
-              <span>{isSubmitting ? 'Saving...' : (materialToEdit ? 'Save Changes' : 'Create Material')}</span>
+              <span>{isSubmitting ? 'Enregistrement...' : (materialToEdit ? 'Enregistrer' : 'Créer la matière')}</span>
             </button>
           </div>
         </form>

@@ -121,7 +121,7 @@ describe('DesktopPos Quick Price/Stock Lookup Integration (Batch 2 Item B5)', ()
     );
 
     // 1. First add a product to cart via product grid or barcode
-    const posSearchInput = screen.getByPlaceholderText(/Rechercher des produits|Search products by name/i) as HTMLInputElement;
+    const posSearchInput = screen.getByPlaceholderText(/Rechercher des produits/i) as HTMLInputElement;
     fireEvent.change(posSearchInput, { target: { value: '619444555666' } });
     fireEvent.keyDown(posSearchInput, { key: 'Enter' });
 

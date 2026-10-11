@@ -44,22 +44,22 @@ export const BackupManager: React.FC = () => {
         const newBackup = await res.json();
         setStatusMsg({
           type: 'success',
-          text: `Backup created successfully: ${newBackup.filename}`
+          text: `Sauvegarde créée avec succès : ${newBackup.filename}`
         });
         await loadBackups();
       } else {
         const err = await res.json();
-        setStatusMsg({ type: 'error', text: err.error || 'Failed to create backup' });
+        setStatusMsg({ type: 'error', text: err.error || 'Échec de la création de la sauvegarde' });
       }
     } catch (err: any) {
-      setStatusMsg({ type: 'error', text: err.message || 'Network error creating backup' });
+      setStatusMsg({ type: 'error', text: err.message || 'Erreur réseau lors de la sauvegarde' });
     } finally {
       setIsCreating(false);
     }
   };
 
   const handleRestoreSnapshot = async (filename: string) => {
-    if (!window.confirm(`Restore database from snapshot "${filename}"? Current data will be replaced.`)) {
+    if (!window.confirm(`Restaurer la base de données depuis l'instantané "${filename}" ? Les données actuelles seront remplacées.`)) {
       return;
     }
 
@@ -76,14 +76,14 @@ export const BackupManager: React.FC = () => {
       if (res.ok) {
         setStatusMsg({
           type: 'success',
-          text: `Database successfully restored from ${filename}. Refreshing view...`
+          text: `Base de données restaurée avec succès depuis ${filename}. Actualisation en cours...`
         });
         setTimeout(() => window.location.reload(), 1500);
       } else {
-        setStatusMsg({ type: 'error', text: data.error || 'Failed to restore backup' });
+        setStatusMsg({ type: 'error', text: data.error || 'Échec de la restauration de la sauvegarde' });
       }
     } catch (err: any) {
-      setStatusMsg({ type: 'error', text: err.message || 'Network error restoring backup' });
+      setStatusMsg({ type: 'error', text: err.message || 'Erreur réseau lors de la restauration' });
     } finally {
       setIsRestoring(false);
     }
@@ -93,7 +93,7 @@ export const BackupManager: React.FC = () => {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    if (!window.confirm(`Restore database from uploaded file "${file.name}"? Current data will be replaced.`)) {
+    if (!window.confirm(`Restaurer la base de données depuis le fichier téléversé "${file.name}" ? Les données actuelles seront remplacées.`)) {
       if (fileInputRef.current) fileInputRef.current.value = '';
       return;
     }
@@ -118,14 +118,14 @@ export const BackupManager: React.FC = () => {
           if (res.ok) {
             setStatusMsg({
               type: 'success',
-              text: `Database successfully restored from uploaded file ${file.name}. Refreshing view...`
+              text: `Base de données restaurée avec succès depuis le fichier ${file.name}. Actualisation en cours...`
             });
             setTimeout(() => window.location.reload(), 1500);
           } else {
-            setStatusMsg({ type: 'error', text: data.error || 'Failed to restore database from file' });
+            setStatusMsg({ type: 'error', text: data.error || 'Échec de la restauration de la base depuis le fichier' });
           }
         } catch (innerErr: any) {
-          setStatusMsg({ type: 'error', text: innerErr.message || 'Error processing uploaded file' });
+          setStatusMsg({ type: 'error', text: innerErr.message || 'Erreur lors du traitement du fichier téléversé' });
         } finally {
           setIsRestoring(false);
           if (fileInputRef.current) fileInputRef.current.value = '';
@@ -134,7 +134,7 @@ export const BackupManager: React.FC = () => {
 
       reader.readAsDataURL(file);
     } catch (err: any) {
-      setStatusMsg({ type: 'error', text: err.message || 'Error reading file' });
+      setStatusMsg({ type: 'error', text: err.message || 'Erreur lors de la lecture du fichier' });
       setIsRestoring(false);
       if (fileInputRef.current) fileInputRef.current.value = '';
     }
@@ -153,10 +153,10 @@ export const BackupManager: React.FC = () => {
         <div>
           <div className="flex items-center gap-2">
             <Database className="w-5 h-5 text-emerald-600" />
-            <h2 className="text-base font-black text-slate-900">Automated Daily Backups & Snapshots</h2>
+            <h2 className="text-base font-black text-slate-900">Sauvegardes Automatiques Quotidiennes & Instantanés</h2>
           </div>
           <p className="text-xs text-slate-500 mt-0.5">
-            Full SQLite database snapshots. Automated daily vacuum with 30-day retention pruning.
+            Instantanés complets de la base SQLite. Nettoyage automatique quotidien avec rétention de 30 jours.
           </p>
         </div>
 
@@ -174,10 +174,10 @@ export const BackupManager: React.FC = () => {
             onClick={() => fileInputRef.current?.click()}
             disabled={isRestoring}
             className="flex items-center gap-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold px-3 py-2 rounded-xl transition-colors border border-slate-300 disabled:opacity-50"
-            title="Upload and restore a .sqlite backup file"
+            title="Téléverser et restaurer un fichier de sauvegarde .sqlite"
           >
             <Upload className="w-4 h-4 text-slate-600" />
-            {isRestoring ? 'Restoring...' : 'Restore from File'}
+            {isRestoring ? 'Restauration...' : 'Restaurer depuis Fichier'}
           </button>
 
           <button
@@ -185,7 +185,7 @@ export const BackupManager: React.FC = () => {
             onClick={loadBackups}
             disabled={loading}
             className="p-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl transition-colors text-xs font-bold"
-            title="Refresh list"
+            title="Rafraîchir la liste"
           >
             <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
           </button>
@@ -199,12 +199,12 @@ export const BackupManager: React.FC = () => {
             {isCreating ? (
               <>
                 <RefreshCw className="w-4 h-4 animate-spin" />
-                Snapshotting...
+                Création de l'instantané...
               </>
             ) : (
               <>
                 <Plus className="w-4 h-4" />
-                Create Backup Now
+                Créer une Sauvegarde Maintenant
               </>
             )}
           </button>
@@ -232,19 +232,19 @@ export const BackupManager: React.FC = () => {
       {/* Snapshot List Table */}
       <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden flex flex-col max-h-[calc(100vh-280px)]">
         {loading && backups.length === 0 ? (
-          <div className="p-8 text-center text-slate-400 text-xs">Loading database snapshots...</div>
+          <div className="p-8 text-center text-slate-400 text-xs">Chargement des instantanés de la base de données...</div>
         ) : backups.length === 0 ? (
           <div className="p-8 text-center text-slate-400 text-xs">
-            No backups found. Click &quot;Create Backup Now&quot; to generate an immediate snapshot.
+            Aucune sauvegarde trouvée. Cliquez sur « Créer une Sauvegarde Maintenant » pour générer un instantané immédiat.
           </div>
         ) : (
           <div className="overflow-x-auto overflow-y-auto flex-1">
             <table className="w-full text-left text-xs border-collapse">
               <thead className="sticky top-0 bg-slate-50 z-10 shadow-xs">
                 <tr className="border-b border-slate-200 font-bold text-slate-700 uppercase text-pos-caption">
-                  <th className="py-2.5 px-3">Snapshot File</th>
-                  <th className="py-2.5 px-3">Size</th>
-                  <th className="py-2.5 px-3">Created Date & Time</th>
+                  <th className="py-2.5 px-3">Fichier Instantané</th>
+                  <th className="py-2.5 px-3">Taille</th>
+                  <th className="py-2.5 px-3">Date & Heure de Création</th>
                   <th className="py-2.5 px-3 text-right">Actions</th>
                 </tr>
               </thead>
@@ -267,19 +267,19 @@ export const BackupManager: React.FC = () => {
                           onClick={() => handleRestoreSnapshot(item.filename)}
                           disabled={isRestoring}
                           className="inline-flex items-center gap-1 bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-200 font-bold px-2.5 py-1 rounded-lg text-xs transition-colors disabled:opacity-50"
-                          title="Restore this snapshot"
+                          title="Restaurer cet instantané"
                         >
                           <RotateCcw className="w-3.5 h-3.5 text-amber-700" />
-                          Restore
+                          Restaurer
                         </button>
                         <a
                           href={`/api/backups/download/${encodeURIComponent(item.filename)}`}
                           download={item.filename}
                           className="inline-flex items-center gap-1 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold px-2.5 py-1 rounded-lg text-xs transition-colors"
-                          title="Download SQLite file"
+                          title="Télécharger le fichier SQLite"
                         >
                           <Download className="w-3.5 h-3.5 text-slate-600" />
-                          Download
+                          Télécharger
                         </a>
                       </div>
                     </td>

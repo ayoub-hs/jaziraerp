@@ -74,7 +74,7 @@ export const CreateFormulationModal: React.FC<CreateFormulationModalProps> = ({
               );
             }
           })
-          .catch(() => setError('Error loading formulation items'));
+          .catch(() => setError('Erreur de chargement des composants de la formule'));
       } else {
         setName('');
         setBaseYieldQuantity('100');
@@ -133,7 +133,7 @@ export const CreateFormulationModal: React.FC<CreateFormulationModalProps> = ({
         const res = await fetch(`/api/formulations/${formulationToEdit.id}/preview-batch?target_units=${units}`);
         if (!res.ok) {
           const d = await res.json();
-          throw new Error(d.error || 'Failed to calculate batch preview');
+          throw new Error(d.error || 'Échec du calcul de simulation de lot');
         }
         const data = await res.json();
         setPreviewData(data);
@@ -151,7 +151,7 @@ export const CreateFormulationModal: React.FC<CreateFormulationModalProps> = ({
           const curStock = mat?.stock_quantity ?? 0;
           return {
             material_id: i.material_id,
-            material_name: mat?.name || 'Unknown',
+            material_name: mat?.name || 'Inconnu',
             material_unit: mat?.unit || 'kg',
             quantity_consumed: req,
             unit_cost: unitCost,
@@ -170,7 +170,7 @@ export const CreateFormulationModal: React.FC<CreateFormulationModalProps> = ({
       }
       setShowPreviewModal(true);
     } catch (err: any) {
-      setError(err.message || 'Error calculating preview');
+      setError(err.message || 'Erreur lors du calcul de la simulation');
     } finally {
       setIsPreviewLoading(false);
     }
@@ -178,7 +178,7 @@ export const CreateFormulationModal: React.FC<CreateFormulationModalProps> = ({
 
   const handleDelete = async () => {
     if (!formulationToEdit) return;
-    if (!window.confirm(`Delete formulation recipe "${formulationToEdit.name}"? This cannot be undone.`)) {
+    if (!window.confirm(`Supprimer la formule "${formulationToEdit.name}" ? Cette action est irréversible.`)) {
       return;
     }
 
@@ -190,12 +190,12 @@ export const CreateFormulationModal: React.FC<CreateFormulationModalProps> = ({
       });
       if (!res.ok) {
         const d = await res.json();
-        throw new Error(d.error || 'Failed to delete formulation');
+        throw new Error(d.error || 'Échec de la suppression de la formule');
       }
       onSuccess();
       onClose();
     } catch (err: any) {
-      setError(err.message || 'Error deleting formulation');
+      setError(err.message || 'Erreur lors de la suppression de la formule');
     } finally {
       setIsDeleting(false);
     }
@@ -207,7 +207,7 @@ export const CreateFormulationModal: React.FC<CreateFormulationModalProps> = ({
 
     const finalName = name.trim();
     if (!finalName) {
-      setError('Formulation name is required');
+      setError('Le nom de la formule est requis');
       return;
     }
 
@@ -219,7 +219,7 @@ export const CreateFormulationModal: React.FC<CreateFormulationModalProps> = ({
       }));
 
     if (validItems.length === 0) {
-      setError('At least one ingredient with a quantity > 0 is required');
+      setError('Au moins un ingrédient avec une quantité > 0 est requis');
       return;
     }
 
@@ -242,13 +242,13 @@ export const CreateFormulationModal: React.FC<CreateFormulationModalProps> = ({
 
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
-        throw new Error(data.error || `Failed to ${formulationToEdit ? 'update' : 'create'} formulation`);
+        throw new Error(data.error || `Échec de ${formulationToEdit ? 'la mise à jour' : 'la création'} de la formule`);
       }
 
       onSuccess();
       onClose();
     } catch (err: any) {
-      setError(err.message || 'Error saving formulation');
+      setError(err.message || "Erreur lors de l'enregistrement de la formule");
     } finally {
       setIsSubmitting(false);
     }
@@ -267,10 +267,10 @@ export const CreateFormulationModal: React.FC<CreateFormulationModalProps> = ({
             </div>
             <div>
               <h3 className="text-sm font-black text-slate-900">
-                {formulationToEdit ? 'Formulation Recipe Editor' : 'Formulation Recipe Builder'}
+                {formulationToEdit ? 'Modifier la Formule de Production' : 'Créer une Formule de Production'}
               </h3>
               <p className="text-pos-badge text-slate-500">
-                {formulationToEdit ? 'View, edit ingredients, preview batch scale, or delete formulation' : 'Define chemical recipe ingredients, yield, and auto-cost reference'}
+                {formulationToEdit ? 'Consulter, modifier les composants, simuler un lot ou supprimer la formule' : 'Définir les ingrédients, le rendement et le coût de référence'}
               </p>
             </div>
           </div>
@@ -279,7 +279,7 @@ export const CreateFormulationModal: React.FC<CreateFormulationModalProps> = ({
             aria-label="Fermer"
             className="text-slate-400 hover:text-slate-600 p-1.5 rounded-lg hover:bg-slate-100 transition-colors"
           >
-            <X className="w-5 h-5" />
+            <X className="w-4 h-4" />
           </button>
         </div>
 
@@ -303,12 +303,12 @@ export const CreateFormulationModal: React.FC<CreateFormulationModalProps> = ({
           <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
             <div className="md:col-span-2">
               <label className="block text-xs font-bold text-slate-700 mb-1">
-                Formulation Name *
+                Nom de la Formule *
               </label>
               <input
                 type="text"
                 required
-                placeholder="e.g. Nettoyant Sol Lavande Standard, Javel 12°..."
+                placeholder="ex. Nettoyant Sol Lavande Standard, Javel 12°..."
                 value={name}
                 onChange={e => setName(e.target.value)}
                 className="w-full text-xs font-semibold px-3 py-2 border border-slate-300 rounded-xl focus:ring-2 focus:ring-purple-500 outline-none"
@@ -318,7 +318,7 @@ export const CreateFormulationModal: React.FC<CreateFormulationModalProps> = ({
             <div className="grid grid-cols-2 gap-2">
               <div>
                 <label className="block text-xs font-bold text-slate-700 mb-1">
-                  Base Yield *
+                  Rendement de Base *
                 </label>
                 <input
                   type="number"
@@ -333,16 +333,16 @@ export const CreateFormulationModal: React.FC<CreateFormulationModalProps> = ({
 
               <div>
                 <label className="block text-xs font-bold text-slate-700 mb-1">
-                  Unit *
+                  Unité *
                 </label>
                 <select
                   value={baseYieldUnit}
                   onChange={e => setBaseYieldUnit(e.target.value)}
                   className="w-full text-xs font-semibold px-3 py-2 border border-slate-300 rounded-xl focus:ring-2 focus:ring-purple-500 outline-none"
                 >
-                  <option value="L">Liters (L)</option>
-                  <option value="kg">Kilograms (kg)</option>
-                  <option value="pcs">Pieces (pcs)</option>
+                  <option value="L">Litres (L)</option>
+                  <option value="kg">Kilogrammes (kg)</option>
+                  <option value="pcs">Pièces (pcs)</option>
                 </select>
               </div>
             </div>
@@ -350,11 +350,11 @@ export const CreateFormulationModal: React.FC<CreateFormulationModalProps> = ({
 
           <div>
             <label className="block text-xs font-bold text-slate-700 mb-1">
-              Manufacturing Instructions / Notes
+              Instructions de Fabrication / Notes
             </label>
             <input
               type="text"
-              placeholder="e.g. Dilute surfactant first, stir at 40°C, add colorant last..."
+              placeholder="ex. Diluer le tensioactif, mélanger à 40°C, ajouter le colorant en dernier..."
               value={notes}
               onChange={e => setNotes(e.target.value)}
               className="w-full text-xs font-semibold px-3 py-2 border border-slate-300 rounded-xl focus:ring-2 focus:ring-purple-500 outline-none"
@@ -365,7 +365,7 @@ export const CreateFormulationModal: React.FC<CreateFormulationModalProps> = ({
           <div className="space-y-2">
             <div className="flex items-center justify-between">
               <label className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
-                <span>Recipe Ingredients & Packaging ({items.length})</span>
+                <span>Ingrédients & Emballages de la Formule ({items.length})</span>
               </label>
               <button
                 type="button"
@@ -373,7 +373,7 @@ export const CreateFormulationModal: React.FC<CreateFormulationModalProps> = ({
                 className="flex items-center gap-1 text-purple-700 hover:text-purple-800 text-xs font-bold bg-purple-50 hover:bg-purple-100 px-2.5 py-1 rounded-lg transition-colors border border-purple-200"
               >
                 <Plus className="w-3.5 h-3.5" />
-                Add Ingredient
+                Ajouter un Ingrédient
               </button>
             </div>
 
@@ -381,10 +381,10 @@ export const CreateFormulationModal: React.FC<CreateFormulationModalProps> = ({
               <table className="w-full text-left text-xs border-collapse">
                 <thead>
                   <tr className="bg-slate-50 border-b border-slate-200 text-pos-caption font-bold text-slate-700 uppercase">
-                    <th className="p-2.5">Raw Material / Component</th>
-                    <th className="p-2.5 w-32">Qty for Base Yield</th>
-                    <th className="p-2.5 text-right w-24">Unit Cost</th>
-                    <th className="p-2.5 text-right w-28">Cost Subtotal</th>
+                    <th className="p-2.5">Matière Première / Composant</th>
+                    <th className="p-2.5 w-32">Qté / Rendement de Base</th>
+                    <th className="p-2.5 text-right w-24">Coût Unitaire</th>
+                    <th className="p-2.5 text-right w-28">Sous-total Coût</th>
                     <th className="p-2.5 text-center w-12"></th>
                   </tr>
                 </thead>
@@ -443,7 +443,7 @@ export const CreateFormulationModal: React.FC<CreateFormulationModalProps> = ({
                               type="button"
                               onClick={() => handleRemoveIngredient(item.id)}
                               className="text-slate-400 hover:text-rose-600 p-1 transition-colors"
-                              title="Remove ingredient"
+                              title="Supprimer l'ingrédient"
                             >
                               <Trash2 className="w-4 h-4" />
                             </button>
@@ -462,12 +462,12 @@ export const CreateFormulationModal: React.FC<CreateFormulationModalProps> = ({
             <div className="flex items-center gap-2 text-purple-900">
               <Calculator className="w-5 h-5 text-purple-700" />
               <div>
-                <span className="text-xs font-bold block">Live Recipe Costing</span>
-                <span className="text-pos-badge text-purple-700">Calculated from current raw material purchase costs</span>
+                <span className="text-xs font-bold block">Coût Estimé de la Formule</span>
+                <span className="text-pos-badge text-purple-700">Calculé selon les derniers coûts d'achat des matières</span>
               </div>
             </div>
             <div className="text-right">
-              <span className="text-pos-badge text-slate-600 block">Total Base Cost:</span>
+              <span className="text-pos-badge text-slate-600 block">Coût Total de Base :</span>
               <span className="text-base font-black font-mono text-purple-950">
                 {formatMoney(recipeCostSummary.totalCost)}
               </span>
@@ -481,7 +481,7 @@ export const CreateFormulationModal: React.FC<CreateFormulationModalProps> = ({
           <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl flex items-center justify-between gap-3">
             <div className="flex items-center gap-2">
               <Eye className="w-4 h-4 text-slate-600" />
-              <span className="text-xs font-bold text-slate-700">Preview Batch Scale:</span>
+              <span className="text-xs font-bold text-slate-700">Simuler la Production :</span>
               <input
                 type="number"
                 min="1"
@@ -499,7 +499,7 @@ export const CreateFormulationModal: React.FC<CreateFormulationModalProps> = ({
               className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-200 hover:bg-slate-300 text-slate-800 text-xs font-bold rounded-lg transition-colors disabled:opacity-50"
             >
               <Play className="w-3.5 h-3.5 text-slate-700" />
-              {isPreviewLoading ? 'Calculating...' : 'Preview Requirements & Stock'}
+              {isPreviewLoading ? 'Calcul en cours...' : 'Vérifier Besoins & Stock'}
             </button>
           </div>
 
@@ -507,8 +507,8 @@ export const CreateFormulationModal: React.FC<CreateFormulationModalProps> = ({
           {showPreviewModal && previewData && (
             <div className="p-3 bg-blue-50 border border-blue-200 rounded-xl space-y-2 text-xs animate-in fade-in duration-150">
               <div className="flex justify-between items-center font-bold text-blue-900 border-b border-blue-200/60 pb-1.5">
-                <span>Batch Output: {previewData.targetOutputUnits} {baseYieldUnit}</span>
-                <span>Total Expected Cost: {formatMoney(previewData.totalBatchCost)} ({formatMoney(previewData.costPerUnit)} / {baseYieldUnit})</span>
+                <span>Production : {previewData.targetOutputUnits} {baseYieldUnit}</span>
+                <span>Coût Total Prévu : {formatMoney(previewData.totalBatchCost)} ({formatMoney(previewData.costPerUnit)} / {baseYieldUnit})</span>
               </div>
               <div className="space-y-1 max-h-40 overflow-y-auto">
                 {previewData.ingredients?.map((ing: any) => {
@@ -517,9 +517,9 @@ export const CreateFormulationModal: React.FC<CreateFormulationModalProps> = ({
                     <div key={ing.material_id} className="flex items-center justify-between text-pos-badge py-0.5 border-b border-blue-100">
                       <span className="font-semibold text-slate-800">{ing.material_name}:</span>
                       <div className="flex items-center gap-3">
-                        <span className="font-mono text-slate-600">Requires {ing.quantity_consumed} {ing.material_unit} ({formatMoney(ing.total_cost)})</span>
+                        <span className="font-mono text-slate-600">Requis : {ing.quantity_consumed} {ing.material_unit} ({formatMoney(ing.total_cost)})</span>
                         <span className={`font-mono font-bold px-1 rounded ${isShortage ? 'bg-rose-100 text-rose-800' : 'bg-emerald-100 text-emerald-800'}`}>
-                          {isShortage ? `Shortage: ${ing.remaining_stock_after_batch} ${ing.material_unit}` : `Remaining: ${ing.remaining_stock_after_batch} ${ing.material_unit}`}
+                          {isShortage ? `Manque : ${Math.abs(ing.remaining_stock_after_batch)} ${ing.material_unit}` : `Restant : ${ing.remaining_stock_after_batch} ${ing.material_unit}`}
                         </span>
                       </div>
                     </div>
@@ -540,7 +540,7 @@ export const CreateFormulationModal: React.FC<CreateFormulationModalProps> = ({
                 className="px-3.5 py-2.5 bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 font-bold rounded-xl text-xs transition-colors flex items-center gap-1.5 disabled:opacity-50"
               >
                 <Trash2 className="w-4 h-4 text-rose-600" />
-                <span>{isDeleting ? 'Deleting...' : 'Delete Recipe'}</span>
+                <span>{isDeleting ? 'Suppression...' : 'Supprimer la formule'}</span>
               </button>
             ) : <div />}
 
@@ -550,7 +550,7 @@ export const CreateFormulationModal: React.FC<CreateFormulationModalProps> = ({
                 onClick={onClose}
                 className="px-4 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl text-xs transition-colors"
               >
-                Cancel
+                Annuler
               </button>
               <button
                 type="submit"
@@ -558,7 +558,7 @@ export const CreateFormulationModal: React.FC<CreateFormulationModalProps> = ({
                 className="px-5 py-2.5 bg-purple-700 hover:bg-purple-800 disabled:opacity-50 text-white font-bold rounded-xl text-xs shadow-sm transition-colors flex items-center justify-center gap-1.5"
               >
                 <Layers className="w-4 h-4" />
-                <span>{isSubmitting ? 'Saving...' : (formulationToEdit ? 'Save Changes' : 'Create Formulation')}</span>
+                <span>{isSubmitting ? 'Enregistrement...' : (formulationToEdit ? 'Enregistrer' : 'Créer la formule')}</span>
               </button>
             </div>
           </div>

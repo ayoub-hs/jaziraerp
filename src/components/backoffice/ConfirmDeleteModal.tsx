@@ -20,7 +20,7 @@ export const ConfirmDeleteModal: React.FC<ConfirmDeleteModalProps> = ({
   title,
   message,
   itemName,
-  confirmButtonText = 'Delete'
+  confirmButtonText = 'Supprimer'
 }) => {
   useModalScanPause(isOpen);
 
@@ -41,7 +41,7 @@ export const ConfirmDeleteModal: React.FC<ConfirmDeleteModalProps> = ({
       await onConfirm();
       onClose();
     } catch (err: any) {
-      setError(err.message || 'Failed to delete item');
+      setError(err.message || 'Échec de la suppression');
     } finally {
       setIsDeleting(false);
     }
@@ -69,8 +69,8 @@ export const ConfirmDeleteModal: React.FC<ConfirmDeleteModalProps> = ({
             <p className="text-xs text-slate-500 mt-1.5 leading-relaxed">
               {message || (
                 <>
-                  Are you sure you want to delete {itemName ? <strong className="text-slate-800 font-bold">&quot;{itemName}&quot;</strong> : 'this item'}?
-                  If referenced by historical transactions, it will be safely deactivated/archived rather than broken.
+                  Êtes-vous sûr de vouloir supprimer {itemName ? <strong className="text-slate-800 font-bold">&quot;{itemName}&quot;</strong> : 'cet élément'} ?
+                  S'il est lié à des transactions historiques, il sera désactivé/archivé en toute sécurité.
                 </>
               )}
             </p>
@@ -89,7 +89,7 @@ export const ConfirmDeleteModal: React.FC<ConfirmDeleteModalProps> = ({
               disabled={isDeleting}
               className="flex-1 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold rounded-xl transition-colors disabled:opacity-50"
             >
-              Cancel
+              Annuler
             </button>
             <button
               type="button"
@@ -97,7 +97,7 @@ export const ConfirmDeleteModal: React.FC<ConfirmDeleteModalProps> = ({
               disabled={isDeleting}
               className="flex-1 py-2.5 bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold rounded-xl shadow-xs transition-colors disabled:opacity-50 flex items-center justify-center gap-1.5"
             >
-              {isDeleting ? 'Deleting...' : confirmButtonText}
+              {isDeleting ? 'Suppression...' : confirmButtonText}
             </button>
           </div>
         </div>

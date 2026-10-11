@@ -47,19 +47,19 @@ export const AuthCredentialsModal: React.FC<AuthCredentialsModalProps> = ({
     setError(null);
 
     if (!/^\d{4}$/.test(setupPin.trim())) {
-      setError('PIN must be exactly 4 digits');
+      setError('Le code PIN doit comporter exactement 4 chiffres');
       return;
     }
     if (setupPin !== confirmSetupPin) {
-      setError('PINs do not match');
+      setError('Les codes PIN ne correspondent pas');
       return;
     }
     if (setupPassword.trim().length < 4) {
-      setError('Master Password must be at least 4 characters');
+      setError('Le mot de passe maître doit comporter au moins 4 caractères');
       return;
     }
     if (setupPassword !== confirmSetupPassword) {
-      setError('Master Passwords do not match');
+      setError('Les mots de passe maître ne correspondent pas');
       return;
     }
 
@@ -77,17 +77,17 @@ export const AuthCredentialsModal: React.FC<AuthCredentialsModalProps> = ({
 
       const data = await res.json().catch(() => ({}));
       if (!res.ok) {
-        throw new Error(data.error || 'Failed to complete initial security setup');
+        throw new Error(data.error || 'Échec de la configuration initiale de sécurité');
       }
 
       await authService.cacheCredentials(setupPin.trim(), setupPassword.trim());
-      setSuccess('Security credentials configured successfully!');
+      setSuccess('Identifiants de sécurité configurés avec succès !');
       setTimeout(() => {
         onSuccess?.();
         onClose();
       }, 1200);
     } catch (err: any) {
-      setError(err.message || 'Error configuring security credentials');
+      setError(err.message || 'Erreur lors de la configuration des identifiants');
     } finally {
       setIsSubmitting(false);
     }
@@ -98,7 +98,7 @@ export const AuthCredentialsModal: React.FC<AuthCredentialsModalProps> = ({
     setError(null);
 
     if (!currentSecret.trim()) {
-      setError('Current PIN or Master Password is required');
+      setError('Code PIN ou mot de passe maître actuel requis');
       return;
     }
 
@@ -106,21 +106,21 @@ export const AuthCredentialsModal: React.FC<AuthCredentialsModalProps> = ({
 
     if (changeType === 'PIN') {
       if (!/^\d{4}$/.test(newPin.trim())) {
-        setError('New PIN must be exactly 4 digits');
+        setError('Le nouveau code PIN doit comporter exactement 4 chiffres');
         return;
       }
       if (newPin !== confirmNewPin) {
-        setError('New PINs do not match');
+        setError('Les nouveaux codes PIN ne correspondent pas');
         return;
       }
       payload.new_pin = newPin.trim();
     } else {
       if (newPassword.trim().length < 4) {
-        setError('New Master Password must be at least 4 characters');
+        setError('Le nouveau mot de passe maître doit comporter au moins 4 caractères');
         return;
       }
       if (newPassword !== confirmNewPassword) {
-        setError('New Master Passwords do not match');
+        setError('Les nouveaux mots de passe maître ne correspondent pas');
         return;
       }
       payload.new_password = newPassword.trim();
@@ -136,7 +136,7 @@ export const AuthCredentialsModal: React.FC<AuthCredentialsModalProps> = ({
 
       const data = await res.json().catch(() => ({}));
       if (!res.ok) {
-        throw new Error(data.error || 'Failed to update credentials');
+        throw new Error(data.error || 'Échec de la mise à jour des identifiants');
       }
 
       if (payload.new_pin) {
@@ -146,13 +146,13 @@ export const AuthCredentialsModal: React.FC<AuthCredentialsModalProps> = ({
         await authService.cacheCredentials('', payload.new_password);
       }
 
-      setSuccess('Credentials updated successfully!');
+      setSuccess('Identifiants mis à jour avec succès !');
       setTimeout(() => {
         onSuccess?.();
         onClose();
       }, 1200);
     } catch (err: any) {
-      setError(err.message || 'Error updating credentials');
+      setError(err.message || 'Erreur lors de la mise à jour des identifiants');
     } finally {
       setIsSubmitting(false);
     }
@@ -169,12 +169,12 @@ export const AuthCredentialsModal: React.FC<AuthCredentialsModalProps> = ({
             </div>
             <div>
               <h3 className="text-sm font-black text-slate-900">
-                {mode === 'SETUP' ? 'Initial Security Setup' : 'Security Settings'}
+                {mode === 'SETUP' ? 'Configuration de Sécurité' : 'Paramètres de Sécurité'}
               </h3>
               <p className="text-xs text-slate-500">
                 {mode === 'SETUP'
-                  ? 'Configure 4-digit counter PIN and master recovery password'
-                  : 'Update your counter unlock PIN or master password'}
+                  ? 'Configurer le code PIN caisse (4 chiffres) et le mot de passe maître'
+                  : 'Modifier votre code PIN caisse ou mot de passe maître'}
               </p>
             </div>
           </div>
@@ -203,7 +203,7 @@ export const AuthCredentialsModal: React.FC<AuthCredentialsModalProps> = ({
               )}
 
               <div>
-                <label className="block font-bold text-slate-700 mb-1">Company / Shop Name</label>
+                <label className="block font-bold text-slate-700 mb-1">Nom de l'Entreprise / Boutique</label>
                 <input
                   type="text"
                   required
@@ -215,30 +215,30 @@ export const AuthCredentialsModal: React.FC<AuthCredentialsModalProps> = ({
 
               <div className="p-3.5 bg-slate-50 rounded-xl border border-slate-200/80 space-y-3">
                 <span className="font-black text-slate-700 block uppercase tracking-wider text-pos-badge">
-                  1. Counter Unlock PIN (4 Digits)
+                  1. Code PIN Caisse (4 Chiffres)
                 </span>
                 <div className="grid grid-cols-2 gap-2">
                   <div>
-                    <label className="block font-semibold text-slate-600 mb-1 text-xs">4-Digit PIN *</label>
+                    <label className="block font-semibold text-slate-600 mb-1 text-xs">Code PIN (4 chiffres) *</label>
                     <input
                       type="password"
                       maxLength={4}
                       pattern="[0-9]{4}"
                       required
-                      placeholder="e.g. 1234"
+                      placeholder="ex. 1234"
                       value={setupPin}
                       onChange={e => setSetupPin(e.target.value.replace(/\D/g, ''))}
                       className="w-full px-3 py-2 border border-slate-300 rounded-xl font-mono text-center tracking-widest text-sm font-bold"
                     />
                   </div>
                   <div>
-                    <label className="block font-semibold text-slate-600 mb-1 text-xs">Confirm PIN *</label>
+                    <label className="block font-semibold text-slate-600 mb-1 text-xs">Confirmer le PIN *</label>
                     <input
                       type="password"
                       maxLength={4}
                       pattern="[0-9]{4}"
                       required
-                      placeholder="e.g. 1234"
+                      placeholder="ex. 1234"
                       value={confirmSetupPin}
                       onChange={e => setConfirmSetupPin(e.target.value.replace(/\D/g, ''))}
                       className="w-full px-3 py-2 border border-slate-300 rounded-xl font-mono text-center tracking-widest text-sm font-bold"
@@ -249,26 +249,26 @@ export const AuthCredentialsModal: React.FC<AuthCredentialsModalProps> = ({
 
               <div className="p-3.5 bg-slate-50 rounded-xl border border-slate-200/80 space-y-3">
                 <span className="font-black text-slate-700 block uppercase tracking-wider text-pos-badge">
-                  2. Master Password (Recovery & Admin)
+                  2. Mot de Passe Maître (Récupération & Admin)
                 </span>
                 <div className="space-y-2">
                   <div>
-                    <label className="block font-semibold text-slate-600 mb-1 text-xs">Master Password *</label>
+                    <label className="block font-semibold text-slate-600 mb-1 text-xs">Mot de passe maître *</label>
                     <input
                       type="password"
                       required
-                      placeholder="At least 4 characters"
+                      placeholder="Au moins 4 caractères"
                       value={setupPassword}
                       onChange={e => setSetupPassword(e.target.value)}
                       className="w-full px-3 py-2 border border-slate-300 rounded-xl font-medium"
                     />
                   </div>
                   <div>
-                    <label className="block font-semibold text-slate-600 mb-1 text-xs">Confirm Master Password *</label>
+                    <label className="block font-semibold text-slate-600 mb-1 text-xs">Confirmer le mot de passe maître *</label>
                     <input
                       type="password"
                       required
-                      placeholder="Re-enter master password"
+                      placeholder="Ressaisir le mot de passe maître"
                       value={confirmSetupPassword}
                       onChange={e => setConfirmSetupPassword(e.target.value)}
                       className="w-full px-3 py-2 border border-slate-300 rounded-xl font-medium"
@@ -283,7 +283,7 @@ export const AuthCredentialsModal: React.FC<AuthCredentialsModalProps> = ({
                   onClick={onClose}
                   className="flex-1 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl"
                 >
-                  Cancel
+                  Annuler
                 </button>
                 <button
                   type="submit"
@@ -291,7 +291,7 @@ export const AuthCredentialsModal: React.FC<AuthCredentialsModalProps> = ({
                   className="flex-1 py-2.5 bg-emerald-700 hover:bg-emerald-800 text-white font-bold rounded-xl shadow-sm transition-colors flex items-center justify-center gap-1.5"
                 >
                   {isSubmitting ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Lock className="w-4 h-4" />}
-                  <span>Save Security Credentials</span>
+                  <span>Enregistrer les identifiants</span>
                 </button>
               </div>
             </form>
@@ -307,12 +307,12 @@ export const AuthCredentialsModal: React.FC<AuthCredentialsModalProps> = ({
               {/* Current Credential */}
               <div>
                 <label className="block font-bold text-slate-700 mb-1">
-                  Current PIN or Master Password *
+                  Code PIN ou mot de passe maître actuel *
                 </label>
                 <input
                   type="password"
                   required
-                  placeholder="Enter current PIN or password to authorize"
+                  placeholder="Saisir le PIN ou mot de passe actuel pour autoriser"
                   value={currentSecret}
                   onChange={e => setCurrentSecret(e.target.value)}
                   className="w-full px-3 py-2 border border-slate-300 rounded-xl"
@@ -330,7 +330,7 @@ export const AuthCredentialsModal: React.FC<AuthCredentialsModalProps> = ({
                       : 'border-transparent text-slate-500 hover:text-slate-800'
                   }`}
                 >
-                  Change 4-Digit PIN
+                  Modifier le Code PIN
                 </button>
                 <button
                   type="button"
@@ -341,33 +341,33 @@ export const AuthCredentialsModal: React.FC<AuthCredentialsModalProps> = ({
                       : 'border-transparent text-slate-500 hover:text-slate-800'
                   }`}
                 >
-                  Change Master Password
+                  Modifier le Mot de Passe Maître
                 </button>
               </div>
 
               {changeType === 'PIN' ? (
                 <div className="grid grid-cols-2 gap-2 p-3 bg-slate-50 rounded-xl border border-slate-200/80">
                   <div>
-                    <label className="block font-semibold text-slate-600 mb-1 text-xs">New 4-Digit PIN *</label>
+                    <label className="block font-semibold text-slate-600 mb-1 text-xs">Nouveau code PIN (4 chiffres) *</label>
                     <input
                       type="password"
                       maxLength={4}
                       pattern="[0-9]{4}"
                       required
-                      placeholder="e.g. 5678"
+                      placeholder="ex. 5678"
                       value={newPin}
                       onChange={e => setNewPin(e.target.value.replace(/\D/g, ''))}
                       className="w-full px-3 py-2 border border-slate-300 rounded-xl font-mono text-center tracking-widest text-sm font-bold"
                     />
                   </div>
                   <div>
-                    <label className="block font-semibold text-slate-600 mb-1 text-xs">Confirm New PIN *</label>
+                    <label className="block font-semibold text-slate-600 mb-1 text-xs">Confirmer le nouveau PIN *</label>
                     <input
                       type="password"
                       maxLength={4}
                       pattern="[0-9]{4}"
                       required
-                      placeholder="e.g. 5678"
+                      placeholder="ex. 5678"
                       value={confirmNewPin}
                       onChange={e => setConfirmNewPin(e.target.value.replace(/\D/g, ''))}
                       className="w-full px-3 py-2 border border-slate-300 rounded-xl font-mono text-center tracking-widest text-sm font-bold"
@@ -377,22 +377,22 @@ export const AuthCredentialsModal: React.FC<AuthCredentialsModalProps> = ({
               ) : (
                 <div className="space-y-2 p-3 bg-slate-50 rounded-xl border border-slate-200/80">
                   <div>
-                    <label className="block font-semibold text-slate-600 mb-1 text-xs">New Master Password *</label>
+                    <label className="block font-semibold text-slate-600 mb-1 text-xs">Nouveau mot de passe maître *</label>
                     <input
                       type="password"
                       required
-                      placeholder="At least 4 characters"
+                      placeholder="Au moins 4 caractères"
                       value={newPassword}
                       onChange={e => setNewPassword(e.target.value)}
                       className="w-full px-3 py-2 border border-slate-300 rounded-xl"
                     />
                   </div>
                   <div>
-                    <label className="block font-semibold text-slate-600 mb-1 text-xs">Confirm New Password *</label>
+                    <label className="block font-semibold text-slate-600 mb-1 text-xs">Confirmer le nouveau mot de passe *</label>
                     <input
                       type="password"
                       required
-                      placeholder="Re-enter new password"
+                      placeholder="Ressaisir le nouveau mot de passe"
                       value={confirmNewPassword}
                       onChange={e => setConfirmNewPassword(e.target.value)}
                       className="w-full px-3 py-2 border border-slate-300 rounded-xl"
@@ -407,7 +407,7 @@ export const AuthCredentialsModal: React.FC<AuthCredentialsModalProps> = ({
                   onClick={onClose}
                   className="flex-1 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl"
                 >
-                  Cancel
+                  Annuler
                 </button>
                 <button
                   type="submit"
@@ -415,7 +415,7 @@ export const AuthCredentialsModal: React.FC<AuthCredentialsModalProps> = ({
                   className="flex-1 py-2.5 bg-emerald-700 hover:bg-emerald-800 text-white font-bold rounded-xl shadow-sm transition-colors flex items-center justify-center gap-1.5"
                 >
                   {isSubmitting ? <RefreshCw className="w-4 h-4 animate-spin" /> : <KeyRound className="w-4 h-4" />}
-                  <span>Update Credentials</span>
+                  <span>Mettre à jour les identifiants</span>
                 </button>
               </div>
             </form>

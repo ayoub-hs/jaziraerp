@@ -63,7 +63,7 @@ export const CreateCustomerModal: React.FC<CreateCustomerModalProps> = ({
 
     const finalName = name.trim();
     if (!finalName) {
-      setError('Customer name is required');
+      setError('Le nom du client est requis');
       return;
     }
 
@@ -97,13 +97,13 @@ export const CreateCustomerModal: React.FC<CreateCustomerModalProps> = ({
 
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
-        throw new Error(data.error || `Failed to ${customerToEdit ? 'update' : 'create'} customer`);
+        throw new Error(data.error || `Échec de ${customerToEdit ? 'la mise à jour' : 'la création'} du client`);
       }
 
       onSuccess();
       onClose();
     } catch (err: any) {
-      setError(err.message || 'Error saving customer');
+      setError(err.message || "Erreur lors de l'enregistrement du client");
     } finally {
       setIsSubmitting(false);
     }
@@ -120,10 +120,10 @@ export const CreateCustomerModal: React.FC<CreateCustomerModalProps> = ({
             </div>
             <div>
               <h3 className="text-sm font-black text-slate-900">
-                {customerToEdit ? 'Edit Customer Account' : 'Add Customer Account'}
+                {customerToEdit ? 'Modifier la Fiche Client' : 'Ajouter un Client'}
               </h3>
               <p className="text-pos-badge text-slate-600">
-                {customerToEdit ? 'Update client details and discount tier' : 'Create retail client, wholesale buyer, or reseller profile'}
+                {customerToEdit ? 'Mettre à jour les informations et la grille tarifaire' : 'Créer un profil client détail, gros ou revendeur'}
               </p>
             </div>
           </div>
@@ -146,11 +146,11 @@ export const CreateCustomerModal: React.FC<CreateCustomerModalProps> = ({
           )}
 
           <div>
-            <label className="block font-bold text-slate-700 mb-1">Customer Full Name *</label>
+            <label className="block font-bold text-slate-700 mb-1">Nom Complet du Client *</label>
             <input
               type="text"
               required
-              placeholder="e.g. Société Al Baraka, Ahmed Trabelsi..."
+              placeholder="ex. Société Al Baraka, Ahmed Trabelsi..."
               value={name}
               onChange={e => setName(e.target.value)}
               className="w-full font-semibold px-3 py-2 border border-slate-300 rounded-xl focus:ring-2 focus:ring-amber-500 outline-none"
@@ -159,10 +159,10 @@ export const CreateCustomerModal: React.FC<CreateCustomerModalProps> = ({
 
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block font-bold text-slate-700 mb-1">Phone Number</label>
+              <label className="block font-bold text-slate-700 mb-1">Numéro de Téléphone</label>
               <input
                 type="tel"
-                placeholder="e.g. +216 98 123 456"
+                placeholder="ex. +216 98 123 456"
                 value={phone}
                 onChange={e => setPhone(e.target.value)}
                 className="w-full font-semibold px-3 py-2 border border-slate-300 rounded-xl focus:ring-2 focus:ring-amber-500 outline-none"
@@ -170,24 +170,24 @@ export const CreateCustomerModal: React.FC<CreateCustomerModalProps> = ({
             </div>
 
             <div>
-              <label className="block font-bold text-slate-700 mb-1">Pricing Tier *</label>
+              <label className="block font-bold text-slate-700 mb-1">Tarification *</label>
               <select
                 value={type}
                 onChange={e => setType(e.target.value as any)}
                 className="w-full font-semibold px-3 py-2 border border-slate-300 rounded-xl focus:ring-2 focus:ring-amber-500 outline-none"
               >
-                <option value="RETAIL">Retail (Standard Price)</option>
-                <option value="WHOLESALE">Wholesale (Gros)</option>
-                <option value="RESELLER">Reseller (Revendeur)</option>
+                <option value="RETAIL">Détail (Prix standard)</option>
+                <option value="WHOLESALE">Gros (Prix grossiste)</option>
+                <option value="RESELLER">Revendeur (Remise %)</option>
               </select>
             </div>
           </div>
 
           <div>
-            <label className="block font-bold text-slate-700 mb-1">Delivery Address</label>
+            <label className="block font-bold text-slate-700 mb-1">Adresse de Livraison</label>
             <input
               type="text"
-              placeholder="e.g. Zone Industrielle Poudrière 2, Sfax"
+              placeholder="ex. Zone Industrielle Poudrière 2, Sfax"
               value={address}
               onChange={e => setAddress(e.target.value)}
               className="w-full font-semibold px-3 py-2 border border-slate-300 rounded-xl focus:ring-2 focus:ring-amber-500 outline-none"
@@ -197,7 +197,7 @@ export const CreateCustomerModal: React.FC<CreateCustomerModalProps> = ({
           <div className={!customerToEdit ? "grid grid-cols-2 gap-3" : ""}>
             {type === 'RESELLER' ? (
               <div>
-                <label className="block font-bold text-slate-700 mb-1">Reseller Discount %</label>
+                <label className="block font-bold text-slate-700 mb-1">Remise Revendeur %</label>
                 <input
                   type="number"
                   min="0"
@@ -210,7 +210,7 @@ export const CreateCustomerModal: React.FC<CreateCustomerModalProps> = ({
               </div>
             ) : (
               <div>
-                <label className="block font-bold text-slate-400 mb-1">Reseller Discount %</label>
+                <label className="block font-bold text-slate-400 mb-1">Remise Revendeur %</label>
                 <input
                   type="text"
                   disabled
@@ -222,7 +222,7 @@ export const CreateCustomerModal: React.FC<CreateCustomerModalProps> = ({
 
             {!customerToEdit && (
               <div>
-                <label className="block font-bold text-slate-700 mb-1">Initial Wallet Credit (DT)</label>
+                <label className="block font-bold text-slate-700 mb-1">Solde Initial Acompte (DT)</label>
                 <input
                   type="number"
                   min="0"
@@ -243,7 +243,7 @@ export const CreateCustomerModal: React.FC<CreateCustomerModalProps> = ({
               onClick={onClose}
               className="flex-1 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl transition-colors"
             >
-              Cancel
+              Annuler
             </button>
             <button
               type="submit"
@@ -251,7 +251,7 @@ export const CreateCustomerModal: React.FC<CreateCustomerModalProps> = ({
               className="flex-1 py-2.5 bg-amber-600 hover:bg-amber-700 disabled:opacity-50 text-white font-bold rounded-xl shadow-sm transition-colors flex items-center justify-center gap-1.5"
             >
               <Users className="w-4 h-4" />
-              <span>{isSubmitting ? 'Saving...' : (customerToEdit ? 'Save Changes' : 'Create Customer')}</span>
+              <span>{isSubmitting ? 'Enregistrement...' : (customerToEdit ? 'Enregistrer' : 'Créer le client')}</span>
             </button>
           </div>
         </form>

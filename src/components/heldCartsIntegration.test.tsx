@@ -72,7 +72,7 @@ describe('Held Carts Integration (Batch 2 Item B4)', () => {
     fireEvent.click(holdBtn);
 
     // Cart should now be cleared
-    expect(screen.getByText(/Scannez un code-barres|Scan barcode or click items/i)).toBeTruthy();
+    expect(screen.getByText(/Scannez un code-barres/i)).toBeTruthy();
     expect(heldCartsService.getHeldCartCount()).toBe(1);
 
     // "Paniers (1)" button is now active

@@ -51,7 +51,7 @@ export const CreateContainerModal: React.FC<CreateContainerModalProps> = ({
 
     const finalName = name.trim();
     if (!finalName) {
-      setError('Container type name is required');
+      setError('Le nom du type de contenant est requis');
       return;
     }
 
@@ -72,13 +72,13 @@ export const CreateContainerModal: React.FC<CreateContainerModalProps> = ({
 
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
-        throw new Error(data.error || `Failed to ${containerTypeToEdit ? 'update' : 'create'} container type`);
+        throw new Error(data.error || `Échec de ${containerTypeToEdit ? 'la mise à jour' : 'la création'} du contenant`);
       }
 
       onSuccess();
       onClose();
     } catch (err: any) {
-      setError(err.message || 'Error saving container type');
+      setError(err.message || "Erreur lors de l'enregistrement du contenant");
     } finally {
       setIsSubmitting(false);
     }
@@ -95,10 +95,10 @@ export const CreateContainerModal: React.FC<CreateContainerModalProps> = ({
             </div>
             <div>
               <h3 className="text-sm font-black text-slate-900">
-                {containerTypeToEdit ? 'Edit Container Type' : 'Add Returnable Container Type'}
+                {containerTypeToEdit ? 'Modifier le Type de Contenant' : 'Ajouter un Type de Contenant Consigné'}
               </h3>
               <p className="text-pos-badge text-slate-600">
-                {containerTypeToEdit ? 'Update container specifications and stock' : 'Register consignable jug, crate, or drum'}
+                {containerTypeToEdit ? 'Mettre à jour les spécifications et le stock' : 'Enregistrer un bidon, casier ou fût consigné'}
               </p>
             </div>
           </div>
@@ -121,11 +121,11 @@ export const CreateContainerModal: React.FC<CreateContainerModalProps> = ({
             )}
 
             <div>
-              <label className="block font-bold text-slate-700 mb-1">Container Name *</label>
+              <label className="block font-bold text-slate-700 mb-1">Nom du Contenant *</label>
               <input
                 type="text"
                 required
-                placeholder="e.g. Bidon 5L Consigné, Fût 200L Plastique..."
+                placeholder="ex. Bidon 5L Consigné, Fût 200L Plastique..."
                 value={name}
                 onChange={e => setName(e.target.value)}
                 className="w-full font-semibold px-3 py-2 border border-slate-300 rounded-xl focus:ring-2 focus:ring-teal-500 outline-none"
@@ -134,7 +134,7 @@ export const CreateContainerModal: React.FC<CreateContainerModalProps> = ({
 
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="block font-bold text-slate-700 mb-1">Capacity (Liters)</label>
+                <label className="block font-bold text-slate-700 mb-1">Capacité (Litres)</label>
                 <input
                   type="number"
                   step="any"
@@ -147,7 +147,7 @@ export const CreateContainerModal: React.FC<CreateContainerModalProps> = ({
               </div>
 
               <div>
-                <label className="block font-bold text-slate-700 mb-1">Initial Shop Stock</label>
+                <label className="block font-bold text-slate-700 mb-1">Stock Initial Magasin</label>
                 <input
                   type="number"
                   step="1"
@@ -167,7 +167,7 @@ export const CreateContainerModal: React.FC<CreateContainerModalProps> = ({
               onClick={onClose}
               className="flex-1 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl transition-colors"
             >
-              Cancel
+              Annuler
             </button>
             <button
               type="submit"
@@ -175,7 +175,7 @@ export const CreateContainerModal: React.FC<CreateContainerModalProps> = ({
               className="flex-1 py-2.5 bg-teal-600 hover:bg-teal-700 disabled:opacity-50 text-white font-bold rounded-xl shadow-sm transition-colors flex items-center justify-center gap-1.5"
             >
               <Box className="w-4 h-4" />
-              <span>{isSubmitting ? 'Saving...' : (containerTypeToEdit ? 'Save Changes' : 'Create Container')}</span>
+              <span>{isSubmitting ? 'Enregistrement...' : (containerTypeToEdit ? 'Enregistrer' : 'Créer le contenant')}</span>
             </button>
           </div>
         </form>

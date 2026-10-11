@@ -70,7 +70,7 @@ export const SalesHistoryTab: React.FC<SalesHistoryTabProps> = ({
 
       const res = await fetch(`/api/sales?${params.toString()}`);
       if (!res.ok) {
-        throw new Error(`Failed to load sales (${res.status})`);
+        throw new Error(`Échec du chargement des ventes (${res.status})`);
       }
       const data: any[] = await res.json();
       if (append) {
@@ -81,7 +81,7 @@ export const SalesHistoryTab: React.FC<SalesHistoryTabProps> = ({
       setHasMore(data.length === limit);
       setOffset(currentOffset);
     } catch (err: any) {
-      setError(err.message || 'Error loading sales');
+      setError(err.message || 'Erreur lors du chargement des ventes');
     } finally {
       setLoading(false);
       isFetchingRef.current = false;
@@ -116,7 +116,7 @@ export const SalesHistoryTab: React.FC<SalesHistoryTabProps> = ({
         fetch(`/api/sales/${sale.id}/refunds`)
       ]);
 
-      if (!detailRes.ok) throw new Error('Failed to load sale details');
+      if (!detailRes.ok) throw new Error('Échec du chargement des détails de la vente');
       const detailData = await detailRes.json();
       setSaleDetail(detailData);
 
@@ -124,7 +124,7 @@ export const SalesHistoryTab: React.FC<SalesHistoryTabProps> = ({
         setSaleRefunds(await refundsRes.json());
       }
     } catch (err: any) {
-      setDetailError(err.message || 'Failed to load sale detail');
+      setDetailError(err.message || 'Échec du chargement des détails de la vente');
     } finally {
       setLoadingDetail(false);
     }

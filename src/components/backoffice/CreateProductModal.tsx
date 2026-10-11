@@ -343,7 +343,7 @@ export const CreateProductModal: React.FC<CreateProductModalProps> = ({
     try {
       if (familyToEdit) {
         const finalFamilyName = familyName.trim();
-        if (!finalFamilyName) throw new Error('Family name is required');
+        if (!finalFamilyName) throw new Error('Le nom de la famille est requis');
         const res = await fetch(`/api/products/families/${familyToEdit.id}`, {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
@@ -357,7 +357,7 @@ export const CreateProductModal: React.FC<CreateProductModalProps> = ({
         });
         if (!res.ok) {
           const data = await res.json().catch(() => ({}));
-          throw new Error(data.error || 'Failed to update family');
+          throw new Error(data.error || 'Échec de la mise à jour de la famille');
         }
         onSuccess();
         onClose();
@@ -366,7 +366,7 @@ export const CreateProductModal: React.FC<CreateProductModalProps> = ({
 
       if (productToEdit) {
         const finalSkuName = skuName.trim();
-        if (!finalSkuName) throw new Error('SKU name is required');
+        if (!finalSkuName) throw new Error("Le nom de l'article (SKU) est requis");
         const res = await fetch(`/api/products/${productToEdit.id}`, {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
@@ -385,7 +385,7 @@ export const CreateProductModal: React.FC<CreateProductModalProps> = ({
         });
         if (!res.ok) {
           const data = await res.json().catch(() => ({}));
-          throw new Error(data.error || 'Failed to update product');
+          throw new Error(data.error || "Échec de la mise à jour de l'article");
         }
         onSuccess();
         onClose();
@@ -397,7 +397,7 @@ export const CreateProductModal: React.FC<CreateProductModalProps> = ({
       if (mode === 'NEW_FAMILY') {
         const finalFamilyName = familyName.trim();
         if (!finalFamilyName) {
-          throw new Error('Family name is required');
+          throw new Error('Le nom de la famille est requis');
         }
 
         const famRes = await fetch('/api/products/families', {
@@ -413,7 +413,7 @@ export const CreateProductModal: React.FC<CreateProductModalProps> = ({
 
         if (!famRes.ok) {
           const data = await famRes.json().catch(() => ({}));
-          throw new Error(data.error || 'Failed to create product family');
+          throw new Error(data.error || 'Échec de la création de la famille');
         }
 
         const createdFamily = await famRes.json();
@@ -421,11 +421,11 @@ export const CreateProductModal: React.FC<CreateProductModalProps> = ({
       }
 
       if (!targetFamilyId) {
-        throw new Error('Target product family is required');
+        throw new Error('La famille de produit cible est requise');
       }
 
       // 2. Create SKU under target family
-      const finalSkuName = skuName.trim() || (mode === 'NEW_FAMILY' ? familyName.trim() : 'New SKU');
+      const finalSkuName = skuName.trim() || (mode === 'NEW_FAMILY' ? familyName.trim() : 'Nouvel article');
       const prodRes = await fetch('/api/products', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -445,7 +445,7 @@ export const CreateProductModal: React.FC<CreateProductModalProps> = ({
 
       if (!prodRes.ok) {
         const data = await prodRes.json().catch(() => ({}));
-        throw new Error(data.error || 'Failed to create product SKU');
+        throw new Error(data.error || "Échec de la création de l'article (SKU)");
       }
 
       const createdProd = await prodRes.json();
@@ -502,7 +502,7 @@ export const CreateProductModal: React.FC<CreateProductModalProps> = ({
       onSuccess();
       onClose();
     } catch (err: any) {
-      setError(err.message || 'Error creating product');
+      setError(err.message || "Erreur lors de la création de l'article");
     } finally {
       setIsSubmitting(false);
     }
@@ -519,10 +519,10 @@ export const CreateProductModal: React.FC<CreateProductModalProps> = ({
             </div>
             <div>
               <h3 className="text-sm font-black text-slate-900">
-                {familyToEdit ? `Edit Family: ${familyToEdit.name}` : productToEdit ? `Edit SKU: ${productToEdit.name}` : 'Add Product Family & SKU'}
+                {familyToEdit ? `Modifier la famille : ${familyToEdit.name}` : productToEdit ? `Modifier l'article : ${productToEdit.name}` : 'Ajouter Famille & Article (SKU)'}
               </h3>
               <p className="text-pos-badge text-slate-600">
-                {familyToEdit ? 'Modify category, manufacturing type, or linked recipe' : productToEdit ? 'Update barcode, prices, packaging, and stock' : 'Configure catalog product family, sizing, barcodes, and pricing'}
+                {familyToEdit ? 'Modifier la catégorie, le type de fabrication ou la formule liée' : productToEdit ? 'Mettre à jour le code-barres, les prix, le conditionnement et le stock' : 'Configurer la famille de produit, déclinaisons, codes-barres et tarifs'}
               </p>
             </div>
           </div>
@@ -546,7 +546,7 @@ export const CreateProductModal: React.FC<CreateProductModalProps> = ({
                   : 'border-transparent text-slate-500 hover:text-slate-800'
               }`}
             >
-              1. New Product Family + First SKU
+              1. Nouvelle famille + Premier article
             </button>
             {families.length > 0 && (
               <button
@@ -563,7 +563,7 @@ export const CreateProductModal: React.FC<CreateProductModalProps> = ({
                     : 'border-transparent text-slate-500 hover:text-slate-800'
                 }`}
               >
-                2. Add Size/SKU to Existing Family
+                2. Ajouter format/article à une famille existante
               </button>
             )}
           </div>
@@ -583,17 +583,17 @@ export const CreateProductModal: React.FC<CreateProductModalProps> = ({
           {(!productToEdit && (familyToEdit || mode === 'NEW_FAMILY')) && (
             <div className="p-4 bg-slate-50 rounded-xl border border-slate-200/80 space-y-3">
               <h4 className="text-xs font-black uppercase text-slate-500 tracking-wider">
-                Product Family Details
+                Détails de la famille de produits
               </h4>
               <div className="grid grid-cols-2 gap-3">
                 <div className="col-span-2">
                   <label className="block text-xs font-bold text-slate-700 mb-1">
-                    Family Name *
+                    Nom de la famille *
                   </label>
                   <input
                     type="text"
                     required
-                    placeholder="e.g. Eau de Javel, Liquide Vaisselle, Dégraissant Sol..."
+                    placeholder="ex: Eau de Javel, Liquide Vaisselle, Dégraissant Sol..."
                     value={familyName}
                     onChange={e => setFamilyName(e.target.value)}
                     className="w-full text-xs font-semibold px-3 py-2 border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none bg-white"
@@ -603,7 +603,7 @@ export const CreateProductModal: React.FC<CreateProductModalProps> = ({
                 <div>
                   <div className="flex items-center justify-between mb-1">
                     <label className="block text-xs font-bold text-slate-700">
-                      Category *
+                      Catégorie *
                     </label>
                     {!isCustomCategory ? (
                       <button
@@ -665,29 +665,29 @@ export const CreateProductModal: React.FC<CreateProductModalProps> = ({
 
                 <div>
                   <label className="block text-xs font-bold text-slate-700 mb-1">
-                    Product Type *
+                    Type de produit *
                   </label>
                   <select
                     value={familyType}
                     onChange={e => setFamilyType(e.target.value as any)}
                     className="w-full text-xs font-semibold px-3 py-2 border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none bg-white"
                   >
-                    <option value="MANUFACTURED">Manufactured (In-House Batch)</option>
-                    <option value="RESALE">Resale (Bought from Supplier)</option>
+                    <option value="MANUFACTURED">Fabriqué (Production interne)</option>
+                    <option value="RESALE">Revente (Achat fournisseur)</option>
                   </select>
                 </div>
 
                 {familyType === 'MANUFACTURED' && (
                   <div className="col-span-2">
                     <label className="block text-xs font-bold text-slate-700 mb-1">
-                      Linked Formulation (Optional)
+                      Formulation liée (Optionnel)
                     </label>
                     <select
                       value={formulationId}
                       onChange={e => setFormulationId(e.target.value)}
                       className="w-full text-xs font-semibold px-3 py-2 border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none bg-white"
                     >
-                      <option value="">None / Will link later</option>
+                      <option value="">Aucune / Lier plus tard</option>
                       {formulations.map(f => (
                         <option key={f.id} value={f.id}>{f.name}</option>
                       ))}
@@ -716,7 +716,7 @@ export const CreateProductModal: React.FC<CreateProductModalProps> = ({
           {!familyToEdit && !productToEdit && mode === 'EXISTING_FAMILY' && (
             <div className="p-4 bg-slate-50 rounded-xl border border-slate-200/80 space-y-2">
               <label className="block text-xs font-bold text-slate-700 mb-1">
-                Select Existing Product Family *
+                Sélectionner une famille existante *
               </label>
               <select
                 required
@@ -735,7 +735,7 @@ export const CreateProductModal: React.FC<CreateProductModalProps> = ({
           {!familyToEdit && (
             <div className="p-4 bg-blue-50/40 rounded-xl border border-blue-200/60 space-y-3">
               <h4 className="text-xs font-black uppercase text-blue-900 tracking-wider">
-                SKU & Size Variant
+                Article & Format (SKU)
               </h4>
 
               <div className="grid grid-cols-2 gap-3">
@@ -755,12 +755,12 @@ export const CreateProductModal: React.FC<CreateProductModalProps> = ({
 
                 <div>
                   <label className="block text-xs font-bold text-slate-700 mb-1">
-                    SKU Name *
+                    Nom de l'article *
                   </label>
                   <input
                     type="text"
                     required
-                    placeholder="e.g. Javel Bleach 1L"
+                    placeholder="ex: Eau de Javel 1L"
                     value={skuName}
                     onChange={e => setSkuName(e.target.value)}
                     className="w-full text-xs font-semibold px-3 py-2 border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none bg-white"
@@ -770,7 +770,7 @@ export const CreateProductModal: React.FC<CreateProductModalProps> = ({
                 <div>
                   <div className="flex items-center justify-between mb-1">
                     <label className="block text-xs font-bold text-slate-700">
-                      Unité / Taille (Size Label) *
+                      Unité / Format *
                     </label>
                     {!isCustomSize ? (
                       <button
@@ -781,7 +781,7 @@ export const CreateProductModal: React.FC<CreateProductModalProps> = ({
                         }}
                         className="text-xs text-blue-600 hover:text-blue-800 font-semibold underline"
                       >
-                        + Autre unité
+                        + Autre format
                       </button>
                     ) : (
                       <button
@@ -834,7 +834,7 @@ export const CreateProductModal: React.FC<CreateProductModalProps> = ({
                         <option value="500g">500g</option>
                       </optgroup>
                       <optgroup label="Unités / Conditionnements">
-                        <option value="Piece">Piece (Unité)</option>
+                        <option value="Piece">Pièce (Unité)</option>
                         <option value="Paquet">Paquet</option>
                         <option value="Carton">Carton</option>
                         <option value="Boîte">Boîte</option>
@@ -862,11 +862,11 @@ export const CreateProductModal: React.FC<CreateProductModalProps> = ({
 
                 <div className="col-span-2">
                   <label className="block text-xs font-bold text-slate-700 mb-1">
-                    Barcode (Optional — auto-generated if left empty)
+                    Code-barres (Optionnel — auto-généré si vide)
                   </label>
                   <input
                     type="text"
-                    placeholder="Leave empty for auto-generated Code-128 barcode..."
+                    placeholder="Laisser vide pour génération automatique Code-128..."
                     value={barcode}
                     onChange={e => setBarcode(e.target.value)}
                     className="w-full text-xs font-mono font-semibold px-3 py-2 border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none bg-white"
@@ -877,7 +877,7 @@ export const CreateProductModal: React.FC<CreateProductModalProps> = ({
                   <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                     <div>
                       <label className="block text-xs font-bold text-slate-700">
-                        Coût de référence / Cost Ref. (DT)
+                        Coût de référence (DT)
                       </label>
                       <span className="text-pos-badge text-slate-600">Coût d'achat ou de revient unitaire (DT)</span>
                     </div>
@@ -898,7 +898,7 @@ export const CreateProductModal: React.FC<CreateProductModalProps> = ({
                     {/* Wholesale */}
                     <div className="p-2.5 bg-slate-50 rounded-lg border border-slate-200/80 space-y-2">
                       <div className="flex items-center justify-between">
-                        <span className="text-xs font-bold text-slate-800">Prix Gros / Wholesale (DT) *</span>
+                        <span className="text-xs font-bold text-slate-800">Prix de Gros (DT) *</span>
                         <button
                           type="button"
                           onClick={handleSuggestWholesale}
@@ -948,7 +948,7 @@ export const CreateProductModal: React.FC<CreateProductModalProps> = ({
                     {/* Retail */}
                     <div className="p-2.5 bg-slate-50 rounded-lg border border-slate-200/80 space-y-2">
                       <div className="flex items-center justify-between">
-                        <span className="text-xs font-bold text-slate-800">Prix Détail / Retail (DT) *</span>
+                        <span className="text-xs font-bold text-slate-800">Prix de Détail (DT) *</span>
                         <button
                           type="button"
                           onClick={handleSuggestRetail}
@@ -999,7 +999,7 @@ export const CreateProductModal: React.FC<CreateProductModalProps> = ({
 
                 <div>
                   <label className="block text-xs font-bold text-slate-700 mb-1">
-                    Initial Stock
+                    Stock initial
                   </label>
                   <input
                     type="number"
@@ -1013,7 +1013,7 @@ export const CreateProductModal: React.FC<CreateProductModalProps> = ({
 
                 <div>
                   <label className="block text-xs font-bold text-slate-700 mb-1">
-                    Low Stock Threshold
+                    Seuil d'alerte stock
                   </label>
                   <input
                     type="number"
@@ -1027,16 +1027,16 @@ export const CreateProductModal: React.FC<CreateProductModalProps> = ({
 
                 <div className="col-span-2">
                   <label className="block text-xs font-bold text-slate-700 mb-1">
-                    Returnable Container Type (Optional)
+                    Type de consigne / emballage (Optionnel)
                   </label>
                   <select
                     value={containerTypeId}
                     onChange={e => setContainerTypeId(e.target.value)}
                     className="w-full text-xs font-semibold px-3 py-2 border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none bg-white"
                   >
-                    <option value="">None (Single-use packaging)</option>
+                    <option value="">Aucune (Emballage perdu / à usage unique)</option>
                     {containerTypes.map(ct => (
-                      <option key={ct.id} value={ct.id}>{ct.name} ({ct.capacity_liters ? `${ct.capacity_liters}L` : 'Returnable'})</option>
+                      <option key={ct.id} value={ct.id}>{ct.name} ({ct.capacity_liters ? `${ct.capacity_liters}L` : 'Consigné'})</option>
                     ))}
                   </select>
                 </div>
@@ -1166,7 +1166,7 @@ export const CreateProductModal: React.FC<CreateProductModalProps> = ({
               onClick={onClose}
               className="flex-1 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl text-xs transition-colors"
             >
-              Cancel
+              Annuler
             </button>
             <button
               type="submit"
@@ -1176,12 +1176,12 @@ export const CreateProductModal: React.FC<CreateProductModalProps> = ({
               {familyToEdit || productToEdit ? <Edit2 className="w-4 h-4" /> : <Plus className="w-4 h-4" />}
               <span>
                 {isSubmitting
-                  ? 'Saving...'
+                  ? 'Enregistrement...'
                   : familyToEdit
-                  ? 'Update Product Family'
+                  ? 'Mettre à jour la famille'
                   : productToEdit
-                  ? 'Update Product SKU'
-                  : 'Create Product SKU'}
+                  ? "Mettre à jour l'article"
+                  : "Créer l'article"}
               </span>
             </button>
           </div>

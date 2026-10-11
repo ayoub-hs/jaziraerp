@@ -172,27 +172,27 @@ export const CreatePurchaseModal: React.FC<CreatePurchaseModalProps> = ({
     setError(null);
 
     if (!supplierId) {
-      setError('Please select a supplier.');
+      setError('Veuillez sélectionner un fournisseur.');
       return;
     }
 
     if (items.length === 0) {
-      setError('At least one item is required.');
+      setError('Au moins un article est requis.');
       return;
     }
 
     for (let i = 0; i < items.length; i++) {
       const it = items[i];
       if (!it.item_id) {
-        setError(`Item row #${i + 1} has no material/product selected.`);
+        setError(`La ligne #${i + 1} n'a aucune matière/produit sélectionné.`);
         return;
       }
       if (it.quantity <= 0) {
-        setError(`Item row #${i + 1} quantity must be greater than 0.`);
+        setError(`La quantité de la ligne #${i + 1} doit être supérieure à 0.`);
         return;
       }
       if (it.unit_cost < 0) {
-        setError(`Item row #${i + 1} unit cost cannot be negative.`);
+        setError(`Le coût unitaire de la ligne #${i + 1} ne peut pas être négatif.`);
         return;
       }
     }
@@ -221,13 +221,13 @@ export const CreatePurchaseModal: React.FC<CreatePurchaseModalProps> = ({
 
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
-        throw new Error(data.error || 'Failed to record purchase');
+        throw new Error(data.error || "Échec de l'enregistrement de l'achat");
       }
 
       onSuccess();
       onClose();
     } catch (err: any) {
-      setError(err.message || 'Error recording purchase intake');
+      setError(err.message || "Erreur lors de l'enregistrement de la réception d'achat");
     } finally {
       setIsSubmitting(false);
     }
@@ -243,9 +243,9 @@ export const CreatePurchaseModal: React.FC<CreatePurchaseModalProps> = ({
               <ShoppingBag className="w-4 h-4" />
             </div>
             <div>
-              <h3 className="text-sm font-black text-slate-900">Record Purchase Intake</h3>
+              <h3 className="text-sm font-black text-slate-900">Enregistrer une Réception Fournisseur</h3>
               <p className="text-pos-badge text-slate-600">
-                Log vendor deliveries: raw materials or resale products with immediate inventory updates
+                Réception de marchandises : matières premières ou produits revente avec mise à jour immédiate du stock
               </p>
             </div>
           </div>
@@ -270,7 +270,7 @@ export const CreatePurchaseModal: React.FC<CreatePurchaseModalProps> = ({
           <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
             <div>
               <label className="font-bold text-slate-700 block mb-1">
-                Supplier <span className="text-rose-500">*</span>
+                Fournisseur <span className="text-rose-500">*</span>
               </label>
               <select
                 required
@@ -278,7 +278,7 @@ export const CreatePurchaseModal: React.FC<CreatePurchaseModalProps> = ({
                 onChange={e => setSupplierId(e.target.value)}
                 className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold text-slate-800 focus:bg-white focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all"
               >
-                <option value="">-- Choose Supplier --</option>
+                <option value="">-- Choisir un Fournisseur --</option>
                 {suppliers.map(s => (
                   <option key={s.id} value={s.id}>
                     {s.name} {s.phone ? `(${s.phone})` : ''}
@@ -289,7 +289,7 @@ export const CreatePurchaseModal: React.FC<CreatePurchaseModalProps> = ({
 
             <div>
               <label className="font-bold text-slate-700 block mb-1">
-                Purchase Date <span className="text-rose-500">*</span>
+                Date d'achat <span className="text-rose-500">*</span>
               </label>
               <input
                 type="date"
@@ -301,10 +301,10 @@ export const CreatePurchaseModal: React.FC<CreatePurchaseModalProps> = ({
             </div>
 
             <div>
-              <label className="font-bold text-slate-700 block mb-1">Invoice / Reference #</label>
+              <label className="font-bold text-slate-700 block mb-1">N° Facture / Référence</label>
               <input
                 type="text"
-                placeholder="e.g. Facture #8841"
+                placeholder="ex: Facture #8841"
                 value={notes}
                 onChange={e => setNotes(e.target.value)}
                 className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-800 focus:bg-white focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all"
@@ -316,7 +316,7 @@ export const CreatePurchaseModal: React.FC<CreatePurchaseModalProps> = ({
           <div className="space-y-2">
             <div className="flex items-center justify-between">
               <span className="font-bold text-slate-700 uppercase tracking-wider text-xs">
-                Delivered Items ({items.length})
+                Articles réceptionnés ({items.length})
               </span>
               <button
                 type="button"
@@ -324,7 +324,7 @@ export const CreatePurchaseModal: React.FC<CreatePurchaseModalProps> = ({
                 className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-emerald-50 text-emerald-800 hover:bg-emerald-100 rounded-lg font-bold text-xs transition-colors border border-emerald-200"
               >
                 <Plus className="w-3.5 h-3.5" />
-                Add Item
+                Ajouter un article
               </button>
             </div>
 
@@ -334,10 +334,10 @@ export const CreatePurchaseModal: React.FC<CreatePurchaseModalProps> = ({
                   <thead className="bg-slate-100/70 border-b border-slate-200 text-slate-700 font-bold text-pos-caption uppercase sticky top-0">
                     <tr>
                       <th className="py-2.5 px-3 w-36">Type</th>
-                      <th className="py-2.5 px-3">Item Name</th>
-                      <th className="py-2.5 px-3 w-24 text-right">Quantity</th>
-                      <th className="py-2.5 px-3 w-28 text-right">Unit Cost (DT)</th>
-                      <th className="py-2.5 px-3 w-24 text-right">Line Total</th>
+                      <th className="py-2.5 px-3">Article / Matière</th>
+                      <th className="py-2.5 px-3 w-24 text-right">Quantité</th>
+                      <th className="py-2.5 px-3 w-28 text-right">Coût Unit. (DT)</th>
+                      <th className="py-2.5 px-3 w-24 text-right">Total Ligne</th>
                       <th className="py-2.5 px-3 w-10 text-center"></th>
                     </tr>
                   </thead>
@@ -353,8 +353,8 @@ export const CreatePurchaseModal: React.FC<CreatePurchaseModalProps> = ({
                               onChange={e => handleItemTypeChange(item.id, e.target.value as any)}
                               className="w-full px-2 py-1.5 border border-slate-200 rounded-lg text-xs font-semibold text-slate-700 bg-white"
                             >
-                              <option value="RAW_MATERIAL">Raw Material</option>
-                              <option value="RESALE_PRODUCT">Resale Product</option>
+                              <option value="RAW_MATERIAL">Matière Première</option>
+                              <option value="RESALE_PRODUCT">Produit Revente</option>
                             </select>
                           </td>
 
@@ -365,7 +365,7 @@ export const CreatePurchaseModal: React.FC<CreatePurchaseModalProps> = ({
                                 onChange={e => handleItemSelect(item.id, e.target.value)}
                                 className="w-full px-2 py-1.5 border border-slate-200 rounded-lg text-xs font-medium text-slate-800 bg-white"
                               >
-                                <option value="">-- Choose Material --</option>
+                                <option value="">-- Choisir une Matière --</option>
                                 {materials.map(m => (
                                   <option key={m.id} value={m.id}>
                                     {m.name} ({m.category}) — stock: {m.stock_quantity} {m.unit}
@@ -378,7 +378,7 @@ export const CreatePurchaseModal: React.FC<CreatePurchaseModalProps> = ({
                                 onChange={e => handleItemSelect(item.id, e.target.value)}
                                 className="w-full px-2 py-1.5 border border-slate-200 rounded-lg text-xs font-medium text-slate-800 bg-white"
                               >
-                                <option value="">-- Choose Resale Product --</option>
+                                <option value="">-- Choisir un Produit Revente --</option>
                                 {products.map(p => (
                                   <option key={p.id} value={p.id}>
                                     {p.name} {p.size_label ? `(${p.size_label})` : ''} — stock: {p.stock_quantity}
@@ -422,7 +422,7 @@ export const CreatePurchaseModal: React.FC<CreatePurchaseModalProps> = ({
                                 type="button"
                                 onClick={() => handleRemoveItem(item.id)}
                                 className="p-1 text-slate-400 hover:text-rose-600 rounded hover:bg-rose-50 transition-colors"
-                                title="Remove line item"
+                                title="Supprimer la ligne"
                               >
                                 <Trash2 className="w-3.5 h-3.5" />
                               </button>
@@ -441,7 +441,7 @@ export const CreatePurchaseModal: React.FC<CreatePurchaseModalProps> = ({
           <div className="bg-slate-50 border border-slate-200 rounded-xl p-4 space-y-3">
             <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-200 pb-3">
               <span className="font-bold text-slate-700 uppercase tracking-wider text-xs">
-                Payment Allocation
+                Règlement & Dette Fournisseur
               </span>
               <div className="flex items-center gap-2">
                 <button
@@ -449,21 +449,21 @@ export const CreatePurchaseModal: React.FC<CreatePurchaseModalProps> = ({
                   onClick={() => setCashPaid(totalAmount)}
                   className="px-2.5 py-1 bg-emerald-100 hover:bg-emerald-200 text-emerald-800 rounded font-bold text-xs transition-colors"
                 >
-                  Pay Full in Cash
+                  Tout régler en espèces
                 </button>
                 <button
                   type="button"
                   onClick={() => setCashPaid(0)}
                   className="px-2.5 py-1 bg-amber-100 hover:bg-amber-200 text-amber-900 rounded font-bold text-xs transition-colors"
                 >
-                  All on Credit (0 DT)
+                  À crédit total (0 DT)
                 </button>
               </div>
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
               <div className="bg-white p-3 rounded-lg border border-slate-200">
-                <span className="text-pos-badge uppercase font-bold text-slate-600 block">Total Invoice</span>
+                <span className="text-pos-badge uppercase font-bold text-slate-600 block">Total Facture</span>
                 <span className="text-base font-mono font-black text-slate-900">
                   {totalAmount.toFixed(3)} <span className="text-xs font-normal text-slate-500">DT</span>
                 </span>
@@ -471,7 +471,7 @@ export const CreatePurchaseModal: React.FC<CreatePurchaseModalProps> = ({
 
               <div className="bg-white p-3 rounded-lg border border-slate-200">
                 <label className="text-pos-badge uppercase font-bold text-slate-700 block mb-1">
-                  Cash Paid Upfront
+                  Espèces versées (Comptant)
                 </label>
                 <div className="relative">
                   <input
@@ -487,7 +487,7 @@ export const CreatePurchaseModal: React.FC<CreatePurchaseModalProps> = ({
               </div>
 
               <div className="bg-white p-3 rounded-lg border border-slate-200">
-                <span className="text-pos-badge uppercase font-bold text-slate-600 block">Remaining Balance</span>
+                <span className="text-pos-badge uppercase font-bold text-slate-600 block">Reste Dû (Dette)</span>
                 <span className={`text-base font-mono font-black ${remainingDebt > 0 ? 'text-rose-600' : 'text-emerald-700'}`}>
                   {remainingDebt.toFixed(3)} <span className="text-xs font-normal text-slate-500">DT</span>
                 </span>
@@ -498,14 +498,14 @@ export const CreatePurchaseModal: React.FC<CreatePurchaseModalProps> = ({
               <div className="p-2.5 bg-amber-50 border border-amber-200 rounded-lg flex items-center gap-2 text-amber-900 text-xs">
                 <AlertCircle className="w-4 h-4 shrink-0 text-amber-700" />
                 <span>
-                  A supplier debt ticket of <strong>{remainingDebt.toFixed(3)} DT</strong> will be recorded for{' '}
-                  <strong>{selectedSupplier?.name || 'the supplier'}</strong>.
+                  Une dette fournisseur de <strong>{remainingDebt.toFixed(3)} DT</strong> sera enregistrée pour{' '}
+                  <strong>{selectedSupplier?.name || 'le fournisseur'}</strong>.
                 </span>
               </div>
             ) : (
               <div className="p-2.5 bg-emerald-50 border border-emerald-200 rounded-lg flex items-center gap-2 text-emerald-800 text-xs">
                 <CheckCircle2 className="w-4 h-4 shrink-0 text-emerald-700" />
-                <span>Invoice fully settled upfront in cash. No open debt ticket will be created.</span>
+                <span>Facture entièrement réglée au comptant. Aucune dette fournisseur créée.</span>
               </div>
             )}
           </div>
@@ -518,14 +518,14 @@ export const CreatePurchaseModal: React.FC<CreatePurchaseModalProps> = ({
               onClick={onClose}
               className="px-4 py-2 text-xs font-bold text-slate-600 hover:text-slate-800 hover:bg-slate-100 rounded-xl transition-colors"
             >
-              Cancel
+              Annuler
             </button>
             <button
               type="submit"
               disabled={isSubmitting || totalAmount <= 0}
               className="px-5 py-2 bg-emerald-700 hover:bg-emerald-800 disabled:opacity-50 text-white font-bold rounded-xl shadow-xs transition-colors flex items-center gap-2"
             >
-              {isSubmitting ? 'Recording...' : 'Save & Record Purchase'}
+              {isSubmitting ? 'Enregistrement...' : 'Enregistrer la Réception'}
             </button>
           </div>
         </form>

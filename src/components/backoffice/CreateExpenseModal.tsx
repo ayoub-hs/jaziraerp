@@ -10,9 +10,9 @@ interface CreateExpenseModalProps {
 }
 
 const COMMON_EXPENSE_CATEGORIES = [
-  'Loyer (Rent)',
-  'Électricité & Eau (Utilities)',
-  'Carburant (Fuel)',
+  'Loyer',
+  'Électricité & Eau',
+  'Carburant',
   'Transport & Livraison',
   'Fournitures Magasin & Bureau',
   'Maintenance & Réparation',
@@ -68,7 +68,7 @@ export const CreateExpenseModal: React.FC<CreateExpenseModalProps> = ({
 
     const expenseAmount = parseFloat(amount);
     if (isNaN(expenseAmount) || expenseAmount <= 0) {
-      setError('Expense amount must be greater than 0');
+      setError('Le montant de la dépense doit être supérieur à 0');
       return;
     }
 
@@ -98,7 +98,7 @@ export const CreateExpenseModal: React.FC<CreateExpenseModalProps> = ({
 
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
-        throw new Error(data.error || 'Failed to record expense');
+        throw new Error(data.error || "Échec de l'enregistrement de la dépense");
       }
 
       setAmount('');
@@ -106,7 +106,7 @@ export const CreateExpenseModal: React.FC<CreateExpenseModalProps> = ({
       onSuccess();
       onClose();
     } catch (err: any) {
-      setError(err.message || 'Error recording expense');
+      setError(err.message || "Erreur lors de l'enregistrement de la dépense");
     } finally {
       setIsSubmitting(false);
     }
@@ -122,8 +122,8 @@ export const CreateExpenseModal: React.FC<CreateExpenseModalProps> = ({
               <Receipt className="w-4 h-4" />
             </div>
             <div>
-              <h3 className="text-sm font-black text-slate-900">Record General Expense</h3>
-              <p className="text-pos-badge text-slate-600">Log operational cash outlays and shop expenses</p>
+              <h3 className="text-sm font-black text-slate-900">Enregistrer une Dépense</h3>
+              <p className="text-pos-badge text-slate-600">Saisir les charges courantes et frais d'exploitation</p>
             </div>
           </div>
           <button
@@ -145,7 +145,7 @@ export const CreateExpenseModal: React.FC<CreateExpenseModalProps> = ({
           )}
 
           <div>
-            <label className="block font-bold text-slate-700 mb-1">Expense Category *</label>
+            <label className="block font-bold text-slate-700 mb-1">Catégorie de Dépense *</label>
             <select
               value={category}
               onChange={e => setCategory(e.target.value)}
@@ -159,11 +159,11 @@ export const CreateExpenseModal: React.FC<CreateExpenseModalProps> = ({
 
           {category === 'Autre Dépense' && (
             <div>
-              <label className="block font-bold text-slate-700 mb-1">Custom Category Name *</label>
+              <label className="block font-bold text-slate-700 mb-1">Nom de la Catégorie Personnalisée *</label>
               <input
                 type="text"
                 required
-                placeholder="Enter custom category"
+                placeholder="Entrez la catégorie personnalisée"
                 value={customCategory}
                 onChange={e => setCustomCategory(e.target.value)}
                 className="w-full font-semibold px-3 py-2 border border-slate-300 rounded-xl focus:ring-2 focus:ring-rose-500 outline-none"
@@ -173,7 +173,7 @@ export const CreateExpenseModal: React.FC<CreateExpenseModalProps> = ({
 
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block font-bold text-slate-700 mb-1">Amount (DT) *</label>
+              <label className="block font-bold text-slate-700 mb-1">Montant (DT) *</label>
               <input
                 type="number"
                 step="0.001"
@@ -187,13 +187,13 @@ export const CreateExpenseModal: React.FC<CreateExpenseModalProps> = ({
             </div>
 
             <div>
-              <label className="block font-bold text-slate-700 mb-1">Payment Source *</label>
+              <label className="block font-bold text-slate-700 mb-1">Source de Paiement *</label>
               <select
                 value={paymentSource}
                 onChange={e => setPaymentSource(e.target.value as any)}
                 className="w-full font-semibold px-3 py-2 border border-slate-300 rounded-xl focus:ring-2 focus:ring-rose-500 outline-none"
               >
-                <option value="REGISTER_CASH">Caisse Magasin (Register Drawer)</option>
+                <option value="REGISTER_CASH">Caisse Magasin (Tiroir-caisse)</option>
                 <option value="BANK_OTHER">Banque / Autre Compte</option>
               </select>
             </div>
@@ -207,8 +207,8 @@ export const CreateExpenseModal: React.FC<CreateExpenseModalProps> = ({
               </div>
             ) : openSessions.length === 1 ? (
               <div className="p-2.5 bg-amber-50 rounded-xl border border-amber-200 text-amber-900 text-xs leading-relaxed">
-                <strong>Notice:</strong> Paying from the register drawer will automatically record a{' '}
-                <span className="font-mono font-bold">CASH_OUT</span> movement linked to session{' '}
+                <strong>Remarque :</strong> Le paiement par la caisse enregistrera automatiquement un mouvement de{' '}
+                <span className="font-mono font-bold">SORTIE (CASH_OUT)</span> lié à la session{' '}
                 <span className="font-mono font-bold">{openSessions[0].counter_name} ({openSessions[0].session_number})</span>.
               </div>
             ) : (
@@ -230,10 +230,10 @@ export const CreateExpenseModal: React.FC<CreateExpenseModalProps> = ({
           )}
 
           <div>
-            <label className="block font-bold text-slate-700 mb-1">Description / Memo (Optional)</label>
+            <label className="block font-bold text-slate-700 mb-1">Description / Note (Facultatif)</label>
             <input
               type="text"
-              placeholder="e.g. Café atelier, Facture STEG mars, Bouteilles gaz..."
+              placeholder="ex. Café atelier, Facture STEG mars, Bouteilles gaz..."
               value={description}
               onChange={e => setDescription(e.target.value)}
               className="w-full font-semibold px-3 py-2 border border-slate-300 rounded-xl focus:ring-2 focus:ring-rose-500 outline-none"
@@ -248,7 +248,7 @@ export const CreateExpenseModal: React.FC<CreateExpenseModalProps> = ({
               onClick={onClose}
               className="flex-1 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl transition-colors"
             >
-              Cancel
+              Annuler
             </button>
             <button
               type="submit"
@@ -256,7 +256,7 @@ export const CreateExpenseModal: React.FC<CreateExpenseModalProps> = ({
               className="flex-1 py-2.5 bg-rose-600 hover:bg-rose-700 disabled:opacity-50 text-white font-bold rounded-xl shadow-sm transition-colors flex items-center justify-center gap-1.5"
             >
               <Receipt className="w-4 h-4" />
-              <span>{isSubmitting ? 'Recording...' : 'Save Expense'}</span>
+              <span>{isSubmitting ? 'Enregistrement...' : 'Enregistrer la dépense'}</span>
             </button>
           </div>
         </form>
