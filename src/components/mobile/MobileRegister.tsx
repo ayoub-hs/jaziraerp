@@ -22,7 +22,8 @@ import {
   RotateCcw,
   UserPlus,
   Clock,
-  PauseCircle
+  PauseCircle,
+  MoreHorizontal
 } from 'lucide-react';
 import type { 
   Product, 
@@ -82,6 +83,7 @@ export const MobileRegister: React.FC<MobileRegisterProps> = ({
   const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
   const [saleDiscount, setSaleDiscount] = useState<number>(0);
   const [editingDiscountItemId, setEditingDiscountItemId] = useState<string | null>(null);
+  const [editingOptionsItemId, setEditingOptionsItemId] = useState<string | null>(null);
   const [isCartDrawerOpen, setIsCartDrawerOpen] = useState(false);
   const [isCheckoutOpen, setIsCheckoutOpen] = useState(false);
   const [isRefundOpen, setIsRefundOpen] = useState(false);
@@ -1196,9 +1198,9 @@ export const MobileRegister: React.FC<MobileRegisterProps> = ({
       {/* PULL-UP BOTTOM SHEET CART DRAWER */}
       {isCartDrawerOpen && (
         <div className="fixed inset-0 z-40 bg-black/60 backdrop-blur-sm flex flex-col justify-end">
-          <div className="bg-white rounded-t-3xl shadow-2xl max-h-[85vh] flex flex-col overflow-hidden animate-in slide-in-from-bottom duration-200">
+          <div className="bg-white rounded-t-3xl shadow-2xl max-h-[92dvh] flex flex-col overflow-hidden animate-in slide-in-from-bottom duration-200">
             {/* Drawer Header */}
-            <div className="p-4 bg-slate-900 text-white flex items-center justify-between">
+            <div className="px-4 py-2 bg-slate-900 text-white flex items-center justify-between shrink-0">
               <div>
                 <h3 className="font-bold text-sm">Shopping Cart ({totals.itemCount} items)</h3>
                 <p className="text-xs text-slate-400">
@@ -1210,29 +1212,30 @@ export const MobileRegister: React.FC<MobileRegisterProps> = ({
                   <button
                     type="button"
                     onClick={handleHoldCart}
-                    className="text-xs font-bold text-amber-200 bg-amber-900/60 hover:bg-amber-800/80 border border-amber-600/50 px-2 py-1 rounded-lg flex items-center gap-1 transition-colors"
+                    className="min-h-[44px] text-xs font-bold text-amber-200 bg-amber-900/60 hover:bg-amber-800/80 border border-amber-600/50 px-2.5 py-1 rounded-xl flex items-center gap-1 transition-colors"
                     title="Mettre en attente"
                   >
-                    <PauseCircle className="w-3.5 h-3.5 text-amber-400" />
+                    <PauseCircle className="w-4 h-4 text-amber-400" />
                     <span>Attente</span>
                   </button>
                 )}
                 <button
                   type="button"
                   onClick={() => setIsHeldCartsModalOpen(true)}
-                  className={`text-xs font-bold px-2 py-1 rounded-lg flex items-center gap-1 transition-colors border ${
+                  className={`min-h-[44px] text-xs font-bold px-2.5 py-1 rounded-xl flex items-center gap-1 transition-colors border ${
                     heldCartCount > 0
                       ? 'bg-amber-500 text-slate-950 border-amber-400 font-extrabold'
                       : 'bg-slate-800 text-slate-400 border-slate-700 hover:text-white'
                   }`}
                   title="Paniers en attente"
                 >
-                  <Clock className="w-3.5 h-3.5" />
+                  <Clock className="w-4 h-4" />
                   <span>({heldCartCount})</span>
                 </button>
                 <button
                   onClick={() => setIsCartDrawerOpen(false)}
-                  className="text-slate-400 hover:text-white p-1 rounded-lg"
+                  className="min-w-[44px] min-h-[44px] flex items-center justify-center text-slate-400 hover:text-white rounded-lg transition-colors"
+                  title="Fermer le panier"
                 >
                   <X className="w-5 h-5" />
                 </button>
@@ -1240,7 +1243,7 @@ export const MobileRegister: React.FC<MobileRegisterProps> = ({
             </div>
 
             {priceWarning && (
-              <div className="mx-4 mt-3 p-2.5 bg-amber-50 border border-amber-300 rounded-xl flex items-center justify-between gap-2 text-xs text-amber-900 font-semibold shadow-xs">
+              <div className="mx-3 my-1.5 p-2 bg-amber-50 border border-amber-300 rounded-xl flex items-center justify-between gap-2 text-xs text-amber-900 font-semibold shadow-xs shrink-0">
                 <div className="flex items-center gap-2 min-w-0">
                   <AlertCircle className="w-4 h-4 text-amber-600 shrink-0" />
                   <span className="truncate">{priceWarning}</span>
@@ -1248,81 +1251,194 @@ export const MobileRegister: React.FC<MobileRegisterProps> = ({
                 <button
                   type="button"
                   onClick={() => setPriceWarning(null)}
-                  className="p-1 hover:bg-amber-100 rounded text-amber-700"
+                  className="min-w-[44px] min-h-[44px] flex items-center justify-center hover:bg-amber-100 rounded text-amber-700"
                 >
-                  <X className="w-3.5 h-3.5" />
+                  <X className="w-4 h-4" />
                 </button>
               </div>
             )}
 
             {/* Cart Items List */}
-            <div className="p-4 flex-1 overflow-y-auto divide-y divide-slate-100">
+            <div className="p-2 flex-1 min-h-0 overflow-y-auto divide-y divide-slate-100">
               {cart.map(item => (
-                <div key={item.cart_item_id} className="cart-row py-2.5 space-y-1.5">
-                  <div className="flex items-center justify-between gap-2">
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-1.5 flex-wrap">
-                        <h4 className="font-bold text-xs text-slate-900 truncate">{item.name}</h4>
-                        {(() => {
-                          if (!item.product_id) return null;
-                          const prod = products.find(p => p.id === item.product_id);
-                          if (!prod) return null;
-                          const totalUnitsOrdered = item.quantity * (item.pack_multiplier || 1);
-                          if (prod.stock_quantity <= 0) {
-                            return (
-                              <span className="text-[9px] font-bold text-rose-700 bg-rose-50 border border-rose-200 px-1.5 py-0.2 rounded shrink-0" title="Rupture de stock en magasin">
-                                Rupture (0 dispo)
-                              </span>
-                            );
-                          }
-                          if (totalUnitsOrdered > prod.stock_quantity) {
-                            return (
-                              <span className="text-[9px] font-bold text-amber-700 bg-amber-50 border border-amber-200 px-1.5 py-0.2 rounded shrink-0" title="Quantité supérieure au stock disponible">
-                                Dispo: {prod.stock_quantity}
-                              </span>
-                            );
-                          }
-                          return null;
-                        })()}
-                      </div>
-                      <div className="text-[10px] text-slate-500 flex items-center gap-1.5 mt-0.5">
-                        <span className="text-slate-400 font-medium text-[9px]">P.U:</span>
-                        <input
-                          type="number"
-                          step="0.001"
-                          min="0"
-                          value={item.unit_price}
-                          onChange={e => handleUpdateUnitPrice(item.cart_item_id, parseFloat(e.target.value) || 0)}
-                          className="w-16 px-1 py-0.2 text-[10px] font-mono font-bold text-emerald-700 bg-white border border-slate-200 rounded focus:border-emerald-500 focus:outline-none"
-                          title="Modifier le prix unitaire"
-                        />
-                        <span className="text-[9px] text-slate-400 font-mono">DT</span>
-                        <span
-                          className={`text-[9px] font-semibold px-1 py-0.2 rounded border ${
-                            item.price_overridden
-                              ? 'bg-amber-100 text-amber-800 border-amber-200'
-                              : selectedCustomer?.type === 'RESELLER'
-                              ? 'bg-purple-100 text-purple-800 border-purple-200'
-                              : selectedCustomer?.type === 'WHOLESALE'
-                              ? 'bg-blue-100 text-blue-800 border-blue-200'
-                              : 'bg-slate-100 text-slate-700 border-slate-200'
-                          }`}
-                          title={`Tarification : ${getPriceSourceLabel(item, selectedCustomer)}`}
-                        >
-                          {getPriceSourceLabel(item, selectedCustomer)}
+                <div key={item.cart_item_id} className="cart-row py-1.5 space-y-1">
+                  {/* Line 1: Name + inline size/pack/loan/discount badges */}
+                  <div className="flex items-start justify-between gap-1.5">
+                    <h4 className="text-pos-name font-bold text-slate-900 line-clamp-2 leading-snug flex-1" title={item.name}>
+                      {item.name}
+                      {item.size_label && (
+                        <span className="inline-block text-pos-badge font-bold bg-slate-100 text-slate-700 px-1.5 py-0.5 rounded ml-1.5 align-middle shrink-0">
+                          {item.size_label}
                         </span>
-                        {item.size_label && (
-                          <span className="bg-slate-100 px-1 rounded font-semibold text-slate-600">
-                            {item.size_label}
+                      )}
+                      {item.pack_multiplier > 1 && (
+                        <span className="inline-block text-pos-badge font-bold bg-blue-50 text-blue-700 border border-blue-200 px-1.5 py-0.5 rounded ml-1.5 align-middle shrink-0">
+                          {item.pack_label || `x${item.pack_multiplier}`}
+                        </span>
+                      )}
+                      {item.container_type_id && item.loan_container && (
+                        <span className="inline-block text-pos-badge font-bold bg-amber-100 text-amber-900 border border-amber-300 px-1.5 py-0.5 rounded ml-1.5 align-middle shrink-0" title="Consigne prêtée">
+                          Consigne
+                        </span>
+                      )}
+                      {(item.discount_amount || 0) > 0 && (
+                        <span className="inline-block text-pos-badge font-bold bg-rose-100 text-rose-700 border border-rose-200 px-1.5 py-0.5 rounded font-mono ml-1.5 align-middle shrink-0" title={`Remise: -${formatMoney(item.discount_amount)}`}>
+                          -{formatMoney(item.discount_amount)}
+                        </span>
+                      )}
+                    </h4>
+                    {(() => {
+                      if (!item.product_id) return null;
+                      const prod = products.find(p => p.id === item.product_id);
+                      if (!prod) return null;
+                      const totalUnitsOrdered = item.quantity * (item.pack_multiplier || 1);
+                      if (prod.stock_quantity <= 0) {
+                        return (
+                          <span className="text-pos-badge font-bold text-rose-700 bg-rose-50 border border-rose-200 px-1.5 py-0.5 rounded shrink-0" title="Rupture de stock en magasin">
+                            Rupture
                           </span>
+                        );
+                      }
+                      if (totalUnitsOrdered > prod.stock_quantity) {
+                        return (
+                          <span className="text-pos-badge font-bold text-amber-700 bg-amber-50 border border-amber-200 px-1.5 py-0.5 rounded shrink-0" title="Quantité supérieure au stock disponible">
+                            Dispo: {prod.stock_quantity}
+                          </span>
+                        );
+                      }
+                      return null;
+                    })()}
+                  </div>
+
+                  {/* Line 2: Stepper, unit price, line total, options "...", delete */}
+                  <div className="flex items-center justify-between gap-2">
+                    {/* Stepper with min 44x44 targets */}
+                    <div className="flex items-center border border-slate-300 rounded-xl overflow-hidden bg-slate-50 shrink-0">
+                      <button
+                        type="button"
+                        onClick={() => handleUpdateQuantity(item.cart_item_id, Math.max(0, item.quantity - 1))}
+                        className="min-w-[44px] min-h-[44px] w-11 h-11 flex items-center justify-center hover:bg-slate-200 text-slate-700 font-bold text-lg select-none transition-colors"
+                      >
+                        -
+                      </button>
+                      <BufferedNumberInput
+                        step="0.001"
+                        min={0.001}
+                        disallowZero={true}
+                        value={item.quantity}
+                        onCommit={val => handleUpdateQuantity(item.cart_item_id, val)}
+                        title="Modifier la quantité"
+                        className="w-12 qty-input text-center text-pos-qty font-bold font-mono bg-white border-x border-slate-300 min-h-[44px] py-1 focus:outline-none"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => handleUpdateQuantity(item.cart_item_id, item.quantity + 1)}
+                        className="min-w-[44px] min-h-[44px] w-11 h-11 flex items-center justify-center hover:bg-slate-200 text-slate-700 font-bold text-lg select-none transition-colors"
+                      >
+                        +
+                      </button>
+                    </div>
+
+                    {/* Unit price & line total (both 16px mono) */}
+                    <div className="flex flex-col items-end min-w-[65px] shrink-0 leading-tight">
+                      {(item.discount_amount || 0) > 0 && (
+                        <span className="text-pos-badge line-through text-slate-400 font-mono">
+                          {formatMoney(item.unit_price * item.quantity)}
+                        </span>
+                      )}
+                      <span className="cart-line-total text-pos-price font-bold text-slate-900 font-mono">
+                        {formatMoney(Math.max(0, (item.unit_price * item.quantity) - (item.discount_amount || 0)))}
+                      </span>
+                      <span className="cart-unit-price text-pos-price font-medium text-slate-500 font-mono" title="Prix unitaire">
+                        {formatMoney(item.unit_price)}
+                      </span>
+                    </div>
+
+                    {/* Action buttons: Options "..." and Delete (Trash2) */}
+                    <div className="flex items-center gap-2 shrink-0">
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setEditingOptionsItemId(editingOptionsItemId === item.cart_item_id ? null : item.cart_item_id)
+                        }
+                        className={`min-w-[44px] min-h-[44px] w-11 h-11 flex items-center justify-center rounded-xl border transition-colors ${
+                          editingOptionsItemId === item.cart_item_id
+                            ? 'bg-slate-800 text-white border-slate-800'
+                            : 'text-slate-600 hover:text-slate-800 bg-slate-100 hover:bg-slate-200 border-slate-200'
+                        }`}
+                        title="Options article (consigne, remise, prix unitaire)"
+                      >
+                        <MoreHorizontal className="w-5 h-5" />
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setCart(prev => prev.filter(i => i.cart_item_id !== item.cart_item_id))
+                        }
+                        className="min-w-[44px] min-h-[44px] w-11 h-11 flex items-center justify-center text-slate-400 hover:text-rose-600 rounded-xl hover:bg-rose-50 transition-colors"
+                        title="Supprimer la ligne"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Expanded Options Menu (behind "...") */}
+                  {editingOptionsItemId === item.cart_item_id && (
+                    <div className="mt-1 p-2.5 bg-slate-50 rounded-xl border border-slate-200 space-y-2 text-xs">
+                      <div className="flex items-center justify-between gap-2 flex-wrap">
+                        {item.container_type_id && (
+                          <button
+                            type="button"
+                            onClick={() => handleToggleContainerLoan(item.cart_item_id)}
+                            className={`min-h-[44px] px-3 py-1.5 rounded-xl flex items-center gap-1.5 transition-colors border text-xs font-bold ${
+                              item.loan_container
+                                ? 'bg-amber-100 text-amber-900 border-amber-300 shadow-xs'
+                                : 'bg-white text-slate-700 border-slate-300 hover:bg-slate-100'
+                            }`}
+                            title={item.loan_container ? "Consigne prêtée (enregistrée au compte client)" : "Emballage client (pas de prêt consigne)"}
+                          >
+                            <Box className="w-4 h-4 text-amber-600" />
+                            <span>
+                              {item.loan_container
+                                ? `Prêt consigne (${calculateContainersNeeded(item.quantity, item.pack_multiplier, item.size_label, item.container_capacity_liters, item.name)} pcs)`
+                                : 'Emballage client'}
+                            </span>
+                          </button>
                         )}
+
+                        <div className="flex items-center gap-1.5">
+                          <span className="text-xs font-bold text-slate-700">Remise (DT):</span>
+                          <input
+                            type="number"
+                            step="0.1"
+                            min="0"
+                            value={item.discount_amount || ''}
+                            onChange={e => handleUpdateItemDiscount(item.cart_item_id, parseFloat(e.target.value) || 0)}
+                            placeholder="0.000"
+                            className="w-20 px-2 py-1 text-xs font-mono font-bold border border-slate-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-emerald-500 bg-white"
+                          />
+                        </div>
+                      </div>
+
+                      <div className="flex items-center justify-between gap-2 pt-1.5 border-t border-slate-200 flex-wrap">
+                        <div className="flex items-center gap-1.5">
+                          <span className="text-xs font-bold text-slate-700">P.U (DT):</span>
+                          <input
+                            type="number"
+                            step="0.001"
+                            min="0"
+                            value={item.unit_price}
+                            onChange={e => handleUpdateUnitPrice(item.cart_item_id, parseFloat(e.target.value) || 0)}
+                            className="w-24 px-2 py-1 text-xs font-mono font-bold text-emerald-700 bg-white border border-slate-300 rounded-lg focus:border-emerald-500 focus:outline-none"
+                            title="Modifier le prix unitaire"
+                          />
+                        </div>
+
                         {(() => {
                           const prod = products.find(p => p.id === item.product_id);
-                          if (!prod?.pack_sizes || prod.pack_sizes.length === 0) {
-                            return item.pack_multiplier > 1 ? (
-                              <span className="text-blue-600 font-semibold bg-blue-50 px-1 rounded">{item.pack_label || `x${item.pack_multiplier} pcs`}</span>
-                            ) : null;
-                          }
+                          if (!prod?.pack_sizes || prod.pack_sizes.length === 0) return null;
                           return (
                             <select
                               value={item.selected_pack_size_id || 'base'}
@@ -1351,7 +1467,7 @@ export const MobileRegister: React.FC<MobileRegisterProps> = ({
                                   }
                                 }
                               }}
-                              className="text-[9px] font-bold text-blue-700 bg-blue-50 border border-blue-200 rounded px-1 py-0.2 outline-none cursor-pointer"
+                              className="text-xs font-bold text-blue-700 bg-blue-50 border border-blue-200 rounded-lg px-2 py-1 outline-none cursor-pointer"
                             >
                               <option value="base">Unité (1 pc)</option>
                               {prod.pack_sizes.map(ps => (
@@ -1364,164 +1480,48 @@ export const MobileRegister: React.FC<MobileRegisterProps> = ({
                         })()}
                       </div>
                     </div>
-
-                    {/* Quantity Stepper */}
-                    <div className="flex items-center border border-slate-300 rounded-lg overflow-hidden bg-slate-50 shrink-0">
-                      <button
-                        onClick={() => handleUpdateQuantity(item.cart_item_id, Math.max(0, item.quantity - 1))}
-                        className="px-2 py-0.5 hover:bg-slate-200 text-slate-700 font-bold text-xs"
-                      >
-                        -
-                      </button>
-                      <BufferedNumberInput
-                        step="0.001"
-                        min={0.001}
-                        disallowZero={true}
-                        value={item.quantity}
-                        onCommit={val => handleUpdateQuantity(item.cart_item_id, val)}
-                        className="w-12 text-center text-xs font-bold font-mono bg-white border-x border-slate-300 py-0.5 focus:outline-none"
-                      />
-                      <button
-                        onClick={() => handleUpdateQuantity(item.cart_item_id, item.quantity + 1)}
-                        className="px-2 py-0.5 hover:bg-slate-200 text-slate-700 font-bold text-xs"
-                      >
-                        +
-                      </button>
-                    </div>
-
-                    {/* Total Line & Remove */}
-                    <div className="text-right flex items-center gap-2 shrink-0">
-                      <div className="flex flex-col items-end">
-                        {(item.discount_amount || 0) > 0 && (
-                          <span className="text-[10px] line-through text-slate-400 font-mono">
-                            {formatMoney(item.unit_price * item.quantity)}
-                          </span>
-                        )}
-                        <span className="font-mono text-xs font-bold text-slate-900">
-                          {formatMoney(Math.max(0, (item.unit_price * item.quantity) - (item.discount_amount || 0)))}
-                        </span>
-                      </div>
-                      <button
-                        onClick={() =>
-                          setCart(prev => prev.filter(i => i.cart_item_id !== item.cart_item_id))
-                        }
-                        className="text-slate-300 hover:text-rose-600 p-1"
-                      >
-                        <Trash2 className="w-3.5 h-3.5" />
-                      </button>
-                    </div>
-                  </div>
-
-                  {/* Container Loan Toggle & Discount Button */}
-                  <div className="flex items-center justify-between gap-2 pt-0.5">
-                    <div className="flex items-center gap-2">
-                      {item.container_type_id && (
-                        <button
-                          type="button"
-                          onClick={() => handleToggleContainerLoan(item.cart_item_id)}
-                          className={`text-[10px] font-bold px-2 py-0.5 rounded-full flex items-center gap-1 transition-colors border ${
-                            item.loan_container
-                              ? 'bg-amber-100 text-amber-900 border-amber-300 shadow-xs'
-                              : 'bg-slate-100 text-slate-600 border-slate-200 hover:bg-slate-200'
-                          }`}
-                          title={item.loan_container ? "Consigne prêtée (enregistrée au compte client)" : "Emballage client (pas de prêt consigne)"}
-                        >
-                          <Box className="w-3 h-3 text-amber-600" />
-                          <span>
-                            {item.loan_container
-                              ? `Prêt consigne (${calculateContainersNeeded(item.quantity, item.pack_multiplier, item.size_label, item.container_capacity_liters, item.name)} pcs)`
-                              : 'Emballage client'}
-                          </span>
-                        </button>
-                      )}
-
-                      <button
-                        type="button"
-                        onClick={() => setEditingDiscountItemId(editingDiscountItemId === item.cart_item_id ? null : item.cart_item_id)}
-                        className={`text-[10px] font-bold px-1.5 py-0.5 rounded flex items-center gap-0.5 transition-colors ${
-                          (item.discount_amount || 0) > 0
-                            ? 'bg-rose-100 text-rose-700 font-mono'
-                            : 'text-slate-500 hover:text-slate-700 bg-slate-100 hover:bg-slate-200 border border-slate-200'
-                        }`}
-                        title="Remise par article"
-                      >
-                        <Tag className="w-3 h-3" />
-                        {(item.discount_amount || 0) > 0 ? `Remise: -${formatMoney(item.discount_amount)}` : 'Remise'}
-                      </button>
-                    </div>
-                  </div>
-
-                  {/* Line Discount Input Editor */}
-                  {editingDiscountItemId === item.cart_item_id && (
-                    <div className="mt-1 flex items-center gap-2 bg-slate-50 p-1.5 rounded-lg border border-slate-200">
-                      <span className="text-[10px] font-bold text-slate-600">Remise ligne (DT):</span>
-                      <input
-                        type="number"
-                        step="0.1"
-                        min="0"
-                        value={item.discount_amount || ''}
-                        onChange={e => handleUpdateItemDiscount(item.cart_item_id, parseFloat(e.target.value) || 0)}
-                        placeholder="0.000"
-                        className="w-20 px-1.5 py-0.5 text-xs font-mono font-bold border border-slate-300 rounded focus:outline-none focus:ring-1 focus:ring-emerald-500 bg-white"
-                      />
-                      <button
-                        type="button"
-                        onClick={() => setEditingDiscountItemId(null)}
-                        className="text-[10px] font-bold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 px-2 py-0.5 rounded"
-                      >
-                        OK
-                      </button>
-                    </div>
                   )}
                 </div>
               ))}
             </div>
 
             {/* Drawer Footer & Checkout */}
-            <div className="p-4 bg-slate-50 border-t border-slate-200 space-y-3">
-              {/* Sale Discount Input */}
-              <div className="flex items-center justify-between pb-2 border-b border-slate-200">
-                <span className="text-xs font-semibold text-slate-600 flex items-center gap-1">
-                  <Tag className="w-3.5 h-3.5 text-emerald-600" />
-                  Remise globale (DT):
-                </span>
-                <input
-                  type="number"
-                  step="0.5"
-                  min="0"
-                  value={saleDiscount || ''}
-                  onChange={e => setSaleDiscount(Math.max(0, parseFloat(e.target.value) || 0))}
-                  placeholder="0.000"
-                  className="w-24 px-2 py-1 text-xs text-right font-mono font-bold border border-slate-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-emerald-500 bg-white"
-                />
-              </div>
-
-              <div className="space-y-1 text-xs text-slate-600">
-                <div className="flex justify-between">
-                  <span>Articles ({totals.itemCount} items / {totals.totalPieces} pcs):</span>
+            <div className="p-3 bg-slate-50 border-t border-slate-200 shrink-0 space-y-2">
+              {/* Sale Discount & Subtotals Line */}
+              <div className="flex items-center justify-between gap-2 text-xs text-slate-600 flex-wrap">
+                <div className="flex items-center gap-1.5 flex-wrap">
+                  <span className="font-semibold text-slate-700">Articles ({totals.itemCount} / {totals.totalPieces} pcs):</span>
                   <span className="font-mono">{formatMoney(totals.subtotalHT)} HT</span>
-                </div>
-                <div className="flex justify-between">
-                  <span>TVA (19%):</span>
+                  <span className="text-slate-400">|</span>
+                  <span>TVA:</span>
                   <span className="font-mono">{formatMoney(totals.tvaAmount)}</span>
+                  {totals.totalDiscount > 0 && (
+                    <>
+                      <span className="text-slate-400">|</span>
+                      <span className="text-rose-600 font-semibold font-mono">-{formatMoney(totals.totalDiscount)}</span>
+                    </>
+                  )}
                 </div>
-                {totals.totalDiscount > 0 && (
-                  <div className="flex justify-between text-rose-600 font-semibold">
-                    <span>Total Remises:</span>
-                    <span className="font-mono">-{formatMoney(totals.totalDiscount)}</span>
-                  </div>
-                )}
-                <div className="flex justify-between text-base font-black text-slate-900 pt-1 border-t border-slate-200">
-                  <span>TOTAL TTC:</span>
-                  <span className="font-mono text-xl text-emerald-700">
-                    {formatMoney(totals.totalTTC)}
-                  </span>
+
+                {/* Sale Discount Input */}
+                <div className="flex items-center gap-1 shrink-0">
+                  <Tag className="w-3.5 h-3.5 text-emerald-600" />
+                  <input
+                    type="number"
+                    step="0.5"
+                    min="0"
+                    value={saleDiscount || ''}
+                    onChange={e => setSaleDiscount(Math.max(0, parseFloat(e.target.value) || 0))}
+                    placeholder="Remise DT"
+                    className="w-20 px-1.5 py-0.5 text-xs text-right font-mono font-bold border border-slate-300 rounded focus:outline-none focus:ring-1 focus:ring-emerald-500 bg-white"
+                    title="Remise globale en Dinars"
+                  />
                 </div>
               </div>
 
               {/* Closed Register Notice */}
               {!activeSession && (
-                <div className="p-2.5 bg-amber-50 border border-amber-300 rounded-xl flex items-center justify-between gap-2 text-xs">
+                <div className="p-2 bg-amber-50 border border-amber-300 rounded-xl flex items-center justify-between gap-2 text-xs">
                   <div className="flex items-center gap-1.5 text-amber-900 font-semibold">
                     <AlertCircle className="w-4 h-4 text-amber-600 shrink-0" />
                     <span>Caisse fermée — Session requise</span>
@@ -1539,24 +1539,35 @@ export const MobileRegister: React.FC<MobileRegisterProps> = ({
                 </div>
               )}
 
-              <button
-                onClick={() => {
-                  if (!activeSession || activeSession.status !== 'OPEN') {
+              {/* Compact Two-Row: TOTAL TTC Left, Encaisser Button Right */}
+              <div className="flex items-center justify-between gap-3 pt-1 border-t border-slate-200">
+                <div className="flex flex-col">
+                  <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">TOTAL TTC</span>
+                  <span className="cart-grand-total text-pos-total font-mono text-emerald-700 leading-none">
+                    {formatMoney(totals.totalTTC)}
+                  </span>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (!activeSession || activeSession.status !== 'OPEN') {
+                      setIsCartDrawerOpen(false);
+                      if (onOpenSessionModal) onOpenSessionModal();
+                      return;
+                    }
                     setIsCartDrawerOpen(false);
-                    if (onOpenSessionModal) onOpenSessionModal();
-                    return;
-                  }
-                  setIsCartDrawerOpen(false);
-                  setIsCheckoutOpen(true);
-                }}
-                className={`w-full py-3.5 text-white font-black rounded-xl text-sm shadow-lg transition-colors ${
-                  !activeSession
-                    ? 'bg-amber-600 hover:bg-amber-700'
-                    : 'bg-emerald-700 hover:bg-emerald-800'
-                }`}
-              >
-                {!activeSession ? 'Ouvrir la caisse pour encaisser' : 'Encaisser'}
-              </button>
+                    setIsCheckoutOpen(true);
+                  }}
+                  className={`flex-1 min-h-[52px] py-2 px-4 text-white font-black rounded-xl text-lg shadow-lg flex items-center justify-center transition-colors ${
+                    !activeSession
+                      ? 'bg-amber-600 hover:bg-amber-700'
+                      : 'bg-emerald-700 hover:bg-emerald-800'
+                  }`}
+                >
+                  {!activeSession ? 'Ouvrir la caisse pour encaisser' : 'Encaisser'}
+                </button>
+              </div>
             </div>
           </div>
         </div>
@@ -1749,45 +1760,53 @@ export const MobileRegister: React.FC<MobileRegisterProps> = ({
       />
 
       {/* FIXED BOTTOM NAVIGATION BAR (4 TABS) */}
-      <nav className="fixed bottom-0 inset-x-0 bg-slate-900 border-t border-slate-800 flex items-center justify-around py-2 px-1 z-30 select-none">
+      <nav className="fixed bottom-0 inset-x-0 bg-slate-900 border-t border-slate-800 grid grid-cols-4 min-h-[64px] pb-[env(safe-area-inset-bottom,0px)] z-30 select-none">
         <button
           onClick={() => setActiveTab('REGISTER')}
-          className={`flex flex-col items-center gap-1 py-1 px-3 rounded-lg text-[10px] font-bold transition-colors ${
-            activeTab === 'REGISTER' ? 'text-emerald-400' : 'text-slate-400 hover:text-white'
+          className={`flex flex-col items-center justify-center gap-1 min-h-[48px] py-1.5 w-full transition-colors border-t-2 ${
+            activeTab === 'REGISTER'
+              ? 'border-emerald-400 text-emerald-400 font-black'
+              : 'border-transparent text-slate-400 hover:text-white font-bold'
           }`}
         >
-          <ShoppingCart className="w-4 h-4" />
-          <span>Register</span>
+          <ShoppingCart className="w-4 h-4 shrink-0" />
+          <span className="text-xs">Register</span>
         </button>
 
         <button
           onClick={() => setActiveTab('LOOKUP')}
-          className={`flex flex-col items-center gap-1 py-1 px-3 rounded-lg text-[10px] font-bold transition-colors ${
-            activeTab === 'LOOKUP' ? 'text-emerald-400' : 'text-slate-400 hover:text-white'
+          className={`flex flex-col items-center justify-center gap-1 min-h-[48px] py-1.5 w-full transition-colors border-t-2 ${
+            activeTab === 'LOOKUP'
+              ? 'border-emerald-400 text-emerald-400 font-black'
+              : 'border-transparent text-slate-400 hover:text-white font-bold'
           }`}
         >
-          <Search className="w-4 h-4" />
-          <span>Lookup</span>
+          <Search className="w-4 h-4 shrink-0" />
+          <span className="text-xs">Lookup</span>
         </button>
 
         <button
           onClick={() => setActiveTab('QUICK_EDIT')}
-          className={`flex flex-col items-center gap-1 py-1 px-3 rounded-lg text-[10px] font-bold transition-colors ${
-            activeTab === 'QUICK_EDIT' ? 'text-emerald-400' : 'text-slate-400 hover:text-white'
+          className={`flex flex-col items-center justify-center gap-1 min-h-[48px] py-1.5 w-full transition-colors border-t-2 ${
+            activeTab === 'QUICK_EDIT'
+              ? 'border-emerald-400 text-emerald-400 font-black'
+              : 'border-transparent text-slate-400 hover:text-white font-bold'
           }`}
         >
-          <Edit3 className="w-4 h-4" />
-          <span>Quick-Edit</span>
+          <Edit3 className="w-4 h-4 shrink-0" />
+          <span className="text-xs">Quick-Edit</span>
         </button>
 
         <button
           onClick={() => setActiveTab('CUSTOMERS')}
-          className={`flex flex-col items-center gap-1 py-1 px-3 rounded-lg text-[10px] font-bold transition-colors ${
-            activeTab === 'CUSTOMERS' ? 'text-emerald-400' : 'text-slate-400 hover:text-white'
+          className={`flex flex-col items-center justify-center gap-1 min-h-[48px] py-1.5 w-full transition-colors border-t-2 ${
+            activeTab === 'CUSTOMERS'
+              ? 'border-emerald-400 text-emerald-400 font-black'
+              : 'border-transparent text-slate-400 hover:text-white font-bold'
           }`}
         >
-          <Users className="w-4 h-4" />
-          <span>Customers</span>
+          <Users className="w-4 h-4 shrink-0" />
+          <span className="text-xs">Customers</span>
         </button>
       </nav>
     </div>

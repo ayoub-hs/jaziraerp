@@ -1,0 +1,842 @@
+{
+  "timestamp": "2026-10-10T23:59:57.604Z",
+  "description": "After measurements for Batch UI-2 (phone register, bottom nav, update banner)",
+  "viewports": {
+    "phone_384x725": {
+      "viewport": "phone_384x725",
+      "width": 384,
+      "height": 725,
+      "deviceScaleFactor": 2.81,
+      "drawerClosed": {
+        "innerH": 725,
+        "innerW": 384,
+        "docScrollH": 725,
+        "docScrollW": 384,
+        "noPageScroll": true,
+        "bottomNavHeight": 64,
+        "bottomNavButtons": [
+          {
+            "text": "Register",
+            "width": 96,
+            "height": 63,
+            "fontSizePx": 12,
+            "fontWeight": "900"
+          },
+          {
+            "text": "Lookup",
+            "width": 96,
+            "height": 63,
+            "fontSizePx": 12,
+            "fontWeight": "700"
+          },
+          {
+            "text": "Quick-Edit",
+            "width": 96,
+            "height": 63,
+            "fontSizePx": 12,
+            "fontWeight": "700"
+          },
+          {
+            "text": "Customers",
+            "width": 96,
+            "height": 63,
+            "fontSizePx": 12,
+            "fontWeight": "700"
+          }
+        ],
+        "totalTilesRendered": 10,
+        "tilesPerScreen": 6,
+        "tileSample": {
+          "titleFontSize": 14,
+          "titleFontWeight": "700",
+          "priceFontSize": 16,
+          "priceFontWeight": "700",
+          "badgeFontSize": 12
+        }
+      },
+      "updateBanner": {
+        "color": "rgb(2, 6, 23)",
+        "backgroundColor": "rgb(245, 158, 11)",
+        "fontSize": 12,
+        "text": "Mise à jour disponible :Nouvelle version du serveur détectée (1.0.0).Recharger×",
+        "contrastRatio": 9.39
+      },
+      "drawerOpen": {
+        "innerH": 725,
+        "innerW": 384,
+        "docScrollH": 725,
+        "docScrollW": 384,
+        "noPageScroll": true,
+        "drawerHeaderHeight": 72,
+        "customerBarHeight": 16,
+        "containerNoticeHeight": 0,
+        "cartRowsContainerClientHeight": 459,
+        "bottomPaySectionHeight": 136,
+        "totalInsideViewport": true,
+        "payBtnInsideViewport": true,
+        "payBtnHeight": 52,
+        "minRowHeight": 106.6,
+        "maxRowHeight": 107.6,
+        "meanRowHeight": 107.5,
+        "fullyVisibleRowsCount": 4,
+        "totalRowsCount": 8,
+        "rowDetails": [
+          {
+            "index": 1,
+            "height": 106.6,
+            "top": 138,
+            "bottom": 245,
+            "isInsideContainer": true,
+            "isInsideViewport": true,
+            "isFullyVisible": true,
+            "name": {
+              "text": "Javel Parfumée Citron Frais 1.5L Flacon ",
+              "fontSizePx": 16,
+              "fontWeight": "700"
+            },
+            "unitPrice": {
+              "fontSizePx": 16,
+              "fontWeight": "500"
+            },
+            "quantity": {
+              "fontSizePx": 18,
+              "fontWeight": "700"
+            },
+            "lineTotal": {
+              "fontSizePx": 18,
+              "fontWeight": "700"
+            },
+            "stepperMinusSize": {
+              "width": 44,
+              "height": 44
+            },
+            "stepperPlusSize": {
+              "width": 44,
+              "height": 44
+            },
+            "deleteBtnSize": {
+              "width": 44,
+              "height": 44
+            },
+            "optionsBtnSize": {
+              "width": 44,
+              "height": 44
+            }
+          },
+          {
+            "index": 2,
+            "height": 107.6,
+            "top": 245,
+            "bottom": 352,
+            "isInsideContainer": true,
+            "isInsideViewport": true,
+            "isFullyVisible": true,
+            "name": {
+              "text": "Eau de Javel Désinfectante Concentrée 12",
+              "fontSizePx": 16,
+              "fontWeight": "700"
+            },
+            "unitPrice": {
+              "fontSizePx": 16,
+              "fontWeight": "500"
+            },
+            "quantity": {
+              "fontSizePx": 18,
+              "fontWeight": "700"
+            },
+            "lineTotal": {
+              "fontSizePx": 18,
+              "fontWeight": "700"
+            },
+            "stepperMinusSize": {
+              "width": 44,
+              "height": 44
+            },
+            "stepperPlusSize": {
+              "width": 44,
+              "height": 44
+            },
+            "deleteBtnSize": {
+              "width": 44,
+              "height": 44
+            },
+            "optionsBtnSize": {
+              "width": 44,
+              "height": 44
+            }
+          },
+          {
+            "index": 3,
+            "height": 107.6,
+            "top": 352,
+            "bottom": 460,
+            "isInsideContainer": true,
+            "isInsideViewport": true,
+            "isFullyVisible": true,
+            "name": {
+              "text": "Eau de Javel Industrielle 18° Fût Plasti",
+              "fontSizePx": 16,
+              "fontWeight": "700"
+            },
+            "unitPrice": {
+              "fontSizePx": 16,
+              "fontWeight": "500"
+            },
+            "quantity": {
+              "fontSizePx": 18,
+              "fontWeight": "700"
+            },
+            "lineTotal": {
+              "fontSizePx": 18,
+              "fontWeight": "700"
+            },
+            "stepperMinusSize": {
+              "width": 44,
+              "height": 44
+            },
+            "stepperPlusSize": {
+              "width": 44,
+              "height": 44
+            },
+            "deleteBtnSize": {
+              "width": 44,
+              "height": 44
+            },
+            "optionsBtnSize": {
+              "width": 44,
+              "height": 44
+            }
+          },
+          {
+            "index": 4,
+            "height": 107.6,
+            "top": 460,
+            "bottom": 568,
+            "isInsideContainer": true,
+            "isInsideViewport": true,
+            "isFullyVisible": true,
+            "name": {
+              "text": "Gel Javel Épais Surpuissant Océan Flacon",
+              "fontSizePx": 16,
+              "fontWeight": "700"
+            },
+            "unitPrice": {
+              "fontSizePx": 16,
+              "fontWeight": "500"
+            },
+            "quantity": {
+              "fontSizePx": 18,
+              "fontWeight": "700"
+            },
+            "lineTotal": {
+              "fontSizePx": 18,
+              "fontWeight": "700"
+            },
+            "stepperMinusSize": {
+              "width": 44,
+              "height": 44
+            },
+            "stepperPlusSize": {
+              "width": 44,
+              "height": 44
+            },
+            "deleteBtnSize": {
+              "width": 44,
+              "height": 44
+            },
+            "optionsBtnSize": {
+              "width": 44,
+              "height": 44
+            }
+          },
+          {
+            "index": 5,
+            "height": 107.6,
+            "top": 568,
+            "bottom": 675,
+            "isInsideContainer": false,
+            "isInsideViewport": true,
+            "isFullyVisible": false,
+            "name": {
+              "text": "Liquide Vaisselle Extra Dégraissant Pomm",
+              "fontSizePx": 16,
+              "fontWeight": "700"
+            },
+            "unitPrice": {
+              "fontSizePx": 16,
+              "fontWeight": "500"
+            },
+            "quantity": {
+              "fontSizePx": 18,
+              "fontWeight": "700"
+            },
+            "lineTotal": {
+              "fontSizePx": 18,
+              "fontWeight": "700"
+            },
+            "stepperMinusSize": {
+              "width": 44,
+              "height": 44
+            },
+            "stepperPlusSize": {
+              "width": 44,
+              "height": 44
+            },
+            "deleteBtnSize": {
+              "width": 44,
+              "height": 44
+            },
+            "optionsBtnSize": {
+              "width": 44,
+              "height": 44
+            }
+          },
+          {
+            "index": 6,
+            "height": 107.6,
+            "top": 675,
+            "bottom": 783,
+            "isInsideContainer": false,
+            "isInsideViewport": false,
+            "isFullyVisible": false,
+            "name": {
+              "text": "Liquide Vaisselle Concentré Citron Vert ",
+              "fontSizePx": 16,
+              "fontWeight": "700"
+            },
+            "unitPrice": {
+              "fontSizePx": 16,
+              "fontWeight": "500"
+            },
+            "quantity": {
+              "fontSizePx": 18,
+              "fontWeight": "700"
+            },
+            "lineTotal": {
+              "fontSizePx": 18,
+              "fontWeight": "700"
+            },
+            "stepperMinusSize": {
+              "width": 44,
+              "height": 44
+            },
+            "stepperPlusSize": {
+              "width": 44,
+              "height": 44
+            },
+            "deleteBtnSize": {
+              "width": 44,
+              "height": 44
+            },
+            "optionsBtnSize": {
+              "width": 44,
+              "height": 44
+            }
+          },
+          {
+            "index": 7,
+            "height": 107.6,
+            "top": 783,
+            "bottom": 890,
+            "isInsideContainer": false,
+            "isInsideViewport": false,
+            "isFullyVisible": false,
+            "name": {
+              "text": "Liquide Vaisselle Formule Pro Économique",
+              "fontSizePx": 16,
+              "fontWeight": "700"
+            },
+            "unitPrice": {
+              "fontSizePx": 16,
+              "fontWeight": "500"
+            },
+            "quantity": {
+              "fontSizePx": 18,
+              "fontWeight": "700"
+            },
+            "lineTotal": {
+              "fontSizePx": 18,
+              "fontWeight": "700"
+            },
+            "stepperMinusSize": {
+              "width": 44,
+              "height": 44
+            },
+            "stepperPlusSize": {
+              "width": 44,
+              "height": 44
+            },
+            "deleteBtnSize": {
+              "width": 44,
+              "height": 44
+            },
+            "optionsBtnSize": {
+              "width": 44,
+              "height": 44
+            }
+          },
+          {
+            "index": 8,
+            "height": 107.6,
+            "top": 890,
+            "bottom": 998,
+            "isInsideContainer": false,
+            "isInsideViewport": false,
+            "isFullyVisible": false,
+            "name": {
+              "text": "Liquide Vaisselle Restauration Collectiv",
+              "fontSizePx": 16,
+              "fontWeight": "700"
+            },
+            "unitPrice": {
+              "fontSizePx": 16,
+              "fontWeight": "500"
+            },
+            "quantity": {
+              "fontSizePx": 18,
+              "fontWeight": "700"
+            },
+            "lineTotal": {
+              "fontSizePx": 18,
+              "fontWeight": "700"
+            },
+            "stepperMinusSize": {
+              "width": 44,
+              "height": 44
+            },
+            "stepperPlusSize": {
+              "width": 44,
+              "height": 44
+            },
+            "deleteBtnSize": {
+              "width": 44,
+              "height": 44
+            },
+            "optionsBtnSize": {
+              "width": 44,
+              "height": 44
+            }
+          }
+        ]
+      }
+    },
+    "phone_384x790": {
+      "viewport": "phone_384x790",
+      "width": 384,
+      "height": 790,
+      "deviceScaleFactor": 2.81,
+      "drawerClosed": {
+        "innerH": 790,
+        "innerW": 384,
+        "docScrollH": 790,
+        "docScrollW": 384,
+        "noPageScroll": true,
+        "bottomNavHeight": 64,
+        "bottomNavButtons": [
+          {
+            "text": "Register",
+            "width": 96,
+            "height": 63,
+            "fontSizePx": 12,
+            "fontWeight": "900"
+          },
+          {
+            "text": "Lookup",
+            "width": 96,
+            "height": 63,
+            "fontSizePx": 12,
+            "fontWeight": "700"
+          },
+          {
+            "text": "Quick-Edit",
+            "width": 96,
+            "height": 63,
+            "fontSizePx": 12,
+            "fontWeight": "700"
+          },
+          {
+            "text": "Customers",
+            "width": 96,
+            "height": 63,
+            "fontSizePx": 12,
+            "fontWeight": "700"
+          }
+        ],
+        "totalTilesRendered": 10,
+        "tilesPerScreen": 6,
+        "tileSample": {
+          "titleFontSize": 14,
+          "titleFontWeight": "700",
+          "priceFontSize": 16,
+          "priceFontWeight": "700",
+          "badgeFontSize": 12
+        }
+      },
+      "updateBanner": {
+        "color": "rgb(2, 6, 23)",
+        "backgroundColor": "rgb(245, 158, 11)",
+        "fontSize": 12,
+        "text": "Mise à jour disponible :Nouvelle version du serveur détectée (1.0.0).Recharger×",
+        "contrastRatio": 9.39
+      },
+      "drawerOpen": {
+        "innerH": 790,
+        "innerW": 384,
+        "docScrollH": 790,
+        "docScrollW": 384,
+        "noPageScroll": true,
+        "drawerHeaderHeight": 72,
+        "customerBarHeight": 16,
+        "containerNoticeHeight": 0,
+        "cartRowsContainerClientHeight": 519,
+        "bottomPaySectionHeight": 136,
+        "totalInsideViewport": true,
+        "payBtnInsideViewport": true,
+        "payBtnHeight": 52,
+        "minRowHeight": 106.6,
+        "maxRowHeight": 107.6,
+        "meanRowHeight": 107.5,
+        "fullyVisibleRowsCount": 4,
+        "totalRowsCount": 8,
+        "rowDetails": [
+          {
+            "index": 1,
+            "height": 106.6,
+            "top": 143,
+            "bottom": 250,
+            "isInsideContainer": true,
+            "isInsideViewport": true,
+            "isFullyVisible": true,
+            "name": {
+              "text": "Javel Parfumée Citron Frais 1.5L Flacon ",
+              "fontSizePx": 16,
+              "fontWeight": "700"
+            },
+            "unitPrice": {
+              "fontSizePx": 16,
+              "fontWeight": "500"
+            },
+            "quantity": {
+              "fontSizePx": 18,
+              "fontWeight": "700"
+            },
+            "lineTotal": {
+              "fontSizePx": 18,
+              "fontWeight": "700"
+            },
+            "stepperMinusSize": {
+              "width": 44,
+              "height": 44
+            },
+            "stepperPlusSize": {
+              "width": 44,
+              "height": 44
+            },
+            "deleteBtnSize": {
+              "width": 44,
+              "height": 44
+            },
+            "optionsBtnSize": {
+              "width": 44,
+              "height": 44
+            }
+          },
+          {
+            "index": 2,
+            "height": 107.6,
+            "top": 250,
+            "bottom": 357,
+            "isInsideContainer": true,
+            "isInsideViewport": true,
+            "isFullyVisible": true,
+            "name": {
+              "text": "Eau de Javel Désinfectante Concentrée 12",
+              "fontSizePx": 16,
+              "fontWeight": "700"
+            },
+            "unitPrice": {
+              "fontSizePx": 16,
+              "fontWeight": "500"
+            },
+            "quantity": {
+              "fontSizePx": 18,
+              "fontWeight": "700"
+            },
+            "lineTotal": {
+              "fontSizePx": 18,
+              "fontWeight": "700"
+            },
+            "stepperMinusSize": {
+              "width": 44,
+              "height": 44
+            },
+            "stepperPlusSize": {
+              "width": 44,
+              "height": 44
+            },
+            "deleteBtnSize": {
+              "width": 44,
+              "height": 44
+            },
+            "optionsBtnSize": {
+              "width": 44,
+              "height": 44
+            }
+          },
+          {
+            "index": 3,
+            "height": 107.6,
+            "top": 357,
+            "bottom": 465,
+            "isInsideContainer": true,
+            "isInsideViewport": true,
+            "isFullyVisible": true,
+            "name": {
+              "text": "Eau de Javel Industrielle 18° Fût Plasti",
+              "fontSizePx": 16,
+              "fontWeight": "700"
+            },
+            "unitPrice": {
+              "fontSizePx": 16,
+              "fontWeight": "500"
+            },
+            "quantity": {
+              "fontSizePx": 18,
+              "fontWeight": "700"
+            },
+            "lineTotal": {
+              "fontSizePx": 18,
+              "fontWeight": "700"
+            },
+            "stepperMinusSize": {
+              "width": 44,
+              "height": 44
+            },
+            "stepperPlusSize": {
+              "width": 44,
+              "height": 44
+            },
+            "deleteBtnSize": {
+              "width": 44,
+              "height": 44
+            },
+            "optionsBtnSize": {
+              "width": 44,
+              "height": 44
+            }
+          },
+          {
+            "index": 4,
+            "height": 107.6,
+            "top": 465,
+            "bottom": 573,
+            "isInsideContainer": true,
+            "isInsideViewport": true,
+            "isFullyVisible": true,
+            "name": {
+              "text": "Gel Javel Épais Surpuissant Océan Flacon",
+              "fontSizePx": 16,
+              "fontWeight": "700"
+            },
+            "unitPrice": {
+              "fontSizePx": 16,
+              "fontWeight": "500"
+            },
+            "quantity": {
+              "fontSizePx": 18,
+              "fontWeight": "700"
+            },
+            "lineTotal": {
+              "fontSizePx": 18,
+              "fontWeight": "700"
+            },
+            "stepperMinusSize": {
+              "width": 44,
+              "height": 44
+            },
+            "stepperPlusSize": {
+              "width": 44,
+              "height": 44
+            },
+            "deleteBtnSize": {
+              "width": 44,
+              "height": 44
+            },
+            "optionsBtnSize": {
+              "width": 44,
+              "height": 44
+            }
+          },
+          {
+            "index": 5,
+            "height": 107.6,
+            "top": 573,
+            "bottom": 680,
+            "isInsideContainer": false,
+            "isInsideViewport": true,
+            "isFullyVisible": false,
+            "name": {
+              "text": "Liquide Vaisselle Extra Dégraissant Pomm",
+              "fontSizePx": 16,
+              "fontWeight": "700"
+            },
+            "unitPrice": {
+              "fontSizePx": 16,
+              "fontWeight": "500"
+            },
+            "quantity": {
+              "fontSizePx": 18,
+              "fontWeight": "700"
+            },
+            "lineTotal": {
+              "fontSizePx": 18,
+              "fontWeight": "700"
+            },
+            "stepperMinusSize": {
+              "width": 44,
+              "height": 44
+            },
+            "stepperPlusSize": {
+              "width": 44,
+              "height": 44
+            },
+            "deleteBtnSize": {
+              "width": 44,
+              "height": 44
+            },
+            "optionsBtnSize": {
+              "width": 44,
+              "height": 44
+            }
+          },
+          {
+            "index": 6,
+            "height": 107.6,
+            "top": 680,
+            "bottom": 788,
+            "isInsideContainer": false,
+            "isInsideViewport": true,
+            "isFullyVisible": false,
+            "name": {
+              "text": "Liquide Vaisselle Concentré Citron Vert ",
+              "fontSizePx": 16,
+              "fontWeight": "700"
+            },
+            "unitPrice": {
+              "fontSizePx": 16,
+              "fontWeight": "500"
+            },
+            "quantity": {
+              "fontSizePx": 18,
+              "fontWeight": "700"
+            },
+            "lineTotal": {
+              "fontSizePx": 18,
+              "fontWeight": "700"
+            },
+            "stepperMinusSize": {
+              "width": 44,
+              "height": 44
+            },
+            "stepperPlusSize": {
+              "width": 44,
+              "height": 44
+            },
+            "deleteBtnSize": {
+              "width": 44,
+              "height": 44
+            },
+            "optionsBtnSize": {
+              "width": 44,
+              "height": 44
+            }
+          },
+          {
+            "index": 7,
+            "height": 107.6,
+            "top": 788,
+            "bottom": 896,
+            "isInsideContainer": false,
+            "isInsideViewport": false,
+            "isFullyVisible": false,
+            "name": {
+              "text": "Liquide Vaisselle Formule Pro Économique",
+              "fontSizePx": 16,
+              "fontWeight": "700"
+            },
+            "unitPrice": {
+              "fontSizePx": 16,
+              "fontWeight": "500"
+            },
+            "quantity": {
+              "fontSizePx": 18,
+              "fontWeight": "700"
+            },
+            "lineTotal": {
+              "fontSizePx": 18,
+              "fontWeight": "700"
+            },
+            "stepperMinusSize": {
+              "width": 44,
+              "height": 44
+            },
+            "stepperPlusSize": {
+              "width": 44,
+              "height": 44
+            },
+            "deleteBtnSize": {
+              "width": 44,
+              "height": 44
+            },
+            "optionsBtnSize": {
+              "width": 44,
+              "height": 44
+            }
+          },
+          {
+            "index": 8,
+            "height": 107.6,
+            "top": 896,
+            "bottom": 1003,
+            "isInsideContainer": false,
+            "isInsideViewport": false,
+            "isFullyVisible": false,
+            "name": {
+              "text": "Liquide Vaisselle Restauration Collectiv",
+              "fontSizePx": 16,
+              "fontWeight": "700"
+            },
+            "unitPrice": {
+              "fontSizePx": 16,
+              "fontWeight": "500"
+            },
+            "quantity": {
+              "fontSizePx": 18,
+              "fontWeight": "700"
+            },
+            "lineTotal": {
+              "fontSizePx": 18,
+              "fontWeight": "700"
+            },
+            "stepperMinusSize": {
+              "width": 44,
+              "height": 44
+            },
+            "stepperPlusSize": {
+              "width": 44,
+              "height": 44
+            },
+            "deleteBtnSize": {
+              "width": 44,
+              "height": 44
+            },
+            "optionsBtnSize": {
+              "width": 44,
+              "height": 44
+            }
+          }
+        ]
+      }
+    }
+  }
+}

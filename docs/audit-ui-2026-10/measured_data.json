@@ -1,5 +1,5 @@
 {
-  "timestamp": "2026-10-10T22:29:23.514Z",
+  "timestamp": "2026-10-11T00:23:10.920Z",
   "measurements": {
     "pos_cart_empty_desktop_1600x780": [
       {
@@ -1019,13 +1019,6 @@
       "severity": "Blocker"
     },
     {
-      "target": "Phone 384x725: at least 4 cart lines visible before scroll",
-      "screen": "pos_cart_mobile_drawer",
-      "viewport": "phone_384x725",
-      "details": "Visible mobile cart lines: 3 (target >= 4)",
-      "severity": "High"
-    },
-    {
       "target": "Amount input at least 20px",
       "screen": "session_close_modal",
       "viewport": "phone_384x725",
@@ -1033,123 +1026,11 @@
       "severity": "Blocker"
     },
     {
-      "target": "Touch targets on phone at least 44x44 CSS px",
-      "screen": "mobile_bottom_nav",
-      "viewport": "phone_384x725",
-      "details": "Bottom nav button \"Register\" is 66x43px (target >= 44x44px)",
-      "severity": "High"
-    },
-    {
-      "target": "NOTHING under 12px anywhere",
-      "screen": "mobile_bottom_nav",
-      "viewport": "phone_384x725",
-      "details": "Bottom nav button \"Register\" font size is 10px (< 12px)",
-      "severity": "High"
-    },
-    {
-      "target": "Touch targets on phone at least 44x44 CSS px",
-      "screen": "mobile_bottom_nav",
-      "viewport": "phone_384x725",
-      "details": "Bottom nav button \"Lookup\" is 61x43px (target >= 44x44px)",
-      "severity": "High"
-    },
-    {
-      "target": "NOTHING under 12px anywhere",
-      "screen": "mobile_bottom_nav",
-      "viewport": "phone_384x725",
-      "details": "Bottom nav button \"Lookup\" font size is 10px (< 12px)",
-      "severity": "High"
-    },
-    {
-      "target": "Touch targets on phone at least 44x44 CSS px",
-      "screen": "mobile_bottom_nav",
-      "viewport": "phone_384x725",
-      "details": "Bottom nav button \"Quick-Edit\" is 75x43px (target >= 44x44px)",
-      "severity": "High"
-    },
-    {
-      "target": "NOTHING under 12px anywhere",
-      "screen": "mobile_bottom_nav",
-      "viewport": "phone_384x725",
-      "details": "Bottom nav button \"Quick-Edit\" font size is 10px (< 12px)",
-      "severity": "High"
-    },
-    {
-      "target": "Touch targets on phone at least 44x44 CSS px",
-      "screen": "mobile_bottom_nav",
-      "viewport": "phone_384x725",
-      "details": "Bottom nav button \"Customers\" is 78x43px (target >= 44x44px)",
-      "severity": "High"
-    },
-    {
-      "target": "NOTHING under 12px anywhere",
-      "screen": "mobile_bottom_nav",
-      "viewport": "phone_384x725",
-      "details": "Bottom nav button \"Customers\" font size is 10px (< 12px)",
-      "severity": "High"
-    },
-    {
       "target": "Amount input at least 20px",
       "screen": "session_close_modal",
       "viewport": "phone_384x790",
       "details": "Counted cash input font size is 18px (target >= 20px)",
       "severity": "Blocker"
-    },
-    {
-      "target": "Touch targets on phone at least 44x44 CSS px",
-      "screen": "mobile_bottom_nav",
-      "viewport": "phone_384x790",
-      "details": "Bottom nav button \"Register\" is 66x43px (target >= 44x44px)",
-      "severity": "High"
-    },
-    {
-      "target": "NOTHING under 12px anywhere",
-      "screen": "mobile_bottom_nav",
-      "viewport": "phone_384x790",
-      "details": "Bottom nav button \"Register\" font size is 10px (< 12px)",
-      "severity": "High"
-    },
-    {
-      "target": "Touch targets on phone at least 44x44 CSS px",
-      "screen": "mobile_bottom_nav",
-      "viewport": "phone_384x790",
-      "details": "Bottom nav button \"Lookup\" is 61x43px (target >= 44x44px)",
-      "severity": "High"
-    },
-    {
-      "target": "NOTHING under 12px anywhere",
-      "screen": "mobile_bottom_nav",
-      "viewport": "phone_384x790",
-      "details": "Bottom nav button \"Lookup\" font size is 10px (< 12px)",
-      "severity": "High"
-    },
-    {
-      "target": "Touch targets on phone at least 44x44 CSS px",
-      "screen": "mobile_bottom_nav",
-      "viewport": "phone_384x790",
-      "details": "Bottom nav button \"Quick-Edit\" is 75x43px (target >= 44x44px)",
-      "severity": "High"
-    },
-    {
-      "target": "NOTHING under 12px anywhere",
-      "screen": "mobile_bottom_nav",
-      "viewport": "phone_384x790",
-      "details": "Bottom nav button \"Quick-Edit\" font size is 10px (< 12px)",
-      "severity": "High"
-    },
-    {
-      "target": "Touch targets on phone at least 44x44 CSS px",
-      "screen": "mobile_bottom_nav",
-      "viewport": "phone_384x790",
-      "details": "Bottom nav button \"Customers\" is 78x43px (target >= 44x44px)",
-      "severity": "High"
-    },
-    {
-      "target": "NOTHING under 12px anywhere",
-      "screen": "mobile_bottom_nav",
-      "viewport": "phone_384x790",
-      "details": "Bottom nav button \"Customers\" font size is 10px (< 12px)",
-      "severity": "High"
     }
   ]
 }

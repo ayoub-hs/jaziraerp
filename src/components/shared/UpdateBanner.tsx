@@ -39,7 +39,7 @@ export const UpdateBanner: React.FC = () => {
   return (
     <div
       role="alert"
-      className="bg-amber-500 text-white px-4 py-2 flex items-center justify-between text-xs sm:text-sm font-medium shadow-md z-50 shrink-0"
+      className="bg-amber-500 text-slate-950 px-4 py-2 flex items-center justify-between text-xs sm:text-sm font-semibold shadow-md z-50 shrink-0"
     >
       <div className="flex items-center gap-2">
         <span className="font-bold">Mise à jour disponible :</span>
@@ -49,14 +49,14 @@ export const UpdateBanner: React.FC = () => {
         <button
           type="button"
           onClick={() => window.location.reload()}
-          className="bg-white text-amber-800 hover:bg-amber-50 font-bold px-3 py-1 rounded shadow-sm text-xs transition-colors"
+          className="bg-white text-slate-950 hover:bg-amber-50 font-bold px-3 py-1 rounded shadow-sm text-xs transition-colors"
         >
           Recharger
         </button>
         <button
           type="button"
           onClick={() => setDismissed(true)}
-          className="text-white hover:text-amber-100 p-1 rounded font-bold text-base leading-none"
+          className="text-slate-950 hover:text-black p-1 rounded font-bold text-base leading-none"
           aria-label="Ignorer"
         >
           ×

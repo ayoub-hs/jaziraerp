@@ -607,7 +607,50 @@ async function runAudit() {
         await page.click('button:has-text("Register")').catch(() => {});
         await page.waitForTimeout(200);
 
-        const searchInput = page.locator('input[placeholder*="Search"]');
+        // Product Family Tile font measurements on mobile
+        const tileSample = await page.evaluate(() => {
+          const firstTile = document.querySelector('.grid.grid-cols-2 > div') as HTMLElement | null;
+          if (!firstTile) return null;
+          const title = firstTile.querySelector('h3');
+          const price = firstTile.querySelector('span.font-mono');
+          const badge = firstTile.querySelector('.text-pos-badge');
+          return {
+            titleFontSize: title ? parseFloat(window.getComputedStyle(title).fontSize) : 0,
+            priceFontSize: price ? parseFloat(window.getComputedStyle(price).fontSize) : 0,
+            badgeFontSize: badge ? parseFloat(window.getComputedStyle(badge).fontSize) : 0
+          };
+        });
+        if (tileSample) {
+          if (tileSample.titleFontSize < 14) {
+            violations.push({
+              target: 'Tile grid font sizes',
+              screen: 'pos_product_grid_mobile',
+              viewport: vp.name,
+              details: `Tile title font size is ${tileSample.titleFontSize}px (< 14px)`,
+              severity: 'High'
+            });
+          }
+          if (tileSample.priceFontSize < 16) {
+            violations.push({
+              target: 'Tile grid font sizes',
+              screen: 'pos_product_grid_mobile',
+              viewport: vp.name,
+              details: `Tile price font size is ${tileSample.priceFontSize}px (< 16px)`,
+              severity: 'High'
+            });
+          }
+          if (tileSample.badgeFontSize < 12) {
+            violations.push({
+              target: 'NOTHING under 12px anywhere',
+              screen: 'pos_product_grid_mobile',
+              viewport: vp.name,
+              details: `Tile badge font size is ${tileSample.badgeFontSize}px (< 12px)`,
+              severity: 'High'
+            });
+          }
+        }
+
+        const searchInput = page.locator('input[data-scanner-input="true"], input[placeholder*="Code-barres"], input[placeholder*="Search"]');
         if (await searchInput.isVisible()) {
           const barcodes = ['619100000001', '619100000002', '619100000003', '619100000004', '619100000005', '619100000006', '619100000007', '619100000008'];
           for (const b of barcodes) {
@@ -623,27 +666,154 @@ async function runAudit() {
           await page.waitForTimeout(400);
           await takeShot('pos_cart_8lines');
 
-          const visibleMobileRows = await page.evaluate<number>(`
-            (() => {
-              const rows = Array.from(document.querySelectorAll('.cart-row'));
-              const container = document.querySelector('.overflow-y-auto.divide-y');
-              if (!container) return rows.length;
-              const cRect = container.getBoundingClientRect();
-              return rows.filter(r => {
-                const rRect = r.getBoundingClientRect();
-                return rRect.top >= cRect.top && rRect.bottom <= cRect.bottom;
-              }).length;
-            })()
-          `);
+          const drawerMetrics = await page.evaluate(() => {
+            const innerH = window.innerHeight;
+            const docScrollH = document.documentElement.scrollHeight;
+            const rows = Array.from(document.querySelectorAll('.cart-row'));
+            const container = document.querySelector('.overflow-y-auto.divide-y');
+            const cRect = container ? container.getBoundingClientRect() : { top: 0, bottom: 0 };
+            
+            const visibleRows = rows.filter(r => {
+              const rRect = r.getBoundingClientRect();
+              return rRect.top >= cRect.top && rRect.bottom <= cRect.bottom && rRect.top >= 0 && rRect.bottom <= innerH;
+            }).length;
 
-          if (vp.name === 'phone_384x725' && visibleMobileRows < 4) {
+            const totalEl = (document.querySelector('.cart-grand-total, .text-pos-total, .text-xl.text-emerald-700') ||
+              Array.from(document.querySelectorAll('span')).find(s => s.textContent?.includes('TOTAL TTC'))?.nextElementSibling) as HTMLElement | null;
+            const totalRect = totalEl ? totalEl.getBoundingClientRect() : null;
+            const totalInside = totalRect ? (totalRect.bottom <= innerH && totalRect.top >= 0) : false;
+
+            const payBtn = Array.from(document.querySelectorAll('button')).find(b => b.textContent?.includes('Encaisser'));
+            const payRect = payBtn ? payBtn.getBoundingClientRect() : null;
+            const payInside = payRect ? (payRect.bottom <= innerH && payRect.top >= 0) : false;
+            const payBtnHeight = payRect ? payRect.height : 0;
+
+            const firstRow = rows[0] as HTMLElement | null;
+            let controlsSample = null;
+            if (firstRow) {
+              const buttons = Array.from(firstRow.querySelectorAll('button'));
+              const minus = buttons.find(b => b.textContent?.trim() === '-');
+              const plus = buttons.find(b => b.textContent?.trim() === '+');
+              const del = buttons.find(b => b.querySelector('svg.lucide-trash-2') || b.querySelector('svg.lucide-trash') || b.getAttribute('title')?.includes('Supprimer'));
+              
+              const nameEl = firstRow.querySelector('h4');
+              const priceEl = (firstRow.querySelector('.cart-unit-price, input[title="Modifier le prix unitaire"]') || firstRow.querySelector('.text-pos-price')) as HTMLElement | null;
+              const qtyEl = firstRow.querySelector('input.qty-input, input[disallowzero="true"], .w-12 input, input[type="number"]') as HTMLElement | null;
+              const lineTotalEl = (firstRow.querySelector('.cart-line-total, .font-mono.text-xs.font-bold, .font-mono')) as HTMLElement | null;
+
+              controlsSample = {
+                minusSize: minus ? { width: minus.getBoundingClientRect().width, height: minus.getBoundingClientRect().height } : null,
+                plusSize: plus ? { width: plus.getBoundingClientRect().width, height: plus.getBoundingClientRect().height } : null,
+                delSize: del ? { width: del.getBoundingClientRect().width, height: del.getBoundingClientRect().height } : null,
+                nameFontSize: nameEl ? parseFloat(window.getComputedStyle(nameEl).fontSize) : 0,
+                priceFontSize: priceEl ? parseFloat(window.getComputedStyle(priceEl).fontSize) : 0,
+                qtyFontSize: qtyEl ? parseFloat(window.getComputedStyle(qtyEl).fontSize) : 0,
+                lineTotalFontSize: lineTotalEl ? parseFloat(window.getComputedStyle(lineTotalEl).fontSize) : 0
+              };
+            }
+
+            return {
+              visibleRows,
+              totalInside,
+              payInside,
+              payBtnHeight,
+              noPageScroll: docScrollH <= innerH,
+              controlsSample
+            };
+          });
+
+          if ((vp.name === 'phone_384x725' || vp.name === 'phone_384x790') && drawerMetrics.visibleRows < 4) {
             violations.push({
-              target: 'Phone 384x725: at least 4 cart lines visible before scroll',
+              target: 'Phone visible cart lines: at least 4 before scroll',
               screen: 'pos_cart_mobile_drawer',
               viewport: vp.name,
-              details: `Visible mobile cart lines: ${visibleMobileRows} (target >= 4)`,
+              details: `Visible mobile cart lines: ${drawerMetrics.visibleRows} (target >= 4)`,
               severity: 'High'
             });
+          }
+          if (!drawerMetrics.totalInside || !drawerMetrics.payInside) {
+            violations.push({
+              target: 'Phone cart total and pay button inside viewport',
+              screen: 'pos_cart_mobile_drawer',
+              viewport: vp.name,
+              details: `Total inside: ${drawerMetrics.totalInside}, Pay inside: ${drawerMetrics.payInside}`,
+              severity: 'High'
+            });
+          }
+          if (!drawerMetrics.noPageScroll) {
+            violations.push({
+              target: 'Zero page scroll (document scrollHeight <= innerHeight)',
+              screen: 'pos_cart_mobile_drawer',
+              viewport: vp.name,
+              details: `Phone cart drawer caused page scroll`,
+              severity: 'High'
+            });
+          }
+          if (drawerMetrics.controlsSample) {
+            const { minusSize, plusSize, delSize, nameFontSize, priceFontSize, qtyFontSize, lineTotalFontSize } = drawerMetrics.controlsSample;
+            if (minusSize && (minusSize.width < 44 || minusSize.height < 44)) {
+              violations.push({
+                target: 'Touch targets on phone at least 44x44 CSS px',
+                screen: 'pos_cart_mobile_drawer',
+                viewport: vp.name,
+                details: `Stepper minus button size: ${minusSize.width}x${minusSize.height}px (< 44x44px)`,
+                severity: 'High'
+              });
+            }
+            if (plusSize && (plusSize.width < 44 || plusSize.height < 44)) {
+              violations.push({
+                target: 'Touch targets on phone at least 44x44 CSS px',
+                screen: 'pos_cart_mobile_drawer',
+                viewport: vp.name,
+                details: `Stepper plus button size: ${plusSize.width}x${plusSize.height}px (< 44x44px)`,
+                severity: 'High'
+              });
+            }
+            if (delSize && (delSize.width < 44 || delSize.height < 44)) {
+              violations.push({
+                target: 'Touch targets on phone at least 44x44 CSS px',
+                screen: 'pos_cart_mobile_drawer',
+                viewport: vp.name,
+                details: `Delete button size: ${delSize.width}x${delSize.height}px (< 44x44px)`,
+                severity: 'High'
+              });
+            }
+            if (nameFontSize < 16) {
+              violations.push({
+                target: 'Sale-critical text at least 16px',
+                screen: 'pos_cart_mobile_drawer',
+                viewport: vp.name,
+                details: `Cart row name font size is ${nameFontSize}px (< 16px)`,
+                severity: 'Blocker'
+              });
+            }
+            if (priceFontSize < 16) {
+              violations.push({
+                target: 'Sale-critical text at least 16px',
+                screen: 'pos_cart_mobile_drawer',
+                viewport: vp.name,
+                details: `Cart row unit price font size is ${priceFontSize}px (< 16px)`,
+                severity: 'Blocker'
+              });
+            }
+            if (qtyFontSize < 18) {
+              violations.push({
+                target: 'Quantity at least 18px bold',
+                screen: 'pos_cart_mobile_drawer',
+                viewport: vp.name,
+                details: `Cart row qty font size is ${qtyFontSize}px (< 18px)`,
+                severity: 'Blocker'
+              });
+            }
+            if (lineTotalFontSize < 16) {
+              violations.push({
+                target: 'Sale-critical text at least 16px',
+                screen: 'pos_cart_mobile_drawer',
+                viewport: vp.name,
+                details: `Cart row line total font size is ${lineTotalFontSize}px (< 16px)`,
+                severity: 'Blocker'
+              });
+            }
           }
         }
       }
@@ -1205,6 +1375,17 @@ async function runAudit() {
         await page.waitForTimeout(400);
         await takeShot('customers_list');
 
+        const navHeight = await page.$eval('nav.fixed.bottom-0', nav => nav.getBoundingClientRect().height).catch(() => 0);
+        if (navHeight < 64) {
+          violations.push({
+            target: 'Bottom navigation height at least 64px',
+            screen: 'mobile_bottom_nav',
+            viewport: vp.name,
+            details: `Bottom nav height is ${Math.round(navHeight)}px (target >= 64px)`,
+            severity: 'High'
+          });
+        }
+
         const mobileNavButtons = await page.$$eval('nav.fixed.bottom-0 button', btns => {
           return btns.map(b => {
             const r = b.getBoundingClientRect();
@@ -1219,12 +1400,12 @@ async function runAudit() {
         });
 
         for (const btn of mobileNavButtons) {
-          if (btn.height < 44 || btn.width < 44) {
+          if (btn.height < 48 || btn.width < 44) {
             violations.push({
               target: 'Touch targets on phone at least 44x44 CSS px',
               screen: 'mobile_bottom_nav',
               viewport: vp.name,
-              details: `Bottom nav button "${btn.text}" is ${Math.round(btn.width)}x${Math.round(btn.height)}px (target >= 44x44px)`,
+              details: `Bottom nav button "${btn.text}" is ${Math.round(btn.width)}x${Math.round(btn.height)}px (target height >= 48px, width >= 44px)`,
               severity: 'High'
             });
           }
@@ -1280,7 +1461,10 @@ async function runAudit() {
       'Contrast at least 4.5:1 for text',
       'Desktop 1600x780: at least 6 cart lines + total + pay visible',
       'Desktop 1563x545: at least 3 cart lines + total + pay visible',
-      'Phone 384x725: at least 4 cart lines visible before scroll',
+      'Phone visible cart lines: at least 4 before scroll',
+      'Phone cart total and pay button inside viewport',
+      'Bottom navigation height at least 64px',
+      'Tile grid font sizes',
       'Phone 384x400: cash field, change due and confirm button all visible',
       'Zero page scroll (document scrollHeight <= innerHeight)',
       'No horizontal page scroll',
@@ -1316,7 +1500,16 @@ async function runAudit() {
       'Cart grand total at least 28px bold'
     ];
 
+    const BATCH_2_TARGETS = [
+      'Phone visible cart lines: at least 4 before scroll',
+      'Phone cart total and pay button inside viewport',
+      'Bottom navigation height at least 64px',
+      'Tile grid font sizes'
+    ];
+
     const batch1Violations = violations.filter(v => BATCH_1_TARGETS.includes(v.target));
+    const batch2Violations = violations.filter(v => BATCH_2_TARGETS.includes(v.target));
+
     console.log('\n======================================================');
     console.log('BATCH UI-1 TARGET VERIFICATION REPORT');
     console.log('======================================================');
@@ -1330,12 +1523,25 @@ async function runAudit() {
     console.log('------------------------------------------------------');
     console.log(`Total Batch UI-1 Violations: ${batch1Violations.length}`);
 
-    if (batch1Violations.length > 0) {
-      console.error('\n[BATCH UI-1 HARNESS] Failures detected in Batch UI-1 targets:');
-      batch1Violations.forEach(v => console.error(`  - [${v.viewport}] ${v.target}: ${v.details}`));
+    console.log('\n======================================================');
+    console.log('BATCH UI-2 TARGET VERIFICATION REPORT');
+    console.log('======================================================');
+    console.log(String('Batch 2 Target').padEnd(65) + ' | ' + 'Status' + ' | ' + 'Violations');
+    console.log('-'.repeat(85));
+    for (const t of BATCH_2_TARGETS) {
+      const count = targetGroups[t] || 0;
+      const status = count > 0 ? 'FAIL ❌' : 'PASS ✅';
+      console.log(t.padEnd(65) + ' | ' + status.padEnd(6) + ' | ' + count);
+    }
+    console.log('------------------------------------------------------');
+    console.log(`Total Batch UI-2 Violations: ${batch2Violations.length}`);
+
+    if (batch1Violations.length > 0 || batch2Violations.length > 0) {
+      console.error('\n[BATCH UI-1/2 HARNESS] Failures detected:');
+      [...batch1Violations, ...batch2Violations].forEach(v => console.error(`  - [${v.viewport}] ${v.target}: ${v.details}`));
       process.exit(1);
     } else {
-      console.log('\n[BATCH UI-1 HARNESS] All Batch UI-1 targets PASSED! ✅');
+      console.log('\n[BATCH UI-1/2 HARNESS] All Batch UI-1 and Batch UI-2 targets PASSED! ✅');
       process.exit(0);
     }
   } finally {
