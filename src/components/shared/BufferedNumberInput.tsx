@@ -10,6 +10,7 @@ interface BufferedNumberInputProps {
   placeholder?: string;
   onCommit: (value: number) => void;
   disallowZero?: boolean;
+  displayDecimals?: number;
 }
 
 export const BufferedNumberInput: React.FC<BufferedNumberInputProps> = ({
@@ -21,21 +22,34 @@ export const BufferedNumberInput: React.FC<BufferedNumberInputProps> = ({
   title,
   placeholder,
   onCommit,
-  disallowZero = false
+  disallowZero = false,
+  displayDecimals
 }) => {
-  const [text, setText] = useState<string>(String(value));
+  const formatValue = (v: number): string => {
+    if (typeof displayDecimals === 'number') {
+      return Number(v).toFixed(displayDecimals);
+    }
+    return String(v);
+  };
+
+  const [text, setText] = useState<string>(formatValue(value));
+  const [isFocused, setIsFocused] = useState<boolean>(false);
+  const prevValueRef = useRef<number>(value);
   const keyTimestampsRef = useRef<number[]>([]);
   const isBurstRef = useRef<boolean>(false);
 
   useEffect(() => {
-    setText(String(value));
+    if (prevValueRef.current !== value) {
+      prevValueRef.current = value;
+      setText(formatValue(value));
+    }
     isBurstRef.current = false;
     keyTimestampsRef.current = [];
-  }, [value]);
+  }, [value, displayDecimals]);
 
   const commit = () => {
     if (isBurstRef.current) {
-      setText(String(value));
+      setText(formatValue(value));
       isBurstRef.current = false;
       keyTimestampsRef.current = [];
       return;
@@ -43,7 +57,7 @@ export const BufferedNumberInput: React.FC<BufferedNumberInputProps> = ({
 
     const trimmed = text.trim();
     if (trimmed === '') {
-      setText(String(value));
+      setText(formatValue(value));
       return;
     }
     const parsed = parseFloat(trimmed);
@@ -52,12 +66,22 @@ export const BufferedNumberInput: React.FC<BufferedNumberInputProps> = ({
       if (capped !== value) {
         onCommit(capped);
       }
-      setText(String(capped));
+      prevValueRef.current = capped;
+      setText(formatValue(capped));
     } else {
-      setText(String(value)); // Revert if invalid
+      setText(formatValue(value)); // Revert if invalid
     }
     isBurstRef.current = false;
     keyTimestampsRef.current = [];
+  };
+
+  const handleFocus = () => {
+    setIsFocused(true);
+  };
+
+  const handleBlur = () => {
+    setIsFocused(false);
+    commit();
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
@@ -69,7 +93,7 @@ export const BufferedNumberInput: React.FC<BufferedNumberInputProps> = ({
 
       if (keyTimestampsRef.current.length >= 6) {
         isBurstRef.current = true;
-        setText(String(value));
+        setText(formatValue(value));
         e.preventDefault();
         return;
       }
@@ -84,14 +108,14 @@ export const BufferedNumberInput: React.FC<BufferedNumberInputProps> = ({
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (isBurstRef.current) {
-      setText(String(value));
+      setText(formatValue(value));
       return;
     }
     const newVal = e.target.value;
     // Guard against pasted or bundled barcode scan bursts (>= 6 digits)
     if (newVal.length - text.length >= 6 && /^\d+$/.test(newVal.replace('.', ''))) {
       isBurstRef.current = true;
-      setText(String(value));
+      setText(formatValue(value));
       return;
     }
     setText(newVal);
@@ -107,8 +131,9 @@ export const BufferedNumberInput: React.FC<BufferedNumberInputProps> = ({
       placeholder={placeholder}
       className={className}
       value={text}
+      onFocus={handleFocus}
+      onBlur={handleBlur}
       onChange={handleChange}
-      onBlur={commit}
       onKeyDown={handleKeyDown}
     />
   );

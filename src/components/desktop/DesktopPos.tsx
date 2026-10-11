@@ -958,6 +958,7 @@ export const DesktopPos: React.FC<DesktopPosProps> = ({
                   <BufferedNumberInput
                     step="0.001"
                     min={0}
+                    displayDecimals={3}
                     value={item.unit_price}
                     onCommit={val => handleUpdateUnitPrice(item.cart_item_id, val)}
                     className="w-24 px-1.5 py-0.5 text-pos-price font-mono font-bold text-emerald-700 bg-white border border-slate-200 rounded focus:border-emerald-500 focus:outline-none"
@@ -1041,7 +1042,7 @@ export const DesktopPos: React.FC<DesktopPosProps> = ({
                   <button
                     type="button"
                     onClick={() => setEditingOptionsItemId(editingOptionsItemId === item.cart_item_id ? null : item.cart_item_id)}
-                    className={`text-pos-badge font-bold px-2 py-0.5 rounded transition-colors border ${
+                    className={`text-pos-badge font-bold px-2 py-0.5 min-h-[32px] min-w-[36px] flex items-center justify-center rounded transition-colors border ${
                       editingOptionsItemId === item.cart_item_id
                         ? 'bg-slate-800 text-white border-slate-800'
                         : 'text-slate-600 hover:text-slate-800 bg-slate-100 hover:bg-slate-200 border-slate-200'

@@ -444,7 +444,7 @@ describe('Cart Utilities', () => {
   });
 
   describe('getPriceSourceLabel (Batch 2 Item A3)', () => {
-    it('returns "Modifié" when price_overridden is true regardless of customer type', () => {
+    it('returns "Prix modifié" when price_overridden is true regardless of customer type', () => {
       const item: CartItem = {
         cart_item_id: 'i-1',
         name: 'Item 1',
@@ -460,10 +460,10 @@ describe('Cart Utilities', () => {
         reseller_discount_percent: 10,
         wallet_balance: 0
       };
-      expect(getPriceSourceLabel(item, reseller)).toBe('Modifié');
+      expect(getPriceSourceLabel(item, reseller)).toBe('Prix modifié');
     });
 
-    it('returns "-X% Revendeur" for RESELLER customer when not overridden', () => {
+    it('returns "-X% revendeur" for RESELLER customer when not overridden', () => {
       const item: CartItem = {
         cart_item_id: 'i-1',
         name: 'Item 1',
@@ -478,10 +478,10 @@ describe('Cart Utilities', () => {
         reseller_discount_percent: 15,
         wallet_balance: 0
       };
-      expect(getPriceSourceLabel(item, reseller)).toBe('-15% Revendeur');
+      expect(getPriceSourceLabel(item, reseller)).toBe('-15% revendeur');
     });
 
-    it('returns "Gros" for WHOLESALE customer when not overridden', () => {
+    it('returns "Tarif gros" for WHOLESALE customer when not overridden', () => {
       const item: CartItem = {
         cart_item_id: 'i-1',
         name: 'Item 1',
@@ -496,10 +496,10 @@ describe('Cart Utilities', () => {
         reseller_discount_percent: 0,
         wallet_balance: 0
       };
-      expect(getPriceSourceLabel(item, wholesale)).toBe('Gros');
+      expect(getPriceSourceLabel(item, wholesale)).toBe('Tarif gros');
     });
 
-    it('returns "Détail" for RETAIL customer or null/walk-in when not overridden', () => {
+    it('returns "Tarif détail" for RETAIL customer or null/walk-in when not overridden', () => {
       const item: CartItem = {
         cart_item_id: 'i-1',
         name: 'Item 1',
@@ -514,8 +514,8 @@ describe('Cart Utilities', () => {
         reseller_discount_percent: 0,
         wallet_balance: 0
       };
-      expect(getPriceSourceLabel(item, null)).toBe('Détail');
-      expect(getPriceSourceLabel(item, retail)).toBe('Détail');
+      expect(getPriceSourceLabel(item, null)).toBe('Tarif détail');
+      expect(getPriceSourceLabel(item, retail)).toBe('Tarif détail');
     });
   });
 });

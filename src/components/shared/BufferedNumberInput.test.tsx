@@ -85,4 +85,39 @@ describe('BufferedNumberInput (Batch 2 Item A2)', () => {
     // Capped at 9999 since 123456 > 9999
     expect(onCommit).toHaveBeenCalledWith(9999);
   });
+
+  it('formats value with displayDecimals when not focused', () => {
+    const onCommit = vi.fn();
+    render(<BufferedNumberInput value={4} displayDecimals={3} onCommit={onCommit} />);
+
+    const input = screen.getByRole('spinbutton') as HTMLInputElement;
+    expect(input.value).toBe('4.000');
+  });
+
+  it('allows editing raw value during focus and formats to displayDecimals on blur', () => {
+    const onCommit = vi.fn();
+    render(<BufferedNumberInput value={4} displayDecimals={3} onCommit={onCommit} />);
+
+    const input = screen.getByRole('spinbutton') as HTMLInputElement;
+    fireEvent.focus(input);
+    fireEvent.change(input, { target: { value: '3.5' } });
+    expect(input.value).toBe('3.5');
+
+    fireEvent.blur(input);
+    expect(onCommit).toHaveBeenCalledWith(3.5);
+    expect(input.value).toBe('3.500');
+  });
+
+  it('reverts invalid input and restores displayDecimals format on blur', () => {
+    const onCommit = vi.fn();
+    render(<BufferedNumberInput value={4.25} displayDecimals={3} onCommit={onCommit} />);
+
+    const input = screen.getByRole('spinbutton') as HTMLInputElement;
+    fireEvent.focus(input);
+    fireEvent.change(input, { target: { value: '' } });
+    fireEvent.blur(input);
+
+    expect(onCommit).not.toHaveBeenCalled();
+    expect(input.value).toBe('4.250');
+  });
 });

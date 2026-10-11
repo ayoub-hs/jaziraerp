@@ -352,19 +352,19 @@ export function recalculateCartForCustomer(
  */
 export function getPriceSourceLabel(item: CartItem, customer?: Customer | null): string {
   if (item.price_overridden) {
-    return 'Modifié';
+    return 'Prix modifié';
   }
   if (!customer || customer.type === 'RETAIL') {
-    return 'Détail';
+    return 'Tarif détail';
   }
   if (customer.type === 'WHOLESALE') {
-    return 'Gros';
+    return 'Tarif gros';
   }
   if (customer.type === 'RESELLER') {
     const pct = customer.reseller_discount_percent ?? 0;
-    return `-${pct}% Revendeur`;
+    return pct > 0 ? `-${pct}% revendeur` : 'Tarif gros';
   }
-  return 'Détail';
+  return 'Tarif détail';
 }
 
 

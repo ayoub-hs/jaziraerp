@@ -1425,12 +1425,12 @@ export const MobileRegister: React.FC<MobileRegisterProps> = ({
                       <div className="flex items-center justify-between gap-2 pt-1.5 border-t border-slate-200 flex-wrap">
                         <div className="flex items-center gap-1.5">
                           <span className="text-xs font-bold text-slate-700">P.U (DT):</span>
-                          <input
-                            type="number"
+                          <BufferedNumberInput
                             step="0.001"
-                            min="0"
+                            min={0}
+                            displayDecimals={3}
                             value={item.unit_price}
-                            onChange={e => handleUpdateUnitPrice(item.cart_item_id, parseFloat(e.target.value) || 0)}
+                            onCommit={val => handleUpdateUnitPrice(item.cart_item_id, val)}
                             className="w-24 px-2 py-1 text-xs font-mono font-bold text-emerald-700 bg-white border border-slate-300 rounded-lg focus:border-emerald-500 focus:outline-none"
                             title="Modifier le prix unitaire"
                           />

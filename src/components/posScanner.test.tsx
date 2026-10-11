@@ -246,27 +246,27 @@ describe('Component tests for scanner bursts and checkout cash guards (Batch 3 I
       scannerService.triggerScan('619000333001');
     });
 
-    // Tag should be "Détail"
-    expect(screen.getByText('Détail')).toBeTruthy();
+    // Tag should be "Tarif détail"
+    expect(screen.getByText('Tarif détail')).toBeTruthy();
 
     // 2. Switch to Wholesale customer
     const custSearchInput = screen.getByPlaceholderText(/Rechercher client/i);
     fireEvent.focus(custSearchInput);
     fireEvent.click(screen.getByText('Client Gros'));
-    expect(screen.getByText('Gros')).toBeTruthy();
+    expect(screen.getByText('Tarif gros')).toBeTruthy();
 
     // 3. Switch to Reseller customer (10% discount)
     fireEvent.click(screen.getByTitle(/Désélectionner le client/i));
     fireEvent.focus(screen.getByPlaceholderText(/Rechercher client/i));
     fireEvent.click(screen.getByText('Client Revendeur'));
-    expect(screen.getByText('-10% Revendeur')).toBeTruthy();
+    expect(screen.getByText('-10% revendeur')).toBeTruthy();
 
     // 4. Manually override price
     const priceInput = screen.getByTitle('Modifier le prix unitaire');
     fireEvent.change(priceInput, { target: { value: '4.500' } });
     fireEvent.blur(priceInput);
 
-    // Tag should now be "Modifié"
-    expect(screen.getByText('Modifié')).toBeTruthy();
+    // Tag should now be "Prix modifié"
+    expect(screen.getByText('Prix modifié')).toBeTruthy();
   });
 });
