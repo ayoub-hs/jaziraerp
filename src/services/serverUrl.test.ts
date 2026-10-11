@@ -2,8 +2,10 @@ import { describe, it, expect } from 'vitest';
 import { validateServerUrl, DEFAULT_SERVER_URL } from './serverUrl.js';
 
 describe('Server URL Validation & HTTPS Enforce Gate', () => {
-  it('DEFAULT_SERVER_URL uses https scheme', () => {
-    expect(DEFAULT_SERVER_URL.startsWith('https://')).toBe(true);
+  it('DEFAULT_SERVER_URL uses https scheme when defined', () => {
+    if (DEFAULT_SERVER_URL) {
+      expect(DEFAULT_SERVER_URL.startsWith('https://')).toBe(true);
+    }
   });
 
   it('rejects empty or whitespace URLs', () => {
@@ -31,7 +33,7 @@ describe('Server URL Validation & HTTPS Enforce Gate', () => {
   });
 
   it('accepts valid https URLs (cloud tailnet and LAN with port)', () => {
-    expect(validateServerUrl('https://jazicloud.fossa-wrasse.ts.net').valid).toBe(true);
+    expect(validateServerUrl('https://serveur-erp.ts.net').valid).toBe(true);
     expect(validateServerUrl('https://192.168.1.50:3000').valid).toBe(true);
     expect(validateServerUrl('https://localhost:3000/').valid).toBe(true);
   });

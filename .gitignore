@@ -13,3 +13,7 @@ android/app/build
 android/.gradle
 android/app/src/main/assets/public
 docs/audit-ui-2026-10/screenshots/*.png
+.env
+.env.local
+.env.*.local
+!.env.example

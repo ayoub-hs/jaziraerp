@@ -10,10 +10,12 @@
 import { Capacitor } from '@capacitor/core';
 
 const STORAGE_KEY = 'erp_server_url';
-export const DEFAULT_SERVER_URL = 'https://jazicloud.fossa-wrasse.ts.net';
+export const EXAMPLE_SERVER_URL = 'https://serveur-erp.ts.net';
+export const DEFAULT_SERVER_URL = ((typeof import.meta !== 'undefined' && import.meta.env?.VITE_DEFAULT_SERVER_URL) || '').trim().replace(/\/+$/, '');
 
 export function validateServerUrl(rawUrl: string): { valid: boolean; error?: string } {
   const trimmed = (rawUrl || '').trim().replace(/\/+$/, '');
+  const example = DEFAULT_SERVER_URL || EXAMPLE_SERVER_URL;
   if (!trimmed) {
     return {
       valid: false,
@@ -23,7 +25,7 @@ export function validateServerUrl(rawUrl: string): { valid: boolean; error?: str
   if (!trimmed.startsWith('https://')) {
     return {
       valid: false,
-      error: `L'adresse du serveur doit obligatoirement commencer par https:// (connexion sécurisée requise). Exemple: ${DEFAULT_SERVER_URL}`
+      error: `L'adresse du serveur doit obligatoirement commencer par https:// (connexion sécurisée requise). Exemple: ${example}`
     };
   }
   try {
@@ -31,13 +33,13 @@ export function validateServerUrl(rawUrl: string): { valid: boolean; error?: str
     if (parsed.protocol !== 'https:' || !parsed.hostname) {
       return {
         valid: false,
-        error: `Adresse invalide. L'adresse doit commencer par https://. Exemple: ${DEFAULT_SERVER_URL}`
+        error: `Adresse invalide. L'adresse doit commencer par https://. Exemple: ${example}`
       };
     }
   } catch {
     return {
       valid: false,
-      error: `Format d'adresse invalide. Exemple: ${DEFAULT_SERVER_URL}`
+      error: `Format d'adresse invalide. Exemple: ${example}`
     };
   }
   return { valid: true };

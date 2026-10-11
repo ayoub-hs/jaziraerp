@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Server, Check, Loader2 } from 'lucide-react';
-import { setServerUrl, validateServerUrl, DEFAULT_SERVER_URL } from '../../services/serverUrl.js';
+import { setServerUrl, validateServerUrl, DEFAULT_SERVER_URL, EXAMPLE_SERVER_URL } from '../../services/serverUrl.js';
 
 interface ServerSetupProps {
   onSaved: (url: string) => void;
@@ -16,13 +16,14 @@ export const ServerSetup: React.FC<ServerSetupProps> = ({ onSaved }) => {
   const [testing, setTesting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  const fallbackExample = DEFAULT_SERVER_URL || EXAMPLE_SERVER_URL;
   const normalized = url.trim().replace(/\/+$/, '');
 
   const handleSave = async () => {
     setError(null);
     const validation = validateServerUrl(url);
     if (!validation.valid) {
-      setError(validation.error || `Adresse invalide. Exemple: ${DEFAULT_SERVER_URL}`);
+      setError(validation.error || `Adresse invalide. Exemple: ${fallbackExample}`);
       return;
     }
     setTesting(true);
@@ -50,14 +51,14 @@ export const ServerSetup: React.FC<ServerSetupProps> = ({ onSaved }) => {
           <h1 className="text-lg font-black text-slate-900">Connexion au serveur</h1>
         </div>
         <p className="text-xs text-slate-600 font-semibold">
-          Entrez l'adresse du serveur ERP. Exemple: <span className="font-mono">{DEFAULT_SERVER_URL}</span>
+          Entrez l'adresse du serveur ERP. Exemple: <span className="font-mono">{fallbackExample}</span>
         </p>
         <input
           type="url"
           inputMode="url"
           value={url}
           onChange={e => setUrl(e.target.value)}
-          placeholder={DEFAULT_SERVER_URL}
+          placeholder={fallbackExample}
           className="w-full font-mono text-sm px-3 py-2.5 border border-slate-300 rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none"
         />
         {error && (
