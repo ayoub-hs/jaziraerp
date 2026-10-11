@@ -674,7 +674,7 @@ export const MobileRegister: React.FC<MobileRegisterProps> = ({
             <div className="flex flex-col">
               <span>{scanAlert.message}</span>
               {scanAlert.barcode && (
-                <span className="text-[10px] font-mono opacity-90">Vérifiez le rayon ou l'étiquette</span>
+                <span className="text-xs font-mono opacity-90">Vérifiez le rayon ou l'étiquette</span>
               )}
             </div>
           </div>
@@ -858,7 +858,7 @@ export const MobileRegister: React.FC<MobileRegisterProps> = ({
                   <span className="text-xs font-bold block">
                     {totals.itemCount} items in cart
                   </span>
-                  <span className="text-[10px] text-slate-400">Tap to review & checkout</span>
+                  <span className="text-xs text-slate-400">Tap to review & checkout</span>
                 </div>
               </div>
               <div className="flex items-center gap-2">
@@ -883,7 +883,7 @@ export const MobileRegister: React.FC<MobileRegisterProps> = ({
                   <span className="text-xs font-bold block">
                     {heldCartCount} panier(s) en attente
                   </span>
-                  <span className="text-[10px] text-amber-950/80">Appuyer pour reprendre un panier</span>
+                  <span className="text-xs text-amber-950/80">Appuyer pour reprendre un panier</span>
                 </div>
               </div>
               <Clock className="w-5 h-5 text-slate-950" />
@@ -944,14 +944,14 @@ export const MobileRegister: React.FC<MobileRegisterProps> = ({
 
               <div className="grid grid-cols-2 gap-3 pt-2">
                 <div className="bg-slate-50 p-3 rounded-xl border border-slate-200">
-                  <span className="text-[10px] text-slate-500 font-bold uppercase">Prix Détail (TTC)</span>
+                  <span className="text-xs text-slate-500 font-bold uppercase">Prix Détail (TTC)</span>
                   <div className="text-xl font-black text-emerald-700 font-mono mt-0.5">
                     {formatMoney(lookupProduct.retail_price)}
                   </div>
                 </div>
 
                 <div className="bg-slate-50 p-3 rounded-xl border border-slate-200">
-                  <span className="text-[10px] text-slate-500 font-bold uppercase">Prix Gros (TTC)</span>
+                  <span className="text-xs text-slate-500 font-bold uppercase">Prix Gros (TTC)</span>
                   <div className="text-xl font-black text-blue-700 font-mono mt-0.5">
                     {formatMoney(lookupProduct.wholesale_price)}
                   </div>
@@ -1137,12 +1137,12 @@ export const MobileRegister: React.FC<MobileRegisterProps> = ({
                     <div className="flex justify-between items-start">
                       <div>
                         <h3 className="font-bold text-slate-900 text-sm">{customer.name}</h3>
-                        <span className="text-[10px] font-bold text-slate-500 uppercase">
+                        <span className="text-xs font-bold text-slate-500 uppercase">
                           Tier: {customer.type}
                         </span>
                       </div>
                       <div className="text-right">
-                        <span className="text-[10px] text-slate-400 block font-semibold">Total Dû:</span>
+                        <span className="text-xs text-slate-400 block font-semibold">Total Dû:</span>
                         <span className={`text-base font-black font-mono ${hasDebt ? 'text-amber-700' : 'text-slate-400'}`}>
                           {formatMoney(customer.total_debt)}
                         </span>
@@ -1184,7 +1184,7 @@ export const MobileRegister: React.FC<MobileRegisterProps> = ({
                     </div>
 
                     {paymentMsg && selectedCustDetails?.id === customer.id && (
-                      <p className="text-[11px] font-semibold text-emerald-700 bg-emerald-50 p-2 rounded-lg">
+                      <p className="text-xs font-semibold text-emerald-700 bg-emerald-50 p-2 rounded-lg">
                         {paymentMsg}
                       </p>
                     )}

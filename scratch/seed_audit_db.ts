@@ -219,19 +219,30 @@ export function seedAuditDb(dbPath: string = '/tmp/audit_test.sqlite') {
       ('mov-2', 'sess-counter-1', ?, 'CASH_OUT', 20.000, 'Achat fournitures d entretien', ?)
   `).run(now, now, now, now);
 
-  // 11. Completed Sale
+  // 11. Completed Sale (8 lines with customer Grossiste Ben Salem)
   db.prepare(`
     INSERT INTO sales (id, receipt_number, session_id, date, customer_id, subtotal_ht, tva_rate, tva_amount, total_ttc, total_discount, cash_paid, wallet_paid, credit_amount, change_given, status, created_at)
-    VALUES ('sale-prev-1', 'REC-20261010-0001', 'sess-counter-1', ?, 'cust-3', 14.706, 0.19, 2.794, 17.500, 0.0, 20.000, 0.0, 0.0, 2.500, 'COMPLETED', ?)
+    VALUES ('sale-prev-1', 'REC-20261010-0001', 'sess-counter-1', ?, 'cust-1', 84.034, 0.19, 15.966, 100.000, 5.500, 100.000, 0.0, 0.0, 0.000, 'COMPLETED', ?)
   `).run(yesterday, yesterday);
 
   db.prepare(`
     INSERT INTO sale_items (id, sale_id, product_id, is_quick_add, quick_add_name, pack_size_id, pack_multiplier, quantity, quantity_refunded, base_stock_deducted, unit_price, catalog_unit_price, discount_amount, line_total)
     VALUES 
       ('si-1', 'sale-prev-1', 'prod-01', 0, NULL, NULL, 1, 2, 0, 2, 2.400, 2.400, 0, 4.800),
-      ('si-2', 'sale-prev-1', 'prod-05', 0, NULL, NULL, 1, 3, 0, 3, 3.100, 3.100, 0, 9.300),
-      ('si-3', 'sale-prev-1', 'prod-09', 0, NULL, NULL, 1, 1, 0, 1, 2.900, 2.900, 0, 2.900)
+      ('si-2', 'sale-prev-1', 'prod-02', 0, NULL, NULL, 1, 1, 0, 1, 5.800, 5.800, 0, 5.800),
+      ('si-3', 'sale-prev-1', 'prod-03', 0, NULL, NULL, 1, 1, 0, 1, 22.500, 22.500, 0, 22.500),
+      ('si-4', 'sale-prev-1', 'prod-04', 0, NULL, NULL, 1, 3, 0, 3, 3.200, 3.200, 0, 9.600),
+      ('si-5', 'sale-prev-1', 'prod-05', 0, NULL, NULL, 1, 2, 0, 2, 3.100, 3.100, 0, 6.200),
+      ('si-6', 'sale-prev-1', 'prod-06', 0, NULL, NULL, 1, 4, 0, 4, 3.200, 3.200, 0, 12.800),
+      ('si-7', 'sale-prev-1', 'prod-07', 0, NULL, NULL, 1, 1, 0, 1, 9.800, 9.800, 0, 9.800),
+      ('si-8', 'sale-prev-1', 'prod-08', 0, NULL, NULL, 1, 1, 0, 1, 34.000, 34.000, 0, 34.000)
   `).run();
+
+  // Attached delivery note for sale-prev-1
+  db.prepare(`
+    INSERT INTO delivery_notes (id, sale_id, number, created_at)
+    VALUES ('dn-prev-1', 'sale-prev-1', 'BL-202610-0001', ?)
+  `).run(yesterday);
 
   db.close();
   console.log(`[SeedAuditDb] Seeded realistic database successfully at: ${dbPath}`);

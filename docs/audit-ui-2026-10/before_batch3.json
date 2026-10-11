@@ -1,0 +1,2278 @@
+{
+  "timestamp": "2026-10-11T07:55:29.928Z",
+  "description": "Baseline measurements for Batch UI-3 (modal clipping, small text, contrast) before code changes",
+  "viewports": {
+    "desktop_1600x780": {
+      "viewport": "desktop_1600x780",
+      "width": 1600,
+      "height": 780,
+      "modals": {
+        "ReceiptPrintModal": {
+          "modalName": "ReceiptPrintModal",
+          "viewport": "desktop_1600x780",
+          "innerH": 780,
+          "innerW": 1600,
+          "card": {
+            "top": 26,
+            "bottom": 754,
+            "height": 728,
+            "width": 384,
+            "insideViewport": true
+          },
+          "header": {
+            "top": 27,
+            "bottom": 75,
+            "height": 48,
+            "insideViewport": true
+          },
+          "closeBtn": {
+            "top": 39,
+            "bottom": 63,
+            "height": 24,
+            "width": 24,
+            "insideViewport": true
+          },
+          "primaryAction": {
+            "text": "Imprimer (58mm)",
+            "top": 705,
+            "bottom": 737,
+            "height": 32,
+            "width": 171,
+            "insideViewport": true
+          },
+          "body": {
+            "scrollHeight": 726,
+            "clientHeight": 726,
+            "scrolls": false
+          },
+          "smallTextNodesCount": 44,
+          "smallTextSamples": [
+            {
+              "text": "Zone Industrielle Charguia II, Tunis",
+              "fontSizePx": 10,
+              "tagName": "div"
+            },
+            {
+              "text": "Tél: +216 71 234 567",
+              "fontSizePx": 10,
+              "tagName": "div"
+            },
+            {
+              "text": "Ticket:",
+              "fontSizePx": 10,
+              "tagName": "span"
+            },
+            {
+              "text": "REC-20261010-0001",
+              "fontSizePx": 10,
+              "tagName": "span"
+            },
+            {
+              "text": "Date:",
+              "fontSizePx": 10,
+              "tagName": "span"
+            },
+            {
+              "text": "10/10/2026 08:55 AM",
+              "fontSizePx": 10,
+              "tagName": "span"
+            },
+            {
+              "text": "Client:",
+              "fontSizePx": 10,
+              "tagName": "span"
+            },
+            {
+              "text": "Grossiste Ben Salem & Frères",
+              "fontSizePx": 10,
+              "tagName": "span"
+            },
+            {
+              "text": "Article",
+              "fontSizePx": 10,
+              "tagName": "span"
+            },
+            {
+              "text": "Total",
+              "fontSizePx": 10,
+              "tagName": "span"
+            }
+          ]
+        },
+        "InvoicePrintModal": {
+          "modalName": "InvoicePrintModal",
+          "viewport": "desktop_1600x780",
+          "innerH": 780,
+          "innerW": 1600,
+          "card": {
+            "top": 39,
+            "bottom": 741,
+            "height": 702,
+            "width": 768,
+            "insideViewport": true
+          },
+          "header": {
+            "top": 40,
+            "bottom": 100,
+            "height": 60,
+            "insideViewport": true
+          },
+          "closeBtn": {
+            "top": 56,
+            "bottom": 84,
+            "height": 28,
+            "width": 28,
+            "insideViewport": true
+          },
+          "primaryAction": {
+            "text": "Imprimer Facture A4",
+            "top": 688,
+            "bottom": 724,
+            "height": 36,
+            "width": 188,
+            "insideViewport": true
+          },
+          "body": {
+            "scrollHeight": 822,
+            "clientHeight": 571,
+            "scrolls": true
+          },
+          "smallTextNodesCount": 63,
+          "smallTextSamples": [
+            {
+              "text": "Zone Industrielle Charguia II, Tunis",
+              "fontSizePx": 11,
+              "tagName": "div"
+            },
+            {
+              "text": "Tél: +216 71 234 567",
+              "fontSizePx": 11,
+              "tagName": "div"
+            },
+            {
+              "text": "Réf: REC-20261010-0001",
+              "fontSizePx": 11,
+              "tagName": "div"
+            },
+            {
+              "text": "REC-20261010-0001",
+              "fontSizePx": 11,
+              "tagName": "span"
+            },
+            {
+              "text": "Date: 10/10/2026",
+              "fontSizePx": 11,
+              "tagName": "div"
+            },
+            {
+              "text": "Facturé à:",
+              "fontSizePx": 10,
+              "tagName": "span"
+            },
+            {
+              "text": "Client au comptant / Grossiste",
+              "fontSizePx": 11,
+              "tagName": "div"
+            },
+            {
+              "text": "Désignation",
+              "fontSizePx": 11,
+              "tagName": "th"
+            },
+            {
+              "text": "Qté",
+              "fontSizePx": 11,
+              "tagName": "th"
+            },
+            {
+              "text": "P.U. HT",
+              "fontSizePx": 11,
+              "tagName": "th"
+            }
+          ]
+        },
+        "DeliveryNotePrintModal": {
+          "modalName": "DeliveryNotePrintModal",
+          "viewport": "desktop_1600x780",
+          "innerH": 780,
+          "innerW": 1600,
+          "card": {
+            "top": 39,
+            "bottom": 741,
+            "height": 702,
+            "width": 768,
+            "insideViewport": true
+          },
+          "header": {
+            "top": 40,
+            "bottom": 102,
+            "height": 62,
+            "insideViewport": true
+          },
+          "closeBtn": {
+            "top": 57,
+            "bottom": 85,
+            "height": 28,
+            "width": 28,
+            "insideViewport": true
+          },
+          "primaryAction": {
+            "text": "Imprimer Bon de Livraison",
+            "top": 688,
+            "bottom": 724,
+            "height": 36,
+            "width": 224,
+            "insideViewport": true
+          },
+          "body": {
+            "scrollHeight": 1102,
+            "clientHeight": 569,
+            "scrolls": true
+          },
+          "smallTextNodesCount": 77,
+          "smallTextSamples": [
+            {
+              "text": "Zone Industrielle Charguia II, Tunis",
+              "fontSizePx": 11,
+              "tagName": "div"
+            },
+            {
+              "text": "Tél: +216 71 234 567",
+              "fontSizePx": 11,
+              "tagName": "div"
+            },
+            {
+              "text": "N° BL: BL-202610-0001",
+              "fontSizePx": 11,
+              "tagName": "div"
+            },
+            {
+              "text": "BL-202610-0001",
+              "fontSizePx": 11,
+              "tagName": "span"
+            },
+            {
+              "text": "Date: 10/10/2026",
+              "fontSizePx": 11,
+              "tagName": "div"
+            },
+            {
+              "text": "Réf. Vente: REC-20261010-0001",
+              "fontSizePx": 10,
+              "tagName": "div"
+            },
+            {
+              "text": "Destinataire / Livré à :",
+              "fontSizePx": 10,
+              "tagName": "span"
+            },
+            {
+              "text": "Adresse: Zone Industrielle Charguia II, ",
+              "fontSizePx": 11,
+              "tagName": "div"
+            },
+            {
+              "text": "Tél: +216 71 234 567",
+              "fontSizePx": 11,
+              "tagName": "div"
+            },
+            {
+              "text": "Livraison magasin / site client",
+              "fontSizePx": 10,
+              "tagName": "div"
+            }
+          ]
+        },
+        "RefundModal": {
+          "modalName": "RefundModal",
+          "viewport": "desktop_1600x780",
+          "innerH": 780,
+          "innerW": 1600,
+          "card": {
+            "top": 170,
+            "bottom": 627,
+            "height": 457,
+            "width": 576,
+            "insideViewport": true
+          },
+          "header": {
+            "top": 171,
+            "bottom": 231,
+            "height": 60,
+            "insideViewport": true
+          },
+          "closeBtn": {
+            "top": 187,
+            "bottom": 215,
+            "height": 28,
+            "width": 28,
+            "insideViewport": true
+          },
+          "primaryAction": {
+            "text": "Confirm Refund & Restock",
+            "top": 562,
+            "bottom": 602,
+            "height": 40,
+            "width": 257,
+            "insideViewport": true
+          },
+          "body": {
+            "scrollHeight": 395,
+            "clientHeight": 395,
+            "scrolls": false
+          },
+          "smallTextNodesCount": 0,
+          "smallTextSamples": []
+        },
+        "SessionModal_Close": {
+          "modalName": "SessionModal_Close",
+          "viewport": "desktop_1600x780",
+          "innerH": 780,
+          "innerW": 1600,
+          "card": {
+            "top": 71,
+            "bottom": 710,
+            "height": 639,
+            "width": 448,
+            "insideViewport": true
+          },
+          "header": {
+            "top": 72,
+            "bottom": 132,
+            "height": 60,
+            "insideViewport": true
+          },
+          "closeBtn": {
+            "top": 88,
+            "bottom": 116,
+            "height": 28,
+            "width": 28,
+            "insideViewport": true
+          },
+          "primaryAction": {
+            "text": "Close Session",
+            "top": 649,
+            "bottom": 689,
+            "height": 40,
+            "width": 197,
+            "insideViewport": true
+          },
+          "body": {
+            "scrollHeight": 577,
+            "clientHeight": 577,
+            "scrolls": false
+          },
+          "smallTextNodesCount": 2,
+          "smallTextSamples": [
+            {
+              "text": "Il reste des paniers en attente. Veuille",
+              "fontSizePx": 11,
+              "tagName": "p"
+            },
+            {
+              "text": "→ Basculer sur cette caisse (Travailler ",
+              "fontSizePx": 11,
+              "tagName": "button"
+            }
+          ]
+        },
+        "CashMovementModal": {
+          "modalName": "CashMovementModal",
+          "viewport": "desktop_1600x780",
+          "innerH": 780,
+          "innerW": 1600,
+          "card": {
+            "top": 209,
+            "bottom": 571,
+            "height": 362,
+            "width": 448,
+            "insideViewport": true
+          },
+          "header": {
+            "top": 210,
+            "bottom": 270,
+            "height": 60,
+            "insideViewport": true
+          },
+          "closeBtn": {
+            "top": 226,
+            "bottom": 254,
+            "height": 28,
+            "width": 28,
+            "insideViewport": true
+          },
+          "primaryAction": {
+            "text": "Record Cash Out",
+            "top": 510,
+            "bottom": 550,
+            "height": 40,
+            "width": 197,
+            "insideViewport": true
+          },
+          "body": {
+            "scrollHeight": 300,
+            "clientHeight": 300,
+            "scrolls": false
+          },
+          "smallTextNodesCount": 0,
+          "smallTextSamples": []
+        },
+        "HeldCartsModal": {
+          "modalName": "HeldCartsModal",
+          "viewport": "desktop_1600x780",
+          "innerH": 780,
+          "innerW": 1600,
+          "card": {
+            "top": 235,
+            "bottom": 545,
+            "height": 311,
+            "width": 512,
+            "insideViewport": true
+          },
+          "header": {
+            "top": 236,
+            "bottom": 296,
+            "height": 60,
+            "insideViewport": true
+          },
+          "closeBtn": {
+            "top": 252,
+            "bottom": 280,
+            "height": 28,
+            "width": 28,
+            "insideViewport": true
+          },
+          "primaryAction": {
+            "text": "Reprendre ce panier",
+            "top": 430,
+            "bottom": 458,
+            "height": 28,
+            "width": 169,
+            "insideViewport": true
+          },
+          "body": {
+            "scrollHeight": 184,
+            "clientHeight": 184,
+            "scrolls": false
+          },
+          "smallTextNodesCount": 8,
+          "smallTextSamples": [
+            {
+              "text": "08:55",
+              "fontSizePx": 11,
+              "tagName": "span"
+            },
+            {
+              "text": "•",
+              "fontSizePx": 11,
+              "tagName": "span"
+            },
+            {
+              "text": "2 art. (3 pcs)",
+              "fontSizePx": 11,
+              "tagName": "span"
+            },
+            {
+              "text": "Javel Parfumée Citron 1.5L",
+              "fontSizePx": 11,
+              "tagName": "span"
+            },
+            {
+              "text": "2 × 2.400 DT",
+              "fontSizePx": 11,
+              "tagName": "span"
+            },
+            {
+              "text": "Liquide Vaisselle Pomme 1L",
+              "fontSizePx": 11,
+              "tagName": "span"
+            },
+            {
+              "text": "1 × 3.100 DT",
+              "fontSizePx": 11,
+              "tagName": "span"
+            },
+            {
+              "text": "Max 10 paniers mis en attente",
+              "fontSizePx": 11,
+              "tagName": "div"
+            }
+          ]
+        },
+        "QuickPriceLookupModal": {
+          "modalName": "QuickPriceLookupModal",
+          "viewport": "desktop_1600x780",
+          "innerH": 780,
+          "innerW": 1600,
+          "card": {
+            "top": 31,
+            "bottom": 749,
+            "height": 718,
+            "width": 896,
+            "insideViewport": true
+          },
+          "header": {
+            "top": 32,
+            "bottom": 100,
+            "height": 68,
+            "insideViewport": true
+          },
+          "closeBtn": {
+            "top": 50,
+            "bottom": 82,
+            "height": 32,
+            "width": 32,
+            "insideViewport": true
+          },
+          "primaryAction": {
+            "text": "Ajouter Carton de 6 bouteilles",
+            "top": 448,
+            "bottom": 472,
+            "height": 24,
+            "width": 199,
+            "insideViewport": true
+          },
+          "body": {
+            "scrollHeight": 1125,
+            "clientHeight": 518,
+            "scrolls": true
+          },
+          "smallTextNodesCount": 52,
+          "smallTextSamples": [
+            {
+              "text": "F3 / Ctrl+L / Esc",
+              "fontSizePx": 11,
+              "tagName": "span"
+            },
+            {
+              "text": "cat-detergents",
+              "fontSizePx": 10,
+              "tagName": "span"
+            },
+            {
+              "text": "1.5L",
+              "fontSizePx": 10,
+              "tagName": "span"
+            },
+            {
+              "text": "619100000001",
+              "fontSizePx": 11,
+              "tagName": "span"
+            },
+            {
+              "text": "(Dépôt : 150)",
+              "fontSizePx": 11,
+              "tagName": "span"
+            },
+            {
+              "text": "Prix Détail (TTC)",
+              "fontSizePx": 10,
+              "tagName": "div"
+            },
+            {
+              "text": "✓ Tarif appliqué",
+              "fontSizePx": 10,
+              "tagName": "span"
+            },
+            {
+              "text": "Prix Gros (TTC)",
+              "fontSizePx": 10,
+              "tagName": "div"
+            },
+            {
+              "text": "Barème Revendeurs (Gros remise)",
+              "fontSizePx": 10,
+              "tagName": "div"
+            },
+            {
+              "text": "-5%",
+              "fontSizePx": 10,
+              "tagName": "span"
+            }
+          ]
+        },
+        "QuickAddModal": {
+          "modalName": "QuickAddModal",
+          "viewport": "desktop_1600x780",
+          "innerH": 780,
+          "innerW": 1600,
+          "card": {
+            "top": 239,
+            "bottom": 541,
+            "height": 302,
+            "width": 448,
+            "insideViewport": true
+          },
+          "header": {
+            "top": 240,
+            "bottom": 300,
+            "height": 60,
+            "insideViewport": true
+          },
+          "closeBtn": {
+            "top": 256,
+            "bottom": 284,
+            "height": 28,
+            "width": 28,
+            "insideViewport": true
+          },
+          "primaryAction": {
+            "text": "Add to Cart",
+            "top": 480,
+            "bottom": 520,
+            "height": 40,
+            "width": 197,
+            "insideViewport": true
+          },
+          "body": {
+            "scrollHeight": 240,
+            "clientHeight": 240,
+            "scrolls": false
+          },
+          "smallTextNodesCount": 0,
+          "smallTextSamples": []
+        }
+      }
+    },
+    "desktop_1563x545": {
+      "viewport": "desktop_1563x545",
+      "width": 1563,
+      "height": 545,
+      "modals": {
+        "ReceiptPrintModal": {
+          "modalName": "ReceiptPrintModal",
+          "viewport": "desktop_1563x545",
+          "innerH": 545,
+          "innerW": 1563,
+          "card": {
+            "top": -91,
+            "bottom": 636,
+            "height": 728,
+            "width": 384,
+            "insideViewport": false
+          },
+          "header": {
+            "top": -90,
+            "bottom": -42,
+            "height": 48,
+            "insideViewport": false
+          },
+          "closeBtn": {
+            "top": -78,
+            "bottom": -54,
+            "height": 24,
+            "width": 24,
+            "insideViewport": false
+          },
+          "primaryAction": {
+            "text": "Imprimer (58mm)",
+            "top": 587,
+            "bottom": 619,
+            "height": 32,
+            "width": 171,
+            "insideViewport": false
+          },
+          "body": {
+            "scrollHeight": 726,
+            "clientHeight": 726,
+            "scrolls": false
+          },
+          "smallTextNodesCount": 44,
+          "smallTextSamples": [
+            {
+              "text": "Zone Industrielle Charguia II, Tunis",
+              "fontSizePx": 10,
+              "tagName": "div"
+            },
+            {
+              "text": "Tél: +216 71 234 567",
+              "fontSizePx": 10,
+              "tagName": "div"
+            },
+            {
+              "text": "Ticket:",
+              "fontSizePx": 10,
+              "tagName": "span"
+            },
+            {
+              "text": "REC-20261010-0001",
+              "fontSizePx": 10,
+              "tagName": "span"
+            },
+            {
+              "text": "Date:",
+              "fontSizePx": 10,
+              "tagName": "span"
+            },
+            {
+              "text": "10/10/2026 08:55 AM",
+              "fontSizePx": 10,
+              "tagName": "span"
+            },
+            {
+              "text": "Client:",
+              "fontSizePx": 10,
+              "tagName": "span"
+            },
+            {
+              "text": "Grossiste Ben Salem & Frères",
+              "fontSizePx": 10,
+              "tagName": "span"
+            },
+            {
+              "text": "Article",
+              "fontSizePx": 10,
+              "tagName": "span"
+            },
+            {
+              "text": "Total",
+              "fontSizePx": 10,
+              "tagName": "span"
+            }
+          ]
+        },
+        "InvoicePrintModal": {
+          "modalName": "InvoicePrintModal",
+          "viewport": "desktop_1563x545",
+          "innerH": 545,
+          "innerW": 1563,
+          "card": {
+            "top": 27,
+            "bottom": 518,
+            "height": 491,
+            "width": 768,
+            "insideViewport": true
+          },
+          "header": {
+            "top": 28,
+            "bottom": 88,
+            "height": 60,
+            "insideViewport": true
+          },
+          "closeBtn": {
+            "top": 44,
+            "bottom": 72,
+            "height": 28,
+            "width": 28,
+            "insideViewport": true
+          },
+          "primaryAction": {
+            "text": "Imprimer Facture A4",
+            "top": 465,
+            "bottom": 501,
+            "height": 36,
+            "width": 188,
+            "insideViewport": true
+          },
+          "body": {
+            "scrollHeight": 822,
+            "clientHeight": 360,
+            "scrolls": true
+          },
+          "smallTextNodesCount": 63,
+          "smallTextSamples": [
+            {
+              "text": "Zone Industrielle Charguia II, Tunis",
+              "fontSizePx": 11,
+              "tagName": "div"
+            },
+            {
+              "text": "Tél: +216 71 234 567",
+              "fontSizePx": 11,
+              "tagName": "div"
+            },
+            {
+              "text": "Réf: REC-20261010-0001",
+              "fontSizePx": 11,
+              "tagName": "div"
+            },
+            {
+              "text": "REC-20261010-0001",
+              "fontSizePx": 11,
+              "tagName": "span"
+            },
+            {
+              "text": "Date: 10/10/2026",
+              "fontSizePx": 11,
+              "tagName": "div"
+            },
+            {
+              "text": "Facturé à:",
+              "fontSizePx": 10,
+              "tagName": "span"
+            },
+            {
+              "text": "Client au comptant / Grossiste",
+              "fontSizePx": 11,
+              "tagName": "div"
+            },
+            {
+              "text": "Désignation",
+              "fontSizePx": 11,
+              "tagName": "th"
+            },
+            {
+              "text": "Qté",
+              "fontSizePx": 11,
+              "tagName": "th"
+            },
+            {
+              "text": "P.U. HT",
+              "fontSizePx": 11,
+              "tagName": "th"
+            }
+          ]
+        },
+        "DeliveryNotePrintModal": {
+          "modalName": "DeliveryNotePrintModal",
+          "viewport": "desktop_1563x545",
+          "innerH": 545,
+          "innerW": 1563,
+          "card": {
+            "top": 27,
+            "bottom": 518,
+            "height": 491,
+            "width": 768,
+            "insideViewport": true
+          },
+          "header": {
+            "top": 28,
+            "bottom": 90,
+            "height": 62,
+            "insideViewport": true
+          },
+          "closeBtn": {
+            "top": 45,
+            "bottom": 73,
+            "height": 28,
+            "width": 28,
+            "insideViewport": true
+          },
+          "primaryAction": {
+            "text": "Imprimer Bon de Livraison",
+            "top": 465,
+            "bottom": 501,
+            "height": 36,
+            "width": 224,
+            "insideViewport": true
+          },
+          "body": {
+            "scrollHeight": 1102,
+            "clientHeight": 358,
+            "scrolls": true
+          },
+          "smallTextNodesCount": 77,
+          "smallTextSamples": [
+            {
+              "text": "Zone Industrielle Charguia II, Tunis",
+              "fontSizePx": 11,
+              "tagName": "div"
+            },
+            {
+              "text": "Tél: +216 71 234 567",
+              "fontSizePx": 11,
+              "tagName": "div"
+            },
+            {
+              "text": "N° BL: BL-202610-0001",
+              "fontSizePx": 11,
+              "tagName": "div"
+            },
+            {
+              "text": "BL-202610-0001",
+              "fontSizePx": 11,
+              "tagName": "span"
+            },
+            {
+              "text": "Date: 10/10/2026",
+              "fontSizePx": 11,
+              "tagName": "div"
+            },
+            {
+              "text": "Réf. Vente: REC-20261010-0001",
+              "fontSizePx": 10,
+              "tagName": "div"
+            },
+            {
+              "text": "Destinataire / Livré à :",
+              "fontSizePx": 10,
+              "tagName": "span"
+            },
+            {
+              "text": "Adresse: Zone Industrielle Charguia II, ",
+              "fontSizePx": 11,
+              "tagName": "div"
+            },
+            {
+              "text": "Tél: +216 71 234 567",
+              "fontSizePx": 11,
+              "tagName": "div"
+            },
+            {
+              "text": "Livraison magasin / site client",
+              "fontSizePx": 10,
+              "tagName": "div"
+            }
+          ]
+        },
+        "RefundModal": {
+          "modalName": "RefundModal",
+          "viewport": "desktop_1563x545",
+          "innerH": 545,
+          "innerW": 1563,
+          "card": {
+            "top": 52,
+            "bottom": 509,
+            "height": 457,
+            "width": 576,
+            "insideViewport": true
+          },
+          "header": {
+            "top": 53,
+            "bottom": 113,
+            "height": 60,
+            "insideViewport": true
+          },
+          "closeBtn": {
+            "top": 69,
+            "bottom": 97,
+            "height": 28,
+            "width": 28,
+            "insideViewport": true
+          },
+          "primaryAction": {
+            "text": "Confirm Refund & Restock",
+            "top": 444,
+            "bottom": 484,
+            "height": 40,
+            "width": 257,
+            "insideViewport": true
+          },
+          "body": {
+            "scrollHeight": 395,
+            "clientHeight": 395,
+            "scrolls": false
+          },
+          "smallTextNodesCount": 0,
+          "smallTextSamples": []
+        },
+        "SessionModal_Close": {
+          "modalName": "SessionModal_Close",
+          "viewport": "desktop_1563x545",
+          "innerH": 545,
+          "innerW": 1563,
+          "card": {
+            "top": -47,
+            "bottom": 592,
+            "height": 639,
+            "width": 448,
+            "insideViewport": false
+          },
+          "header": {
+            "top": -46,
+            "bottom": 14,
+            "height": 60,
+            "insideViewport": false
+          },
+          "closeBtn": {
+            "top": -30,
+            "bottom": -2,
+            "height": 28,
+            "width": 28,
+            "insideViewport": false
+          },
+          "primaryAction": {
+            "text": "Close Session",
+            "top": 531,
+            "bottom": 571,
+            "height": 40,
+            "width": 197,
+            "insideViewport": false
+          },
+          "body": {
+            "scrollHeight": 577,
+            "clientHeight": 577,
+            "scrolls": false
+          },
+          "smallTextNodesCount": 2,
+          "smallTextSamples": [
+            {
+              "text": "Il reste des paniers en attente. Veuille",
+              "fontSizePx": 11,
+              "tagName": "p"
+            },
+            {
+              "text": "→ Basculer sur cette caisse (Travailler ",
+              "fontSizePx": 11,
+              "tagName": "button"
+            }
+          ]
+        },
+        "CashMovementModal": {
+          "modalName": "CashMovementModal",
+          "viewport": "desktop_1563x545",
+          "innerH": 545,
+          "innerW": 1563,
+          "card": {
+            "top": 92,
+            "bottom": 454,
+            "height": 362,
+            "width": 448,
+            "insideViewport": true
+          },
+          "header": {
+            "top": 93,
+            "bottom": 153,
+            "height": 60,
+            "insideViewport": true
+          },
+          "closeBtn": {
+            "top": 109,
+            "bottom": 137,
+            "height": 28,
+            "width": 28,
+            "insideViewport": true
+          },
+          "primaryAction": {
+            "text": "Record Cash Out",
+            "top": 393,
+            "bottom": 433,
+            "height": 40,
+            "width": 197,
+            "insideViewport": true
+          },
+          "body": {
+            "scrollHeight": 300,
+            "clientHeight": 300,
+            "scrolls": false
+          },
+          "smallTextNodesCount": 0,
+          "smallTextSamples": []
+        },
+        "HeldCartsModal": {
+          "modalName": "HeldCartsModal",
+          "viewport": "desktop_1563x545",
+          "innerH": 545,
+          "innerW": 1563,
+          "card": {
+            "top": 117,
+            "bottom": 428,
+            "height": 311,
+            "width": 512,
+            "insideViewport": true
+          },
+          "header": {
+            "top": 118,
+            "bottom": 178,
+            "height": 60,
+            "insideViewport": true
+          },
+          "closeBtn": {
+            "top": 134,
+            "bottom": 162,
+            "height": 28,
+            "width": 28,
+            "insideViewport": true
+          },
+          "primaryAction": {
+            "text": "Reprendre ce panier",
+            "top": 313,
+            "bottom": 341,
+            "height": 28,
+            "width": 169,
+            "insideViewport": true
+          },
+          "body": {
+            "scrollHeight": 184,
+            "clientHeight": 184,
+            "scrolls": false
+          },
+          "smallTextNodesCount": 8,
+          "smallTextSamples": [
+            {
+              "text": "08:55",
+              "fontSizePx": 11,
+              "tagName": "span"
+            },
+            {
+              "text": "•",
+              "fontSizePx": 11,
+              "tagName": "span"
+            },
+            {
+              "text": "2 art. (3 pcs)",
+              "fontSizePx": 11,
+              "tagName": "span"
+            },
+            {
+              "text": "Javel Parfumée Citron 1.5L",
+              "fontSizePx": 11,
+              "tagName": "span"
+            },
+            {
+              "text": "2 × 2.400 DT",
+              "fontSizePx": 11,
+              "tagName": "span"
+            },
+            {
+              "text": "Liquide Vaisselle Pomme 1L",
+              "fontSizePx": 11,
+              "tagName": "span"
+            },
+            {
+              "text": "1 × 3.100 DT",
+              "fontSizePx": 11,
+              "tagName": "span"
+            },
+            {
+              "text": "Max 10 paniers mis en attente",
+              "fontSizePx": 11,
+              "tagName": "div"
+            }
+          ]
+        },
+        "QuickPriceLookupModal": {
+          "modalName": "QuickPriceLookupModal",
+          "viewport": "desktop_1563x545",
+          "innerH": 545,
+          "innerW": 1563,
+          "card": {
+            "top": 22,
+            "bottom": 523,
+            "height": 501,
+            "width": 896,
+            "insideViewport": true
+          },
+          "header": {
+            "top": 23,
+            "bottom": 91,
+            "height": 68,
+            "insideViewport": true
+          },
+          "closeBtn": {
+            "top": 41,
+            "bottom": 73,
+            "height": 32,
+            "width": 32,
+            "insideViewport": true
+          },
+          "primaryAction": {
+            "text": "Ajouter Carton de 6 bouteilles",
+            "top": 438,
+            "bottom": 462,
+            "height": 24,
+            "width": 199,
+            "insideViewport": true
+          },
+          "body": {
+            "scrollHeight": 1125,
+            "clientHeight": 301,
+            "scrolls": true
+          },
+          "smallTextNodesCount": 52,
+          "smallTextSamples": [
+            {
+              "text": "F3 / Ctrl+L / Esc",
+              "fontSizePx": 11,
+              "tagName": "span"
+            },
+            {
+              "text": "cat-detergents",
+              "fontSizePx": 10,
+              "tagName": "span"
+            },
+            {
+              "text": "1.5L",
+              "fontSizePx": 10,
+              "tagName": "span"
+            },
+            {
+              "text": "619100000001",
+              "fontSizePx": 11,
+              "tagName": "span"
+            },
+            {
+              "text": "(Dépôt : 150)",
+              "fontSizePx": 11,
+              "tagName": "span"
+            },
+            {
+              "text": "Prix Détail (TTC)",
+              "fontSizePx": 10,
+              "tagName": "div"
+            },
+            {
+              "text": "✓ Tarif appliqué",
+              "fontSizePx": 10,
+              "tagName": "span"
+            },
+            {
+              "text": "Prix Gros (TTC)",
+              "fontSizePx": 10,
+              "tagName": "div"
+            },
+            {
+              "text": "Barème Revendeurs (Gros remise)",
+              "fontSizePx": 10,
+              "tagName": "div"
+            },
+            {
+              "text": "-5%",
+              "fontSizePx": 10,
+              "tagName": "span"
+            }
+          ]
+        },
+        "QuickAddModal": {
+          "modalName": "QuickAddModal",
+          "viewport": "desktop_1563x545",
+          "innerH": 545,
+          "innerW": 1563,
+          "card": {
+            "top": 122,
+            "bottom": 424,
+            "height": 302,
+            "width": 448,
+            "insideViewport": true
+          },
+          "header": {
+            "top": 123,
+            "bottom": 183,
+            "height": 60,
+            "insideViewport": true
+          },
+          "closeBtn": {
+            "top": 139,
+            "bottom": 167,
+            "height": 28,
+            "width": 28,
+            "insideViewport": true
+          },
+          "primaryAction": {
+            "text": "Add to Cart",
+            "top": 363,
+            "bottom": 403,
+            "height": 40,
+            "width": 197,
+            "insideViewport": true
+          },
+          "body": {
+            "scrollHeight": 240,
+            "clientHeight": 240,
+            "scrolls": false
+          },
+          "smallTextNodesCount": 0,
+          "smallTextSamples": []
+        }
+      }
+    },
+    "phone_384x725": {
+      "viewport": "phone_384x725",
+      "width": 384,
+      "height": 725,
+      "modals": {
+        "ReceiptPrintModal": {
+          "modalName": "ReceiptPrintModal",
+          "viewport": "phone_384x725",
+          "innerH": 725,
+          "innerW": 384,
+          "card": {
+            "top": -1,
+            "bottom": 726,
+            "height": 728,
+            "width": 352,
+            "insideViewport": false
+          },
+          "header": {
+            "top": 0,
+            "bottom": 48,
+            "height": 48,
+            "insideViewport": false
+          },
+          "closeBtn": {
+            "top": 12,
+            "bottom": 36,
+            "height": 24,
+            "width": 24,
+            "insideViewport": true
+          },
+          "primaryAction": {
+            "text": "Imprimer (58mm)",
+            "top": 677,
+            "bottom": 709,
+            "height": 32,
+            "width": 155,
+            "insideViewport": true
+          },
+          "body": {
+            "scrollHeight": 726,
+            "clientHeight": 726,
+            "scrolls": false
+          },
+          "smallTextNodesCount": 44,
+          "smallTextSamples": [
+            {
+              "text": "Zone Industrielle Charguia II, Tunis",
+              "fontSizePx": 10,
+              "tagName": "div"
+            },
+            {
+              "text": "Tél: +216 71 234 567",
+              "fontSizePx": 10,
+              "tagName": "div"
+            },
+            {
+              "text": "Ticket:",
+              "fontSizePx": 10,
+              "tagName": "span"
+            },
+            {
+              "text": "REC-20261010-0001",
+              "fontSizePx": 10,
+              "tagName": "span"
+            },
+            {
+              "text": "Date:",
+              "fontSizePx": 10,
+              "tagName": "span"
+            },
+            {
+              "text": "10/10/2026 08:55 AM",
+              "fontSizePx": 10,
+              "tagName": "span"
+            },
+            {
+              "text": "Client:",
+              "fontSizePx": 10,
+              "tagName": "span"
+            },
+            {
+              "text": "Grossiste Ben Salem & Frères",
+              "fontSizePx": 10,
+              "tagName": "span"
+            },
+            {
+              "text": "Article",
+              "fontSizePx": 10,
+              "tagName": "span"
+            },
+            {
+              "text": "Total",
+              "fontSizePx": 10,
+              "tagName": "span"
+            }
+          ]
+        },
+        "InvoicePrintModal": {
+          "modalName": "InvoicePrintModal",
+          "viewport": "phone_384x725",
+          "innerH": 725,
+          "innerW": 384,
+          "card": {
+            "top": 36,
+            "bottom": 689,
+            "height": 653,
+            "width": 352,
+            "insideViewport": true
+          },
+          "header": {
+            "top": 37,
+            "bottom": 117,
+            "height": 80,
+            "insideViewport": true
+          },
+          "closeBtn": {
+            "top": 63,
+            "bottom": 91,
+            "height": 28,
+            "width": 28,
+            "insideViewport": true
+          },
+          "primaryAction": {
+            "text": "Imprimer Facture A4",
+            "top": 636,
+            "bottom": 672,
+            "height": 36,
+            "width": 188,
+            "insideViewport": true
+          },
+          "body": {
+            "scrollHeight": 1464,
+            "clientHeight": 502,
+            "scrolls": true
+          },
+          "smallTextNodesCount": 63,
+          "smallTextSamples": [
+            {
+              "text": "Zone Industrielle Charguia II, Tunis",
+              "fontSizePx": 11,
+              "tagName": "div"
+            },
+            {
+              "text": "Tél: +216 71 234 567",
+              "fontSizePx": 11,
+              "tagName": "div"
+            },
+            {
+              "text": "Réf: REC-20261010-0001",
+              "fontSizePx": 11,
+              "tagName": "div"
+            },
+            {
+              "text": "REC-20261010-0001",
+              "fontSizePx": 11,
+              "tagName": "span"
+            },
+            {
+              "text": "Date: 10/10/2026",
+              "fontSizePx": 11,
+              "tagName": "div"
+            },
+            {
+              "text": "Facturé à:",
+              "fontSizePx": 10,
+              "tagName": "span"
+            },
+            {
+              "text": "Client au comptant / Grossiste",
+              "fontSizePx": 11,
+              "tagName": "div"
+            },
+            {
+              "text": "Désignation",
+              "fontSizePx": 11,
+              "tagName": "th"
+            },
+            {
+              "text": "Qté",
+              "fontSizePx": 11,
+              "tagName": "th"
+            },
+            {
+              "text": "P.U. HT",
+              "fontSizePx": 11,
+              "tagName": "th"
+            }
+          ]
+        },
+        "DeliveryNotePrintModal": {
+          "modalName": "DeliveryNotePrintModal",
+          "viewport": "phone_384x725",
+          "innerH": 725,
+          "innerW": 384,
+          "card": {
+            "top": 36,
+            "bottom": 689,
+            "height": 653,
+            "width": 352,
+            "insideViewport": true
+          },
+          "header": {
+            "top": 37,
+            "bottom": 117,
+            "height": 80,
+            "insideViewport": true
+          },
+          "closeBtn": {
+            "top": 63,
+            "bottom": 91,
+            "height": 28,
+            "width": 28,
+            "insideViewport": true
+          },
+          "primaryAction": {
+            "text": "Imprimer Bon de Livraison",
+            "top": 604,
+            "bottom": 672,
+            "height": 68,
+            "width": 121,
+            "insideViewport": true
+          },
+          "body": {
+            "scrollHeight": 1631,
+            "clientHeight": 470,
+            "scrolls": true
+          },
+          "smallTextNodesCount": 77,
+          "smallTextSamples": [
+            {
+              "text": "Zone Industrielle Charguia II, Tunis",
+              "fontSizePx": 11,
+              "tagName": "div"
+            },
+            {
+              "text": "Tél: +216 71 234 567",
+              "fontSizePx": 11,
+              "tagName": "div"
+            },
+            {
+              "text": "N° BL: BL-202610-0001",
+              "fontSizePx": 11,
+              "tagName": "div"
+            },
+            {
+              "text": "BL-202610-0001",
+              "fontSizePx": 11,
+              "tagName": "span"
+            },
+            {
+              "text": "Date: 10/10/2026",
+              "fontSizePx": 11,
+              "tagName": "div"
+            },
+            {
+              "text": "Réf. Vente: REC-20261010-0001",
+              "fontSizePx": 10,
+              "tagName": "div"
+            },
+            {
+              "text": "Destinataire / Livré à :",
+              "fontSizePx": 10,
+              "tagName": "span"
+            },
+            {
+              "text": "Adresse: Zone Industrielle Charguia II, ",
+              "fontSizePx": 11,
+              "tagName": "div"
+            },
+            {
+              "text": "Tél: +216 71 234 567",
+              "fontSizePx": 11,
+              "tagName": "div"
+            },
+            {
+              "text": "Livraison magasin / site client",
+              "fontSizePx": 10,
+              "tagName": "div"
+            }
+          ]
+        },
+        "RefundModal": {
+          "modalName": "RefundModal",
+          "viewport": "phone_384x725",
+          "innerH": 725,
+          "innerW": 384,
+          "card": {
+            "top": 124,
+            "bottom": 617,
+            "height": 493,
+            "width": 352,
+            "insideViewport": true
+          },
+          "header": {
+            "top": 125,
+            "bottom": 185,
+            "height": 60,
+            "insideViewport": true
+          },
+          "closeBtn": {
+            "top": 141,
+            "bottom": 169,
+            "height": 28,
+            "width": 28,
+            "insideViewport": true
+          },
+          "primaryAction": {
+            "text": "Confirm Refund & Restock",
+            "top": 532,
+            "bottom": 592,
+            "height": 60,
+            "width": 145,
+            "insideViewport": true
+          },
+          "body": {
+            "scrollHeight": 431,
+            "clientHeight": 431,
+            "scrolls": false
+          },
+          "smallTextNodesCount": 0,
+          "smallTextSamples": []
+        },
+        "SessionModal_Close": {
+          "modalName": "SessionModal_Close",
+          "viewport": "phone_384x725",
+          "innerH": 725,
+          "innerW": 384,
+          "card": {
+            "top": 11,
+            "bottom": 714,
+            "height": 703,
+            "width": 352,
+            "insideViewport": true
+          },
+          "header": {
+            "top": 12,
+            "bottom": 72,
+            "height": 60,
+            "insideViewport": true
+          },
+          "closeBtn": {
+            "top": 28,
+            "bottom": 56,
+            "height": 28,
+            "width": 28,
+            "insideViewport": true
+          },
+          "primaryAction": {
+            "text": "Close Session",
+            "top": 653,
+            "bottom": 693,
+            "height": 40,
+            "width": 149,
+            "insideViewport": true
+          },
+          "body": {
+            "scrollHeight": 641,
+            "clientHeight": 641,
+            "scrolls": false
+          },
+          "smallTextNodesCount": 2,
+          "smallTextSamples": [
+            {
+              "text": "Il reste des paniers en attente. Veuille",
+              "fontSizePx": 11,
+              "tagName": "p"
+            },
+            {
+              "text": "→ Basculer sur cette caisse (Travailler ",
+              "fontSizePx": 11,
+              "tagName": "button"
+            }
+          ]
+        },
+        "CashMovementModal": {
+          "modalName": "CashMovementModal",
+          "viewport": "phone_384x725",
+          "innerH": 725,
+          "innerW": 384,
+          "card": {
+            "top": 174,
+            "bottom": 552,
+            "height": 378,
+            "width": 352,
+            "insideViewport": true
+          },
+          "header": {
+            "top": 175,
+            "bottom": 235,
+            "height": 60,
+            "insideViewport": true
+          },
+          "closeBtn": {
+            "top": 191,
+            "bottom": 219,
+            "height": 28,
+            "width": 28,
+            "insideViewport": true
+          },
+          "primaryAction": {
+            "text": "Record Cash Out",
+            "top": 491,
+            "bottom": 531,
+            "height": 40,
+            "width": 149,
+            "insideViewport": true
+          },
+          "body": {
+            "scrollHeight": 316,
+            "clientHeight": 316,
+            "scrolls": false
+          },
+          "smallTextNodesCount": 0,
+          "smallTextSamples": []
+        },
+        "QuickAddModal": {
+          "modalName": "QuickAddModal",
+          "viewport": "phone_384x725",
+          "innerH": 725,
+          "innerW": 384,
+          "card": {
+            "top": 212,
+            "bottom": 514,
+            "height": 302,
+            "width": 352,
+            "insideViewport": true
+          },
+          "header": {
+            "top": 213,
+            "bottom": 273,
+            "height": 60,
+            "insideViewport": true
+          },
+          "closeBtn": {
+            "top": 229,
+            "bottom": 257,
+            "height": 28,
+            "width": 28,
+            "insideViewport": true
+          },
+          "primaryAction": {
+            "text": "Add to Cart",
+            "top": 453,
+            "bottom": 493,
+            "height": 40,
+            "width": 149,
+            "insideViewport": true
+          },
+          "body": {
+            "scrollHeight": 240,
+            "clientHeight": 240,
+            "scrolls": false
+          },
+          "smallTextNodesCount": 0,
+          "smallTextSamples": []
+        }
+      }
+    },
+    "phone_384x400": {
+      "viewport": "phone_384x400",
+      "width": 384,
+      "height": 400,
+      "modals": {
+        "ReceiptPrintModal": {
+          "modalName": "ReceiptPrintModal",
+          "viewport": "phone_384x400",
+          "innerH": 400,
+          "innerW": 384,
+          "card": {
+            "top": -164,
+            "bottom": 564,
+            "height": 728,
+            "width": 352,
+            "insideViewport": false
+          },
+          "header": {
+            "top": -163,
+            "bottom": -115,
+            "height": 48,
+            "insideViewport": false
+          },
+          "closeBtn": {
+            "top": -151,
+            "bottom": -127,
+            "height": 24,
+            "width": 24,
+            "insideViewport": false
+          },
+          "primaryAction": {
+            "text": "Imprimer (58mm)",
+            "top": 515,
+            "bottom": 547,
+            "height": 32,
+            "width": 155,
+            "insideViewport": false
+          },
+          "body": {
+            "scrollHeight": 726,
+            "clientHeight": 726,
+            "scrolls": false
+          },
+          "smallTextNodesCount": 44,
+          "smallTextSamples": [
+            {
+              "text": "Zone Industrielle Charguia II, Tunis",
+              "fontSizePx": 10,
+              "tagName": "div"
+            },
+            {
+              "text": "Tél: +216 71 234 567",
+              "fontSizePx": 10,
+              "tagName": "div"
+            },
+            {
+              "text": "Ticket:",
+              "fontSizePx": 10,
+              "tagName": "span"
+            },
+            {
+              "text": "REC-20261010-0001",
+              "fontSizePx": 10,
+              "tagName": "span"
+            },
+            {
+              "text": "Date:",
+              "fontSizePx": 10,
+              "tagName": "span"
+            },
+            {
+              "text": "10/10/2026 08:55 AM",
+              "fontSizePx": 10,
+              "tagName": "span"
+            },
+            {
+              "text": "Client:",
+              "fontSizePx": 10,
+              "tagName": "span"
+            },
+            {
+              "text": "Grossiste Ben Salem & Frères",
+              "fontSizePx": 10,
+              "tagName": "span"
+            },
+            {
+              "text": "Article",
+              "fontSizePx": 10,
+              "tagName": "span"
+            },
+            {
+              "text": "Total",
+              "fontSizePx": 10,
+              "tagName": "span"
+            }
+          ]
+        },
+        "InvoicePrintModal": {
+          "modalName": "InvoicePrintModal",
+          "viewport": "phone_384x400",
+          "innerH": 400,
+          "innerW": 384,
+          "card": {
+            "top": 20,
+            "bottom": 380,
+            "height": 360,
+            "width": 352,
+            "insideViewport": true
+          },
+          "header": {
+            "top": 21,
+            "bottom": 101,
+            "height": 80,
+            "insideViewport": true
+          },
+          "closeBtn": {
+            "top": 47,
+            "bottom": 75,
+            "height": 28,
+            "width": 28,
+            "insideViewport": true
+          },
+          "primaryAction": {
+            "text": "Imprimer Facture A4",
+            "top": 327,
+            "bottom": 363,
+            "height": 36,
+            "width": 188,
+            "insideViewport": true
+          },
+          "body": {
+            "scrollHeight": 1464,
+            "clientHeight": 209,
+            "scrolls": true
+          },
+          "smallTextNodesCount": 63,
+          "smallTextSamples": [
+            {
+              "text": "Zone Industrielle Charguia II, Tunis",
+              "fontSizePx": 11,
+              "tagName": "div"
+            },
+            {
+              "text": "Tél: +216 71 234 567",
+              "fontSizePx": 11,
+              "tagName": "div"
+            },
+            {
+              "text": "Réf: REC-20261010-0001",
+              "fontSizePx": 11,
+              "tagName": "div"
+            },
+            {
+              "text": "REC-20261010-0001",
+              "fontSizePx": 11,
+              "tagName": "span"
+            },
+            {
+              "text": "Date: 10/10/2026",
+              "fontSizePx": 11,
+              "tagName": "div"
+            },
+            {
+              "text": "Facturé à:",
+              "fontSizePx": 10,
+              "tagName": "span"
+            },
+            {
+              "text": "Client au comptant / Grossiste",
+              "fontSizePx": 11,
+              "tagName": "div"
+            },
+            {
+              "text": "Désignation",
+              "fontSizePx": 11,
+              "tagName": "th"
+            },
+            {
+              "text": "Qté",
+              "fontSizePx": 11,
+              "tagName": "th"
+            },
+            {
+              "text": "P.U. HT",
+              "fontSizePx": 11,
+              "tagName": "th"
+            }
+          ]
+        },
+        "DeliveryNotePrintModal": {
+          "modalName": "DeliveryNotePrintModal",
+          "viewport": "phone_384x400",
+          "innerH": 400,
+          "innerW": 384,
+          "card": {
+            "top": 20,
+            "bottom": 380,
+            "height": 360,
+            "width": 352,
+            "insideViewport": true
+          },
+          "header": {
+            "top": 21,
+            "bottom": 101,
+            "height": 80,
+            "insideViewport": true
+          },
+          "closeBtn": {
+            "top": 47,
+            "bottom": 75,
+            "height": 28,
+            "width": 28,
+            "insideViewport": true
+          },
+          "primaryAction": {
+            "text": "Imprimer Bon de Livraison",
+            "top": 295,
+            "bottom": 363,
+            "height": 68,
+            "width": 121,
+            "insideViewport": true
+          },
+          "body": {
+            "scrollHeight": 1631,
+            "clientHeight": 177,
+            "scrolls": true
+          },
+          "smallTextNodesCount": 77,
+          "smallTextSamples": [
+            {
+              "text": "Zone Industrielle Charguia II, Tunis",
+              "fontSizePx": 11,
+              "tagName": "div"
+            },
+            {
+              "text": "Tél: +216 71 234 567",
+              "fontSizePx": 11,
+              "tagName": "div"
+            },
+            {
+              "text": "N° BL: BL-202610-0001",
+              "fontSizePx": 11,
+              "tagName": "div"
+            },
+            {
+              "text": "BL-202610-0001",
+              "fontSizePx": 11,
+              "tagName": "span"
+            },
+            {
+              "text": "Date: 10/10/2026",
+              "fontSizePx": 11,
+              "tagName": "div"
+            },
+            {
+              "text": "Réf. Vente: REC-20261010-0001",
+              "fontSizePx": 10,
+              "tagName": "div"
+            },
+            {
+              "text": "Destinataire / Livré à :",
+              "fontSizePx": 10,
+              "tagName": "span"
+            },
+            {
+              "text": "Adresse: Zone Industrielle Charguia II, ",
+              "fontSizePx": 11,
+              "tagName": "div"
+            },
+            {
+              "text": "Tél: +216 71 234 567",
+              "fontSizePx": 11,
+              "tagName": "div"
+            },
+            {
+              "text": "Livraison magasin / site client",
+              "fontSizePx": 10,
+              "tagName": "div"
+            }
+          ]
+        },
+        "RefundModal": {
+          "modalName": "RefundModal",
+          "viewport": "phone_384x400",
+          "innerH": 400,
+          "innerW": 384,
+          "card": {
+            "top": 28,
+            "bottom": 388,
+            "height": 360,
+            "width": 352,
+            "insideViewport": true
+          },
+          "header": {
+            "top": 29,
+            "bottom": 89,
+            "height": 60,
+            "insideViewport": true
+          },
+          "closeBtn": {
+            "top": 45,
+            "bottom": 73,
+            "height": 28,
+            "width": 28,
+            "insideViewport": true
+          },
+          "primaryAction": {
+            "text": "Confirm Refund & Restock",
+            "top": 436,
+            "bottom": 496,
+            "height": 60,
+            "width": 145,
+            "insideViewport": false
+          },
+          "body": {
+            "scrollHeight": 431,
+            "clientHeight": 298,
+            "scrolls": true
+          },
+          "smallTextNodesCount": 0,
+          "smallTextSamples": []
+        },
+        "CustomerStatementModal": {
+          "modalName": "CustomerStatementModal",
+          "viewport": "phone_384x400",
+          "innerH": 400,
+          "innerW": 384,
+          "card": {
+            "top": 20,
+            "bottom": 380,
+            "height": 360,
+            "width": 352,
+            "insideViewport": true
+          },
+          "header": {
+            "top": 21,
+            "bottom": 175,
+            "height": 154,
+            "insideViewport": true
+          },
+          "closeBtn": {
+            "top": 82,
+            "bottom": 114,
+            "height": 32,
+            "width": 32,
+            "insideViewport": true
+          },
+          "primaryAction": {
+            "text": "Imprimer / PDF",
+            "top": 76,
+            "bottom": 120,
+            "height": 44,
+            "width": 101,
+            "insideViewport": true
+          },
+          "body": {
+            "scrollHeight": 282,
+            "clientHeight": 48,
+            "scrolls": true
+          },
+          "smallTextNodesCount": 22,
+          "smallTextSamples": [
+            {
+              "text": "RETAIL",
+              "fontSizePx": 10,
+              "tagName": "span"
+            },
+            {
+              "text": "Dette Ouverte",
+              "fontSizePx": 10,
+              "tagName": "span"
+            },
+            {
+              "text": "Portefeuille (Avoir)",
+              "fontSizePx": 10,
+              "tagName": "span"
+            },
+            {
+              "text": "Solde Registre Dette",
+              "fontSizePx": 10,
+              "tagName": "span"
+            },
+            {
+              "text": "Solde Registre Portefeuille",
+              "fontSizePx": 10,
+              "tagName": "span"
+            },
+            {
+              "text": "Zone Industrielle Charguia II, Tunis",
+              "fontSizePx": 11,
+              "tagName": "div"
+            },
+            {
+              "text": "Tél: +216 71 234 567",
+              "fontSizePx": 11,
+              "tagName": "div"
+            },
+            {
+              "text": "Date d'édition: 11/10/2026 08:56 AM",
+              "fontSizePx": 11,
+              "tagName": "div"
+            },
+            {
+              "text": "11/10/2026 08:56 AM",
+              "fontSizePx": 11,
+              "tagName": "span"
+            },
+            {
+              "text": "Période: Toutes les dates",
+              "fontSizePx": 11,
+              "tagName": "div"
+            }
+          ]
+        },
+        "SessionModal_Close": {
+          "modalName": "SessionModal_Close",
+          "viewport": "phone_384x400",
+          "innerH": 400,
+          "innerW": 384,
+          "card": {
+            "top": -151,
+            "bottom": 551,
+            "height": 703,
+            "width": 352,
+            "insideViewport": false
+          },
+          "header": {
+            "top": -150,
+            "bottom": -90,
+            "height": 60,
+            "insideViewport": false
+          },
+          "closeBtn": {
+            "top": -134,
+            "bottom": -106,
+            "height": 28,
+            "width": 28,
+            "insideViewport": false
+          },
+          "primaryAction": {
+            "text": "Close Session",
+            "top": 490,
+            "bottom": 530,
+            "height": 40,
+            "width": 149,
+            "insideViewport": false
+          },
+          "body": {
+            "scrollHeight": 641,
+            "clientHeight": 641,
+            "scrolls": false
+          },
+          "smallTextNodesCount": 2,
+          "smallTextSamples": [
+            {
+              "text": "Il reste des paniers en attente. Veuille",
+              "fontSizePx": 11,
+              "tagName": "p"
+            },
+            {
+              "text": "→ Basculer sur cette caisse (Travailler ",
+              "fontSizePx": 11,
+              "tagName": "button"
+            }
+          ]
+        },
+        "CashMovementModal": {
+          "modalName": "CashMovementModal",
+          "viewport": "phone_384x400",
+          "innerH": 400,
+          "innerW": 384,
+          "card": {
+            "top": 11,
+            "bottom": 389,
+            "height": 378,
+            "width": 352,
+            "insideViewport": true
+          },
+          "header": {
+            "top": 12,
+            "bottom": 72,
+            "height": 60,
+            "insideViewport": true
+          },
+          "closeBtn": {
+            "top": 28,
+            "bottom": 56,
+            "height": 28,
+            "width": 28,
+            "insideViewport": true
+          },
+          "primaryAction": {
+            "text": "Record Cash Out",
+            "top": 328,
+            "bottom": 368,
+            "height": 40,
+            "width": 149,
+            "insideViewport": true
+          },
+          "body": {
+            "scrollHeight": 316,
+            "clientHeight": 316,
+            "scrolls": false
+          },
+          "smallTextNodesCount": 0,
+          "smallTextSamples": []
+        },
+        "QuickAddModal": {
+          "modalName": "QuickAddModal",
+          "viewport": "phone_384x400",
+          "innerH": 400,
+          "innerW": 384,
+          "card": {
+            "top": 49,
+            "bottom": 351,
+            "height": 302,
+            "width": 352,
+            "insideViewport": true
+          },
+          "header": {
+            "top": 50,
+            "bottom": 110,
+            "height": 60,
+            "insideViewport": true
+          },
+          "closeBtn": {
+            "top": 66,
+            "bottom": 94,
+            "height": 28,
+            "width": 28,
+            "insideViewport": true
+          },
+          "primaryAction": {
+            "text": "Add to Cart",
+            "top": 290,
+            "bottom": 330,
+            "height": 40,
+            "width": 149,
+            "insideViewport": true
+          },
+          "body": {
+            "scrollHeight": 240,
+            "clientHeight": 240,
+            "scrolls": false
+          },
+          "smallTextNodesCount": 0,
+          "smallTextSamples": []
+        }
+      }
+    }
+  }
+}

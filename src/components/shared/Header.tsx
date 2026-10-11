@@ -167,7 +167,7 @@ export const Header: React.FC<HeaderProps> = ({
               <h1 className="text-base sm:text-lg font-bold tracking-tight text-white leading-tight">
                 Al Jazira SHSP
               </h1>
-              <p className="text-[10px] text-slate-400 font-medium">
+              <p className="text-xs text-slate-400 font-medium">
                 Detergents & Hygiène ERP
               </p>
             </div>

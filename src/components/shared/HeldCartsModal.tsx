@@ -106,10 +106,10 @@ export const HeldCartsModal: React.FC<HeldCartsModalProps> = ({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 overflow-y-auto">
-      <div className="bg-white rounded-2xl shadow-2xl max-w-lg w-full overflow-hidden flex flex-col border border-slate-200 max-h-[90vh]">
+    <div className="fixed inset-0 z-50 flex items-start sm:items-center justify-center bg-black/60 backdrop-blur-sm p-2 sm:p-4 overflow-y-auto">
+      <div className="my-auto bg-white rounded-2xl shadow-2xl max-w-lg w-full max-h-[calc(100dvh-1rem)] flex flex-col overflow-hidden border border-slate-200">
         {/* Header */}
-        <div className="bg-slate-900 text-white px-5 py-4 flex items-center justify-between">
+        <div className="shrink-0 bg-slate-900 text-white px-5 py-4 flex items-center justify-between">
           <div className="flex items-center gap-2">
             <PauseCircle className="w-5 h-5 text-amber-400" />
             <h2 className="text-base font-bold">Paniers en attente ({heldCarts.length})</h2>
@@ -124,7 +124,7 @@ export const HeldCartsModal: React.FC<HeldCartsModalProps> = ({
 
         {/* Overwrite Confirmation Alert */}
         {confirmResumeCart && (
-          <div className="p-4 bg-amber-50 border-b border-amber-200 text-amber-900 text-xs space-y-3 animate-in fade-in">
+          <div className="shrink-0 p-4 bg-amber-50 border-b border-amber-200 text-amber-900 text-xs space-y-3 animate-in fade-in">
             <div className="flex items-start gap-2.5">
               <AlertCircle className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
               <div>
@@ -138,14 +138,14 @@ export const HeldCartsModal: React.FC<HeldCartsModalProps> = ({
               <button
                 type="button"
                 onClick={() => handleHoldCurrentAndResume(confirmResumeCart)}
-                className="px-3 py-1.5 bg-amber-600 hover:bg-amber-700 text-white font-bold rounded-lg shadow-xs transition-colors"
+                className="px-3 py-1.5 bg-amber-400 hover:bg-amber-300 text-amber-950 font-bold rounded-lg shadow-xs transition-colors"
               >
                 Mettre l'actuel en attente & Reprendre
               </button>
               <button
                 type="button"
                 onClick={() => doResume(confirmResumeCart)}
-                className="px-3 py-1.5 bg-rose-600 hover:bg-rose-700 text-white font-bold rounded-lg shadow-xs transition-colors"
+                className="px-3 py-1.5 bg-rose-700 hover:bg-rose-800 text-white font-bold rounded-lg shadow-xs transition-colors"
               >
                 Écraser l'actuel
               </button>
@@ -161,7 +161,7 @@ export const HeldCartsModal: React.FC<HeldCartsModalProps> = ({
         )}
 
         {/* Cart List */}
-        <div className="p-4 overflow-y-auto flex-1 divide-y divide-slate-100 space-y-3">
+        <div className="flex-1 min-h-0 p-4 overflow-y-auto divide-y divide-slate-100 space-y-3">
           {heldCarts.length === 0 ? (
             <div className="py-12 text-center text-slate-400 space-y-2">
               <ShoppingBag className="w-10 h-10 mx-auto stroke-1 text-slate-300" />
@@ -185,12 +185,12 @@ export const HeldCartsModal: React.FC<HeldCartsModalProps> = ({
                       <div className="flex items-center gap-2">
                         <span className="font-bold text-sm text-slate-900">{cart.label}</span>
                         {cart.customer && (
-                          <span className="text-[10px] font-semibold bg-emerald-100 text-emerald-800 px-1.5 py-0.5 rounded">
+                          <span className="text-xs font-bold bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded">
                             {cart.customer.type}
                           </span>
                         )}
                       </div>
-                      <div className="flex items-center gap-2 text-[11px] text-slate-500 mt-0.5">
+                      <div className="flex items-center gap-2 text-xs text-slate-600 mt-0.5">
                         <Clock className="w-3 h-3 text-slate-400" />
                         <span>
                           {new Date(cart.created_at).toLocaleTimeString('fr-FR', {
@@ -208,7 +208,7 @@ export const HeldCartsModal: React.FC<HeldCartsModalProps> = ({
                         {formatMoney(totals.totalTTC)}
                       </span>
                       {cart.saleDiscount > 0 && (
-                        <span className="text-[10px] text-rose-600 font-semibold">
+                        <span className="text-xs text-rose-600 font-semibold">
                           Remise: -{formatMoney(cart.saleDiscount)}
                         </span>
                       )}
@@ -216,7 +216,7 @@ export const HeldCartsModal: React.FC<HeldCartsModalProps> = ({
                   </div>
 
                   {/* Summary of Items */}
-                  <div className="bg-white rounded-lg p-2 border border-slate-100 text-[11px] text-slate-600 space-y-1">
+                  <div className="bg-white rounded-lg p-2 border border-slate-100 text-xs text-slate-600 space-y-1">
                     {cart.items.slice(0, 3).map(item => (
                       <div key={item.cart_item_id} className="flex justify-between">
                         <span className="truncate max-w-[260px] font-medium">
@@ -228,7 +228,7 @@ export const HeldCartsModal: React.FC<HeldCartsModalProps> = ({
                       </div>
                     ))}
                     {cart.items.length > 3 && (
-                      <div className="text-[10px] text-slate-400 italic">
+                      <div className="text-xs text-slate-600 italic">
                         + {cart.items.length - 3} autre(s) article(s)...
                       </div>
                     )}
@@ -238,18 +238,18 @@ export const HeldCartsModal: React.FC<HeldCartsModalProps> = ({
                   <div className="flex justify-between items-center pt-1">
                     {isConfirmingDelete ? (
                       <div className="flex items-center gap-1.5">
-                        <span className="text-[11px] text-rose-600 font-bold">Supprimer ?</span>
+                        <span className="text-xs text-rose-600 font-bold">Supprimer ?</span>
                         <button
                           type="button"
                           onClick={() => handleDelete(cart.id)}
-                          className="px-2 py-1 bg-rose-600 hover:bg-rose-700 text-white rounded text-[11px] font-bold"
+                          className="px-2 py-1 bg-rose-700 hover:bg-rose-800 text-white rounded text-xs font-bold"
                         >
                           Oui
                         </button>
                         <button
                           type="button"
                           onClick={() => setDeleteConfirmId(null)}
-                          className="px-2 py-1 bg-slate-200 hover:bg-slate-300 text-slate-700 rounded text-[11px]"
+                          className="px-2 py-1 bg-slate-200 hover:bg-slate-300 text-slate-700 rounded text-xs"
                         >
                           Non
                         </button>
@@ -269,7 +269,7 @@ export const HeldCartsModal: React.FC<HeldCartsModalProps> = ({
                     <button
                       type="button"
                       onClick={() => handleResume(cart)}
-                      className="px-3.5 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl text-xs flex items-center gap-1.5 shadow-sm transition-colors"
+                      className="min-h-[44px] px-3.5 py-2 bg-emerald-700 hover:bg-emerald-800 text-white font-bold rounded-xl text-xs sm:text-sm flex items-center gap-1.5 shadow-sm transition-colors"
                     >
                       <Play className="w-3.5 h-3.5 fill-current" />
                       <span>Reprendre ce panier</span>
@@ -282,14 +282,14 @@ export const HeldCartsModal: React.FC<HeldCartsModalProps> = ({
         </div>
 
         {/* Footer */}
-        <div className="p-4 bg-slate-50 border-t border-slate-200 flex justify-between items-center">
-          <div className="text-[11px] text-slate-500">
+        <div className="shrink-0 p-3 sm:p-4 bg-slate-50 border-t border-slate-200 flex justify-between items-center">
+          <div className="text-xs text-slate-600">
             Max 10 paniers mis en attente
           </div>
           <button
             type="button"
             onClick={onClose}
-            className="py-2 px-4 bg-slate-200 hover:bg-slate-300 text-slate-700 font-bold rounded-xl text-xs transition-colors"
+            className="min-h-[44px] py-2 px-4 bg-slate-200 hover:bg-slate-300 text-slate-700 font-bold rounded-xl text-xs sm:text-sm transition-colors"
           >
             Fermer
           </button>

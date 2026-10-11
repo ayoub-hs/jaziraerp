@@ -1,0 +1,1387 @@
+{
+  "timestamp": "2026-10-11T08:39:33.977Z",
+  "description": "Baseline measurements for Batch UI-3 (modal clipping, small text, contrast) before code changes",
+  "viewports": {
+    "desktop_1600x780": {
+      "viewport": "desktop_1600x780",
+      "width": 1600,
+      "height": 780,
+      "modals": {
+        "ReceiptPrintModal": {
+          "modalName": "ReceiptPrintModal",
+          "viewport": "desktop_1600x780",
+          "innerH": 780,
+          "innerW": 1600,
+          "card": {
+            "top": 16,
+            "bottom": 780,
+            "height": 764,
+            "width": 384,
+            "insideViewport": true
+          },
+          "header": {
+            "top": 17,
+            "bottom": 65,
+            "height": 48,
+            "insideViewport": true
+          },
+          "closeBtn": {
+            "top": 29,
+            "bottom": 53,
+            "height": 24,
+            "width": 24,
+            "insideViewport": true
+          },
+          "primaryAction": {
+            "text": "Imprimer (58mm)",
+            "top": 719,
+            "bottom": 763,
+            "height": 44,
+            "width": 171,
+            "insideViewport": true
+          },
+          "body": {
+            "scrollHeight": 702,
+            "clientHeight": 637,
+            "scrolls": true
+          },
+          "smallTextNodesCount": 0,
+          "smallTextSamples": []
+        },
+        "InvoicePrintModal": {
+          "modalName": "InvoicePrintModal",
+          "viewport": "desktop_1600x780",
+          "innerH": 780,
+          "innerW": 1600,
+          "card": {
+            "top": 16,
+            "bottom": 780,
+            "height": 764,
+            "width": 768,
+            "insideViewport": true
+          },
+          "header": {
+            "top": 17,
+            "bottom": 77,
+            "height": 60,
+            "insideViewport": true
+          },
+          "closeBtn": {
+            "top": 33,
+            "bottom": 61,
+            "height": 28,
+            "width": 28,
+            "insideViewport": true
+          },
+          "primaryAction": {
+            "text": "Imprimer Facture A4",
+            "top": 719,
+            "bottom": 763,
+            "height": 44,
+            "width": 209,
+            "insideViewport": true
+          },
+          "body": {
+            "scrollHeight": 956,
+            "clientHeight": 625,
+            "scrolls": true
+          },
+          "smallTextNodesCount": 0,
+          "smallTextSamples": []
+        },
+        "DeliveryNotePrintModal": {
+          "modalName": "DeliveryNotePrintModal",
+          "viewport": "desktop_1600x780",
+          "innerH": 780,
+          "innerW": 1600,
+          "card": {
+            "top": 16,
+            "bottom": 780,
+            "height": 764,
+            "width": 768,
+            "insideViewport": true
+          },
+          "header": {
+            "top": 17,
+            "bottom": 79,
+            "height": 62,
+            "insideViewport": true
+          },
+          "closeBtn": {
+            "top": 34,
+            "bottom": 62,
+            "height": 28,
+            "width": 28,
+            "insideViewport": true
+          },
+          "primaryAction": {
+            "text": "Imprimer Bon de Livraison",
+            "top": 719,
+            "bottom": 763,
+            "height": 44,
+            "width": 250,
+            "insideViewport": true
+          },
+          "body": {
+            "scrollHeight": 1102,
+            "clientHeight": 623,
+            "scrolls": true
+          },
+          "smallTextNodesCount": 0,
+          "smallTextSamples": []
+        },
+        "RefundModal": {
+          "modalName": "RefundModal",
+          "viewport": "desktop_1600x780",
+          "innerH": 780,
+          "innerW": 1600,
+          "card": {
+            "top": 147,
+            "bottom": 633,
+            "height": 486,
+            "width": 576,
+            "insideViewport": true
+          },
+          "header": {
+            "top": 148,
+            "bottom": 224,
+            "height": 76,
+            "insideViewport": true
+          },
+          "closeBtn": {
+            "top": 164,
+            "bottom": 208,
+            "height": 44,
+            "width": 44,
+            "insideViewport": true
+          },
+          "primaryAction": {
+            "text": "Confirm Refund & Restock",
+            "top": 572,
+            "bottom": 616,
+            "height": 44,
+            "width": 265,
+            "insideViewport": true
+          },
+          "body": {
+            "scrollHeight": 408,
+            "clientHeight": 408,
+            "scrolls": false
+          },
+          "smallTextNodesCount": 0,
+          "smallTextSamples": []
+        },
+        "SessionModal_Close": {
+          "modalName": "SessionModal_Close",
+          "viewport": "desktop_1600x780",
+          "innerH": 780,
+          "innerW": 1600,
+          "card": {
+            "top": 60,
+            "bottom": 720,
+            "height": 660,
+            "width": 448,
+            "insideViewport": true
+          },
+          "header": {
+            "top": 61,
+            "bottom": 121,
+            "height": 60,
+            "insideViewport": true
+          },
+          "closeBtn": {
+            "top": 77,
+            "bottom": 105,
+            "height": 28,
+            "width": 28,
+            "insideViewport": true
+          },
+          "primaryAction": {
+            "text": "Close Session",
+            "top": 659,
+            "bottom": 703,
+            "height": 44,
+            "width": 201,
+            "insideViewport": true
+          },
+          "body": {
+            "scrollHeight": 598,
+            "clientHeight": 598,
+            "scrolls": false
+          },
+          "smallTextNodesCount": 0,
+          "smallTextSamples": []
+        },
+        "CashMovementModal": {
+          "modalName": "CashMovementModal",
+          "viewport": "desktop_1600x780",
+          "innerH": 780,
+          "innerW": 1600,
+          "card": {
+            "top": 203,
+            "bottom": 578,
+            "height": 375,
+            "width": 448,
+            "insideViewport": true
+          },
+          "header": {
+            "top": 204,
+            "bottom": 264,
+            "height": 60,
+            "insideViewport": true
+          },
+          "closeBtn": {
+            "top": 220,
+            "bottom": 248,
+            "height": 28,
+            "width": 28,
+            "insideViewport": true
+          },
+          "primaryAction": {
+            "text": "Record Cash Out",
+            "top": 517,
+            "bottom": 561,
+            "height": 44,
+            "width": 201,
+            "insideViewport": true
+          },
+          "body": {
+            "scrollHeight": 313,
+            "clientHeight": 313,
+            "scrolls": false
+          },
+          "smallTextNodesCount": 0,
+          "smallTextSamples": []
+        },
+        "HeldCartsModal": {
+          "modalName": "HeldCartsModal",
+          "viewport": "desktop_1600x780",
+          "innerH": 780,
+          "innerW": 1600,
+          "card": {
+            "top": 222,
+            "bottom": 559,
+            "height": 337,
+            "width": 512,
+            "insideViewport": true
+          },
+          "header": {
+            "top": 223,
+            "bottom": 283,
+            "height": 60,
+            "insideViewport": true
+          },
+          "closeBtn": {
+            "top": 239,
+            "bottom": 267,
+            "height": 28,
+            "width": 28,
+            "insideViewport": true
+          },
+          "primaryAction": {
+            "text": "Reprendre ce panier",
+            "top": 416,
+            "bottom": 460,
+            "height": 44,
+            "width": 189,
+            "insideViewport": true
+          },
+          "body": {
+            "scrollHeight": 198,
+            "clientHeight": 198,
+            "scrolls": false
+          },
+          "smallTextNodesCount": 0,
+          "smallTextSamples": []
+        },
+        "QuickPriceLookupModal": {
+          "modalName": "QuickPriceLookupModal",
+          "viewport": "desktop_1600x780",
+          "innerH": 780,
+          "innerW": 1600,
+          "card": {
+            "top": 16,
+            "bottom": 780,
+            "height": 764,
+            "width": 896,
+            "insideViewport": true
+          },
+          "header": {
+            "top": 17,
+            "bottom": 85,
+            "height": 68,
+            "insideViewport": true
+          },
+          "closeBtn": {
+            "top": 35,
+            "bottom": 67,
+            "height": 32,
+            "width": 32,
+            "insideViewport": true
+          },
+          "primaryAction": {
+            "text": "Ajouter Carton de 6 bouteilles",
+            "top": 431,
+            "bottom": 455,
+            "height": 24,
+            "width": 199,
+            "insideViewport": true
+          },
+          "body": {
+            "scrollHeight": 1176,
+            "clientHeight": 540,
+            "scrolls": true
+          },
+          "smallTextNodesCount": 0,
+          "smallTextSamples": []
+        },
+        "QuickAddModal": {
+          "modalName": "QuickAddModal",
+          "viewport": "desktop_1600x780",
+          "innerH": 780,
+          "innerW": 1600,
+          "card": {
+            "top": 233,
+            "bottom": 548,
+            "height": 315,
+            "width": 448,
+            "insideViewport": true
+          },
+          "header": {
+            "top": 234,
+            "bottom": 294,
+            "height": 60,
+            "insideViewport": true
+          },
+          "closeBtn": {
+            "top": 250,
+            "bottom": 278,
+            "height": 28,
+            "width": 28,
+            "insideViewport": true
+          },
+          "primaryAction": {
+            "text": "Add to Cart",
+            "top": 487,
+            "bottom": 531,
+            "height": 44,
+            "width": 201,
+            "insideViewport": true
+          },
+          "body": {
+            "scrollHeight": 253,
+            "clientHeight": 253,
+            "scrolls": false
+          },
+          "smallTextNodesCount": 0,
+          "smallTextSamples": []
+        }
+      }
+    },
+    "desktop_1563x545": {
+      "viewport": "desktop_1563x545",
+      "width": 1563,
+      "height": 545,
+      "modals": {
+        "ReceiptPrintModal": {
+          "modalName": "ReceiptPrintModal",
+          "viewport": "desktop_1563x545",
+          "innerH": 545,
+          "innerW": 1563,
+          "card": {
+            "top": 16,
+            "bottom": 545,
+            "height": 529,
+            "width": 384,
+            "insideViewport": true
+          },
+          "header": {
+            "top": 17,
+            "bottom": 65,
+            "height": 48,
+            "insideViewport": true
+          },
+          "closeBtn": {
+            "top": 29,
+            "bottom": 53,
+            "height": 24,
+            "width": 24,
+            "insideViewport": true
+          },
+          "primaryAction": {
+            "text": "Imprimer (58mm)",
+            "top": 484,
+            "bottom": 528,
+            "height": 44,
+            "width": 171,
+            "insideViewport": true
+          },
+          "body": {
+            "scrollHeight": 702,
+            "clientHeight": 402,
+            "scrolls": true
+          },
+          "smallTextNodesCount": 0,
+          "smallTextSamples": []
+        },
+        "InvoicePrintModal": {
+          "modalName": "InvoicePrintModal",
+          "viewport": "desktop_1563x545",
+          "innerH": 545,
+          "innerW": 1563,
+          "card": {
+            "top": 16,
+            "bottom": 545,
+            "height": 529,
+            "width": 768,
+            "insideViewport": true
+          },
+          "header": {
+            "top": 17,
+            "bottom": 77,
+            "height": 60,
+            "insideViewport": true
+          },
+          "closeBtn": {
+            "top": 33,
+            "bottom": 61,
+            "height": 28,
+            "width": 28,
+            "insideViewport": true
+          },
+          "primaryAction": {
+            "text": "Imprimer Facture A4",
+            "top": 484,
+            "bottom": 528,
+            "height": 44,
+            "width": 209,
+            "insideViewport": true
+          },
+          "body": {
+            "scrollHeight": 956,
+            "clientHeight": 390,
+            "scrolls": true
+          },
+          "smallTextNodesCount": 0,
+          "smallTextSamples": []
+        },
+        "DeliveryNotePrintModal": {
+          "modalName": "DeliveryNotePrintModal",
+          "viewport": "desktop_1563x545",
+          "innerH": 545,
+          "innerW": 1563,
+          "card": {
+            "top": 16,
+            "bottom": 545,
+            "height": 529,
+            "width": 768,
+            "insideViewport": true
+          },
+          "header": {
+            "top": 17,
+            "bottom": 79,
+            "height": 62,
+            "insideViewport": true
+          },
+          "closeBtn": {
+            "top": 34,
+            "bottom": 62,
+            "height": 28,
+            "width": 28,
+            "insideViewport": true
+          },
+          "primaryAction": {
+            "text": "Imprimer Bon de Livraison",
+            "top": 484,
+            "bottom": 528,
+            "height": 44,
+            "width": 250,
+            "insideViewport": true
+          },
+          "body": {
+            "scrollHeight": 1102,
+            "clientHeight": 388,
+            "scrolls": true
+          },
+          "smallTextNodesCount": 0,
+          "smallTextSamples": []
+        },
+        "RefundModal": {
+          "modalName": "RefundModal",
+          "viewport": "desktop_1563x545",
+          "innerH": 545,
+          "innerW": 1563,
+          "card": {
+            "top": 30,
+            "bottom": 516,
+            "height": 486,
+            "width": 576,
+            "insideViewport": true
+          },
+          "header": {
+            "top": 31,
+            "bottom": 107,
+            "height": 76,
+            "insideViewport": true
+          },
+          "closeBtn": {
+            "top": 47,
+            "bottom": 91,
+            "height": 44,
+            "width": 44,
+            "insideViewport": true
+          },
+          "primaryAction": {
+            "text": "Confirm Refund & Restock",
+            "top": 455,
+            "bottom": 499,
+            "height": 44,
+            "width": 265,
+            "insideViewport": true
+          },
+          "body": {
+            "scrollHeight": 408,
+            "clientHeight": 408,
+            "scrolls": false
+          },
+          "smallTextNodesCount": 0,
+          "smallTextSamples": []
+        },
+        "SessionModal_Close": {
+          "modalName": "SessionModal_Close",
+          "viewport": "desktop_1563x545",
+          "innerH": 545,
+          "innerW": 1563,
+          "card": {
+            "top": 16,
+            "bottom": 545,
+            "height": 529,
+            "width": 448,
+            "insideViewport": true
+          },
+          "header": {
+            "top": 17,
+            "bottom": 77,
+            "height": 60,
+            "insideViewport": true
+          },
+          "closeBtn": {
+            "top": 33,
+            "bottom": 61,
+            "height": 28,
+            "width": 28,
+            "insideViewport": true
+          },
+          "primaryAction": {
+            "text": "Close Session",
+            "top": 484,
+            "bottom": 528,
+            "height": 44,
+            "width": 201,
+            "insideViewport": true
+          },
+          "body": {
+            "scrollHeight": 467,
+            "clientHeight": 467,
+            "scrolls": false
+          },
+          "smallTextNodesCount": 0,
+          "smallTextSamples": []
+        },
+        "CashMovementModal": {
+          "modalName": "CashMovementModal",
+          "viewport": "desktop_1563x545",
+          "innerH": 545,
+          "innerW": 1563,
+          "card": {
+            "top": 85,
+            "bottom": 460,
+            "height": 375,
+            "width": 448,
+            "insideViewport": true
+          },
+          "header": {
+            "top": 86,
+            "bottom": 146,
+            "height": 60,
+            "insideViewport": true
+          },
+          "closeBtn": {
+            "top": 102,
+            "bottom": 130,
+            "height": 28,
+            "width": 28,
+            "insideViewport": true
+          },
+          "primaryAction": {
+            "text": "Record Cash Out",
+            "top": 399,
+            "bottom": 443,
+            "height": 44,
+            "width": 201,
+            "insideViewport": true
+          },
+          "body": {
+            "scrollHeight": 313,
+            "clientHeight": 313,
+            "scrolls": false
+          },
+          "smallTextNodesCount": 0,
+          "smallTextSamples": []
+        },
+        "HeldCartsModal": {
+          "modalName": "HeldCartsModal",
+          "viewport": "desktop_1563x545",
+          "innerH": 545,
+          "innerW": 1563,
+          "card": {
+            "top": 104,
+            "bottom": 441,
+            "height": 337,
+            "width": 512,
+            "insideViewport": true
+          },
+          "header": {
+            "top": 105,
+            "bottom": 165,
+            "height": 60,
+            "insideViewport": true
+          },
+          "closeBtn": {
+            "top": 121,
+            "bottom": 149,
+            "height": 28,
+            "width": 28,
+            "insideViewport": true
+          },
+          "primaryAction": {
+            "text": "Reprendre ce panier",
+            "top": 298,
+            "bottom": 342,
+            "height": 44,
+            "width": 189,
+            "insideViewport": true
+          },
+          "body": {
+            "scrollHeight": 198,
+            "clientHeight": 198,
+            "scrolls": false
+          },
+          "smallTextNodesCount": 0,
+          "smallTextSamples": []
+        },
+        "QuickPriceLookupModal": {
+          "modalName": "QuickPriceLookupModal",
+          "viewport": "desktop_1563x545",
+          "innerH": 545,
+          "innerW": 1563,
+          "card": {
+            "top": 16,
+            "bottom": 545,
+            "height": 529,
+            "width": 896,
+            "insideViewport": true
+          },
+          "header": {
+            "top": 17,
+            "bottom": 85,
+            "height": 68,
+            "insideViewport": true
+          },
+          "closeBtn": {
+            "top": 35,
+            "bottom": 67,
+            "height": 32,
+            "width": 32,
+            "insideViewport": true
+          },
+          "primaryAction": {
+            "text": "Ajouter Carton de 6 bouteilles",
+            "top": 431,
+            "bottom": 455,
+            "height": 24,
+            "width": 199,
+            "insideViewport": true
+          },
+          "body": {
+            "scrollHeight": 1176,
+            "clientHeight": 305,
+            "scrolls": true
+          },
+          "smallTextNodesCount": 0,
+          "smallTextSamples": []
+        },
+        "QuickAddModal": {
+          "modalName": "QuickAddModal",
+          "viewport": "desktop_1563x545",
+          "innerH": 545,
+          "innerW": 1563,
+          "card": {
+            "top": 115,
+            "bottom": 430,
+            "height": 315,
+            "width": 448,
+            "insideViewport": true
+          },
+          "header": {
+            "top": 116,
+            "bottom": 176,
+            "height": 60,
+            "insideViewport": true
+          },
+          "closeBtn": {
+            "top": 132,
+            "bottom": 160,
+            "height": 28,
+            "width": 28,
+            "insideViewport": true
+          },
+          "primaryAction": {
+            "text": "Add to Cart",
+            "top": 369,
+            "bottom": 413,
+            "height": 44,
+            "width": 201,
+            "insideViewport": true
+          },
+          "body": {
+            "scrollHeight": 253,
+            "clientHeight": 253,
+            "scrolls": false
+          },
+          "smallTextNodesCount": 0,
+          "smallTextSamples": []
+        }
+      }
+    },
+    "phone_384x725": {
+      "viewport": "phone_384x725",
+      "width": 384,
+      "height": 725,
+      "modals": {
+        "ReceiptPrintModal": {
+          "modalName": "ReceiptPrintModal",
+          "viewport": "phone_384x725",
+          "innerH": 725,
+          "innerW": 384,
+          "card": {
+            "top": 8,
+            "bottom": 717,
+            "height": 709,
+            "width": 368,
+            "insideViewport": true
+          },
+          "header": {
+            "top": 9,
+            "bottom": 57,
+            "height": 48,
+            "insideViewport": true
+          },
+          "closeBtn": {
+            "top": 21,
+            "bottom": 45,
+            "height": 24,
+            "width": 24,
+            "insideViewport": true
+          },
+          "primaryAction": {
+            "text": "Imprimer (58mm)",
+            "top": 660,
+            "bottom": 704,
+            "height": 44,
+            "width": 167,
+            "insideViewport": true
+          },
+          "body": {
+            "scrollHeight": 702,
+            "clientHeight": 590,
+            "scrolls": true
+          },
+          "smallTextNodesCount": 0,
+          "smallTextSamples": []
+        },
+        "InvoicePrintModal": {
+          "modalName": "InvoicePrintModal",
+          "viewport": "phone_384x725",
+          "innerH": 725,
+          "innerW": 384,
+          "card": {
+            "top": 8,
+            "bottom": 717,
+            "height": 709,
+            "width": 368,
+            "insideViewport": true
+          },
+          "header": {
+            "top": 9,
+            "bottom": 61,
+            "height": 52,
+            "insideViewport": true
+          },
+          "closeBtn": {
+            "top": 21,
+            "bottom": 49,
+            "height": 28,
+            "width": 28,
+            "insideViewport": true
+          },
+          "primaryAction": {
+            "text": "Imprimer Facture A4",
+            "top": 660,
+            "bottom": 704,
+            "height": 44,
+            "width": 188,
+            "insideViewport": true
+          },
+          "body": {
+            "scrollHeight": 1388,
+            "clientHeight": 586,
+            "scrolls": true
+          },
+          "smallTextNodesCount": 0,
+          "smallTextSamples": []
+        },
+        "DeliveryNotePrintModal": {
+          "modalName": "DeliveryNotePrintModal",
+          "viewport": "phone_384x725",
+          "innerH": 725,
+          "innerW": 384,
+          "card": {
+            "top": 8,
+            "bottom": 717,
+            "height": 709,
+            "width": 368,
+            "insideViewport": true
+          },
+          "header": {
+            "top": 9,
+            "bottom": 81,
+            "height": 72,
+            "insideViewport": true
+          },
+          "closeBtn": {
+            "top": 31,
+            "bottom": 59,
+            "height": 28,
+            "width": 28,
+            "insideViewport": true
+          },
+          "primaryAction": {
+            "text": "Imprimer Bon de Livraison",
+            "top": 660,
+            "bottom": 704,
+            "height": 44,
+            "width": 224,
+            "insideViewport": true
+          },
+          "body": {
+            "scrollHeight": 1514,
+            "clientHeight": 538,
+            "scrolls": true
+          },
+          "smallTextNodesCount": 0,
+          "smallTextSamples": []
+        },
+        "RefundModal": {
+          "modalName": "RefundModal",
+          "viewport": "phone_384x725",
+          "innerH": 725,
+          "innerW": 384,
+          "card": {
+            "top": 116,
+            "bottom": 610,
+            "height": 494,
+            "width": 368,
+            "insideViewport": true
+          },
+          "header": {
+            "top": 117,
+            "bottom": 185,
+            "height": 68,
+            "insideViewport": true
+          },
+          "closeBtn": {
+            "top": 129,
+            "bottom": 173,
+            "height": 44,
+            "width": 44,
+            "insideViewport": true
+          },
+          "primaryAction": {
+            "text": "Confirm Refund & Restock",
+            "top": 537,
+            "bottom": 597,
+            "height": 60,
+            "width": 165,
+            "insideViewport": true
+          },
+          "body": {
+            "scrollHeight": 424,
+            "clientHeight": 424,
+            "scrolls": false
+          },
+          "smallTextNodesCount": 0,
+          "smallTextSamples": []
+        },
+        "SessionModal_Close": {
+          "modalName": "SessionModal_Close",
+          "viewport": "phone_384x725",
+          "innerH": 725,
+          "innerW": 384,
+          "card": {
+            "top": 13,
+            "bottom": 713,
+            "height": 700,
+            "width": 368,
+            "insideViewport": true
+          },
+          "header": {
+            "top": 14,
+            "bottom": 74,
+            "height": 60,
+            "insideViewport": true
+          },
+          "closeBtn": {
+            "top": 30,
+            "bottom": 58,
+            "height": 28,
+            "width": 28,
+            "insideViewport": true
+          },
+          "primaryAction": {
+            "text": "Close Session",
+            "top": 656,
+            "bottom": 700,
+            "height": 44,
+            "width": 165,
+            "insideViewport": true
+          },
+          "body": {
+            "scrollHeight": 638,
+            "clientHeight": 638,
+            "scrolls": false
+          },
+          "smallTextNodesCount": 0,
+          "smallTextSamples": []
+        },
+        "CashMovementModal": {
+          "modalName": "CashMovementModal",
+          "viewport": "phone_384x725",
+          "innerH": 725,
+          "innerW": 384,
+          "card": {
+            "top": 171,
+            "bottom": 554,
+            "height": 383,
+            "width": 368,
+            "insideViewport": true
+          },
+          "header": {
+            "top": 172,
+            "bottom": 232,
+            "height": 60,
+            "insideViewport": true
+          },
+          "closeBtn": {
+            "top": 188,
+            "bottom": 216,
+            "height": 28,
+            "width": 28,
+            "insideViewport": true
+          },
+          "primaryAction": {
+            "text": "Record Cash Out",
+            "top": 497,
+            "bottom": 541,
+            "height": 44,
+            "width": 165,
+            "insideViewport": true
+          },
+          "body": {
+            "scrollHeight": 321,
+            "clientHeight": 321,
+            "scrolls": false
+          },
+          "smallTextNodesCount": 0,
+          "smallTextSamples": []
+        },
+        "QuickAddModal": {
+          "modalName": "QuickAddModal",
+          "viewport": "phone_384x725",
+          "innerH": 725,
+          "innerW": 384,
+          "card": {
+            "top": 209,
+            "bottom": 516,
+            "height": 307,
+            "width": 368,
+            "insideViewport": true
+          },
+          "header": {
+            "top": 210,
+            "bottom": 270,
+            "height": 60,
+            "insideViewport": true
+          },
+          "closeBtn": {
+            "top": 226,
+            "bottom": 254,
+            "height": 28,
+            "width": 28,
+            "insideViewport": true
+          },
+          "primaryAction": {
+            "text": "Add to Cart",
+            "top": 459,
+            "bottom": 503,
+            "height": 44,
+            "width": 165,
+            "insideViewport": true
+          },
+          "body": {
+            "scrollHeight": 245,
+            "clientHeight": 245,
+            "scrolls": false
+          },
+          "smallTextNodesCount": 0,
+          "smallTextSamples": []
+        }
+      }
+    },
+    "phone_384x400": {
+      "viewport": "phone_384x400",
+      "width": 384,
+      "height": 400,
+      "modals": {
+        "ReceiptPrintModal": {
+          "modalName": "ReceiptPrintModal",
+          "viewport": "phone_384x400",
+          "innerH": 400,
+          "innerW": 384,
+          "card": {
+            "top": 8,
+            "bottom": 392,
+            "height": 384,
+            "width": 368,
+            "insideViewport": true
+          },
+          "header": {
+            "top": 9,
+            "bottom": 57,
+            "height": 48,
+            "insideViewport": true
+          },
+          "closeBtn": {
+            "top": 21,
+            "bottom": 45,
+            "height": 24,
+            "width": 24,
+            "insideViewport": true
+          },
+          "primaryAction": {
+            "text": "Imprimer (58mm)",
+            "top": 335,
+            "bottom": 379,
+            "height": 44,
+            "width": 167,
+            "insideViewport": true
+          },
+          "body": {
+            "scrollHeight": 702,
+            "clientHeight": 265,
+            "scrolls": true
+          },
+          "smallTextNodesCount": 0,
+          "smallTextSamples": []
+        },
+        "InvoicePrintModal": {
+          "modalName": "InvoicePrintModal",
+          "viewport": "phone_384x400",
+          "innerH": 400,
+          "innerW": 384,
+          "card": {
+            "top": 8,
+            "bottom": 392,
+            "height": 384,
+            "width": 368,
+            "insideViewport": true
+          },
+          "header": {
+            "top": 9,
+            "bottom": 61,
+            "height": 52,
+            "insideViewport": true
+          },
+          "closeBtn": {
+            "top": 21,
+            "bottom": 49,
+            "height": 28,
+            "width": 28,
+            "insideViewport": true
+          },
+          "primaryAction": {
+            "text": "Imprimer Facture A4",
+            "top": 335,
+            "bottom": 379,
+            "height": 44,
+            "width": 188,
+            "insideViewport": true
+          },
+          "body": {
+            "scrollHeight": 1388,
+            "clientHeight": 261,
+            "scrolls": true
+          },
+          "smallTextNodesCount": 0,
+          "smallTextSamples": []
+        },
+        "DeliveryNotePrintModal": {
+          "modalName": "DeliveryNotePrintModal",
+          "viewport": "phone_384x400",
+          "innerH": 400,
+          "innerW": 384,
+          "card": {
+            "top": 8,
+            "bottom": 392,
+            "height": 384,
+            "width": 368,
+            "insideViewport": true
+          },
+          "header": {
+            "top": 9,
+            "bottom": 81,
+            "height": 72,
+            "insideViewport": true
+          },
+          "closeBtn": {
+            "top": 31,
+            "bottom": 59,
+            "height": 28,
+            "width": 28,
+            "insideViewport": true
+          },
+          "primaryAction": {
+            "text": "Imprimer Bon de Livraison",
+            "top": 335,
+            "bottom": 379,
+            "height": 44,
+            "width": 224,
+            "insideViewport": true
+          },
+          "body": {
+            "scrollHeight": 1514,
+            "clientHeight": 213,
+            "scrolls": true
+          },
+          "smallTextNodesCount": 0,
+          "smallTextSamples": []
+        },
+        "RefundModal": {
+          "modalName": "RefundModal",
+          "viewport": "phone_384x400",
+          "innerH": 400,
+          "innerW": 384,
+          "card": {
+            "top": 8,
+            "bottom": 392,
+            "height": 384,
+            "width": 368,
+            "insideViewport": true
+          },
+          "header": {
+            "top": 9,
+            "bottom": 77,
+            "height": 68,
+            "insideViewport": true
+          },
+          "closeBtn": {
+            "top": 21,
+            "bottom": 65,
+            "height": 44,
+            "width": 44,
+            "insideViewport": true
+          },
+          "primaryAction": {
+            "text": "Confirm Refund & Restock",
+            "top": 319,
+            "bottom": 379,
+            "height": 60,
+            "width": 165,
+            "insideViewport": true
+          },
+          "body": {
+            "scrollHeight": 314,
+            "clientHeight": 314,
+            "scrolls": false
+          },
+          "smallTextNodesCount": 0,
+          "smallTextSamples": []
+        },
+        "CustomerStatementModal": {
+          "modalName": "CustomerStatementModal",
+          "viewport": "phone_384x400",
+          "innerH": 400,
+          "innerW": 384,
+          "card": {
+            "top": 8,
+            "bottom": 392,
+            "height": 384,
+            "width": 368,
+            "insideViewport": true
+          },
+          "header": {
+            "top": 9,
+            "bottom": 179,
+            "height": 170,
+            "insideViewport": true
+          },
+          "closeBtn": {
+            "top": 72,
+            "bottom": 116,
+            "height": 44,
+            "width": 44,
+            "insideViewport": true
+          },
+          "primaryAction": {
+            "text": "Imprimer / PDF",
+            "top": 72,
+            "bottom": 116,
+            "height": 44,
+            "width": 107,
+            "insideViewport": true
+          },
+          "body": {
+            "scrollHeight": 266,
+            "clientHeight": 32,
+            "scrolls": true
+          },
+          "smallTextNodesCount": 0,
+          "smallTextSamples": []
+        },
+        "SessionModal_Close": {
+          "modalName": "SessionModal_Close",
+          "viewport": "phone_384x400",
+          "innerH": 400,
+          "innerW": 384,
+          "card": {
+            "top": 8,
+            "bottom": 392,
+            "height": 384,
+            "width": 368,
+            "insideViewport": true
+          },
+          "header": {
+            "top": 9,
+            "bottom": 69,
+            "height": 60,
+            "insideViewport": true
+          },
+          "closeBtn": {
+            "top": 25,
+            "bottom": 53,
+            "height": 28,
+            "width": 28,
+            "insideViewport": true
+          },
+          "primaryAction": {
+            "text": "Close Session",
+            "top": 335,
+            "bottom": 379,
+            "height": 44,
+            "width": 165,
+            "insideViewport": true
+          },
+          "body": {
+            "scrollHeight": 322,
+            "clientHeight": 322,
+            "scrolls": false
+          },
+          "smallTextNodesCount": 0,
+          "smallTextSamples": []
+        },
+        "CashMovementModal": {
+          "modalName": "CashMovementModal",
+          "viewport": "phone_384x400",
+          "innerH": 400,
+          "innerW": 384,
+          "card": {
+            "top": 9,
+            "bottom": 392,
+            "height": 383,
+            "width": 368,
+            "insideViewport": true
+          },
+          "header": {
+            "top": 10,
+            "bottom": 70,
+            "height": 60,
+            "insideViewport": true
+          },
+          "closeBtn": {
+            "top": 26,
+            "bottom": 54,
+            "height": 28,
+            "width": 28,
+            "insideViewport": true
+          },
+          "primaryAction": {
+            "text": "Record Cash Out",
+            "top": 335,
+            "bottom": 379,
+            "height": 44,
+            "width": 165,
+            "insideViewport": true
+          },
+          "body": {
+            "scrollHeight": 321,
+            "clientHeight": 321,
+            "scrolls": false
+          },
+          "smallTextNodesCount": 0,
+          "smallTextSamples": []
+        },
+        "QuickAddModal": {
+          "modalName": "QuickAddModal",
+          "viewport": "phone_384x400",
+          "innerH": 400,
+          "innerW": 384,
+          "card": {
+            "top": 47,
+            "bottom": 354,
+            "height": 307,
+            "width": 368,
+            "insideViewport": true
+          },
+          "header": {
+            "top": 48,
+            "bottom": 108,
+            "height": 60,
+            "insideViewport": true
+          },
+          "closeBtn": {
+            "top": 64,
+            "bottom": 92,
+            "height": 28,
+            "width": 28,
+            "insideViewport": true
+          },
+          "primaryAction": {
+            "text": "Add to Cart",
+            "top": 297,
+            "bottom": 341,
+            "height": 44,
+            "width": 165,
+            "insideViewport": true
+          },
+          "body": {
+            "scrollHeight": 245,
+            "clientHeight": 245,
+            "scrolls": false
+          },
+          "smallTextNodesCount": 0,
+          "smallTextSamples": []
+        }
+      }
+    }
+  }
+}

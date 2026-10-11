@@ -222,31 +222,43 @@ export const RefundModal: React.FC<RefundModalProps> = ({
   const isSubmitDisabled = isSubmitting || currentRemaining <= 0 || !refundQuantity || parseFloat(refundQuantity) <= 0 || isCashWithNoSession;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
-      <div className="bg-white rounded-2xl shadow-2xl max-w-xl w-full overflow-hidden flex flex-col border border-slate-200 max-h-[90vh]">
+    <div className="fixed inset-0 m-0 z-50 flex items-center justify-center bg-slate-900/60 p-2 sm:p-4 overflow-y-auto">
+      <div className="my-auto bg-white rounded-xl shadow-2xl max-w-xl w-full max-h-[calc(100dvh-1rem)] sm:max-h-[calc(100dvh-2rem)] flex flex-col overflow-hidden border border-slate-200">
         {/* Header */}
-        <div className="bg-slate-900 text-white px-6 py-4 flex items-center justify-between">
+        <div className="shrink-0 bg-slate-900 text-white px-4 py-3 sm:px-6 sm:py-4 flex items-center justify-between">
           <div className="flex items-center gap-2">
             <RotateCcw className="w-5 h-5 text-amber-400" />
             <h2 className="text-base font-bold">Returns & Partial Refunds</h2>
           </div>
           <button
             onClick={onClose}
-            className="text-slate-400 hover:text-white p-1 rounded-lg hover:bg-slate-800 transition-colors"
+            className="w-11 h-11 flex items-center justify-center text-slate-400 hover:text-white rounded-lg hover:bg-slate-800 transition-colors shrink-0 cursor-pointer"
+            title="Fermer"
           >
             <X className="w-5 h-5" />
           </button>
         </div>
 
-        <div className="p-6 overflow-y-auto flex-1 space-y-4">
-          {success ? (
-            <div className="text-center py-8 space-y-3">
+        {success ? (
+          <div className="flex-1 min-h-0 flex flex-col overflow-hidden">
+            <div className="flex-1 min-h-0 overflow-y-auto p-6 space-y-4 text-center py-8">
               <CheckCircle className="w-12 h-12 text-emerald-500 mx-auto" />
               <h3 className="text-lg font-bold text-slate-800">Refund Successful</h3>
               <p className="text-sm text-slate-600">{success}</p>
             </div>
-          ) : !selectedSale ? (
-            <div className="space-y-4">
+            <div className="shrink-0 p-3 sm:p-4 bg-slate-50 border-t border-slate-200 flex justify-end">
+              <button
+                type="button"
+                onClick={onClose}
+                className="min-h-[44px] py-2.5 px-5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl text-sm transition-colors"
+              >
+                Fermer
+              </button>
+            </div>
+          </div>
+        ) : !selectedSale ? (
+          <div className="flex-1 min-h-0 flex flex-col overflow-hidden">
+            <div className="flex-1 min-h-0 overflow-y-auto p-5 sm:p-6 space-y-4">
               <div className="relative">
                 <Search className="w-4 h-4 text-slate-400 absolute left-3 top-3" />
                 <input
@@ -286,7 +298,7 @@ export const RefundModal: React.FC<RefundModalProps> = ({
                           <div className="font-bold text-sm text-slate-900 font-mono">
                             {formatMoney(sale.total_ttc)}
                           </div>
-                          <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${
+                          <span className={`text-xs font-bold px-2 py-0.5 rounded ${
                             sale.status === 'COMPLETED' ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'
                           }`}>
                             {sale.status}
@@ -302,8 +314,20 @@ export const RefundModal: React.FC<RefundModalProps> = ({
                 </div>
               </div>
             </div>
-          ) : (
-            <form onSubmit={handleProcessRefund} className="space-y-4">
+
+            <div className="shrink-0 p-3 sm:p-4 bg-slate-50 border-t border-slate-200 flex justify-end">
+              <button
+                type="button"
+                onClick={onClose}
+                className="min-h-[44px] py-2.5 px-5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl text-sm transition-colors"
+              >
+                Fermer
+              </button>
+            </div>
+          </div>
+        ) : (
+          <form onSubmit={handleProcessRefund} className="flex-1 min-h-0 flex flex-col overflow-hidden">
+            <div className="flex-1 min-h-0 overflow-y-auto p-5 sm:p-6 space-y-4">
               {/* Selected Sale Overview */}
               <div className="bg-slate-50 border border-slate-200 rounded-xl p-3 flex justify-between items-center text-xs">
                 <div>
@@ -312,7 +336,7 @@ export const RefundModal: React.FC<RefundModalProps> = ({
                     {selectedSale.customer_name || 'Walk-in'} • {formatDateTime(selectedSale.date)}
                   </div>
                   {(selectedSale as any).debt_ticket && (
-                    <div className="text-[11px] font-semibold text-amber-800 mt-0.5">
+                    <div className="text-xs font-semibold text-amber-800 mt-0.5">
                       Dette liée : {formatMoney((selectedSale as any).debt_ticket.remaining_amount)} restants / {formatMoney((selectedSale as any).debt_ticket.total_amount)}
                     </div>
                   )}
@@ -320,7 +344,7 @@ export const RefundModal: React.FC<RefundModalProps> = ({
                 <button
                   type="button"
                   onClick={() => setSelectedSale(null)}
-                  className="text-emerald-600 hover:text-emerald-800 font-bold underline"
+                  className="text-emerald-700 hover:text-emerald-900 font-bold underline text-xs"
                 >
                   Change Sale
                 </button>
@@ -329,7 +353,7 @@ export const RefundModal: React.FC<RefundModalProps> = ({
               {/* Prior Refunds for this Sale */}
               {saleRefunds.length > 0 && (
                 <div className="bg-amber-50/70 border border-amber-200 rounded-xl p-3 space-y-2">
-                  <h4 className="text-[11px] font-bold text-amber-900 uppercase tracking-wider">
+                  <h4 className="text-xs font-bold text-amber-950 uppercase tracking-wider">
                     Prior Refunds for this Receipt ({saleRefunds.length})
                   </h4>
                   <div className="space-y-1.5 max-h-32 overflow-y-auto">
@@ -337,9 +361,9 @@ export const RefundModal: React.FC<RefundModalProps> = ({
                       <div key={rf.id} className="text-xs bg-white p-2 rounded-lg border border-amber-100 flex justify-between items-center">
                         <div>
                           <span className="font-bold text-slate-800">{formatMoney(rf.refund_amount)}</span> via <span className="font-semibold text-slate-600">{rf.refund_method}</span>
-                          <div className="text-slate-500 text-[10px]">{rf.reason || 'No reason specified'} • {formatDateTime(rf.created_at)}</div>
+                          <div className="text-slate-600 text-xs">{rf.reason || 'No reason specified'} • {formatDateTime(rf.created_at)}</div>
                         </div>
-                        <span className="text-[10px] font-bold px-1.5 py-0.5 bg-amber-100 text-amber-800 rounded">
+                        <span className="text-xs font-bold px-2 py-0.5 bg-amber-100 text-amber-950 rounded">
                           {rf.status || 'COMPLETED'}
                         </span>
                       </div>
@@ -453,7 +477,7 @@ export const RefundModal: React.FC<RefundModalProps> = ({
                           </option>
                         ))}
                       </select>
-                      <p className="text-[11px] text-slate-400 mt-1">
+                      <p className="text-xs text-slate-600 mt-1">
                         Plusieurs caisses sont ouvertes. Choisissez la session de caisse qui décaisse le montant.
                       </p>
                     </div>
@@ -480,26 +504,26 @@ export const RefundModal: React.FC<RefundModalProps> = ({
                   <span>{error}</span>
                 </div>
               )}
+            </div>
 
-              <div className="pt-2 flex gap-3">
-                <button
-                  type="button"
-                  onClick={onClose}
-                  className="flex-1 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl text-sm transition-colors"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  disabled={isSubmitDisabled}
-                  className="flex-1 py-2.5 bg-amber-600 hover:bg-amber-700 disabled:opacity-50 text-white font-bold rounded-xl text-sm shadow transition-colors"
-                >
-                  {isSubmitting ? 'Refunding...' : 'Confirm Refund & Restock'}
-                </button>
-              </div>
-            </form>
-          )}
-        </div>
+            <div className="shrink-0 p-3 sm:p-4 bg-slate-50 border-t border-slate-200 flex gap-3">
+              <button
+                type="button"
+                onClick={onClose}
+                className="flex-1 min-h-[44px] py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl text-sm transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                disabled={isSubmitDisabled}
+                className="flex-1 min-h-[44px] py-2.5 bg-amber-400 hover:bg-amber-300 disabled:opacity-50 text-amber-950 font-bold rounded-xl text-sm shadow transition-colors flex items-center justify-center"
+              >
+                {isSubmitting ? 'Refunding...' : 'Confirm Refund & Restock'}
+              </button>
+            </div>
+          </form>
+        )}
       </div>
     </div>
   );

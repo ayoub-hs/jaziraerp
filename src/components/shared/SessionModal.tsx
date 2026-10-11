@@ -264,9 +264,9 @@ export const SessionModal: React.FC<SessionModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
-      <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full overflow-hidden border border-slate-200">
-        <div className="bg-slate-900 text-white px-5 py-4 flex items-center justify-between">
+    <div className="fixed inset-0 z-50 flex items-start sm:items-center justify-center bg-black/60 backdrop-blur-sm p-2 sm:p-4 overflow-y-auto">
+      <div className="my-auto bg-white rounded-2xl shadow-2xl max-w-md w-full max-h-[calc(100dvh-1rem)] flex flex-col overflow-hidden border border-slate-200">
+        <div className="shrink-0 bg-slate-900 text-white px-5 py-4 flex items-center justify-between">
           <div className="flex items-center gap-2">
             {closedReportData ? (
               <CheckCircle className="w-5 h-5 text-emerald-400" />
@@ -292,65 +292,67 @@ export const SessionModal: React.FC<SessionModalProps> = ({
         </div>
 
         {closedReportData ? (
-          <div className="p-5 space-y-4">
-            <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-3 flex items-start gap-3">
-              <CheckCircle className="w-5 h-5 text-emerald-600 flex-shrink-0 mt-0.5" />
-              <div>
-                <h4 className="text-xs font-bold text-emerald-900">Session de caisse clôturée avec succès</h4>
-                <p className="text-[11px] text-emerald-700 mt-0.5">
-                  {closedReportData.counter_name} — {closedReportData.session_number}
-                </p>
-              </div>
-            </div>
-
-            <div className="bg-slate-50 border border-slate-200 rounded-xl p-3 space-y-1.5 text-xs">
-              <div className="flex justify-between text-slate-600">
-                <span>Fond initial:</span>
-                <span className="font-mono font-bold text-slate-900">{formatMoney(closedReportData.opening_cash)}</span>
-              </div>
-              <div className="flex justify-between text-slate-600">
-                <span>Ventes espèces:</span>
-                <span className="font-mono font-bold text-slate-900">{formatMoney(closedReportData.cash_sales)}</span>
-              </div>
-              {closedReportData.cash_refunds > 0 && (
-                <div className="flex justify-between text-slate-600">
-                  <span>Remboursements espèces:</span>
-                  <span className="font-mono font-bold text-rose-700">-{formatMoney(closedReportData.cash_refunds)}</span>
+          <div className="flex-1 min-h-0 flex flex-col overflow-hidden">
+            <div className="flex-1 min-h-0 overflow-y-auto p-5 space-y-4">
+              <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-3 flex items-start gap-3">
+                <CheckCircle className="w-5 h-5 text-emerald-600 flex-shrink-0 mt-0.5" />
+                <div>
+                  <h4 className="text-xs font-bold text-emerald-900">Session de caisse clôturée avec succès</h4>
+                  <p className="text-xs text-emerald-700 mt-0.5">
+                    {closedReportData.counter_name} — {closedReportData.session_number}
+                  </p>
                 </div>
-              )}
-              {(closedReportData.cash_in > 0 || closedReportData.cash_out > 0) && (
+              </div>
+
+              <div className="bg-slate-50 border border-slate-200 rounded-xl p-3 space-y-1.5 text-xs">
                 <div className="flex justify-between text-slate-600">
-                  <span>Mouvements manuels (In / Out):</span>
-                  <span className="font-mono font-bold text-slate-900">
-                    +{formatMoney(closedReportData.cash_in)} / -{formatMoney(closedReportData.cash_out)}
+                  <span>Fond initial:</span>
+                  <span className="font-mono font-bold text-slate-900">{formatMoney(closedReportData.opening_cash)}</span>
+                </div>
+                <div className="flex justify-between text-slate-600">
+                  <span>Ventes espèces:</span>
+                  <span className="font-mono font-bold text-slate-900">{formatMoney(closedReportData.cash_sales)}</span>
+                </div>
+                {closedReportData.cash_refunds > 0 && (
+                  <div className="flex justify-between text-slate-600">
+                    <span>Remboursements espèces:</span>
+                    <span className="font-mono font-bold text-rose-700">-{formatMoney(closedReportData.cash_refunds)}</span>
+                  </div>
+                )}
+                {(closedReportData.cash_in > 0 || closedReportData.cash_out > 0) && (
+                  <div className="flex justify-between text-slate-600">
+                    <span>Mouvements manuels (In / Out):</span>
+                    <span className="font-mono font-bold text-slate-900">
+                      +{formatMoney(closedReportData.cash_in)} / -{formatMoney(closedReportData.cash_out)}
+                    </span>
+                  </div>
+                )}
+                <div className="border-t border-slate-200 pt-1.5 flex justify-between text-slate-600">
+                  <span>Espèces attendues:</span>
+                  <span className="font-mono font-bold text-slate-900">{formatMoney(closedReportData.expected_cash)}</span>
+                </div>
+                <div className="flex justify-between text-slate-600">
+                  <span>Espèces comptées:</span>
+                  <span className="font-mono font-bold text-slate-900">{formatMoney(closedReportData.counted_cash)}</span>
+                </div>
+                <div className="border-t border-slate-200 pt-1.5 flex justify-between font-bold">
+                  <span className="text-slate-700">Écart / Variance:</span>
+                  <span className={`font-mono ${
+                    (closedReportData.variance ?? 0) === 0 ? 'text-emerald-700' : (closedReportData.variance ?? 0) > 0 ? 'text-blue-700' : 'text-rose-700'
+                  }`}>
+                    {formatMoney(closedReportData.variance)}
                   </span>
                 </div>
+              </div>
+
+              {printFeedback && (
+                <p className="text-xs text-slate-600 bg-slate-100 p-2 rounded-lg font-medium text-center">
+                  {printFeedback}
+                </p>
               )}
-              <div className="border-t border-slate-200 pt-1.5 flex justify-between text-slate-600">
-                <span>Espèces attendues:</span>
-                <span className="font-mono font-bold text-slate-900">{formatMoney(closedReportData.expected_cash)}</span>
-              </div>
-              <div className="flex justify-between text-slate-600">
-                <span>Espèces comptées:</span>
-                <span className="font-mono font-bold text-slate-900">{formatMoney(closedReportData.counted_cash)}</span>
-              </div>
-              <div className="border-t border-slate-200 pt-1.5 flex justify-between font-bold">
-                <span className="text-slate-700">Écart / Variance:</span>
-                <span className={`font-mono ${
-                  (closedReportData.variance ?? 0) === 0 ? 'text-emerald-700' : (closedReportData.variance ?? 0) > 0 ? 'text-blue-700' : 'text-rose-700'
-                }`}>
-                  {formatMoney(closedReportData.variance)}
-                </span>
-              </div>
             </div>
 
-            {printFeedback && (
-              <p className="text-[11px] text-slate-600 bg-slate-100 p-2 rounded-lg font-medium text-center">
-                {printFeedback}
-              </p>
-            )}
-
-            <div className="pt-2 flex gap-3">
+            <div className="shrink-0 p-3 sm:p-4 bg-slate-50 border-t border-slate-200 flex gap-3">
               <button
                 type="button"
                 onClick={async () => {
@@ -362,7 +364,7 @@ export const SessionModal: React.FC<SessionModalProps> = ({
                     setPrintFeedback(res.error || 'Erreur lors de la réimpression');
                   }
                 }}
-                className="flex-1 py-2.5 bg-slate-900 hover:bg-slate-800 text-white font-bold rounded-xl text-xs inline-flex items-center justify-center gap-2 transition-colors shadow"
+                className="flex-1 min-h-[44px] py-2.5 bg-slate-900 hover:bg-slate-800 text-white font-bold rounded-xl text-xs sm:text-sm inline-flex items-center justify-center gap-2 transition-colors shadow"
               >
                 <Printer className="w-4 h-4 text-emerald-400" />
                 Réimprimer Rapport Z
@@ -370,270 +372,276 @@ export const SessionModal: React.FC<SessionModalProps> = ({
               <button
                 type="button"
                 onClick={onClose}
-                className="flex-1 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl text-xs transition-colors"
+                className="flex-1 min-h-[44px] py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl text-xs sm:text-sm transition-colors"
               >
                 Terminer & Fermer
               </button>
             </div>
           </div>
         ) : mode === 'OPEN' ? (
-          <form onSubmit={handleOpenSubmit} className="p-5 space-y-4">
-            <div>
-              <label className="block text-xs font-bold text-slate-700 mb-1">
-                Register / Counter Name *
-              </label>
-              {!isAddingCounter ? (
-                <div className="flex gap-2">
-                  <select
-                    value={counterName}
-                    onChange={e => {
-                      if (e.target.value === '__NEW__') {
-                        setIsAddingCounter(true);
-                        setNewCounterName('');
-                      } else {
-                        setCounterName(e.target.value);
-                      }
-                    }}
-                    className="w-full text-sm font-semibold px-3 py-2 border border-slate-300 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:outline-none"
-                  >
-                    {counters.map(c => (
-                      <option key={c.id} value={c.name}>{c.name}</option>
-                    ))}
-                    {counters.length === 0 && (
-                      <>
-                        <option value="Countertop">Countertop (Main Station)</option>
-                        <option value="Mobile Register">Mobile Register (Phone / PWA)</option>
-                      </>
-                    )}
-                    <option value="__NEW__">+ Add New Register / Counter...</option>
-                  </select>
-                </div>
-              ) : (
-                <div className="flex gap-2 items-center">
-                  <input
-                    type="text"
-                    placeholder="e.g. Counter 2, Drive-thru..."
-                    value={newCounterName}
-                    onChange={e => setNewCounterName(e.target.value)}
-                    className="flex-1 text-xs font-semibold px-3 py-2 border border-slate-300 rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none"
-                    autoFocus
-                  />
-                  <button
-                    type="button"
-                    disabled={isSavingCounter}
-                    onClick={async () => {
-                      if (isSavingCounterRef.current) return;
-                      const clean = newCounterName.trim();
-                      if (!clean) return;
-                      isSavingCounterRef.current = true;
-                      setIsSavingCounter(true);
-                      try {
-                        const res = await fetch('/api/register/counters', {
-                          method: 'POST',
-                          headers: { 'Content-Type': 'application/json' },
-                          body: JSON.stringify({ name: clean })
-                        });
-                        if (res.ok) {
-                          const created = await res.json();
-                          setCounters(prev => [...prev.filter(c => c.id !== created.id), created]);
-                          setCounterName(created.name);
-                          setIsAddingCounter(false);
+          <form onSubmit={handleOpenSubmit} className="flex-1 min-h-0 flex flex-col overflow-hidden">
+            <div className="flex-1 min-h-0 overflow-y-auto p-5 space-y-4">
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1">
+                  Register / Counter Name *
+                </label>
+                {!isAddingCounter ? (
+                  <div className="flex gap-2">
+                    <select
+                      value={counterName}
+                      onChange={e => {
+                        if (e.target.value === '__NEW__') {
+                          setIsAddingCounter(true);
+                          setNewCounterName('');
                         } else {
-                          const errData = await res.json().catch(() => ({}));
-                          setError(errData.error || 'Failed to add counter');
+                          setCounterName(e.target.value);
                         }
-                      } catch (err: any) {
-                        setError(err.message || 'Error adding counter');
-                      } finally {
-                        isSavingCounterRef.current = false;
-                        setIsSavingCounter(false);
-                      }
-                    }}
-                    className="px-3 py-2 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white rounded-xl text-xs font-bold transition-colors"
-                  >
-                    {isSavingCounter ? 'Saving...' : 'Save'}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setIsAddingCounter(false)}
-                    className="px-2.5 py-2 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-xl text-xs font-semibold transition-colors"
-                  >
-                    Cancel
-                  </button>
-                </div>
+                      }}
+                      className="w-full text-sm font-semibold px-3 py-2 border border-slate-300 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:outline-none"
+                    >
+                      {counters.map(c => (
+                        <option key={c.id} value={c.name}>{c.name}</option>
+                      ))}
+                      {counters.length === 0 && (
+                        <>
+                          <option value="Countertop">Countertop (Main Station)</option>
+                          <option value="Mobile Register">Mobile Register (Phone / PWA)</option>
+                        </>
+                      )}
+                      <option value="__NEW__">+ Add New Register / Counter...</option>
+                    </select>
+                  </div>
+                ) : (
+                  <div className="flex gap-2 items-center">
+                    <input
+                      type="text"
+                      placeholder="e.g. Counter 2, Drive-thru..."
+                      value={newCounterName}
+                      onChange={e => setNewCounterName(e.target.value)}
+                      className="flex-1 text-xs font-semibold px-3 py-2 border border-slate-300 rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none"
+                      autoFocus
+                    />
+                    <button
+                      type="button"
+                      disabled={isSavingCounter}
+                      onClick={async () => {
+                        if (isSavingCounterRef.current) return;
+                        const clean = newCounterName.trim();
+                        if (!clean) return;
+                        isSavingCounterRef.current = true;
+                        setIsSavingCounter(true);
+                        try {
+                          const res = await fetch('/api/register/counters', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ name: clean })
+                          });
+                          if (res.ok) {
+                            const created = await res.json();
+                            setCounters(prev => [...prev.filter(c => c.id !== created.id), created]);
+                            setCounterName(created.name);
+                            setIsAddingCounter(false);
+                          } else {
+                            const errData = await res.json().catch(() => ({}));
+                            setError(errData.error || 'Failed to add counter');
+                          }
+                        } catch (err: any) {
+                          setError(err.message || 'Error adding counter');
+                        } finally {
+                          isSavingCounterRef.current = false;
+                          setIsSavingCounter(false);
+                        }
+                      }}
+                      className="px-3 py-2 bg-emerald-700 hover:bg-emerald-800 disabled:opacity-50 text-white rounded-xl text-xs font-bold transition-colors"
+                    >
+                      {isSavingCounter ? 'Saving...' : 'Save'}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setIsAddingCounter(false)}
+                      className="px-2.5 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-semibold transition-colors"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                )}
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1">
+                  Opening Cash Float (DT) *
+                </label>
+                <input
+                  type="number"
+                  step="0.001"
+                  min="0"
+                  required
+                  value={openingCash}
+                  onChange={e => setOpeningCash(e.target.value)}
+                  placeholder="100.000"
+                  className="w-full text-pos-input font-bold font-mono px-3 py-2 border border-slate-300 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:outline-none"
+                />
+                <span className="text-xs text-slate-600 mt-1 block">
+                  Cash drawer starting balance
+                </span>
+              </div>
+
+              {error && (
+                <p className="text-xs text-rose-600 font-semibold bg-rose-50 border border-rose-200 p-2 rounded-lg">
+                  {error}
+                </p>
               )}
             </div>
 
-            <div>
-              <label className="block text-xs font-bold text-slate-700 mb-1">
-                Opening Cash Float (DT) *
-              </label>
-              <input
-                type="number"
-                step="0.001"
-                min="0"
-                required
-                value={openingCash}
-                onChange={e => setOpeningCash(e.target.value)}
-                placeholder="100.000"
-                className="w-full text-lg font-bold font-mono px-3 py-2 border border-slate-300 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:outline-none"
-              />
-              <span className="text-[11px] text-slate-500 mt-1 block">
-                Cash drawer starting balance
-              </span>
-            </div>
-
-            {error && (
-              <p className="text-xs text-rose-600 font-semibold bg-rose-50 border border-rose-200 p-2 rounded-lg">
-                {error}
-              </p>
-            )}
-
-            <div className="pt-2 flex gap-3">
+            <div className="shrink-0 p-3 sm:p-4 bg-slate-50 border-t border-slate-200 flex gap-3">
               <button
                 type="button"
                 onClick={onClose}
-                className="flex-1 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl text-sm transition-colors"
+                className="flex-1 min-h-[44px] py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl text-sm transition-colors"
               >
                 Cancel
               </button>
               <button
                 type="submit"
                 disabled={submitting}
-                className="flex-1 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl text-sm shadow transition-colors"
+                className="flex-1 min-h-[44px] py-2.5 bg-emerald-700 hover:bg-emerald-800 text-white font-bold rounded-xl text-sm shadow transition-colors"
               >
                 {submitting ? 'Opening...' : 'Start Session'}
               </button>
             </div>
           </form>
         ) : (
-          <form onSubmit={handleCloseSubmit} className="p-5 space-y-4">
-            {heldCartsService.getHeldCartCount() > 0 && (
-              <div className="bg-amber-50 border border-amber-300 rounded-xl p-3 flex items-start gap-2.5 text-amber-900 text-xs shadow-xs">
-                <AlertCircle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
+          <form onSubmit={handleCloseSubmit} className="flex-1 min-h-0 flex flex-col overflow-hidden">
+            <div className="flex-1 min-h-0 overflow-y-auto p-5 space-y-4">
+              {heldCartsService.getHeldCartCount() > 0 && (
+                <div className="bg-amber-50 border border-amber-300 rounded-xl p-3 flex items-start gap-2.5 text-amber-900 text-xs shadow-xs">
+                  <AlertCircle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
+                  <div>
+                    <span className="font-bold">Attention : {heldCartsService.getHeldCartCount()} panier(s) en attente non finalisé(s)</span>
+                    <p className="text-xs text-amber-800 mt-0.5">
+                      Il reste des paniers en attente. Veuillez les reprendre ou les supprimer avant de clôturer la caisse.
+                    </p>
+                  </div>
+                </div>
+              )}
+              {openSessions.length > 1 && (
                 <div>
-                  <span className="font-bold">Attention : {heldCartsService.getHeldCartCount()} panier(s) en attente non finalisé(s)</span>
-                  <p className="text-[11px] text-amber-800 mt-0.5">
-                    Il reste des paniers en attente. Veuillez les reprendre ou les supprimer avant de clôturer la caisse.
-                  </p>
+                  <label className="block text-xs font-bold text-slate-700 mb-1">
+                    Session de caisse à clôturer *
+                  </label>
+                  <select
+                    value={selectedSessionToCloseId}
+                    onChange={e => setSelectedSessionToCloseId(e.target.value)}
+                    className="w-full text-xs font-bold px-3 py-2 border border-slate-300 rounded-xl bg-slate-50 focus:ring-2 focus:ring-rose-500 focus:outline-none"
+                  >
+                    {openSessions.map(s => (
+                      <option key={s.id} value={s.id}>
+                        {s.counter_name} — {s.session_number} (Fond: {formatMoney(s.opening_cash)})
+                      </option>
+                    ))}
+                  </select>
+                  {onSelectSession && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const chosen = openSessions.find(s => s.id === selectedSessionToCloseId);
+                        if (chosen) {
+                          onSelectSession(chosen);
+                          onClose();
+                        }
+                      }}
+                      className="text-xs text-emerald-700 hover:text-emerald-900 font-bold mt-1.5 inline-block"
+                    >
+                      → Basculer sur cette caisse (Travailler avec {openSessions.find(s => s.id === selectedSessionToCloseId)?.counter_name})
+                    </button>
+                  )}
+                </div>
+              )}
+
+              {/* Summary Box */}
+              <div className="bg-slate-50 border border-slate-200 rounded-xl p-3 space-y-2 text-xs">
+                <div className="flex justify-between text-slate-600">
+                  <span>Session:</span>
+                  <span className="font-bold text-slate-900 font-mono">
+                    {(openSessions.find(s => s.id === selectedSessionToCloseId) || activeSession)?.session_number} (
+                    {(openSessions.find(s => s.id === selectedSessionToCloseId) || activeSession)?.counter_name})
+                  </span>
+                </div>
+                <div className="flex justify-between text-slate-600">
+                  <span>Expected Cash in Drawer:</span>
+                  <span className="font-bold text-slate-900 font-mono">
+                    {formatMoney(expectedCash)}
+                  </span>
                 </div>
               </div>
-            )}
-            {openSessions.length > 1 && (
+
               <div>
                 <label className="block text-xs font-bold text-slate-700 mb-1">
-                  Session de caisse à clôturer *
+                  Counted Physical Cash (DT) *
                 </label>
-                <select
-                  value={selectedSessionToCloseId}
-                  onChange={e => setSelectedSessionToCloseId(e.target.value)}
-                  className="w-full text-xs font-bold px-3 py-2 border border-slate-300 rounded-xl bg-slate-50 focus:ring-2 focus:ring-rose-500 focus:outline-none"
-                >
-                  {openSessions.map(s => (
-                    <option key={s.id} value={s.id}>
-                      {s.counter_name} — {s.session_number} (Fond: {formatMoney(s.opening_cash)})
-                    </option>
-                  ))}
-                </select>
-                {onSelectSession && (
-                  <button
-                    type="button"
-                    onClick={() => {
-                      const chosen = openSessions.find(s => s.id === selectedSessionToCloseId);
-                      if (chosen) {
-                        onSelectSession(chosen);
-                        onClose();
-                      }
-                    }}
-                    className="text-[11px] text-emerald-700 hover:text-emerald-900 font-bold mt-1.5 inline-block"
-                  >
-                    → Basculer sur cette caisse (Travailler avec {openSessions.find(s => s.id === selectedSessionToCloseId)?.counter_name})
-                  </button>
-                )}
+                <input
+                  type="number"
+                  step="0.001"
+                  min="0"
+                  required
+                  autoFocus
+                  value={closingCountedCash}
+                  onChange={e => setClosingCountedCash(e.target.value)}
+                  placeholder="0.000"
+                  className="w-full text-pos-input font-bold font-mono px-3 py-2 border border-slate-300 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:outline-none"
+                />
               </div>
-            )}
 
-            {/* Summary Box */}
-            <div className="bg-slate-50 border border-slate-200 rounded-xl p-3 space-y-2 text-xs">
-              <div className="flex justify-between text-slate-600">
-                <span>Session:</span>
-                <span className="font-bold text-slate-900 font-mono">
-                  {(openSessions.find(s => s.id === selectedSessionToCloseId) || activeSession)?.session_number} (
-                  {(openSessions.find(s => s.id === selectedSessionToCloseId) || activeSession)?.counter_name})
+              {/* Variance indicator */}
+              <div
+                className={`p-3 rounded-xl border flex items-center justify-between font-bold ${
+                  variance === 0
+                    ? 'bg-emerald-50 border-emerald-200 text-emerald-800'
+                    : variance > 0
+                    ? 'bg-amber-50 border-amber-300 text-amber-900'
+                    : 'bg-rose-50 border-rose-200 text-rose-800'
+                }`}
+              >
+                <span className="text-sm font-bold">Cash Variance:</span>
+                <span className={`text-lg font-mono font-black ${
+                  variance === 0 ? 'text-emerald-700' : variance > 0 ? 'text-amber-800' : 'text-rose-700'
+                }`}>
+                  {variance > 0 ? `+${formatMoney(variance)} (Over)` : variance < 0 ? `${formatMoney(variance)} (Short)` : '0.000 DT (Exact)'}
                 </span>
               </div>
-              <div className="flex justify-between text-slate-600">
-                <span>Expected Cash in Drawer:</span>
-                <span className="font-bold text-slate-900 font-mono">
-                  {formatMoney(expectedCash)}
-                </span>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1">
+                  Closing Notes / Audit Remarks
+                </label>
+                <input
+                  type="text"
+                  value={notes}
+                  onChange={e => setNotes(e.target.value)}
+                  placeholder="e.g. End of shift, drawer reconciled cleanly"
+                  className="w-full text-sm px-3 py-2 border border-slate-300 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:outline-none"
+                />
               </div>
+
+              {error && (
+                <p className="text-xs text-rose-600 font-semibold bg-rose-50 border border-rose-200 p-2 rounded-lg">
+                  {error}
+                </p>
+              )}
             </div>
 
-            <div>
-              <label className="block text-xs font-bold text-slate-700 mb-1">
-                Counted Physical Cash (DT) *
-              </label>
-              <input
-                type="number"
-                step="0.001"
-                min="0"
-                required
-                autoFocus
-                value={closingCountedCash}
-                onChange={e => setClosingCountedCash(e.target.value)}
-                placeholder="0.000"
-                className="w-full text-lg font-bold font-mono px-3 py-2 border border-slate-300 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:outline-none"
-              />
-            </div>
-
-            {/* Variance indicator */}
-            <div
-              className={`p-3 rounded-xl border flex items-center justify-between text-xs font-bold ${
-                variance === 0
-                  ? 'bg-emerald-50 border-emerald-200 text-emerald-800'
-                  : variance > 0
-                  ? 'bg-blue-50 border-blue-200 text-blue-800'
-                  : 'bg-rose-50 border-rose-200 text-rose-800'
-              }`}
-            >
-              <span>Cash Variance:</span>
-              <span className="text-sm font-mono font-black">
-                {variance > 0 ? `+${formatMoney(variance)} (Over)` : variance < 0 ? `${formatMoney(variance)} (Short)` : '0.000 DT (Exact)'}
-              </span>
-            </div>
-
-            <div>
-              <label className="block text-xs font-bold text-slate-700 mb-1">
-                Closing Notes / Audit Remarks
-              </label>
-              <input
-                type="text"
-                value={notes}
-                onChange={e => setNotes(e.target.value)}
-                placeholder="e.g. End of shift, drawer reconciled cleanly"
-                className="w-full text-sm px-3 py-2 border border-slate-300 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:outline-none"
-              />
-            </div>
-
-            {error && (
-              <p className="text-xs text-rose-600 font-semibold bg-rose-50 border border-rose-200 p-2 rounded-lg">
-                {error}
-              </p>
-            )}
-
-            <div className="pt-2 flex gap-3">
+            <div className="shrink-0 p-3 sm:p-4 bg-slate-50 border-t border-slate-200 flex gap-3">
               <button
                 type="button"
                 onClick={onClose}
-                className="flex-1 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl text-sm transition-colors"
+                className="flex-1 min-h-[44px] py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl text-sm transition-colors"
               >
                 Cancel
               </button>
               <button
                 type="submit"
                 disabled={submitting}
-                className="flex-1 py-2.5 bg-rose-600 hover:bg-rose-700 text-white font-bold rounded-xl text-sm shadow transition-colors"
+                className="flex-1 min-h-[44px] py-2.5 bg-rose-700 hover:bg-rose-800 text-white font-bold rounded-xl text-sm shadow transition-colors"
               >
                 {submitting ? 'Closing...' : 'Close Session'}
               </button>

@@ -66,9 +66,9 @@ export const QuickAddModal: React.FC<QuickAddModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
-      <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full overflow-hidden border border-slate-200">
-        <div className="bg-slate-900 text-white px-5 py-4 flex items-center justify-between">
+    <div className="fixed inset-0 z-50 flex items-start sm:items-center justify-center bg-black/60 backdrop-blur-sm p-2 sm:p-4 overflow-y-auto">
+      <div className="my-auto bg-white rounded-2xl shadow-2xl max-w-md w-full max-h-[calc(100dvh-1rem)] flex flex-col overflow-hidden border border-slate-200">
+        <div className="shrink-0 bg-slate-900 text-white px-5 py-4 flex items-center justify-between">
           <div className="flex items-center gap-2">
             <Tag className="w-5 h-5 text-emerald-400" />
             <h2 className="text-base font-bold">Quick-Add Uncataloged Item</h2>
@@ -81,72 +81,74 @@ export const QuickAddModal: React.FC<QuickAddModalProps> = ({
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="p-5 space-y-4">
-          <div>
-            <label className="block text-xs font-bold text-slate-700 mb-1">
-              Item Description / Name *
-            </label>
-            <input
-              type="text"
-              required
-              autoFocus
-              value={name}
-              onChange={e => setName(e.target.value)}
-              placeholder="e.g. Special Degreaser Sample 500ml"
-              className="w-full text-sm font-semibold px-3 py-2 border border-slate-300 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:outline-none"
-            />
-          </div>
-
-          <div className="grid grid-cols-2 gap-3">
+        <form onSubmit={handleSubmit} className="flex-1 min-h-0 flex flex-col overflow-hidden">
+          <div className="flex-1 min-h-0 overflow-y-auto p-5 space-y-4">
             <div>
               <label className="block text-xs font-bold text-slate-700 mb-1">
-                Price (TTC in DT) *
+                Item Description / Name *
               </label>
               <input
-                type="number"
-                step="0.001"
-                min="0.001"
+                type="text"
                 required
-                value={price}
-                onChange={e => setPrice(e.target.value)}
-                placeholder="5.000"
-                className="w-full text-base font-bold font-mono px-3 py-2 border border-slate-300 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:outline-none"
+                autoFocus
+                value={name}
+                onChange={e => setName(e.target.value)}
+                placeholder="e.g. Special Degreaser Sample 500ml"
+                className="w-full text-sm font-semibold px-3 py-2 border border-slate-300 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:outline-none"
               />
             </div>
-            <div>
-              <label className="block text-xs font-bold text-slate-700 mb-1">
-                Quantity *
-              </label>
-              <input
-                type="number"
-                step="1"
-                min="1"
-                required
-                value={quantity}
-                onChange={e => setQuantity(e.target.value)}
-                placeholder="1"
-                className="w-full text-base font-bold font-mono px-3 py-2 border border-slate-300 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:outline-none"
-              />
+
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1">
+                  Price (TTC in DT) *
+                </label>
+                <input
+                  type="number"
+                  step="0.001"
+                  min="0.001"
+                  required
+                  value={price}
+                  onChange={e => setPrice(e.target.value)}
+                  placeholder="5.000"
+                  className="w-full text-base font-bold font-mono px-3 py-2 border border-slate-300 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:outline-none"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1">
+                  Quantity *
+                </label>
+                <input
+                  type="number"
+                  step="1"
+                  min="1"
+                  required
+                  value={quantity}
+                  onChange={e => setQuantity(e.target.value)}
+                  placeholder="1"
+                  className="w-full text-base font-bold font-mono px-3 py-2 border border-slate-300 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:outline-none"
+                />
+              </div>
             </div>
+
+            {error && (
+              <p className="text-xs text-rose-600 font-semibold bg-rose-50 border border-rose-200 p-2 rounded-lg">
+                {error}
+              </p>
+            )}
           </div>
 
-          {error && (
-            <p className="text-xs text-rose-600 font-semibold bg-rose-50 border border-rose-200 p-2 rounded-lg">
-              {error}
-            </p>
-          )}
-
-          <div className="pt-2 flex gap-3">
+          <div className="shrink-0 p-3 sm:p-4 bg-slate-50 border-t border-slate-200 flex gap-3">
             <button
               type="button"
               onClick={onClose}
-              className="flex-1 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl text-sm transition-colors"
+              className="flex-1 min-h-[44px] py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl text-sm transition-colors"
             >
               Cancel
             </button>
             <button
               type="submit"
-              className="flex-1 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl text-sm shadow transition-colors flex items-center justify-center gap-1"
+              className="flex-1 min-h-[44px] py-2.5 bg-emerald-700 hover:bg-emerald-800 text-white font-bold rounded-xl text-sm shadow transition-colors flex items-center justify-center gap-1"
             >
               <Plus className="w-4 h-4" />
               Add to Cart

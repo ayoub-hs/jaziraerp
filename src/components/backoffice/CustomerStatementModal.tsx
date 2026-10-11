@@ -172,7 +172,7 @@ export const CustomerStatementModal: React.FC<CustomerStatementModalProps> = ({
     <div className="border border-slate-200 rounded-xl overflow-hidden shadow-2xs">
       <div className="overflow-x-auto">
         <table className="w-full text-left text-xs min-w-[700px]">
-          <thead className="bg-slate-100/80 border-b border-slate-200 text-slate-600 font-bold uppercase tracking-wider text-[10px]">
+          <thead className="bg-slate-100/80 border-b border-slate-200 text-slate-600 font-bold uppercase tracking-wider text-xs">
             <tr>
               <th className="py-2.5 px-3">Date</th>
               <th className="py-2.5 px-3">Type</th>
@@ -197,25 +197,25 @@ export const CustomerStatementModal: React.FC<CustomerStatementModalProps> = ({
                   </td>
                   <td className="py-2.5 px-3 whitespace-nowrap">
                     {isTicket && (
-                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold bg-amber-50 text-amber-800 border border-amber-200">
+                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-bold bg-amber-50 text-amber-800 border border-amber-200">
                         <ArrowUpRight className="w-3 h-3 text-amber-600" />
                         Billet Dette
                       </span>
                     )}
                     {isPayment && (
-                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-50 text-emerald-800 border border-emerald-200">
+                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-bold bg-emerald-50 text-emerald-800 border border-emerald-200">
                         <ArrowDownLeft className="w-3 h-3 text-emerald-600" />
                         Paiement
                       </span>
                     )}
                     {isRefundCredit && (
-                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold bg-blue-50 text-blue-800 border border-blue-200">
+                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-bold bg-blue-50 text-blue-800 border border-blue-200">
                         <RefreshCw className="w-3 h-3 text-blue-600" />
                         Remboursement
                       </span>
                     )}
                     {isWalletEntry && (
-                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold bg-purple-50 text-purple-800 border border-purple-200">
+                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-bold bg-purple-50 text-purple-800 border border-purple-200">
                         <Wallet className="w-3 h-3 text-purple-600" />
                         Portefeuille
                       </span>
@@ -233,7 +233,7 @@ export const CustomerStatementModal: React.FC<CustomerStatementModalProps> = ({
                   <td className="py-2.5 px-3 text-right font-mono font-bold text-slate-900 bg-slate-50/40">
                     {entry.running_balance !== undefined ? formatMoney(entry.running_balance) : '—'}
                   </td>
-                  <td className="py-2.5 px-3 text-slate-500 max-w-xs truncate text-[11px]">
+                  <td className="py-2.5 px-3 text-slate-600 max-w-xs truncate text-xs">
                     {entry.status || '—'}
                   </td>
                 </tr>
@@ -247,25 +247,25 @@ export const CustomerStatementModal: React.FC<CustomerStatementModalProps> = ({
 
   return (
     <div 
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-in fade-in duration-200 print:p-0 print:bg-white print:static print:overflow-visible print:block"
+      className="fixed inset-0 z-50 bg-slate-900/60 p-2 sm:p-4 overflow-y-auto flex items-center justify-center animate-in fade-in duration-200 print:p-0 print:bg-white print:static print:overflow-visible print:block"
       onClick={e => {
         if (e.target === e.currentTarget) onClose();
       }}
     >
       <div 
-        className="bg-white rounded-2xl shadow-2xl max-w-4xl w-full flex flex-col border border-slate-200 max-h-[90vh] overflow-hidden print:border-none print:shadow-none print:w-full print:max-w-none print:max-h-none print:overflow-visible"
+        className="relative w-full max-w-4xl max-h-[calc(100dvh-1rem)] sm:max-h-[calc(100dvh-2rem)] my-auto flex flex-col bg-white rounded-xl shadow-2xl border border-slate-200 overflow-hidden print:border-none print:shadow-none print:w-full print:max-w-none print:max-h-none print:overflow-visible"
         onClick={e => e.stopPropagation()}
       >
         {/* Header - Screen only */}
-        <div className="bg-slate-900 text-white px-6 py-4 flex items-center justify-between shrink-0 print:hidden">
+        <div className="bg-slate-900 text-white px-4 py-3 sm:px-6 sm:py-4 flex items-center justify-between shrink-0 print:hidden">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-blue-600/30 border border-blue-400/40 flex items-center justify-center text-blue-400">
+            <div className="w-10 h-10 rounded-xl bg-blue-600/30 border border-blue-400/40 flex items-center justify-center text-blue-400 shrink-0">
               <FileText className="w-5 h-5" />
             </div>
             <div>
               <div className="flex items-center gap-2">
                 <h2 className="text-base font-black">Relevé de Compte Client</h2>
-                <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-blue-500/20 text-blue-300 border border-blue-400/30">
+                <span className="text-xs font-bold px-2 py-0.5 rounded bg-blue-500/20 text-blue-300 border border-blue-400/30">
                   {customer.type}
                 </span>
               </div>
@@ -280,27 +280,27 @@ export const CustomerStatementModal: React.FC<CustomerStatementModalProps> = ({
               type="button"
               onClick={handlePrint}
               disabled={isLoading}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-500 disabled:opacity-50 text-white text-xs font-bold transition-colors shadow-sm cursor-pointer disabled:cursor-not-allowed"
+              className="flex items-center gap-1.5 min-h-[44px] px-3.5 rounded-lg bg-blue-600 hover:bg-blue-500 disabled:opacity-50 text-white text-xs font-bold transition-colors shadow-sm cursor-pointer disabled:cursor-not-allowed"
               title="Imprimer ou exporter en PDF (A4)"
             >
-              <Printer className="w-3.5 h-3.5" />
+              <Printer className="w-4 h-4" />
               <span>Imprimer / PDF</span>
             </button>
             <button
               type="button"
               onClick={handleExportCsv}
               disabled={isLoading || totalEntries === 0}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 disabled:opacity-50 text-slate-200 text-xs font-bold border border-slate-700 transition-colors shadow-sm cursor-pointer disabled:cursor-not-allowed"
+              className="flex items-center gap-1.5 min-h-[44px] px-3.5 rounded-lg bg-slate-800 hover:bg-slate-700 disabled:opacity-50 text-slate-200 text-xs font-bold border border-slate-700 transition-colors shadow-sm cursor-pointer disabled:cursor-not-allowed"
               title="Exporter au format CSV"
             >
-              <Download className="w-3.5 h-3.5" />
+              <Download className="w-4 h-4" />
               <span>Exporter CSV</span>
             </button>
             <button
               type="button"
               onClick={loadStatement}
               disabled={isLoading}
-              className="p-1.5 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800 transition-colors"
+              className="w-11 h-11 flex items-center justify-center text-slate-400 hover:text-white rounded-lg hover:bg-slate-800 transition-colors cursor-pointer shrink-0"
               title="Actualiser"
             >
               <RefreshCw className={`w-4 h-4 ${isLoading ? 'animate-spin' : ''}`} />
@@ -308,7 +308,7 @@ export const CustomerStatementModal: React.FC<CustomerStatementModalProps> = ({
             <button
               type="button"
               onClick={onClose}
-              className="p-1.5 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800 transition-colors"
+              className="w-11 h-11 flex items-center justify-center text-slate-400 hover:text-white rounded-lg hover:bg-slate-800 transition-colors cursor-pointer shrink-0"
               title="Fermer (Échap)"
             >
               <X className="w-5 h-5" />
@@ -317,27 +317,27 @@ export const CustomerStatementModal: React.FC<CustomerStatementModalProps> = ({
         </div>
 
         {/* Customer Balance Summary Bar - Screen only */}
-        <div className="bg-slate-50 border-b border-slate-200 px-6 py-3 grid grid-cols-2 sm:grid-cols-4 gap-3 shrink-0 print:hidden">
+        <div className="bg-slate-50 border-b border-slate-200 px-4 py-3 sm:px-6 sm:py-3 grid grid-cols-2 sm:grid-cols-4 gap-3 shrink-0 print:hidden">
           <div>
-            <span className="text-[10px] uppercase font-bold text-slate-500 tracking-wider block">Dette Ouverte</span>
+            <span className="text-xs uppercase font-bold text-slate-600 tracking-wider block">Dette Ouverte</span>
             <span className="text-sm font-black font-mono text-amber-700">
               {formatMoney(customer.total_debt)}
             </span>
           </div>
           <div>
-            <span className="text-[10px] uppercase font-bold text-slate-500 tracking-wider block">Portefeuille (Avoir)</span>
+            <span className="text-xs uppercase font-bold text-slate-600 tracking-wider block">Portefeuille (Avoir)</span>
             <span className="text-sm font-black font-mono text-purple-700">
               {formatMoney(customer.wallet_balance)}
             </span>
           </div>
           <div>
-            <span className="text-[10px] uppercase font-bold text-slate-500 tracking-wider block">Solde Registre Dette</span>
+            <span className="text-xs uppercase font-bold text-slate-600 tracking-wider block">Solde Registre Dette</span>
             <span className="text-sm font-black font-mono text-slate-800">
               {formatMoney(debt.final_balance)}
             </span>
           </div>
           <div>
-            <span className="text-[10px] uppercase font-bold text-slate-500 tracking-wider block">Solde Registre Portefeuille</span>
+            <span className="text-xs uppercase font-bold text-slate-600 tracking-wider block">Solde Registre Portefeuille</span>
             <span className="text-sm font-black font-mono text-emerald-700">
               {formatMoney(wallet.final_balance)}
             </span>
@@ -345,7 +345,7 @@ export const CustomerStatementModal: React.FC<CustomerStatementModalProps> = ({
         </div>
 
         {/* Content Area - Screen only */}
-        <div className="flex-1 overflow-y-auto p-6 space-y-6 print:hidden">
+        <div className="flex-1 min-h-0 overflow-y-auto p-4 sm:p-6 space-y-4 sm:space-y-6 print:hidden">
           {error && (
             <div className="p-3 bg-rose-50 border border-rose-200 rounded-xl flex items-center gap-2 text-rose-800 text-xs font-semibold">
               <AlertCircle className="w-4 h-4 shrink-0 text-rose-600" />
@@ -356,13 +356,13 @@ export const CustomerStatementModal: React.FC<CustomerStatementModalProps> = ({
           {isLoading ? (
             <div className="py-16 text-center">
               <RefreshCw className="w-8 h-8 text-blue-600 animate-spin mx-auto mb-2" />
-              <p className="text-sm font-semibold text-slate-500">Chargement de l'historique du grand livre...</p>
+              <p className="text-sm font-semibold text-slate-600">Chargement de l'historique du grand livre...</p>
             </div>
           ) : totalEntries === 0 ? (
             <div className="py-16 text-center bg-slate-50 rounded-2xl border border-slate-200 border-dashed">
-              <FileText className="w-10 h-10 text-slate-300 mx-auto mb-2" />
-              <p className="text-sm font-bold text-slate-600">Aucun mouvement enregistré</p>
-              <p className="text-xs text-slate-400 mt-1">Ce client n'a pas encore de billets de dette, de paiements ou d'opérations de portefeuille.</p>
+              <FileText className="w-10 h-10 text-slate-400 mx-auto mb-2" />
+              <p className="text-sm font-bold text-slate-700">Aucun mouvement enregistré</p>
+              <p className="text-xs text-slate-500 mt-1">Ce client n'a pas encore de billets de dette, de paiements ou d'opérations de portefeuille.</p>
             </div>
           ) : (
             <>
@@ -372,7 +372,7 @@ export const CustomerStatementModal: React.FC<CustomerStatementModalProps> = ({
                   Registre Dette — solde {formatMoney(debt.final_balance)}
                 </h3>
                 {debt.entries.length === 0 ? (
-                  <p className="text-xs text-slate-400">Aucune écriture de dette.</p>
+                  <p className="text-xs text-slate-500">Aucune écriture de dette.</p>
                 ) : renderLedgerTable(debt.entries)}
               </div>
               <div>
@@ -381,7 +381,7 @@ export const CustomerStatementModal: React.FC<CustomerStatementModalProps> = ({
                   Registre Portefeuille — solde {formatMoney(wallet.final_balance)}
                 </h3>
                 {wallet.entries.length === 0 ? (
-                  <p className="text-xs text-slate-400">Aucune opération de portefeuille.</p>
+                  <p className="text-xs text-slate-500">Aucune opération de portefeuille.</p>
                 ) : renderLedgerTable(wallet.entries)}
               </div>
             </>
@@ -389,12 +389,12 @@ export const CustomerStatementModal: React.FC<CustomerStatementModalProps> = ({
         </div>
 
         {/* Footer - Screen only */}
-        <div className="bg-slate-50 border-t border-slate-200 px-6 py-3 flex items-center justify-between text-xs text-slate-500 shrink-0 print:hidden">
+        <div className="bg-slate-50 border-t border-slate-200 px-4 py-3 sm:px-6 sm:py-4 flex items-center justify-between text-xs text-slate-600 shrink-0 print:hidden">
           <span>{totalEntries} écriture(s) dans le grand livre</span>
           <button
             type="button"
             onClick={onClose}
-            className="px-4 py-2 bg-white hover:bg-slate-100 text-slate-700 font-bold rounded-xl border border-slate-200 shadow-2xs transition-colors"
+            className="min-h-[44px] px-4 py-2 bg-white hover:bg-slate-100 text-slate-700 font-bold rounded-xl border border-slate-200 shadow-2xs transition-colors cursor-pointer"
           >
             Fermer
           </button>
@@ -407,7 +407,7 @@ export const CustomerStatementModal: React.FC<CustomerStatementModalProps> = ({
             <div>
               <h1 className="text-lg font-black tracking-tight uppercase">{shop.shop_name}</h1>
               {shop.shop_subtitle ? <p className="text-xs text-slate-600">{shop.shop_subtitle}</p> : null}
-              <div className="text-[11px] text-slate-600 mt-1 space-y-0.5">
+              <div className="text-xs text-slate-600 mt-1 space-y-0.5">
                 {shop.shop_address ? <div>{shop.shop_address}</div> : null}
                 {shop.shop_phone ? <div>Tél: {shop.shop_phone}</div> : null}
                 {shop.tax_id ? <div>Matricule Fiscal: <span className="font-semibold">{shop.tax_id}</span></div> : null}
@@ -417,7 +417,7 @@ export const CustomerStatementModal: React.FC<CustomerStatementModalProps> = ({
               <div className="inline-block bg-slate-900 text-white font-bold px-3 py-1 rounded text-xs mb-1">
                 RELEVÉ DE COMPTE CLIENT
               </div>
-              <div className="text-[11px] text-slate-700 space-y-0.5 font-mono">
+              <div className="text-xs text-slate-700 space-y-0.5 font-mono">
                 <div>Date d'édition: <span className="font-semibold">{formatDateTime(new Date().toISOString())}</span></div>
                 <div>Période: <span className="font-semibold">{periodLabel}</span></div>
               </div>
@@ -427,17 +427,17 @@ export const CustomerStatementModal: React.FC<CustomerStatementModalProps> = ({
           {/* Customer Details Box */}
           <div className="grid grid-cols-2 gap-4 border border-slate-300 rounded-lg p-3 mb-4 bg-slate-50">
             <div>
-              <span className="text-[10px] font-bold text-slate-500 uppercase block">Client:</span>
+              <span className="text-xs font-bold text-slate-600 uppercase block">Client:</span>
               <span className="text-sm font-black text-slate-900">{customer.name}</span>
-              <div className="text-[11px] text-slate-600 mt-0.5">
+              <div className="text-xs text-slate-600 mt-0.5">
                 Catégorie: <span className="font-semibold">{customer.type === 'RESELLER' ? 'Revendeur' : customer.type === 'WHOLESALE' ? 'Grossiste' : 'Détail'}</span>
               </div>
-              {customer.phone ? <div className="text-[11px] text-slate-600">Tél: {customer.phone}</div> : null}
-              {customer.address ? <div className="text-[11px] text-slate-600">Adresse: {customer.address}</div> : null}
+              {customer.phone ? <div className="text-xs text-slate-600">Tél: {customer.phone}</div> : null}
+              {customer.address ? <div className="text-xs text-slate-600">Adresse: {customer.address}</div> : null}
             </div>
             <div className="text-right space-y-1">
               <div>
-                <span className="text-[10px] font-bold text-slate-500 uppercase block">Matricule / Identifiant:</span>
+                <span className="text-xs font-bold text-slate-600 uppercase block">Matricule / Identifiant:</span>
                 <span className="font-mono font-semibold text-xs text-slate-800">{customerMatricule}</span>
               </div>
               <div className="pt-2 border-t border-slate-200 flex justify-between text-xs">
@@ -462,11 +462,11 @@ export const CustomerStatementModal: React.FC<CustomerStatementModalProps> = ({
               </span>
             </div>
             {debt.entries.length === 0 ? (
-              <p className="text-[11px] text-slate-500 italic py-1">Aucune écriture de dette enregistrée.</p>
+              <p className="text-xs text-slate-500 italic py-1">Aucune écriture de dette enregistrée.</p>
             ) : (
-              <table className="w-full text-left border-collapse text-[11px]">
+              <table className="w-full text-left border-collapse text-xs">
                 <thead>
-                  <tr className="border-b border-slate-300 font-bold uppercase text-[10px] text-slate-600">
+                  <tr className="border-b border-slate-300 font-bold uppercase text-xs text-slate-600">
                     <th className="py-1 px-1.5">Date</th>
                     <th className="py-1 px-1.5">Type</th>
                     <th className="py-1 px-1.5">Référence</th>
@@ -506,11 +506,11 @@ export const CustomerStatementModal: React.FC<CustomerStatementModalProps> = ({
               </span>
             </div>
             {wallet.entries.length === 0 ? (
-              <p className="text-[11px] text-slate-500 italic py-1">Aucune opération de portefeuille enregistrée.</p>
+              <p className="text-xs text-slate-500 italic py-1">Aucune opération de portefeuille enregistrée.</p>
             ) : (
-              <table className="w-full text-left border-collapse text-[11px]">
+              <table className="w-full text-left border-collapse text-xs">
                 <thead>
-                  <tr className="border-b border-slate-300 font-bold uppercase text-[10px] text-slate-600">
+                  <tr className="border-b border-slate-300 font-bold uppercase text-xs text-slate-600">
                     <th className="py-1 px-1.5">Date</th>
                     <th className="py-1 px-1.5">Opération</th>
                     <th className="py-1 px-1.5 text-right">Crédit / In (+)</th>
@@ -537,14 +537,14 @@ export const CustomerStatementModal: React.FC<CustomerStatementModalProps> = ({
 
           {/* Signature Box */}
           <div className="pt-4 border-t border-slate-300 flex justify-between items-end">
-            <div className="text-[10px] text-slate-500 italic">
+            <div className="text-xs text-slate-500 italic">
               Document généré par JaziraERP • Arrêté à un solde de dette de {formatMoney(debt.final_balance)}
             </div>
             <div className="w-56 border border-dashed border-slate-400 rounded-lg p-3 text-center h-24 flex flex-col justify-between">
-              <span className="text-[10px] font-bold text-slate-600 uppercase">
+              <span className="text-xs font-bold text-slate-600 uppercase">
                 Cachet et Signature Société
               </span>
-              <span className="text-[9px] text-slate-400 italic">Pour Al Jazira SHSP</span>
+              <span className="text-xs text-slate-400 italic">Pour Al Jazira SHSP</span>
             </div>
           </div>
         </div>

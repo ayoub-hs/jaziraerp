@@ -556,7 +556,7 @@ export const DesktopPos: React.FC<DesktopPosProps> = ({
           <div className="flex flex-col">
             <span>{scanAlert.message}</span>
             {scanAlert.barcode && (
-              <span className="text-[11px] font-mono opacity-90">Produit introuvable dans le catalogue</span>
+              <span className="text-xs font-mono opacity-90">Produit introuvable dans le catalogue</span>
             )}
           </div>
           <button
@@ -714,14 +714,14 @@ export const DesktopPos: React.FC<DesktopPosProps> = ({
                 <span className="text-xs font-bold text-slate-900 truncate max-w-[120px]" title={selectedCustomer.name}>
                   {selectedCustomer.name}
                 </span>
-                <span className="text-[10px] font-bold bg-emerald-100 text-emerald-800 px-1 py-0.2 rounded shrink-0">
+                <span className="text-xs font-bold bg-emerald-100 text-emerald-800 px-1 py-0.2 rounded shrink-0">
                   {selectedCustomer.type}
                 </span>
-                <span className="text-[10px] font-semibold text-purple-700 bg-purple-50 px-1 py-0.2 rounded shrink-0">
+                <span className="text-xs font-semibold text-purple-700 bg-purple-50 px-1 py-0.2 rounded shrink-0">
                   Solde: {formatMoney(selectedCustomer.wallet_balance)}
                 </span>
                 {(selectedCustomer.total_debt || 0) > 0 && (
-                  <span className="text-[10px] font-bold text-amber-800 bg-amber-50 px-1 py-0.2 rounded shrink-0">
+                  <span className="text-xs font-bold text-amber-800 bg-amber-50 px-1 py-0.2 rounded shrink-0">
                     D: {formatMoney(selectedCustomer.total_debt)}
                   </span>
                 )}
@@ -765,7 +765,7 @@ export const DesktopPos: React.FC<DesktopPosProps> = ({
                       className="p-2.5 text-xs font-semibold hover:bg-slate-50 cursor-pointer flex items-center justify-between text-slate-600 bg-slate-50/50"
                     >
                       <span>Passager / Walk-in Retail</span>
-                      <span className="text-[10px] text-slate-400">Sans compte</span>
+                      <span className="text-xs text-slate-400">Sans compte</span>
                     </div>
                     {filteredCustomers.length === 0 ? (
                       <div className="p-4 text-xs text-slate-400 text-center">
@@ -784,11 +784,11 @@ export const DesktopPos: React.FC<DesktopPosProps> = ({
                         >
                           <div className="flex items-center justify-between gap-2">
                             <span className="text-xs font-bold text-slate-800 truncate">{c.name}</span>
-                            <span className="text-[10px] font-semibold bg-slate-100 text-slate-700 px-1.5 py-0.5 rounded shrink-0">
+                            <span className="text-xs font-semibold bg-slate-100 text-slate-700 px-1.5 py-0.5 rounded shrink-0">
                               {c.type}{c.reseller_discount_percent ? ` -${c.reseller_discount_percent}%` : ''}
                             </span>
                           </div>
-                          <div className="flex items-center gap-2 mt-0.5 text-[10px] text-slate-500">
+                          <div className="flex items-center gap-2 mt-0.5 text-xs text-slate-500">
                             {c.phone && <span>{c.phone}</span>}
                             {(c.total_debt || 0) > 0 && (
                               <span className="text-amber-700 font-bold">Dette: {formatMoney(c.total_debt)}</span>
@@ -1101,7 +1101,7 @@ export const DesktopPos: React.FC<DesktopPosProps> = ({
             <div className="h-full flex flex-col items-center justify-center text-slate-400 py-12">
               <Package className="w-8 h-8 stroke-1 text-slate-300 mb-2" />
               <p className="text-xs font-medium">Cart is empty</p>
-              <p className="text-[10px] text-slate-400">Scan barcode or click items to begin sale</p>
+              <p className="text-xs text-slate-400">Scan barcode or click items to begin sale</p>
             </div>
           )}
         </div>

@@ -169,10 +169,10 @@ export const ReceiptPrintModal: React.FC<ReceiptPrintModalProps> = ({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 overflow-y-auto print:p-0 print:bg-white print:static print:overflow-visible">
-      <div className="bg-white rounded-2xl shadow-2xl max-w-sm w-full overflow-hidden flex flex-col border border-slate-200 print:border-none print:shadow-none print:w-auto print:max-w-none print:overflow-visible print:h-auto">
+    <div className="fixed inset-0 z-50 flex items-start sm:items-center justify-center bg-black/60 backdrop-blur-sm p-2 sm:p-4 overflow-y-auto print:p-0 print:bg-white print:static print:overflow-visible">
+      <div className="my-auto bg-white rounded-2xl shadow-2xl max-w-sm w-full max-h-[calc(100dvh-1rem)] overflow-hidden flex flex-col border border-slate-200 print:border-none print:shadow-none print:w-auto print:max-w-none print:overflow-visible print:h-auto print:max-h-none">
         {/* Header */}
-        <div className="bg-slate-900 text-white px-4 py-3 flex items-center justify-between print:hidden">
+        <div className="shrink-0 bg-slate-900 text-white px-4 py-3 flex items-center justify-between print:hidden">
           <div className="flex items-center gap-2">
             <Printer className="w-4 h-4 text-emerald-400" />
             <span className="text-sm font-bold">58mm Thermal Receipt</span>
@@ -186,26 +186,26 @@ export const ReceiptPrintModal: React.FC<ReceiptPrintModalProps> = ({
         </div>
 
         {/* Receipt Container */}
-        <div className="p-4 bg-slate-100 flex justify-center print:p-0 print:bg-white print:m-0">
+        <div className="flex-1 min-h-0 overflow-y-auto p-4 bg-slate-100 flex justify-center print:p-0 print:bg-white print:m-0 print:overflow-visible">
           {loading || !sale ? (
             <div className="py-12 text-center text-xs text-slate-500">Loading receipt data...</div>
           ) : (
             <div
               ref={printRef}
-              className="printable-receipt bg-white p-4 shadow-sm border border-slate-300 w-[240px] text-[11px] font-mono leading-tight text-black print:w-[58mm] print:max-w-[58mm] print:shadow-none print:border-none print:m-0 print:p-1"
+              className="printable-receipt bg-white p-4 shadow-sm border border-slate-300 w-[240px] text-xs font-mono leading-tight text-black print:w-[58mm] print:max-w-[58mm] print:shadow-none print:border-none print:m-0 print:p-1"
               style={{ fontFamily: 'Courier, monospace' }}
             >
               {/* Shop Header */}
               <div className="text-center pb-2 border-b border-dashed border-black">
                 {shop.shop_name ? <div className="font-bold text-sm uppercase">{shop.shop_name}</div> : null}
-                {shop.shop_subtitle ? <div className="text-[10px]">{shop.shop_subtitle}</div> : null}
-                {shop.shop_address ? <div className="text-[10px]">{shop.shop_address}</div> : null}
-                {shop.shop_phone ? <div className="text-[10px]">Tél: {shop.shop_phone}</div> : null}
-                {shop.tax_id ? <div className="text-[9px] text-slate-600">MF: {shop.tax_id}</div> : null}
+                {shop.shop_subtitle ? <div className="text-xs">{shop.shop_subtitle}</div> : null}
+                {shop.shop_address ? <div className="text-xs">{shop.shop_address}</div> : null}
+                {shop.shop_phone ? <div className="text-xs">Tél: {shop.shop_phone}</div> : null}
+                {shop.tax_id ? <div className="text-xs text-slate-600">MF: {shop.tax_id}</div> : null}
               </div>
 
               {/* Receipt Metadata */}
-              <div className="py-2 border-b border-dashed border-black text-[10px] space-y-0.5">
+              <div className="py-2 border-b border-dashed border-black text-xs space-y-0.5">
                 <div className="flex justify-between">
                   <span>Ticket:</span>
                   <span className="font-bold">{sale.receipt_number}</span>
@@ -222,7 +222,7 @@ export const ReceiptPrintModal: React.FC<ReceiptPrintModalProps> = ({
 
               {/* Line Items */}
               <div className="py-2 border-b border-dashed border-black space-y-1">
-                <div className="flex justify-between font-bold text-[10px]">
+                <div className="flex justify-between font-bold text-xs">
                   <span>Article</span>
                   <span>Total</span>
                 </div>
@@ -234,9 +234,9 @@ export const ReceiptPrintModal: React.FC<ReceiptPrintModalProps> = ({
                     ? computedFull
                     : roundMoney((Number(item.total_line ?? (item as any).line_total) || 0) + discount);
                   return (
-                    <div key={item.id} className="text-[10px]">
+                    <div key={item.id} className="text-xs">
                       <div className="truncate font-semibold">{name}</div>
-                      <div className="flex justify-between text-slate-600 text-[9px]">
+                      <div className="flex justify-between text-slate-600 text-xs">
                         <span>
                           {item.quantity} x {formatMoney(item.unit_price)}
                           {item.pack_multiplier > 1 ? ` (x${item.pack_multiplier})` : ''}
@@ -244,7 +244,7 @@ export const ReceiptPrintModal: React.FC<ReceiptPrintModalProps> = ({
                         <span className="text-black font-semibold">{formatMoney(fullTotal)}</span>
                       </div>
                       {discount > 0 && (
-                        <div className="flex justify-between text-slate-700 print:text-black text-[9px] italic">
+                        <div className="flex justify-between text-slate-700 print:text-black text-xs italic">
                           <span className="pl-2">Remise:</span>
                           <span className="font-semibold text-rose-700 print:text-black">-{formatMoney(discount)}</span>
                         </div>
@@ -255,7 +255,7 @@ export const ReceiptPrintModal: React.FC<ReceiptPrintModalProps> = ({
               </div>
 
               {/* Totals */}
-              <div className="py-2 border-b border-dashed border-black space-y-0.5 text-[10px]">
+              <div className="py-2 border-b border-dashed border-black space-y-0.5 text-xs">
                 <div className="flex justify-between">
                   <span>Total HT:</span>
                   <span>{formatMoney(sale.subtotal_ht)}</span>
@@ -277,7 +277,7 @@ export const ReceiptPrintModal: React.FC<ReceiptPrintModalProps> = ({
               </div>
 
               {/* Payments */}
-              <div className="py-2 border-b border-dashed border-black space-y-0.5 text-[10px]">
+              <div className="py-2 border-b border-dashed border-black space-y-0.5 text-xs">
                 {sale.cash_paid > 0 && (
                   <div className="flex justify-between">
                     <span>Espèces:</span>
@@ -311,7 +311,7 @@ export const ReceiptPrintModal: React.FC<ReceiptPrintModalProps> = ({
               </div>
 
               {/* Footer Notice */}
-              <div className="text-center pt-3 text-[9px] space-y-0.5">
+              <div className="text-center pt-3 text-xs space-y-0.5">
                 <div>Merci de votre visite!</div>
                 <div>Les bidons consignés sont remboursables</div>
               </div>
@@ -320,7 +320,7 @@ export const ReceiptPrintModal: React.FC<ReceiptPrintModalProps> = ({
         </div>
 
         {/* Footer Actions */}
-        <div className="p-4 bg-white border-t border-slate-200 flex flex-col gap-2 print:hidden">
+        <div className="shrink-0 p-3 sm:p-4 bg-white border-t border-slate-200 flex flex-col gap-2 print:hidden">
           {printFeedback && (
             <div className="text-center text-xs font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 py-1.5 px-3 rounded-lg">
               ✓ {printFeedback}
@@ -330,14 +330,14 @@ export const ReceiptPrintModal: React.FC<ReceiptPrintModalProps> = ({
             <button
               type="button"
               onClick={onClose}
-              className="flex-1 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl text-xs transition-colors"
+              className="flex-1 min-h-[44px] py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl text-xs transition-colors"
             >
               Fermer
             </button>
             <button
               type="button"
               onClick={handlePrint}
-              className="flex-1 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl text-xs shadow transition-colors flex items-center justify-center gap-1.5"
+              className="flex-1 min-h-[44px] py-2.5 bg-emerald-700 hover:bg-emerald-800 text-white font-bold rounded-xl text-xs shadow transition-colors flex items-center justify-center gap-1.5"
             >
               <Printer className="w-3.5 h-3.5" />
               Imprimer (58mm)

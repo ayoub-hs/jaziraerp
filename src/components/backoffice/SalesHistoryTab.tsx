@@ -138,7 +138,8 @@ export const SalesHistoryTab: React.FC<SalesHistoryTabProps> = ({
   };
 
   return (
-    <div className="space-y-4">
+    <>
+      <div className="space-y-4">
       {/* Header & Controls */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-3">
         <div>
@@ -357,6 +358,7 @@ export const SalesHistoryTab: React.FC<SalesHistoryTabProps> = ({
           </div>
         )}
       </div>
+      </div>
 
       {/* Sale Detail Modal */}
       {selectedSaleId && (
@@ -569,6 +571,6 @@ export const SalesHistoryTab: React.FC<SalesHistoryTabProps> = ({
         onRefundCompleted={handleRefundSuccess}
         initialSaleId={refundModalSaleId}
       />
-    </div>
+    </>
   );
 };
