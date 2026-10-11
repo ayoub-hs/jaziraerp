@@ -13,7 +13,6 @@ import {
   Printer,
   Usb,
   Bluetooth,
-  KeyRound,
   AlertCircle,
   X
 } from 'lucide-react';
@@ -212,10 +211,10 @@ export const Header: React.FC<HeaderProps> = ({
         </div>
 
         {/* Center/Right: Session Status, Sync Badge, Cash Actions */}
-        <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
+        <div className="flex items-center gap-2 sm:gap-2.5 flex-nowrap shrink-0">
           {/* Active Session Badge & Switcher */}
           {activeSession && activeSession.status === 'OPEN' ? (
-            <div className="flex items-center gap-2 bg-slate-800/80 border border-slate-700 px-2.5 py-1 rounded-lg text-xs">
+            <div className="flex items-center gap-2 bg-slate-800/80 border border-slate-700 px-2.5 py-1 rounded-lg text-xs" title={activeSession.session_number}>
               <span className="inline-block w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
               {openSessions && openSessions.length > 1 ? (
                 <select
@@ -225,22 +224,19 @@ export const Header: React.FC<HeaderProps> = ({
                     if (target && onSelectSession) onSelectSession(target);
                   }}
                   className="bg-slate-900 text-emerald-400 font-semibold text-xs border border-slate-600 rounded px-1.5 py-0.5 outline-none cursor-pointer hover:border-emerald-500"
-                  title="Changer de caisse active"
+                  title={activeSession.session_number}
                 >
                   {openSessions.map(s => (
-                    <option key={s.id} value={s.id}>
-                      {s.counter_name} ({s.session_number})
+                    <option key={s.id} value={s.id} title={s.session_number}>
+                      {s.counter_name}
                     </option>
                   ))}
                 </select>
               ) : (
-                <span className="font-medium text-slate-200">
-                  {activeSession.session_number} ({activeSession.counter_name})
+                <span className="font-medium text-slate-200" title={activeSession.session_number}>
+                  {activeSession.counter_name}
                 </span>
               )}
-              <span className="text-slate-400 border-l border-slate-700 pl-2 hidden sm:inline">
-                Float: {formatMoney(activeSession.opening_cash)}
-              </span>
             </div>
           ) : openSessions && openSessions.length > 0 ? (
             <div className="flex items-center gap-1.5 bg-amber-950/40 border border-amber-500/40 px-2 py-1 rounded-lg text-xs">
@@ -255,8 +251,8 @@ export const Header: React.FC<HeaderProps> = ({
               >
                 <option value="" disabled>Sélectionner caisse...</option>
                 {openSessions.map(s => (
-                  <option key={s.id} value={s.id}>
-                    {s.counter_name} ({s.session_number})
+                  <option key={s.id} value={s.id} title={s.session_number}>
+                    {s.counter_name}
                   </option>
                 ))}
               </select>
@@ -466,20 +462,16 @@ export const Header: React.FC<HeaderProps> = ({
             </>
           )}
 
-          {/* Security Settings Button */}
-          <button
-            onClick={() => setIsAuthModalOpen(true)}
-            title="Security Settings (Change PIN / Master Password)"
-            className="flex items-center gap-1 bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white px-2.5 py-1 rounded-lg text-xs font-semibold border border-slate-700 transition-colors"
-          >
-            <KeyRound className="w-3.5 h-3.5 text-blue-400" />
-            <span className="hidden md:inline">Security</span>
-          </button>
-
           {/* Lock Counter Screen Button */}
           <button
-            onClick={onLockSession}
-            title="Lock Counter (Requires PIN to unlock)"
+            onClick={() => {
+              if (!isAuthConfigured) {
+                setIsAuthModalOpen(true);
+              } else {
+                onLockSession();
+              }
+            }}
+            title={isAuthConfigured ? "Lock Counter (Requires PIN to unlock)" : "Configurer le code PIN pour verrouiller"}
             className="flex items-center gap-1 bg-slate-800 hover:bg-slate-700 text-amber-300 hover:text-amber-200 px-2.5 py-1 rounded-lg text-xs font-semibold border border-slate-700 transition-colors"
           >
             <Lock className="w-3.5 h-3.5" />

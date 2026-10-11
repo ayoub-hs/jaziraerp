@@ -568,6 +568,12 @@ export const SessionModal: React.FC<SessionModalProps> = ({
                   </span>
                 </div>
                 <div className="flex justify-between text-slate-600">
+                  <span>Fond de caisse initial :</span>
+                  <span className="font-bold text-slate-900 font-mono">
+                    {formatMoney((openSessions.find(s => s.id === selectedSessionToCloseId) || activeSession)?.opening_cash)}
+                  </span>
+                </div>
+                <div className="flex justify-between text-slate-600">
                   <span>Espèces attendues en caisse :</span>
                   <span className="font-bold text-slate-900 font-mono">
                     {formatMoney(expectedCash)}

@@ -1,6 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Settings, Save, CheckCircle2, AlertCircle, RefreshCw, Store } from 'lucide-react';
+import { Settings, Save, CheckCircle2, AlertCircle, RefreshCw, Store, KeyRound } from 'lucide-react';
 import { getShopInfo, setCachedShopInfo, type ShopInfo } from '../../services/shopInfo.js';
+import { AuthCredentialsModal } from '../shared/AuthCredentialsModal.js';
+import { authService } from '../../services/authService.js';
 
 export const ShopSettingsPanel: React.FC = () => {
   const [shopName, setShopName] = useState('');
@@ -16,8 +18,12 @@ export const ShopSettingsPanel: React.FC = () => {
   const isSavingRef = useRef(false);
   const [statusMsg, setStatusMsg] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
+  const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
+  const [isAuthConfigured, setIsAuthConfigured] = useState<boolean>(authService.isConfigured());
+
   useEffect(() => {
     loadSettings();
+    authService.syncStatus().then(st => setIsAuthConfigured(st.configured));
   }, []);
 
   const loadSettings = async () => {
@@ -303,6 +309,52 @@ export const ShopSettingsPanel: React.FC = () => {
           </button>
         </div>
       </form>
+
+      {/* Security Section */}
+      <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-4">
+        <div className="flex items-center gap-3">
+          <div className="w-12 h-12 rounded-xl bg-blue-50 border border-blue-200 flex items-center justify-center text-blue-600">
+            <KeyRound className="w-6 h-6" />
+          </div>
+          <div>
+            <h2 className="text-base font-black text-slate-900">Sécurité</h2>
+            <p className="text-xs text-slate-600 font-medium mt-0.5">
+              Code PIN de déverrouillage de caisse et mot de passe principal administrateur.
+            </p>
+          </div>
+        </div>
+
+        <div className="flex items-center justify-between pt-2 border-t border-slate-100">
+          <div>
+            <div className="text-xs font-bold text-slate-700">
+              {isAuthConfigured ? 'Sécurité configurée' : 'Sécurité non configurée'}
+            </div>
+            <p className="text-pos-badge text-slate-600 mt-0.5">
+              {isAuthConfigured
+                ? 'Le code PIN et le mot de passe principal sont actifs.'
+                : 'Définissez un code PIN pour verrouiller l\'accès à la caisse.'}
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={() => setIsAuthModalOpen(true)}
+            className="flex items-center gap-1.5 px-4 py-2 bg-slate-800 hover:bg-slate-700 text-white rounded-xl text-xs font-bold transition-colors shadow-sm"
+          >
+            <KeyRound className="w-3.5 h-3.5 text-blue-400" />
+            <span>{isAuthConfigured ? 'Modifier le code PIN / MDP' : 'Configurer le code PIN'}</span>
+          </button>
+        </div>
+      </div>
+
+      <AuthCredentialsModal
+        isOpen={isAuthModalOpen}
+        mode={isAuthConfigured ? 'CHANGE' : 'SETUP'}
+        onClose={() => setIsAuthModalOpen(false)}
+        onSuccess={() => {
+          setIsAuthConfigured(true);
+          setIsAuthModalOpen(false);
+        }}
+      />
     </div>
   );
 };

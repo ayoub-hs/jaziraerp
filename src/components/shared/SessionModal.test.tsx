@@ -143,4 +143,29 @@ describe('SessionModal Z-Report Thermal Slip', () => {
     fireEvent.click(reprintBtn);
     expect(printSpy).toHaveBeenCalledTimes(2);
   });
+
+  it('renders initial opening float breakdown during session close view', async () => {
+    render(
+      <SessionModal
+        isOpen={true}
+        onClose={vi.fn()}
+        mode="CLOSE"
+        activeSession={{
+          id: 'ses-100',
+          session_number: 'SES-20261010-0001',
+          counter_name: 'Countertop',
+          opened_at: '2026-10-10T08:00:00Z',
+          opening_cash: 100,
+          expected_cash: 250,
+          status: 'OPEN'
+        } as any}
+        onSessionUpdated={vi.fn()}
+      />
+    );
+
+    await waitFor(() => {
+      expect(screen.getByText('Fond de caisse initial :')).toBeTruthy();
+      expect(screen.getByText('100.000 DT')).toBeTruthy();
+    });
+  });
 });
