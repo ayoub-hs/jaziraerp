@@ -509,10 +509,10 @@ export const CreateProductModal: React.FC<CreateProductModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
-      <div className="bg-white rounded-2xl shadow-2xl max-w-xl w-full overflow-hidden border border-slate-200 animate-in fade-in zoom-in-95 duration-150">
+    <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-2 sm:p-4 overflow-y-auto">
+      <div className="bg-white rounded-2xl shadow-2xl max-w-xl w-full max-h-[calc(100dvh-1rem)] sm:max-h-[calc(100dvh-2rem)] flex flex-col overflow-hidden border border-slate-200 animate-in fade-in zoom-in-95 duration-150">
         {/* Modal Header */}
-        <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100 bg-slate-50/50">
+        <div className="shrink-0 flex items-center justify-between px-5 py-4 border-b border-slate-100 bg-slate-50/50">
           <div className="flex items-center gap-2.5">
             <div className="w-8 h-8 rounded-xl bg-blue-100 text-blue-700 flex items-center justify-center">
               {familyToEdit || productToEdit ? <Edit2 className="w-4 h-4" /> : <Package className="w-4 h-4" />}
@@ -521,7 +521,7 @@ export const CreateProductModal: React.FC<CreateProductModalProps> = ({
               <h3 className="text-sm font-black text-slate-900">
                 {familyToEdit ? `Edit Family: ${familyToEdit.name}` : productToEdit ? `Edit SKU: ${productToEdit.name}` : 'Add Product Family & SKU'}
               </h3>
-              <p className="text-[11px] text-slate-500">
+              <p className="text-pos-badge text-slate-600">
                 {familyToEdit ? 'Modify category, manufacturing type, or linked recipe' : productToEdit ? 'Update barcode, prices, packaging, and stock' : 'Configure catalog product family, sizing, barcodes, and pricing'}
               </p>
             </div>
@@ -536,7 +536,7 @@ export const CreateProductModal: React.FC<CreateProductModalProps> = ({
 
         {/* Mode Toggle Tabs (only in create mode) */}
         {!familyToEdit && !productToEdit && (
-          <div className="flex border-b border-slate-200 px-5 pt-3 gap-3 bg-slate-50/30 text-xs font-bold">
+          <div className="shrink-0 flex border-b border-slate-200 px-5 pt-3 gap-3 bg-slate-50/30 text-xs font-bold">
             <button
               type="button"
               onClick={() => setMode('NEW_FAMILY')}
@@ -570,7 +570,8 @@ export const CreateProductModal: React.FC<CreateProductModalProps> = ({
         )}
 
         {/* Modal Form */}
-        <form onSubmit={handleSubmit} className="p-5 space-y-4 max-h-[80vh] overflow-y-auto">
+        <form onSubmit={handleSubmit} className="flex-1 min-h-0 flex flex-col">
+          <div className="p-5 space-y-4 flex-1 min-h-0 overflow-y-auto">
           {error && (
             <div className="p-3 bg-rose-50 border border-rose-200 text-rose-800 rounded-xl text-xs flex items-center gap-2">
               <AlertCircle className="w-4 h-4 shrink-0" />
@@ -611,7 +612,7 @@ export const CreateProductModal: React.FC<CreateProductModalProps> = ({
                           setIsCustomCategory(true);
                           setCustomCategoryInput('');
                         }}
-                        className="text-[11px] text-blue-600 hover:text-blue-800 font-semibold underline"
+                        className="text-xs text-blue-600 hover:text-blue-800 font-semibold underline"
                       >
                         + Saisir autre
                       </button>
@@ -622,7 +623,7 @@ export const CreateProductModal: React.FC<CreateProductModalProps> = ({
                           setIsCustomCategory(false);
                           setFamilyCategory(availableCategories[0] || 'Detergents');
                         }}
-                        className="text-[11px] text-slate-500 hover:text-slate-700 font-semibold underline"
+                        className="text-xs text-slate-500 hover:text-slate-700 font-semibold underline"
                       >
                         Choisir liste
                       </button>
@@ -778,7 +779,7 @@ export const CreateProductModal: React.FC<CreateProductModalProps> = ({
                           setIsCustomSize(true);
                           setCustomSizeInput('');
                         }}
-                        className="text-[11px] text-blue-600 hover:text-blue-800 font-semibold underline"
+                        className="text-xs text-blue-600 hover:text-blue-800 font-semibold underline"
                       >
                         + Autre unité
                       </button>
@@ -789,7 +790,7 @@ export const CreateProductModal: React.FC<CreateProductModalProps> = ({
                           setIsCustomSize(false);
                           setSizeLabel('1L');
                         }}
-                        className="text-[11px] text-slate-500 hover:text-slate-700 font-semibold underline"
+                        className="text-xs text-slate-500 hover:text-slate-700 font-semibold underline"
                       >
                         Choisir liste
                       </button>
@@ -875,10 +876,10 @@ export const CreateProductModal: React.FC<CreateProductModalProps> = ({
                 <div className="col-span-2 p-3 bg-white rounded-xl border border-blue-200 space-y-3">
                   <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                     <div>
-                      <label className="block text-[11px] font-bold text-slate-700">
+                      <label className="block text-xs font-bold text-slate-700">
                         Coût de référence / Cost Ref. (DT)
                       </label>
-                      <span className="text-[10px] text-slate-400">Coût d'achat ou de revient unitaire (DT)</span>
+                      <span className="text-pos-badge text-slate-600">Coût d'achat ou de revient unitaire (DT)</span>
                     </div>
                     <div className="w-full sm:w-40">
                       <input
@@ -903,14 +904,14 @@ export const CreateProductModal: React.FC<CreateProductModalProps> = ({
                           onClick={handleSuggestWholesale}
                           disabled={!canSuggestWholesale}
                           title={wholesaleHint}
-                          className="px-2.5 py-1 text-[11px] font-bold rounded-lg bg-blue-600 text-white hover:bg-blue-700 disabled:bg-slate-200 disabled:text-slate-400 transition-colors shadow-sm cursor-pointer disabled:cursor-not-allowed"
+                          className="px-2.5 py-1 text-xs font-bold rounded-lg bg-blue-600 text-white hover:bg-blue-700 disabled:bg-slate-200 disabled:text-slate-500 transition-colors shadow-sm cursor-pointer disabled:cursor-not-allowed"
                         >
                           Suggérer
                         </button>
                       </div>
                       <div className="grid grid-cols-2 gap-2">
                         <div>
-                          <label className="block text-[10px] font-semibold text-slate-500 mb-0.5">
+                          <label className="block text-pos-badge font-semibold text-slate-600 mb-0.5">
                             Marge Gros (%)
                           </label>
                           <input
@@ -925,7 +926,7 @@ export const CreateProductModal: React.FC<CreateProductModalProps> = ({
                           />
                         </div>
                         <div>
-                          <label className="block text-[10px] font-semibold text-slate-500 mb-0.5">
+                          <label className="block text-pos-badge font-semibold text-slate-600 mb-0.5">
                             Prix Gros (DT) *
                           </label>
                           <input
@@ -940,7 +941,7 @@ export const CreateProductModal: React.FC<CreateProductModalProps> = ({
                         </div>
                       </div>
                       {!canSuggestWholesale && (
-                        <p className="text-[10px] text-slate-400 italic">{wholesaleHint}</p>
+                        <p className="text-pos-badge text-slate-600 italic">{wholesaleHint}</p>
                       )}
                     </div>
 
@@ -953,14 +954,14 @@ export const CreateProductModal: React.FC<CreateProductModalProps> = ({
                           onClick={handleSuggestRetail}
                           disabled={!canSuggestRetail}
                           title={retailHint}
-                          className="px-2.5 py-1 text-[11px] font-bold rounded-lg bg-blue-600 text-white hover:bg-blue-700 disabled:bg-slate-200 disabled:text-slate-400 transition-colors shadow-sm cursor-pointer disabled:cursor-not-allowed"
+                          className="px-2.5 py-1 text-xs font-bold rounded-lg bg-blue-600 text-white hover:bg-blue-700 disabled:bg-slate-200 disabled:text-slate-500 transition-colors shadow-sm cursor-pointer disabled:cursor-not-allowed"
                         >
                           Suggérer
                         </button>
                       </div>
                       <div className="grid grid-cols-2 gap-2">
                         <div>
-                          <label className="block text-[10px] font-semibold text-slate-500 mb-0.5">
+                          <label className="block text-pos-badge font-semibold text-slate-600 mb-0.5">
                             Marge Détail (%)
                           </label>
                           <input
@@ -975,7 +976,7 @@ export const CreateProductModal: React.FC<CreateProductModalProps> = ({
                           />
                         </div>
                         <div>
-                          <label className="block text-[10px] font-semibold text-slate-500 mb-0.5">
+                          <label className="block text-pos-badge font-semibold text-slate-600 mb-0.5">
                             Prix Détail (DT) *
                           </label>
                           <input
@@ -990,7 +991,7 @@ export const CreateProductModal: React.FC<CreateProductModalProps> = ({
                         </div>
                       </div>
                       {!canSuggestRetail && (
-                        <p className="text-[10px] text-slate-400 italic">{retailHint}</p>
+                        <p className="text-pos-badge text-slate-600 italic">{retailHint}</p>
                       )}
                     </div>
                   </div>
@@ -1045,7 +1046,7 @@ export const CreateProductModal: React.FC<CreateProductModalProps> = ({
                   <div className="flex items-center justify-between mb-2">
                     <div>
                       <h4 className="text-xs font-bold text-slate-800">Conditionnements / Packs (Multiplicateurs)</h4>
-                      <p className="text-[10px] text-slate-500">Packs de pièces partageant le stock de base (ex: Carton de 12 pcs)</p>
+                      <p className="text-pos-badge text-slate-600">Packs de pièces partageant le stock de base (ex: Carton de 12 pcs)</p>
                     </div>
                   </div>
 
@@ -1061,7 +1062,7 @@ export const CreateProductModal: React.FC<CreateProductModalProps> = ({
                     <div className="mb-3 border border-slate-200 rounded-xl overflow-hidden">
                       <table className="w-full text-left border-collapse text-xs">
                         <thead>
-                          <tr className="bg-slate-50 text-[10px] uppercase font-bold text-slate-500 border-b border-slate-200">
+                          <tr className="bg-slate-50 text-pos-caption uppercase font-bold text-slate-700 border-b border-slate-200">
                             <th className="p-2">Libellé</th>
                             <th className="p-2 text-center">Multiplicateur</th>
                             <th className="p-2 text-right">Prix Pack</th>
@@ -1082,12 +1083,12 @@ export const CreateProductModal: React.FC<CreateProductModalProps> = ({
                                 <td className="p-2 text-right font-mono font-bold text-slate-900">
                                   {formatMoney(calcPrice)}
                                   {p.price_override !== null && p.price_override !== undefined ? (
-                                    <span className="text-[10px] text-blue-600 block">(forfaitaire)</span>
+                                    <span className="text-pos-badge text-blue-600 block">(forfaitaire)</span>
                                   ) : (
-                                    <span className="text-[10px] text-slate-400 block">(auto)</span>
+                                    <span className="text-pos-badge text-slate-600 block">(auto)</span>
                                   )}
                                 </td>
-                                <td className="p-2 font-mono text-[11px] text-slate-500">{p.barcode || '—'}</td>
+                                <td className="p-2 font-mono text-xs text-slate-600">{p.barcode || '—'}</td>
                                 <td className="p-2 text-right">
                                   <button
                                     type="button"
@@ -1109,7 +1110,7 @@ export const CreateProductModal: React.FC<CreateProductModalProps> = ({
                   {/* Add pack row */}
                   <div className="grid grid-cols-1 sm:grid-cols-5 gap-2 bg-slate-50 p-2.5 rounded-xl border border-slate-200 text-xs items-end">
                     <div className="sm:col-span-2">
-                      <label className="block text-[10px] font-bold text-slate-600 mb-0.5">Libellé Pack *</label>
+                      <label className="block text-pos-badge font-bold text-slate-700 mb-0.5">Libellé Pack *</label>
                       <input
                         type="text"
                         placeholder="ex: Carton de 12"
@@ -1119,7 +1120,7 @@ export const CreateProductModal: React.FC<CreateProductModalProps> = ({
                       />
                     </div>
                     <div>
-                      <label className="block text-[10px] font-bold text-slate-600 mb-0.5">Mult. (≥ 2) *</label>
+                      <label className="block text-pos-badge font-bold text-slate-700 mb-0.5">Mult. (≥ 2) *</label>
                       <input
                         type="number"
                         min="2"
@@ -1129,7 +1130,7 @@ export const CreateProductModal: React.FC<CreateProductModalProps> = ({
                       />
                     </div>
                     <div>
-                      <label className="block text-[10px] font-bold text-slate-600 mb-0.5">Prix Spécifique (DT)</label>
+                      <label className="block text-pos-badge font-bold text-slate-700 mb-0.5">Prix Spécifique (DT)</label>
                       <input
                         type="number"
                         step="0.001"
@@ -1156,8 +1157,10 @@ export const CreateProductModal: React.FC<CreateProductModalProps> = ({
             </div>
           )}
 
+          </div>
+
           {/* Modal Footer */}
-          <div className="flex gap-2.5 pt-2 border-t border-slate-100">
+          <div className="shrink-0 flex gap-2.5 px-5 py-3 border-t border-slate-100 bg-slate-50/50">
             <button
               type="button"
               onClick={onClose}

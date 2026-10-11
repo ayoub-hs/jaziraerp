@@ -234,17 +234,17 @@ export const CreatePurchaseModal: React.FC<CreatePurchaseModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4 overflow-y-auto">
-      <div className="bg-white rounded-2xl shadow-2xl max-w-3xl w-full overflow-hidden border border-slate-200 my-auto">
+    <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-2 sm:p-4 overflow-y-auto">
+      <div className="bg-white rounded-2xl shadow-2xl max-w-3xl w-full max-h-[calc(100dvh-1rem)] sm:max-h-[calc(100dvh-2rem)] flex flex-col overflow-hidden border border-slate-200">
         {/* Header */}
-        <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100 bg-slate-50/50">
+        <div className="shrink-0 flex items-center justify-between px-5 py-4 border-b border-slate-100 bg-slate-50/50">
           <div className="flex items-center gap-2.5">
             <div className="w-8 h-8 rounded-xl bg-emerald-100 text-emerald-700 flex items-center justify-center">
               <ShoppingBag className="w-4 h-4" />
             </div>
             <div>
               <h3 className="text-sm font-black text-slate-900">Record Purchase Intake</h3>
-              <p className="text-[11px] text-slate-500">
+              <p className="text-pos-badge text-slate-600">
                 Log vendor deliveries: raw materials or resale products with immediate inventory updates
               </p>
             </div>
@@ -257,7 +257,8 @@ export const CreatePurchaseModal: React.FC<CreatePurchaseModalProps> = ({
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="p-5 space-y-4 text-xs">
+        <form onSubmit={handleSubmit} className="flex-1 min-h-0 flex flex-col">
+          <div className="flex-1 min-h-0 overflow-y-auto p-4 sm:p-5 space-y-4 text-xs">
           {error && (
             <div className="p-3 bg-rose-50 border border-rose-200 rounded-xl flex items-center gap-2.5 text-rose-700">
               <AlertCircle className="w-4 h-4 shrink-0" />
@@ -314,13 +315,13 @@ export const CreatePurchaseModal: React.FC<CreatePurchaseModalProps> = ({
           {/* Line Items Table */}
           <div className="space-y-2">
             <div className="flex items-center justify-between">
-              <span className="font-bold text-slate-700 uppercase tracking-wider text-[11px]">
+              <span className="font-bold text-slate-700 uppercase tracking-wider text-xs">
                 Delivered Items ({items.length})
               </span>
               <button
                 type="button"
                 onClick={handleAddItem}
-                className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 rounded-lg font-bold text-xs transition-colors border border-emerald-200"
+                className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-emerald-50 text-emerald-800 hover:bg-emerald-100 rounded-lg font-bold text-xs transition-colors border border-emerald-200"
               >
                 <Plus className="w-3.5 h-3.5" />
                 Add Item
@@ -330,14 +331,14 @@ export const CreatePurchaseModal: React.FC<CreatePurchaseModalProps> = ({
             <div className="border border-slate-200 rounded-xl overflow-hidden bg-slate-50/50">
               <div className="overflow-x-auto max-h-60 overflow-y-auto">
                 <table className="w-full text-left border-collapse">
-                  <thead className="bg-slate-100/70 border-b border-slate-200 text-slate-600 font-bold text-[10px] uppercase sticky top-0">
+                  <thead className="bg-slate-100/70 border-b border-slate-200 text-slate-700 font-bold text-pos-caption uppercase sticky top-0">
                     <tr>
-                      <th className="p-2.5 pl-3 w-36">Type</th>
-                      <th className="p-2.5">Item Name</th>
-                      <th className="p-2.5 w-24 text-right">Quantity</th>
-                      <th className="p-2.5 w-28 text-right">Unit Cost (DT)</th>
-                      <th className="p-2.5 w-24 text-right">Line Total</th>
-                      <th className="p-2.5 w-10 text-center"></th>
+                      <th className="py-2.5 px-3 w-36">Type</th>
+                      <th className="py-2.5 px-3">Item Name</th>
+                      <th className="py-2.5 px-3 w-24 text-right">Quantity</th>
+                      <th className="py-2.5 px-3 w-28 text-right">Unit Cost (DT)</th>
+                      <th className="py-2.5 px-3 w-24 text-right">Line Total</th>
+                      <th className="py-2.5 px-3 w-10 text-center"></th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-200 bg-white">
@@ -350,7 +351,7 @@ export const CreatePurchaseModal: React.FC<CreatePurchaseModalProps> = ({
                             <select
                               value={item.item_type}
                               onChange={e => handleItemTypeChange(item.id, e.target.value as any)}
-                              className="w-full px-2 py-1.5 border border-slate-200 rounded-lg text-[11px] font-semibold text-slate-700 bg-white"
+                              className="w-full px-2 py-1.5 border border-slate-200 rounded-lg text-xs font-semibold text-slate-700 bg-white"
                             >
                               <option value="RAW_MATERIAL">Raw Material</option>
                               <option value="RESALE_PRODUCT">Resale Product</option>
@@ -439,21 +440,21 @@ export const CreatePurchaseModal: React.FC<CreatePurchaseModalProps> = ({
           {/* Payment & Debt Section */}
           <div className="bg-slate-50 border border-slate-200 rounded-xl p-4 space-y-3">
             <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-200 pb-3">
-              <span className="font-bold text-slate-700 uppercase tracking-wider text-[11px]">
+              <span className="font-bold text-slate-700 uppercase tracking-wider text-xs">
                 Payment Allocation
               </span>
               <div className="flex items-center gap-2">
                 <button
                   type="button"
                   onClick={() => setCashPaid(totalAmount)}
-                  className="px-2 py-1 bg-emerald-100 hover:bg-emerald-200 text-emerald-800 rounded font-bold text-[10px] transition-colors"
+                  className="px-2.5 py-1 bg-emerald-100 hover:bg-emerald-200 text-emerald-800 rounded font-bold text-xs transition-colors"
                 >
                   Pay Full in Cash
                 </button>
                 <button
                   type="button"
                   onClick={() => setCashPaid(0)}
-                  className="px-2 py-1 bg-amber-100 hover:bg-amber-200 text-amber-800 rounded font-bold text-[10px] transition-colors"
+                  className="px-2.5 py-1 bg-amber-100 hover:bg-amber-200 text-amber-900 rounded font-bold text-xs transition-colors"
                 >
                   All on Credit (0 DT)
                 </button>
@@ -462,14 +463,14 @@ export const CreatePurchaseModal: React.FC<CreatePurchaseModalProps> = ({
 
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
               <div className="bg-white p-3 rounded-lg border border-slate-200">
-                <span className="text-[10px] uppercase font-bold text-slate-400 block">Total Invoice</span>
+                <span className="text-pos-badge uppercase font-bold text-slate-600 block">Total Invoice</span>
                 <span className="text-base font-mono font-black text-slate-900">
                   {totalAmount.toFixed(3)} <span className="text-xs font-normal text-slate-500">DT</span>
                 </span>
               </div>
 
               <div className="bg-white p-3 rounded-lg border border-slate-200">
-                <label className="text-[10px] uppercase font-bold text-slate-700 block mb-1">
+                <label className="text-pos-badge uppercase font-bold text-slate-700 block mb-1">
                   Cash Paid Upfront
                 </label>
                 <div className="relative">
@@ -481,36 +482,37 @@ export const CreatePurchaseModal: React.FC<CreatePurchaseModalProps> = ({
                     onChange={e => setCashPaid(parseFloat(e.target.value) || 0)}
                     className="w-full px-2 py-1 border border-slate-300 rounded font-mono font-bold text-emerald-700 text-sm"
                   />
-                  <span className="absolute right-2 top-1 text-slate-400 font-mono text-xs">DT</span>
+                  <span className="absolute right-2 top-1 text-slate-500 font-mono text-xs">DT</span>
                 </div>
               </div>
 
               <div className="bg-white p-3 rounded-lg border border-slate-200">
-                <span className="text-[10px] uppercase font-bold text-slate-400 block">Remaining Balance</span>
-                <span className={`text-base font-mono font-black ${remainingDebt > 0 ? 'text-rose-600' : 'text-emerald-600'}`}>
+                <span className="text-pos-badge uppercase font-bold text-slate-600 block">Remaining Balance</span>
+                <span className={`text-base font-mono font-black ${remainingDebt > 0 ? 'text-rose-600' : 'text-emerald-700'}`}>
                   {remainingDebt.toFixed(3)} <span className="text-xs font-normal text-slate-500">DT</span>
                 </span>
               </div>
             </div>
 
             {remainingDebt > 0 ? (
-              <div className="p-2.5 bg-amber-50 border border-amber-200 rounded-lg flex items-center gap-2 text-amber-800 text-[11px]">
-                <AlertCircle className="w-4 h-4 shrink-0 text-amber-600" />
+              <div className="p-2.5 bg-amber-50 border border-amber-200 rounded-lg flex items-center gap-2 text-amber-900 text-xs">
+                <AlertCircle className="w-4 h-4 shrink-0 text-amber-700" />
                 <span>
                   A supplier debt ticket of <strong>{remainingDebt.toFixed(3)} DT</strong> will be recorded for{' '}
                   <strong>{selectedSupplier?.name || 'the supplier'}</strong>.
                 </span>
               </div>
             ) : (
-              <div className="p-2.5 bg-emerald-50 border border-emerald-200 rounded-lg flex items-center gap-2 text-emerald-800 text-[11px]">
-                <CheckCircle2 className="w-4 h-4 shrink-0 text-emerald-600" />
+              <div className="p-2.5 bg-emerald-50 border border-emerald-200 rounded-lg flex items-center gap-2 text-emerald-800 text-xs">
+                <CheckCircle2 className="w-4 h-4 shrink-0 text-emerald-700" />
                 <span>Invoice fully settled upfront in cash. No open debt ticket will be created.</span>
               </div>
             )}
           </div>
+          </div>
 
           {/* Actions */}
-          <div className="flex items-center justify-end gap-2.5 pt-2">
+          <div className="shrink-0 flex items-center justify-end gap-2.5 px-5 py-3 border-t border-slate-100 bg-slate-50/50">
             <button
               type="button"
               onClick={onClose}
@@ -521,7 +523,7 @@ export const CreatePurchaseModal: React.FC<CreatePurchaseModalProps> = ({
             <button
               type="submit"
               disabled={isSubmitting || totalAmount <= 0}
-              className="px-5 py-2 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white font-bold rounded-xl shadow-xs transition-colors flex items-center gap-2"
+              className="px-5 py-2 bg-emerald-700 hover:bg-emerald-800 disabled:opacity-50 text-white font-bold rounded-xl shadow-xs transition-colors flex items-center gap-2"
             >
               {isSubmitting ? 'Recording...' : 'Save & Record Purchase'}
             </button>

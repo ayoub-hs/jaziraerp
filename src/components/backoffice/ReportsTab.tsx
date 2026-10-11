@@ -260,7 +260,7 @@ export const ReportsTab: React.FC = () => {
       {activeReport !== 'INVENTORY_VALUATION' && (
         <div className="bg-white p-3.5 rounded-2xl shadow-sm border border-slate-200 flex flex-wrap items-center justify-between gap-3 text-xs">
           <div className="flex flex-wrap items-center gap-2.5">
-            <div className="flex items-center gap-1.5 text-slate-500 font-bold text-[11px] uppercase tracking-wider">
+            <div className="flex items-center gap-1.5 text-slate-700 font-bold text-pos-badge uppercase tracking-wider">
               <Calendar className="w-3.5 h-3.5 text-slate-400" />
               <span>Period:</span>
             </div>
@@ -284,28 +284,28 @@ export const ReportsTab: React.FC = () => {
               <button
                 type="button"
                 onClick={() => handleQuickDate('TODAY')}
-                className="px-2 py-1 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-md text-[11px] font-semibold transition-colors"
+                className="px-2 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-md text-pos-badge font-semibold transition-colors"
               >
                 Today
               </button>
               <button
                 type="button"
                 onClick={() => handleQuickDate('THIS_MONTH')}
-                className="px-2 py-1 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-md text-[11px] font-semibold transition-colors"
+                className="px-2 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-md text-pos-badge font-semibold transition-colors"
               >
                 This Month
               </button>
               <button
                 type="button"
                 onClick={() => handleQuickDate('LAST_30')}
-                className="px-2 py-1 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-md text-[11px] font-semibold transition-colors"
+                className="px-2 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-md text-pos-badge font-semibold transition-colors"
               >
                 Last 30 Days
               </button>
               <button
                 type="button"
                 onClick={() => handleQuickDate('ALL_TIME')}
-                className="px-2 py-1 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-md text-[11px] font-semibold transition-colors"
+                className="px-2 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-md text-pos-badge font-semibold transition-colors"
               >
                 All Time
               </button>
@@ -345,23 +345,23 @@ export const ReportsTab: React.FC = () => {
       {activeReport === 'SALES_CUSTOMER' && salesByCustomerData?.summary && (
         <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
           <div className="bg-white p-3.5 rounded-2xl shadow-sm border border-slate-200">
-            <span className="text-slate-500 text-[10px] uppercase font-bold block">Total Sales Count</span>
+            <span className="text-slate-600 text-pos-badge uppercase font-bold block">Total Sales Count</span>
             <span className="font-mono font-bold text-slate-900 text-lg">{salesByCustomerData.summary.total_sales_count}</span>
           </div>
           <div className="bg-blue-50/70 p-3.5 rounded-2xl shadow-sm border border-blue-200">
-            <span className="text-blue-700 text-[10px] uppercase font-bold block">Total Revenue (TTC)</span>
+            <span className="text-blue-900 text-pos-badge uppercase font-bold block">Total Revenue (TTC)</span>
             <span className="font-mono font-bold text-blue-900 text-lg">{formatMoney(salesByCustomerData.summary.total_ttc)}</span>
           </div>
           <div className="bg-emerald-50/70 p-3.5 rounded-2xl shadow-sm border border-emerald-200">
-            <span className="text-emerald-700 text-[10px] uppercase font-bold block">Cash Collected</span>
+            <span className="text-emerald-900 text-pos-badge uppercase font-bold block">Cash Collected</span>
             <span className="font-mono font-bold text-emerald-900 text-lg">{formatMoney(salesByCustomerData.summary.total_cash)}</span>
           </div>
           <div className="bg-purple-50/70 p-3.5 rounded-2xl shadow-sm border border-purple-200">
-            <span className="text-purple-700 text-[10px] uppercase font-bold block">Wallet Deductions</span>
+            <span className="text-purple-900 text-pos-badge uppercase font-bold block">Wallet Deductions</span>
             <span className="font-mono font-bold text-purple-900 text-lg">{formatMoney(salesByCustomerData.summary.total_wallet)}</span>
           </div>
           <div className="bg-amber-50/70 p-3.5 rounded-2xl shadow-sm border border-amber-200">
-            <span className="text-amber-700 text-[10px] uppercase font-bold block">Customer Credit Issued</span>
+            <span className="text-amber-900 text-pos-badge uppercase font-bold block">Customer Credit Issued</span>
             <span className="font-mono font-bold text-amber-900 text-lg">{formatMoney(salesByCustomerData.summary.total_credit)}</span>
           </div>
         </div>
@@ -370,19 +370,19 @@ export const ReportsTab: React.FC = () => {
       {activeReport === 'SALES_REGISTER' && salesByRegisterData?.summary && (
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
           <div className="bg-white p-3.5 rounded-2xl shadow-sm border border-slate-200">
-            <span className="text-slate-500 text-[10px] uppercase font-bold block">Total Sales Count</span>
+            <span className="text-slate-600 text-pos-badge uppercase font-bold block">Total Sales Count</span>
             <span className="font-mono font-bold text-slate-900 text-lg">{salesByRegisterData.summary.total_sales_count}</span>
           </div>
           <div className="bg-blue-50/70 p-3.5 rounded-2xl shadow-sm border border-blue-200">
-            <span className="text-blue-700 text-[10px] uppercase font-bold block">Total Sales Volume (TTC)</span>
+            <span className="text-blue-900 text-pos-badge uppercase font-bold block">Total Sales Volume (TTC)</span>
             <span className="font-mono font-bold text-blue-900 text-lg">{formatMoney(salesByRegisterData.summary.total_ttc)}</span>
           </div>
           <div className="bg-emerald-50/70 p-3.5 rounded-2xl shadow-sm border border-emerald-200">
-            <span className="text-emerald-700 text-[10px] uppercase font-bold block">Total Cash Inflow</span>
+            <span className="text-emerald-900 text-pos-badge uppercase font-bold block">Total Cash Inflow</span>
             <span className="font-mono font-bold text-emerald-900 text-lg">{formatMoney(salesByRegisterData.summary.total_cash)}</span>
           </div>
           <div className="bg-amber-50/70 p-3.5 rounded-2xl shadow-sm border border-amber-200">
-            <span className="text-amber-700 text-[10px] uppercase font-bold block">Total Credit Tendered</span>
+            <span className="text-amber-900 text-pos-badge uppercase font-bold block">Total Credit Tendered</span>
             <span className="font-mono font-bold text-amber-900 text-lg">{formatMoney(salesByRegisterData.summary.total_credit)}</span>
           </div>
         </div>
@@ -391,11 +391,11 @@ export const ReportsTab: React.FC = () => {
       {activeReport === 'DEBT_PAYMENTS' && debtPaymentsData?.summary && (
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
           <div className="bg-white p-3.5 rounded-2xl shadow-sm border border-slate-200">
-            <span className="text-slate-500 text-[10px] uppercase font-bold block">Payments Recorded</span>
+            <span className="text-slate-600 text-pos-badge uppercase font-bold block">Payments Recorded</span>
             <span className="font-mono font-bold text-slate-900 text-lg">{debtPaymentsData.summary.total_payments_count}</span>
           </div>
           <div className="bg-emerald-50/70 p-3.5 rounded-2xl shadow-sm border border-emerald-200 col-span-2">
-            <span className="text-emerald-700 text-[10px] uppercase font-bold block">Total Debt Repayments Collected</span>
+            <span className="text-emerald-900 text-pos-badge uppercase font-bold block">Total Debt Repayments Collected</span>
             <span className="font-mono font-bold text-emerald-900 text-xl">{formatMoney(debtPaymentsData.summary.total_amount_paid)}</span>
           </div>
         </div>
@@ -404,63 +404,63 @@ export const ReportsTab: React.FC = () => {
       {activeReport === 'INVENTORY_VALUATION' && inventoryValuationData?.summary && (
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
           <div className="bg-white p-3.5 rounded-2xl shadow-sm border border-slate-200">
-            <span className="text-slate-500 text-[10px] uppercase font-bold block">Catalog Items</span>
+            <span className="text-slate-600 text-pos-badge uppercase font-bold block">Catalog Items</span>
             <span className="font-mono font-bold text-slate-900 text-lg">
               {inventoryValuationData.summary.product_count} SKUs • {inventoryValuationData.summary.material_count} Materials
             </span>
           </div>
           <div className="bg-amber-50/70 p-3.5 rounded-2xl shadow-sm border border-amber-200">
-            <span className="text-amber-700 text-[10px] uppercase font-bold block">Raw Materials Value</span>
+            <span className="text-amber-900 text-pos-badge uppercase font-bold block">Raw Materials Value</span>
             <span className="font-mono font-bold text-amber-900 text-lg">{formatMoney(inventoryValuationData.summary.material_cost_valuation)}</span>
           </div>
           <div className="bg-blue-50/70 p-3.5 rounded-2xl shadow-sm border border-blue-200">
-            <span className="text-blue-700 text-[10px] uppercase font-bold block">Products Cost Value</span>
+            <span className="text-blue-900 text-pos-badge uppercase font-bold block">Products Cost Value</span>
             <span className="font-mono font-bold text-blue-900 text-lg">{formatMoney(inventoryValuationData.summary.product_cost_valuation)}</span>
           </div>
           <div className="bg-emerald-50/70 p-3.5 rounded-2xl shadow-sm border border-emerald-200">
-            <span className="text-emerald-700 text-[10px] uppercase font-bold block">Total Inventory Asset Valuation</span>
+            <span className="text-emerald-900 text-pos-badge uppercase font-bold block">Total Inventory Asset Valuation</span>
             <span className="font-mono font-bold text-emerald-900 text-xl">{formatMoney(inventoryValuationData.summary.grand_total_cost_valuation)}</span>
           </div>
         </div>
       )}
 
       {/* Main Report Data Tables */}
-      <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+      <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden flex flex-col max-h-[calc(100vh-280px)]">
         {/* 1. SALES BY CUSTOMER TABLE */}
         {activeReport === 'SALES_CUSTOMER' && (
-          <div className="overflow-x-auto">
+          <div className="overflow-x-auto overflow-y-auto flex-1">
             <table className="w-full text-left border-collapse text-xs">
-              <thead>
-                <tr className="bg-slate-50 border-b border-slate-200 font-bold text-slate-600 uppercase text-[10px]">
-                  <th className="p-3">Customer</th>
-                  <th className="p-3">Phone</th>
-                  <th className="p-3 text-center">Sales Count</th>
-                  <th className="p-3 text-right">Subtotal HT</th>
-                  <th className="p-3 text-right">TVA</th>
-                  <th className="p-3 text-right">Gross TTC</th>
-                  <th className="p-3 text-right text-red-600">Refunded</th>
-                  <th className="p-3 text-right font-bold text-slate-900">Net TTC</th>
-                  <th className="p-3 text-right text-emerald-700">Cash Paid</th>
-                  <th className="p-3 text-right text-purple-700">Wallet Paid</th>
-                  <th className="p-3 text-right text-amber-700">Credit (Due)</th>
+              <thead className="sticky top-0 bg-slate-50 z-10 shadow-xs">
+                <tr className="border-b border-slate-200 font-bold text-slate-700 uppercase text-pos-caption">
+                  <th className="py-2.5 px-3">Customer</th>
+                  <th className="py-2.5 px-3">Phone</th>
+                  <th className="py-2.5 px-3 text-center">Sales Count</th>
+                  <th className="py-2.5 px-3 text-right">Subtotal HT</th>
+                  <th className="py-2.5 px-3 text-right">TVA</th>
+                  <th className="py-2.5 px-3 text-right">Gross TTC</th>
+                  <th className="py-2.5 px-3 text-right text-rose-700">Refunded</th>
+                  <th className="py-2.5 px-3 text-right font-bold text-slate-900">Net TTC</th>
+                  <th className="py-2.5 px-3 text-right text-emerald-800">Cash Paid</th>
+                  <th className="py-2.5 px-3 text-right text-purple-800">Wallet Paid</th>
+                  <th className="py-2.5 px-3 text-right text-amber-800">Credit (Due)</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
                 {(salesByCustomerData?.customer_sales || [])
                   .filter((c: any) => !searchFilter || c.customer_name.toLowerCase().includes(searchFilter.toLowerCase()) || (c.customer_phone && c.customer_phone.includes(searchFilter)))
                   .map((c: any) => (
-                    <tr key={c.customer_id} className="hover:bg-slate-50">
-                      <td className="p-3 font-bold text-slate-800">{c.customer_name}</td>
-                      <td className="p-3 font-mono text-slate-500">{c.customer_phone || '—'}</td>
-                      <td className="p-3 text-center font-mono font-bold">{c.sale_count}</td>
-                      <td className="p-3 text-right font-mono">{formatMoney(c.total_ht)}</td>
-                      <td className="p-3 text-right font-mono text-slate-500">{formatMoney(c.total_tva)}</td>
-                      <td className="p-3 text-right font-mono">{formatMoney(c.gross_ttc ?? c.total_ttc)}</td>
-                      <td className="p-3 text-right font-mono text-red-600">{formatMoney(c.refunded_amount || 0)}</td>
-                      <td className="p-3 text-right font-mono font-bold text-slate-900">{formatMoney(c.net_ttc ?? c.total_ttc)}</td>
-                      <td className="p-3 text-right font-mono font-bold text-emerald-700">{formatMoney(c.cash_paid)}</td>
-                      <td className="p-3 text-right font-mono text-purple-700">{formatMoney(c.wallet_paid)}</td>
-                      <td className="p-3 text-right font-mono font-bold text-amber-700">
+                    <tr key={c.customer_id} className="hover:bg-slate-50 transition-colors">
+                      <td className="py-2 px-3 font-bold text-slate-900 text-pos-body">{c.customer_name}</td>
+                      <td className="py-2 px-3 font-mono text-slate-600 text-pos-body">{c.customer_phone || '—'}</td>
+                      <td className="py-2 px-3 text-center font-mono font-bold text-pos-body">{c.sale_count}</td>
+                      <td className="py-2 px-3 text-right font-mono text-pos-body tabular-nums">{formatMoney(c.total_ht)}</td>
+                      <td className="py-2 px-3 text-right font-mono text-slate-600 text-pos-body tabular-nums">{formatMoney(c.total_tva)}</td>
+                      <td className="py-2 px-3 text-right font-mono text-pos-body tabular-nums">{formatMoney(c.gross_ttc ?? c.total_ttc)}</td>
+                      <td className="py-2 px-3 text-right font-mono text-rose-700 text-pos-body tabular-nums">{formatMoney(c.refunded_amount || 0)}</td>
+                      <td className="py-2 px-3 text-right font-mono font-bold text-slate-900 text-pos-body tabular-nums">{formatMoney(c.net_ttc ?? c.total_ttc)}</td>
+                      <td className="py-2 px-3 text-right font-mono font-bold text-emerald-800 text-pos-body tabular-nums">{formatMoney(c.cash_paid)}</td>
+                      <td className="py-2 px-3 text-right font-mono text-purple-800 text-pos-body tabular-nums">{formatMoney(c.wallet_paid)}</td>
+                      <td className="py-2 px-3 text-right font-mono font-bold text-amber-800 text-pos-body tabular-nums">
                         {c.credit_amount > 0 ? formatMoney(c.credit_amount) : '0.000'}
                       </td>
                     </tr>
@@ -479,39 +479,39 @@ export const ReportsTab: React.FC = () => {
 
         {/* 2. SALES BY REGISTER TABLE */}
         {activeReport === 'SALES_REGISTER' && (
-          <div className="overflow-x-auto">
+          <div className="overflow-x-auto overflow-y-auto flex-1">
             <table className="w-full text-left border-collapse text-xs">
-              <thead>
-                <tr className="bg-slate-50 border-b border-slate-200 font-bold text-slate-600 uppercase text-[10px]">
-                  <th className="p-3">Register / Counter</th>
-                  <th className="p-3 text-center">Sessions Count</th>
-                  <th className="p-3 text-center">Sales Count</th>
-                  <th className="p-3 text-right">Subtotal HT</th>
-                  <th className="p-3 text-right">TVA</th>
-                  <th className="p-3 text-right">Gross TTC</th>
-                  <th className="p-3 text-right text-red-600">Refunded</th>
-                  <th className="p-3 text-right font-bold text-slate-900">Net Volume TTC</th>
-                  <th className="p-3 text-right text-emerald-700">Cash Inflow</th>
-                  <th className="p-3 text-right text-purple-700">Wallet Paid</th>
-                  <th className="p-3 text-right text-amber-700">Credit Granted</th>
+              <thead className="sticky top-0 bg-slate-50 z-10 shadow-xs">
+                <tr className="border-b border-slate-200 font-bold text-slate-700 uppercase text-pos-caption">
+                  <th className="py-2.5 px-3">Register / Counter</th>
+                  <th className="py-2.5 px-3 text-center">Sessions Count</th>
+                  <th className="py-2.5 px-3 text-center">Sales Count</th>
+                  <th className="py-2.5 px-3 text-right">Subtotal HT</th>
+                  <th className="py-2.5 px-3 text-right">TVA</th>
+                  <th className="py-2.5 px-3 text-right">Gross TTC</th>
+                  <th className="py-2.5 px-3 text-right text-rose-700">Refunded</th>
+                  <th className="py-2.5 px-3 text-right font-bold text-slate-900">Net Volume TTC</th>
+                  <th className="py-2.5 px-3 text-right text-emerald-800">Cash Inflow</th>
+                  <th className="py-2.5 px-3 text-right text-purple-800">Wallet Paid</th>
+                  <th className="py-2.5 px-3 text-right text-amber-800">Credit Granted</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
                 {(salesByRegisterData?.register_sales || [])
                   .filter((r: any) => !searchFilter || r.counter_name.toLowerCase().includes(searchFilter.toLowerCase()))
                   .map((r: any) => (
-                    <tr key={r.counter_name} className="hover:bg-slate-50">
-                      <td className="p-3 font-bold text-slate-900">{r.counter_name}</td>
-                      <td className="p-3 text-center font-mono">{r.session_count}</td>
-                      <td className="p-3 text-center font-mono font-bold text-slate-800">{r.sale_count}</td>
-                      <td className="p-3 text-right font-mono">{formatMoney(r.total_ht)}</td>
-                      <td className="p-3 text-right font-mono text-slate-500">{formatMoney(r.total_tva)}</td>
-                      <td className="p-3 text-right font-mono">{formatMoney(r.gross_ttc ?? r.total_ttc)}</td>
-                      <td className="p-3 text-right font-mono text-red-600">{formatMoney(r.refunded_amount || 0)}</td>
-                      <td className="p-3 text-right font-mono font-bold text-slate-900">{formatMoney(r.net_ttc ?? r.total_ttc)}</td>
-                      <td className="p-3 text-right font-mono font-bold text-emerald-700">{formatMoney(r.cash_paid)}</td>
-                      <td className="p-3 text-right font-mono text-purple-700">{formatMoney(r.wallet_paid)}</td>
-                      <td className="p-3 text-right font-mono font-bold text-amber-700">{formatMoney(r.credit_amount)}</td>
+                    <tr key={r.counter_name} className="hover:bg-slate-50 transition-colors">
+                      <td className="py-2 px-3 font-bold text-slate-900 text-pos-body">{r.counter_name}</td>
+                      <td className="py-2 px-3 text-center font-mono text-pos-body">{r.session_count}</td>
+                      <td className="py-2 px-3 text-center font-mono font-bold text-slate-800 text-pos-body">{r.sale_count}</td>
+                      <td className="py-2 px-3 text-right font-mono text-pos-body tabular-nums">{formatMoney(r.total_ht)}</td>
+                      <td className="py-2 px-3 text-right font-mono text-slate-600 text-pos-body tabular-nums">{formatMoney(r.total_tva)}</td>
+                      <td className="py-2 px-3 text-right font-mono text-pos-body tabular-nums">{formatMoney(r.gross_ttc ?? r.total_ttc)}</td>
+                      <td className="py-2 px-3 text-right font-mono text-rose-700 text-pos-body tabular-nums">{formatMoney(r.refunded_amount || 0)}</td>
+                      <td className="py-2 px-3 text-right font-mono font-bold text-slate-900 text-pos-body tabular-nums">{formatMoney(r.net_ttc ?? r.total_ttc)}</td>
+                      <td className="py-2 px-3 text-right font-mono font-bold text-emerald-800 text-pos-body tabular-nums">{formatMoney(r.cash_paid)}</td>
+                      <td className="py-2 px-3 text-right font-mono text-purple-800 text-pos-body tabular-nums">{formatMoney(r.wallet_paid)}</td>
+                      <td className="py-2 px-3 text-right font-mono font-bold text-amber-800 text-pos-body tabular-nums">{formatMoney(r.credit_amount)}</td>
                     </tr>
                   ))}
                 {(!salesByRegisterData?.register_sales || salesByRegisterData.register_sales.length === 0) && (
@@ -528,29 +528,29 @@ export const ReportsTab: React.FC = () => {
 
         {/* 3. CUSTOMER DEBT PAYMENTS TABLE */}
         {activeReport === 'DEBT_PAYMENTS' && (
-          <div className="overflow-x-auto">
+          <div className="overflow-x-auto overflow-y-auto flex-1">
             <table className="w-full text-left border-collapse text-xs">
-              <thead>
-                <tr className="bg-slate-50 border-b border-slate-200 font-bold text-slate-600 uppercase text-[10px]">
-                  <th className="p-3">Payment Date</th>
-                  <th className="p-3">Customer</th>
-                  <th className="p-3">Phone</th>
-                  <th className="p-3 text-right">Amount Repaid</th>
-                  <th className="p-3">Payment Method</th>
-                  <th className="p-3">Notes</th>
+              <thead className="sticky top-0 bg-slate-50 z-10 shadow-xs">
+                <tr className="border-b border-slate-200 font-bold text-slate-700 uppercase text-pos-caption">
+                  <th className="py-2.5 px-3">Payment Date</th>
+                  <th className="py-2.5 px-3">Customer</th>
+                  <th className="py-2.5 px-3">Phone</th>
+                  <th className="py-2.5 px-3 text-right">Amount Repaid</th>
+                  <th className="py-2.5 px-3">Payment Method</th>
+                  <th className="py-2.5 px-3">Notes</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
                 {(debtPaymentsData?.payments || [])
                   .filter((p: any) => !searchFilter || p.customer_name.toLowerCase().includes(searchFilter.toLowerCase()) || (p.notes && p.notes.toLowerCase().includes(searchFilter.toLowerCase())))
                   .map((p: any) => (
-                    <tr key={p.id} className="hover:bg-slate-50">
-                      <td className="p-3 font-mono text-slate-500">{new Date(p.date).toLocaleString()}</td>
-                      <td className="p-3 font-bold text-slate-900">{p.customer_name}</td>
-                      <td className="p-3 font-mono text-slate-500">{p.customer_phone || '—'}</td>
-                      <td className="p-3 text-right font-mono font-bold text-emerald-700">{formatMoney(p.amount)}</td>
-                      <td className="p-3 font-semibold text-slate-700">{p.payment_method}</td>
-                      <td className="p-3 text-slate-500">{p.notes || '—'}</td>
+                    <tr key={p.id} className="hover:bg-slate-50 transition-colors">
+                      <td className="py-2 px-3 font-mono text-slate-600 text-pos-body">{new Date(p.date).toLocaleString()}</td>
+                      <td className="py-2 px-3 font-bold text-slate-900 text-pos-body">{p.customer_name}</td>
+                      <td className="py-2 px-3 font-mono text-slate-600 text-pos-body">{p.customer_phone || '—'}</td>
+                      <td className="py-2 px-3 text-right font-mono font-bold text-emerald-800 text-pos-body tabular-nums">{formatMoney(p.amount)}</td>
+                      <td className="py-2 px-3 font-semibold text-slate-700 text-pos-body">{p.payment_method}</td>
+                      <td className="py-2 px-3 text-slate-600 text-pos-body">{p.notes || '—'}</td>
                     </tr>
                   ))}
                 {(!debtPaymentsData?.payments || debtPaymentsData.payments.length === 0) && (
@@ -567,18 +567,18 @@ export const ReportsTab: React.FC = () => {
 
         {/* 4. INVENTORY VALUATION TABLE */}
         {activeReport === 'INVENTORY_VALUATION' && (
-          <div className="overflow-x-auto">
+          <div className="overflow-x-auto overflow-y-auto flex-1">
             <table className="w-full text-left border-collapse text-xs">
-              <thead>
-                <tr className="bg-slate-50 border-b border-slate-200 font-bold text-slate-600 uppercase text-[10px]">
-                  <th className="p-3">Item Name</th>
-                  <th className="p-3">Category</th>
-                  <th className="p-3">Classification</th>
-                  <th className="p-3 text-center">Stock</th>
-                  <th className="p-3 text-right">Unit Cost</th>
-                  <th className="p-3 text-right font-bold text-slate-900">Total Asset Value</th>
-                  <th className="p-3 text-right">Retail Price</th>
-                  <th className="p-3 text-right text-blue-700">Retail Stock Value</th>
+              <thead className="sticky top-0 bg-slate-50 z-10 shadow-xs">
+                <tr className="border-b border-slate-200 font-bold text-slate-700 uppercase text-pos-caption">
+                  <th className="py-2.5 px-3">Item Name</th>
+                  <th className="py-2.5 px-3">Category</th>
+                  <th className="py-2.5 px-3">Classification</th>
+                  <th className="py-2.5 px-3 text-center">Stock</th>
+                  <th className="py-2.5 px-3 text-right">Unit Cost</th>
+                  <th className="py-2.5 px-3 text-right font-bold text-slate-900">Total Asset Value</th>
+                  <th className="py-2.5 px-3 text-right">Retail Price</th>
+                  <th className="py-2.5 px-3 text-right text-blue-900">Retail Stock Value</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
@@ -586,19 +586,19 @@ export const ReportsTab: React.FC = () => {
                 {(inventoryValuationData?.products || [])
                   .filter((p: any) => !searchFilter || p.name.toLowerCase().includes(searchFilter.toLowerCase()) || p.category.toLowerCase().includes(searchFilter.toLowerCase()))
                   .map((p: any) => (
-                    <tr key={`p-${p.id}`} className="hover:bg-slate-50">
-                      <td className="p-3 font-bold text-slate-900">{p.name} {p.size_label && `(${p.size_label})`}</td>
-                      <td className="p-3 text-slate-600">{p.category}</td>
-                      <td className="p-3">
-                        <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-blue-100 text-blue-800">
+                    <tr key={`p-${p.id}`} className="hover:bg-slate-50 transition-colors">
+                      <td className="py-2 px-3 font-bold text-slate-900 text-pos-body">{p.name} {p.size_label && `(${p.size_label})`}</td>
+                      <td className="py-2 px-3 text-slate-700 text-pos-body">{p.category}</td>
+                      <td className="py-2 px-3">
+                        <span className="px-2 py-0.5 rounded text-pos-badge font-bold bg-blue-100 text-blue-900">
                           PRODUCT SKU
                         </span>
                       </td>
-                      <td className="p-3 text-center font-mono font-bold text-slate-800">{p.stock_quantity}</td>
-                      <td className="p-3 text-right font-mono">{formatMoney(p.unit_cost)}</td>
-                      <td className="p-3 text-right font-mono font-bold text-emerald-700">{formatMoney(p.line_cost_valuation)}</td>
-                      <td className="p-3 text-right font-mono">{formatMoney(p.retail_price)}</td>
-                      <td className="p-3 text-right font-mono text-blue-700">{formatMoney(p.line_retail_valuation)}</td>
+                      <td className="py-2 px-3 text-center font-mono font-bold text-slate-800 text-pos-body">{p.stock_quantity}</td>
+                      <td className="py-2 px-3 text-right font-mono text-pos-body tabular-nums">{formatMoney(p.unit_cost)}</td>
+                      <td className="py-2 px-3 text-right font-mono font-bold text-emerald-800 text-pos-body tabular-nums">{formatMoney(p.line_cost_valuation)}</td>
+                      <td className="py-2 px-3 text-right font-mono text-pos-body tabular-nums">{formatMoney(p.retail_price)}</td>
+                      <td className="py-2 px-3 text-right font-mono text-blue-900 text-pos-body tabular-nums">{formatMoney(p.line_retail_valuation)}</td>
                     </tr>
                   ))}
 
@@ -606,19 +606,19 @@ export const ReportsTab: React.FC = () => {
                 {(inventoryValuationData?.materials || [])
                   .filter((m: any) => !searchFilter || m.name.toLowerCase().includes(searchFilter.toLowerCase()) || m.category.toLowerCase().includes(searchFilter.toLowerCase()))
                   .map((m: any) => (
-                    <tr key={`m-${m.id}`} className="hover:bg-slate-50 bg-amber-50/20">
-                      <td className="p-3 font-bold text-slate-900">{m.name}</td>
-                      <td className="p-3 text-slate-600">{m.category}</td>
-                      <td className="p-3">
-                        <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-amber-100 text-amber-800">
+                    <tr key={`m-${m.id}`} className="hover:bg-slate-50 bg-amber-50/20 transition-colors">
+                      <td className="py-2 px-3 font-bold text-slate-900 text-pos-body">{m.name}</td>
+                      <td className="py-2 px-3 text-slate-700 text-pos-body">{m.category}</td>
+                      <td className="py-2 px-3">
+                        <span className="px-2 py-0.5 rounded text-pos-badge font-bold bg-amber-100 text-amber-900">
                           MATERIAL ({m.unit})
                         </span>
                       </td>
-                      <td className="p-3 text-center font-mono font-bold text-slate-800">{m.stock_quantity} {m.unit}</td>
-                      <td className="p-3 text-right font-mono">{formatMoney(m.unit_cost)}</td>
-                      <td className="p-3 text-right font-mono font-bold text-emerald-700">{formatMoney(m.line_cost_valuation)}</td>
-                      <td className="p-3 text-right font-mono text-slate-400">—</td>
-                      <td className="p-3 text-right font-mono text-slate-400">—</td>
+                      <td className="py-2 px-3 text-center font-mono font-bold text-slate-800 text-pos-body">{m.stock_quantity} {m.unit}</td>
+                      <td className="py-2 px-3 text-right font-mono text-pos-body tabular-nums">{formatMoney(m.unit_cost)}</td>
+                      <td className="py-2 px-3 text-right font-mono font-bold text-emerald-800 text-pos-body tabular-nums">{formatMoney(m.line_cost_valuation)}</td>
+                      <td className="py-2 px-3 text-right font-mono text-slate-400">—</td>
+                      <td className="py-2 px-3 text-right font-mono text-slate-400">—</td>
                     </tr>
                   ))}
 

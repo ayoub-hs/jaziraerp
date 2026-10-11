@@ -160,7 +160,7 @@ export const Header: React.FC<HeaderProps> = ({
         {/* Brand & View Switcher */}
         <div className="flex items-center gap-3">
           <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-lg bg-emerald-600 flex items-center justify-center font-black text-lg text-white shadow-inner">
+            <div className="w-8 h-8 rounded-lg bg-emerald-700 flex items-center justify-center font-black text-lg text-white shadow-inner">
               J
             </div>
             <div>
@@ -179,7 +179,7 @@ export const Header: React.FC<HeaderProps> = ({
               onClick={() => onSelectView('DESKTOP_POS')}
               className={`flex items-center gap-1 px-2.5 py-1 rounded-md transition-colors ${
                 currentView === 'DESKTOP_POS'
-                  ? 'bg-emerald-600 text-white shadow-sm'
+                  ? 'bg-emerald-700 text-white shadow-sm'
                   : 'text-slate-300 hover:text-white'
               }`}
             >
@@ -190,7 +190,7 @@ export const Header: React.FC<HeaderProps> = ({
               onClick={() => onSelectView('MOBILE_REGISTER')}
               className={`flex items-center gap-1 px-2.5 py-1 rounded-md transition-colors ${
                 currentView === 'MOBILE_REGISTER'
-                  ? 'bg-emerald-600 text-white shadow-sm'
+                  ? 'bg-emerald-700 text-white shadow-sm'
                   : 'text-slate-300 hover:text-white'
               }`}
             >
@@ -201,7 +201,7 @@ export const Header: React.FC<HeaderProps> = ({
               onClick={() => onSelectView('BACKOFFICE')}
               className={`flex items-center gap-1 px-2.5 py-1 rounded-md transition-colors ${
                 currentView === 'BACKOFFICE'
-                  ? 'bg-emerald-600 text-white shadow-sm'
+                  ? 'bg-emerald-700 text-white shadow-sm'
                   : 'text-slate-300 hover:text-white'
               }`}
             >
@@ -521,9 +521,9 @@ export const Header: React.FC<HeaderProps> = ({
                 <div key={item.temp_client_id} className="p-3 bg-slate-800/80 rounded-xl border border-slate-700 text-xs space-y-1">
                   <div className="flex justify-between font-mono font-bold text-slate-300">
                     <span>{item.action_type}</span>
-                    <span className="text-[10px] text-slate-400">{item.temp_client_id}</span>
+                    <span className="text-pos-badge text-slate-400">{item.temp_client_id}</span>
                   </div>
-                  <div className="text-rose-400 font-semibold text-[11px]">
+                  <div className="text-rose-400 font-semibold text-xs">
                     Erreur: {item.error || 'Vérification requise'}
                   </div>
                 </div>

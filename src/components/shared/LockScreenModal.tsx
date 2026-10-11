@@ -150,21 +150,21 @@ export const LockScreenModal: React.FC<LockScreenModalProps> = ({
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/95 backdrop-blur-xl p-4 select-none animate-fadeIn">
-      <div className="bg-slate-900 border border-slate-800 rounded-3xl shadow-2xl max-w-sm w-full p-6 flex flex-col items-center text-center">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/95 backdrop-blur-xl p-2 sm:p-4 select-none animate-fadeIn overflow-y-auto">
+      <div className="bg-slate-900 border border-slate-800 rounded-2xl sm:rounded-3xl shadow-2xl max-w-sm w-full p-4 sm:p-6 flex flex-col items-center text-center max-h-[calc(100dvh-1rem)] sm:max-h-[calc(100dvh-2rem)] overflow-y-auto my-auto">
         {/* Lock Icon & Header */}
-        <div className="w-14 h-14 rounded-2xl bg-emerald-600/20 border border-emerald-500/30 flex items-center justify-center mb-3">
-          <Lock className="w-7 h-7 text-emerald-400" />
+        <div className="w-10 h-10 sm:w-14 sm:h-14 rounded-xl sm:rounded-2xl bg-emerald-700/20 border border-emerald-500/30 flex items-center justify-center mb-2 sm:mb-3">
+          <Lock className="w-5 h-5 sm:w-7 sm:h-7 text-emerald-400" />
         </div>
 
-        <h2 className="text-lg font-black text-white">{effectiveShopName}</h2>
+        <h2 className="text-base sm:text-lg font-black text-white">{effectiveShopName}</h2>
         <p className="text-xs text-slate-400 mt-0.5">
           {isMasterMode ? 'Master Password Unlock' : 'Enter 4-Digit Counter PIN'}
         </p>
 
         {/* Error Alert */}
         {error && (
-          <div className="mt-3 w-full bg-rose-950/60 border border-rose-800/60 text-rose-300 px-3 py-1.5 rounded-xl text-xs flex items-center justify-center gap-1.5 animate-shake">
+          <div className="mt-2 sm:mt-3 w-full bg-rose-950/60 border border-rose-800/60 text-rose-300 px-3 py-1.5 rounded-xl text-xs flex items-center justify-center gap-1.5 animate-shake">
             <AlertCircle className="w-3.5 h-3.5 shrink-0" />
             <span>{error}</span>
           </div>
@@ -172,15 +172,15 @@ export const LockScreenModal: React.FC<LockScreenModalProps> = ({
 
         {/* Mode 1: 4-Digit PIN Numpad */}
         {!isMasterMode ? (
-          <div className="w-full mt-5">
+          <div className="w-full mt-2 sm:mt-5">
             {/* 4 PIN Dots Indicator */}
-            <div className="flex justify-center gap-4 mb-6">
+            <div className="flex justify-center gap-3 sm:gap-4 mb-3 sm:mb-6">
               {[0, 1, 2, 3].map(index => {
                 const filled = index < pin.length;
                 return (
                   <div
                     key={index}
-                    className={`w-4 h-4 rounded-full transition-all duration-200 ${
+                    className={`w-3.5 h-3.5 sm:w-4 sm:h-4 rounded-full transition-all duration-200 ${
                       filled
                         ? 'bg-emerald-500 scale-110 shadow-[0_0_10px_rgba(16,185,129,0.7)]'
                         : 'bg-slate-800 border-2 border-slate-700'
@@ -191,14 +191,14 @@ export const LockScreenModal: React.FC<LockScreenModalProps> = ({
             </div>
 
             {/* Numeric Keypad */}
-            <div className="grid grid-cols-3 gap-2.5 max-w-[260px] mx-auto">
+            <div className="grid grid-cols-3 gap-1.5 sm:gap-2.5 max-w-[260px] mx-auto">
               {['1', '2', '3', '4', '5', '6', '7', '8', '9'].map(num => (
                 <button
                   key={num}
                   type="button"
                   onClick={() => handleDigitPress(num)}
                   disabled={isVerifying}
-                  className="h-14 rounded-2xl bg-slate-800/80 hover:bg-slate-700/80 active:bg-emerald-600 text-white font-mono text-xl font-bold border border-slate-700/60 transition-all flex items-center justify-center active:scale-95 shadow-sm"
+                  className="h-10 sm:h-14 rounded-xl sm:rounded-2xl bg-slate-800/80 hover:bg-slate-700/80 active:bg-emerald-700 text-white font-mono text-lg sm:text-xl font-bold border border-slate-700/60 transition-all flex items-center justify-center active:scale-95 shadow-sm"
                 >
                   {num}
                 </button>
@@ -207,7 +207,7 @@ export const LockScreenModal: React.FC<LockScreenModalProps> = ({
                 type="button"
                 onClick={handleClear}
                 disabled={isVerifying || pin.length === 0}
-                className="h-14 rounded-2xl bg-slate-800/40 hover:bg-slate-700/60 text-slate-400 font-bold text-xs border border-slate-800 transition-colors flex items-center justify-center active:scale-95"
+                className="h-10 sm:h-14 rounded-xl sm:rounded-2xl bg-slate-800/40 hover:bg-slate-700/60 text-slate-400 font-bold text-xs border border-slate-800 transition-colors flex items-center justify-center active:scale-95"
               >
                 Clear
               </button>
@@ -215,7 +215,7 @@ export const LockScreenModal: React.FC<LockScreenModalProps> = ({
                 type="button"
                 onClick={() => handleDigitPress('0')}
                 disabled={isVerifying}
-                className="h-14 rounded-2xl bg-slate-800/80 hover:bg-slate-700/80 active:bg-emerald-600 text-white font-mono text-xl font-bold border border-slate-700/60 transition-all flex items-center justify-center active:scale-95 shadow-sm"
+                className="h-10 sm:h-14 rounded-xl sm:rounded-2xl bg-slate-800/80 hover:bg-slate-700/80 active:bg-emerald-700 text-white font-mono text-lg sm:text-xl font-bold border border-slate-700/60 transition-all flex items-center justify-center active:scale-95 shadow-sm"
               >
                 0
               </button>
@@ -223,14 +223,14 @@ export const LockScreenModal: React.FC<LockScreenModalProps> = ({
                 type="button"
                 onClick={handleBackspace}
                 disabled={isVerifying || pin.length === 0}
-                className="h-14 rounded-2xl bg-slate-800/40 hover:bg-slate-700/60 text-slate-400 font-bold text-xs border border-slate-800 transition-colors flex items-center justify-center active:scale-95"
+                className="h-10 sm:h-14 rounded-xl sm:rounded-2xl bg-slate-800/40 hover:bg-slate-700/60 text-slate-400 font-bold text-xs border border-slate-800 transition-colors flex items-center justify-center active:scale-95"
               >
                 Del
               </button>
             </div>
 
             {/* Switch to Master Password */}
-            <div className="mt-5 pt-3 border-t border-slate-800/80 text-center">
+            <div className="mt-3 sm:mt-5 pt-2 sm:pt-3 border-t border-slate-800/80 text-center">
               <button
                 type="button"
                 onClick={() => {
@@ -261,7 +261,7 @@ export const LockScreenModal: React.FC<LockScreenModalProps> = ({
             <button
               type="submit"
               disabled={isVerifying || !masterPassword.trim()}
-              className="w-full py-2.5 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white font-bold rounded-xl text-xs transition-colors flex items-center justify-center gap-1.5"
+              className="w-full py-2.5 bg-emerald-700 hover:bg-emerald-800 disabled:opacity-50 text-white font-bold rounded-xl text-xs transition-colors flex items-center justify-center gap-1.5"
             >
               {isVerifying ? (
                 <>
@@ -290,7 +290,7 @@ export const LockScreenModal: React.FC<LockScreenModalProps> = ({
         )}
 
         {/* Offline indicator note */}
-        <div className="mt-3 text-[10px] text-slate-500">
+        <div className="mt-2 sm:mt-3 text-pos-badge text-slate-500">
           Single-User Secure Unlock • Works 100% Offline
         </div>
       </div>

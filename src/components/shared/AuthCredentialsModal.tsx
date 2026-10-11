@@ -159,10 +159,10 @@ export const AuthCredentialsModal: React.FC<AuthCredentialsModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
-      <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full overflow-hidden border border-slate-200 animate-in fade-in zoom-in-95 duration-150">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-2 sm:p-4 overflow-y-auto">
+      <div className="bg-white rounded-xl shadow-2xl max-w-md w-full max-h-[calc(100dvh-1rem)] sm:max-h-[calc(100dvh-2rem)] flex flex-col overflow-hidden border border-slate-200 animate-in fade-in zoom-in-95 duration-150">
         {/* Modal Header */}
-        <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100 bg-slate-50/50">
+        <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100 bg-slate-50/50 shrink-0">
           <div className="flex items-center gap-2.5">
             <div className="w-8 h-8 rounded-xl bg-emerald-100 text-emerald-700 flex items-center justify-center">
               <Shield className="w-4 h-4" />
@@ -171,7 +171,7 @@ export const AuthCredentialsModal: React.FC<AuthCredentialsModalProps> = ({
               <h3 className="text-sm font-black text-slate-900">
                 {mode === 'SETUP' ? 'Initial Security Setup' : 'Security Settings'}
               </h3>
-              <p className="text-[11px] text-slate-500">
+              <p className="text-xs text-slate-500">
                 {mode === 'SETUP'
                   ? 'Configure 4-digit counter PIN and master recovery password'
                   : 'Update your counter unlock PIN or master password'}
@@ -187,7 +187,7 @@ export const AuthCredentialsModal: React.FC<AuthCredentialsModalProps> = ({
         </div>
 
         {/* Modal Body */}
-        <div className="p-5">
+        <div className="p-4 sm:p-5 flex-1 min-h-0 overflow-y-auto">
           {success ? (
             <div className="text-center py-6 space-y-3">
               <CheckCircle className="w-10 h-10 text-emerald-500 mx-auto" />
@@ -214,12 +214,12 @@ export const AuthCredentialsModal: React.FC<AuthCredentialsModalProps> = ({
               </div>
 
               <div className="p-3.5 bg-slate-50 rounded-xl border border-slate-200/80 space-y-3">
-                <span className="font-black text-slate-700 block uppercase tracking-wider text-[10px]">
+                <span className="font-black text-slate-700 block uppercase tracking-wider text-pos-badge">
                   1. Counter Unlock PIN (4 Digits)
                 </span>
                 <div className="grid grid-cols-2 gap-2">
                   <div>
-                    <label className="block font-semibold text-slate-600 mb-1 text-[11px]">4-Digit PIN *</label>
+                    <label className="block font-semibold text-slate-600 mb-1 text-xs">4-Digit PIN *</label>
                     <input
                       type="password"
                       maxLength={4}
@@ -232,7 +232,7 @@ export const AuthCredentialsModal: React.FC<AuthCredentialsModalProps> = ({
                     />
                   </div>
                   <div>
-                    <label className="block font-semibold text-slate-600 mb-1 text-[11px]">Confirm PIN *</label>
+                    <label className="block font-semibold text-slate-600 mb-1 text-xs">Confirm PIN *</label>
                     <input
                       type="password"
                       maxLength={4}
@@ -248,12 +248,12 @@ export const AuthCredentialsModal: React.FC<AuthCredentialsModalProps> = ({
               </div>
 
               <div className="p-3.5 bg-slate-50 rounded-xl border border-slate-200/80 space-y-3">
-                <span className="font-black text-slate-700 block uppercase tracking-wider text-[10px]">
+                <span className="font-black text-slate-700 block uppercase tracking-wider text-pos-badge">
                   2. Master Password (Recovery & Admin)
                 </span>
                 <div className="space-y-2">
                   <div>
-                    <label className="block font-semibold text-slate-600 mb-1 text-[11px]">Master Password *</label>
+                    <label className="block font-semibold text-slate-600 mb-1 text-xs">Master Password *</label>
                     <input
                       type="password"
                       required
@@ -264,7 +264,7 @@ export const AuthCredentialsModal: React.FC<AuthCredentialsModalProps> = ({
                     />
                   </div>
                   <div>
-                    <label className="block font-semibold text-slate-600 mb-1 text-[11px]">Confirm Master Password *</label>
+                    <label className="block font-semibold text-slate-600 mb-1 text-xs">Confirm Master Password *</label>
                     <input
                       type="password"
                       required
@@ -288,7 +288,7 @@ export const AuthCredentialsModal: React.FC<AuthCredentialsModalProps> = ({
                 <button
                   type="submit"
                   disabled={isSubmitting}
-                  className="flex-1 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl shadow-sm transition-colors flex items-center justify-center gap-1.5"
+                  className="flex-1 py-2.5 bg-emerald-700 hover:bg-emerald-800 text-white font-bold rounded-xl shadow-sm transition-colors flex items-center justify-center gap-1.5"
                 >
                   {isSubmitting ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Lock className="w-4 h-4" />}
                   <span>Save Security Credentials</span>
@@ -348,7 +348,7 @@ export const AuthCredentialsModal: React.FC<AuthCredentialsModalProps> = ({
               {changeType === 'PIN' ? (
                 <div className="grid grid-cols-2 gap-2 p-3 bg-slate-50 rounded-xl border border-slate-200/80">
                   <div>
-                    <label className="block font-semibold text-slate-600 mb-1 text-[11px]">New 4-Digit PIN *</label>
+                    <label className="block font-semibold text-slate-600 mb-1 text-xs">New 4-Digit PIN *</label>
                     <input
                       type="password"
                       maxLength={4}
@@ -361,7 +361,7 @@ export const AuthCredentialsModal: React.FC<AuthCredentialsModalProps> = ({
                     />
                   </div>
                   <div>
-                    <label className="block font-semibold text-slate-600 mb-1 text-[11px]">Confirm New PIN *</label>
+                    <label className="block font-semibold text-slate-600 mb-1 text-xs">Confirm New PIN *</label>
                     <input
                       type="password"
                       maxLength={4}
@@ -377,7 +377,7 @@ export const AuthCredentialsModal: React.FC<AuthCredentialsModalProps> = ({
               ) : (
                 <div className="space-y-2 p-3 bg-slate-50 rounded-xl border border-slate-200/80">
                   <div>
-                    <label className="block font-semibold text-slate-600 mb-1 text-[11px]">New Master Password *</label>
+                    <label className="block font-semibold text-slate-600 mb-1 text-xs">New Master Password *</label>
                     <input
                       type="password"
                       required
@@ -388,7 +388,7 @@ export const AuthCredentialsModal: React.FC<AuthCredentialsModalProps> = ({
                     />
                   </div>
                   <div>
-                    <label className="block font-semibold text-slate-600 mb-1 text-[11px]">Confirm New Password *</label>
+                    <label className="block font-semibold text-slate-600 mb-1 text-xs">Confirm New Password *</label>
                     <input
                       type="password"
                       required
@@ -412,7 +412,7 @@ export const AuthCredentialsModal: React.FC<AuthCredentialsModalProps> = ({
                 <button
                   type="submit"
                   disabled={isSubmitting}
-                  className="flex-1 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl shadow-sm transition-colors flex items-center justify-center gap-1.5"
+                  className="flex-1 py-2.5 bg-emerald-700 hover:bg-emerald-800 text-white font-bold rounded-xl shadow-sm transition-colors flex items-center justify-center gap-1.5"
                 >
                   {isSubmitting ? <RefreshCw className="w-4 h-4 animate-spin" /> : <KeyRound className="w-4 h-4" />}
                   <span>Update Credentials</span>

@@ -33,22 +33,23 @@ export const FamilySizesModal: React.FC<FamilySizesModalProps> = ({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
-      <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full overflow-hidden border border-slate-200">
-        <div className="bg-slate-900 text-white px-5 py-4 flex items-center justify-between">
+    <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-2 sm:p-4 overflow-y-auto">
+      <div className="bg-white rounded-2xl shadow-xl max-w-md w-full max-h-[calc(100dvh-1rem)] sm:max-h-[calc(100dvh-2rem)] overflow-hidden border border-slate-200 flex flex-col">
+        <div className="shrink-0 bg-slate-900 text-white px-5 py-4 flex items-center justify-between">
           <div className="flex items-center gap-2">
             <Layers className="w-5 h-5 text-emerald-400" />
             <h2 className="text-base font-bold">Select Size — {familyName}</h2>
           </div>
           <button
             onClick={onClose}
+            aria-label="Fermer"
             className="text-slate-400 hover:text-white p-1 rounded-lg hover:bg-slate-800 transition-colors"
           >
             <X className="w-5 h-5" />
           </button>
         </div>
 
-        <div className="p-5 divide-y divide-slate-100 max-h-96 overflow-y-auto">
+        <div className="p-5 divide-y divide-slate-100 overflow-y-auto flex-1 min-h-0">
           {products.map(product => {
             const effectivePrice = getProductPriceForCustomer(product, customer);
             const isLowStock = product.stock_quantity <= product.low_stock_threshold;
@@ -64,9 +65,9 @@ export const FamilySizesModal: React.FC<FamilySizesModalProps> = ({
                   <div>
                     <div className="font-bold text-sm text-slate-900 flex items-center gap-2">
                       <span>{product.size_label || product.name}</span>
-                      <span className="text-[10px] text-slate-500 bg-slate-100 px-1.5 py-0.5 rounded font-medium">1 pc</span>
+                      <span className="text-pos-badge text-slate-600 bg-slate-100 px-1.5 py-0.5 rounded font-medium">1 pc</span>
                       {isLowStock && (
-                        <span className="text-[10px] bg-amber-100 text-amber-800 px-1.5 py-0.5 rounded font-semibold flex items-center gap-1">
+                        <span className="text-pos-badge bg-amber-100 text-amber-900 px-1.5 py-0.5 rounded font-semibold flex items-center gap-1">
                           <AlertTriangle className="w-3 h-3" />
                           Stock: {product.stock_quantity}
                         </span>
@@ -78,11 +79,11 @@ export const FamilySizesModal: React.FC<FamilySizesModalProps> = ({
                   </div>
 
                   <div className="text-right">
-                    <div className="font-bold text-emerald-700 font-mono text-sm">
+                    <div className="font-bold text-emerald-800 font-mono text-sm">
                       {formatMoney(effectivePrice)}
                     </div>
                     {customer && customer.type !== 'RETAIL' && (
-                      <div className="text-[10px] text-slate-400 line-through font-mono">
+                      <div className="text-pos-badge text-slate-500 line-through font-mono">
                         {formatMoney(product.retail_price)}
                       </div>
                     )}
@@ -106,7 +107,7 @@ export const FamilySizesModal: React.FC<FamilySizesModalProps> = ({
                           title={`Ajouter ${ps.pack_label || `pack x${ps.multiplier}`}`}
                         >
                           <span className="font-bold">{ps.pack_label || `x${ps.multiplier} pcs`}</span>
-                          <span className="font-mono text-blue-700 font-bold">{formatMoney(packPrice)}</span>
+                          <span className="font-mono text-blue-800 font-bold">{formatMoney(packPrice)}</span>
                         </button>
                       );
                     })}
@@ -117,11 +118,11 @@ export const FamilySizesModal: React.FC<FamilySizesModalProps> = ({
           })}
         </div>
 
-        <div className="p-3 bg-slate-50 border-t border-slate-200 text-right">
+        <div className="shrink-0 px-5 py-3 bg-slate-50/50 border-t border-slate-100 flex justify-end">
           <button
             type="button"
             onClick={onClose}
-            className="py-2 px-4 bg-slate-200 hover:bg-slate-300 text-slate-800 font-bold rounded-xl text-xs transition-colors"
+            className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl text-xs transition-colors"
           >
             Cancel
           </button>

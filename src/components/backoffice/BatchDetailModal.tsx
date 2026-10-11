@@ -93,13 +93,13 @@ export const BatchDetailModal: React.FC<BatchDetailModalProps> = ({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-in fade-in duration-200"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-2 sm:p-4 overflow-y-auto animate-in fade-in duration-200"
       onClick={e => {
         if (e.target === e.currentTarget) onClose();
       }}
     >
       <div
-        className="bg-white rounded-2xl shadow-2xl max-w-3xl w-full flex flex-col border border-slate-200 max-h-[90vh] overflow-hidden"
+        className="bg-white rounded-2xl shadow-2xl max-w-3xl w-full flex flex-col border border-slate-200 max-h-[calc(100dvh-1rem)] sm:max-h-[calc(100dvh-2rem)] overflow-hidden"
         onClick={e => e.stopPropagation()}
       >
         {/* Header */}
@@ -167,26 +167,26 @@ export const BatchDetailModal: React.FC<BatchDetailModalProps> = ({
               {/* Summary Cards */}
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 bg-slate-50 p-4 rounded-xl border border-slate-200">
                 <div>
-                  <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">Date</span>
+                  <span className="text-pos-badge font-bold text-slate-700 uppercase tracking-wider block">Date</span>
                   <span className="text-xs font-semibold text-slate-800 mt-0.5 flex items-center gap-1">
                     <Calendar className="w-3.5 h-3.5 text-slate-400" />
                     {formatDate(batch.date)}
                   </span>
                 </div>
                 <div>
-                  <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">Unités Produites</span>
+                  <span className="text-pos-badge font-bold text-slate-700 uppercase tracking-wider block">Unités Produites</span>
                   <span className="text-sm font-black font-mono text-slate-900 mt-0.5 block">
                     {batch.units_produced}
                   </span>
                 </div>
                 <div>
-                  <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">Coût Total Lot</span>
+                  <span className="text-pos-badge font-bold text-slate-700 uppercase tracking-wider block">Coût Total Lot</span>
                   <span className="text-sm font-black font-mono text-slate-900 mt-0.5 block">
                     {formatMoney(batch.total_batch_cost)}
                   </span>
                 </div>
                 <div>
-                  <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">Coût / Unité</span>
+                  <span className="text-pos-badge font-bold text-slate-700 uppercase tracking-wider block">Coût / Unité</span>
                   <span className="text-sm font-black font-mono text-emerald-700 mt-0.5 block">
                     {formatMoney(batch.cost_per_unit)}
                   </span>
@@ -207,8 +207,8 @@ export const BatchDetailModal: React.FC<BatchDetailModalProps> = ({
                   </h3>
                 </div>
                 <div className="overflow-x-auto">
-                  <table className="w-full text-left text-xs min-w-[600px]">
-                    <thead className="bg-slate-50 border-b border-slate-200 text-slate-600 font-bold uppercase tracking-wider text-[10px]">
+                  <table className="w-full text-left text-pos-body min-w-[600px]">
+                    <thead className="bg-slate-50 border-b border-slate-200 text-slate-700 font-bold uppercase tracking-wider text-pos-caption">
                       <tr>
                         <th className="py-2.5 px-3">Matière</th>
                         <th className="py-2.5 px-3 text-right">Quantité</th>
@@ -219,21 +219,21 @@ export const BatchDetailModal: React.FC<BatchDetailModalProps> = ({
                     <tbody className="divide-y divide-slate-100">
                       {batch.materials_consumed?.map(item => (
                         <tr key={item.id} className="hover:bg-slate-50/80 transition-colors">
-                          <td className="py-2.5 px-3 font-semibold text-slate-900">
+                          <td className="py-2 px-3 font-semibold text-slate-900 text-pos-body">
                             {item.material_name}
                             {item.material_category && (
-                              <span className="text-[10px] text-slate-400 font-normal ml-1.5">
+                              <span className="text-pos-badge text-slate-600 font-normal ml-1.5">
                                 ({item.material_category})
                               </span>
                             )}
                           </td>
-                          <td className="py-2.5 px-3 text-right font-mono font-semibold text-slate-800">
+                          <td className="py-2 px-3 text-right font-mono font-semibold text-slate-800 text-pos-body">
                             {item.quantity_consumed} {item.material_unit || ''}
                           </td>
-                          <td className="py-2.5 px-3 text-right font-mono font-semibold text-slate-700">
+                          <td className="py-2 px-3 text-right font-mono font-semibold text-slate-700 text-pos-body">
                             {formatMoney(item.unit_cost)}
                           </td>
-                          <td className="py-2.5 px-3 text-right font-mono font-bold text-slate-900">
+                          <td className="py-2 px-3 text-right font-mono font-bold text-slate-900 text-pos-body">
                             {formatMoney(item.total_cost)}
                           </td>
                         </tr>

@@ -404,7 +404,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
           {!completedSale && (
             <div className="flex items-center gap-3">
               <div className="text-right">
-                <span className="text-[10px] text-slate-400 uppercase tracking-wider block font-semibold leading-none">TOTAL À PAYER</span>
+                <span className="text-pos-badge text-slate-400 uppercase tracking-wider block font-semibold leading-none">TOTAL À PAYER</span>
                 <span className="text-xl sm:text-2xl font-black text-emerald-400 font-mono leading-tight">{formatMoney(totalTTC)}</span>
               </div>
               <button

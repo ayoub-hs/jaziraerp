@@ -100,13 +100,13 @@ export const PurchaseDetailModal: React.FC<PurchaseDetailModalProps> = ({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-in fade-in duration-200"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-2 sm:p-4 overflow-y-auto animate-in fade-in duration-200"
       onClick={e => {
         if (e.target === e.currentTarget) onClose();
       }}
     >
       <div
-        className="bg-white rounded-2xl shadow-2xl max-w-3xl w-full flex flex-col border border-slate-200 max-h-[90vh] overflow-hidden"
+        className="bg-white rounded-2xl shadow-2xl max-w-3xl w-full flex flex-col border border-slate-200 max-h-[calc(100dvh-1rem)] sm:max-h-[calc(100dvh-2rem)] overflow-hidden"
         onClick={e => e.stopPropagation()}
       >
         {/* Header */}
@@ -174,7 +174,7 @@ export const PurchaseDetailModal: React.FC<PurchaseDetailModalProps> = ({
               {/* Summary Cards */}
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 bg-slate-50 p-4 rounded-xl border border-slate-200">
                 <div>
-                  <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">Date</span>
+                  <span className="text-pos-badge font-bold text-slate-700 uppercase tracking-wider block">Date</span>
                   <div className="flex items-center gap-1 mt-0.5 text-xs font-semibold text-slate-800">
                     <Calendar className="w-3.5 h-3.5 text-slate-400" />
                     <span>{formatDate(purchase.date)}</span>
@@ -182,12 +182,12 @@ export const PurchaseDetailModal: React.FC<PurchaseDetailModalProps> = ({
                 </div>
 
                 <div>
-                  <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">Statut Paiement</span>
+                  <span className="text-pos-badge font-bold text-slate-700 uppercase tracking-wider block">Statut Paiement</span>
                   <span
-                    className={`inline-block mt-0.5 px-2 py-0.5 text-[11px] font-bold rounded-md ${
+                    className={`inline-block mt-0.5 px-2 py-0.5 text-pos-badge font-bold rounded-md ${
                       isPaid
                         ? 'bg-emerald-100 text-emerald-800 border border-emerald-200'
-                        : 'bg-amber-100 text-amber-800 border border-amber-200'
+                        : 'bg-amber-100 text-amber-900 border border-amber-200'
                     }`}
                   >
                     {isPaid ? 'PAYÉ COMPTANT' : 'CRÉDIT / DETTE'}
@@ -195,14 +195,14 @@ export const PurchaseDetailModal: React.FC<PurchaseDetailModalProps> = ({
                 </div>
 
                 <div>
-                  <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">Acompte Versé</span>
+                  <span className="text-pos-badge font-bold text-slate-700 uppercase tracking-wider block">Acompte Versé</span>
                   <span className="text-sm font-black font-mono text-emerald-700 mt-0.5 block">
                     {formatMoney(downPayment)}
                   </span>
                 </div>
 
                 <div>
-                  <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">Dette Restante</span>
+                  <span className="text-pos-badge font-bold text-slate-700 uppercase tracking-wider block">Dette Restante</span>
                   <span
                     className={`text-sm font-black font-mono mt-0.5 block ${
                       remainingDebt > 0 ? 'text-rose-700' : 'text-slate-700'
@@ -237,8 +237,8 @@ export const PurchaseDetailModal: React.FC<PurchaseDetailModalProps> = ({
                   </span>
                 </div>
                 <div className="overflow-x-auto">
-                  <table className="w-full text-left text-xs min-w-[600px]">
-                    <thead className="bg-slate-50 border-b border-slate-200 text-slate-600 font-bold uppercase tracking-wider text-[10px]">
+                  <table className="w-full text-left text-pos-body min-w-[600px]">
+                    <thead className="bg-slate-50 border-b border-slate-200 text-slate-700 font-bold uppercase tracking-wider text-pos-caption">
                       <tr>
                         <th className="py-2.5 px-3">Article / Désignation</th>
                         <th className="py-2.5 px-3">Type</th>
@@ -250,26 +250,26 @@ export const PurchaseDetailModal: React.FC<PurchaseDetailModalProps> = ({
                     <tbody className="divide-y divide-slate-100">
                       {purchase.items?.map((item) => (
                         <tr key={item.id} className="hover:bg-slate-50/80 transition-colors">
-                          <td className="py-2.5 px-3 font-semibold text-slate-900">
+                          <td className="py-2 px-3 font-semibold text-slate-900 text-pos-body">
                             {item.item_name}
                             {item.item_category_or_size && (
-                              <span className="text-[10px] text-slate-400 font-normal ml-1.5">
+                              <span className="text-pos-badge text-slate-600 font-normal ml-1.5">
                                 ({item.item_category_or_size})
                               </span>
                             )}
                           </td>
-                          <td className="py-2.5 px-3">
-                            <span className="px-1.5 py-0.5 text-[10px] font-bold rounded bg-slate-100 text-slate-700">
+                          <td className="py-2 px-3">
+                            <span className="px-1.5 py-0.5 text-pos-badge font-bold rounded bg-slate-100 text-slate-700">
                               {item.item_type === 'RAW_MATERIAL' ? 'Matière première' : 'Produit fini'}
                             </span>
                           </td>
-                          <td className="py-2.5 px-3 text-right font-mono font-semibold text-slate-800">
+                          <td className="py-2 px-3 text-right font-mono font-semibold text-slate-800 text-pos-body">
                             {item.quantity} {item.material_unit || 'u'}
                           </td>
-                          <td className="py-2.5 px-3 text-right font-mono font-semibold text-slate-700">
+                          <td className="py-2 px-3 text-right font-mono font-semibold text-slate-700 text-pos-body">
                             {formatMoney(item.unit_cost)}
                           </td>
-                          <td className="py-2.5 px-3 text-right font-mono font-bold text-slate-900">
+                          <td className="py-2 px-3 text-right font-mono font-bold text-slate-900 text-pos-body">
                             {formatMoney(item.total_cost)}
                           </td>
                         </tr>

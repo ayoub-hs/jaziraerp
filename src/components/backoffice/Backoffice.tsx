@@ -837,7 +837,7 @@ export const Backoffice: React.FC<BackofficeProps> = ({
       {/* Sidebar Navigation */}
       <aside className="w-full md:w-56 bg-slate-900 text-slate-300 flex md:flex-col shrink-0 overflow-x-auto border-r border-slate-800">
         <div className="p-3 border-b border-slate-800 hidden md:block">
-          <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+          <span className="text-pos-badge font-bold text-slate-400 uppercase tracking-wider">
             Administration
           </span>
         </div>
@@ -845,7 +845,7 @@ export const Backoffice: React.FC<BackofficeProps> = ({
           <button
             onClick={() => setActiveTab('SALES')}
             className={`flex items-center gap-2 px-3 py-2 rounded-lg transition-colors whitespace-nowrap ${
-              activeTab === 'SALES' ? 'bg-emerald-600 text-white shadow-sm' : 'hover:bg-slate-800'
+              activeTab === 'SALES' ? 'bg-emerald-700 text-white shadow-sm' : 'hover:bg-slate-800'
             }`}
           >
             <Receipt className="w-4 h-4" />
@@ -854,7 +854,7 @@ export const Backoffice: React.FC<BackofficeProps> = ({
           <button
             onClick={() => setActiveTab('CATALOG')}
             className={`flex items-center gap-2 px-3 py-2 rounded-lg transition-colors whitespace-nowrap ${
-              activeTab === 'CATALOG' ? 'bg-emerald-600 text-white shadow-sm' : 'hover:bg-slate-800'
+              activeTab === 'CATALOG' ? 'bg-emerald-700 text-white shadow-sm' : 'hover:bg-slate-800'
             }`}
           >
             <Package className="w-4 h-4" />
@@ -863,7 +863,7 @@ export const Backoffice: React.FC<BackofficeProps> = ({
           <button
             onClick={() => setActiveTab('MATERIALS')}
             className={`flex items-center gap-2 px-3 py-2 rounded-lg transition-colors whitespace-nowrap ${
-              activeTab === 'MATERIALS' ? 'bg-emerald-600 text-white shadow-sm' : 'hover:bg-slate-800'
+              activeTab === 'MATERIALS' ? 'bg-emerald-700 text-white shadow-sm' : 'hover:bg-slate-800'
             }`}
           >
             <FlaskConical className="w-4 h-4" />
@@ -872,7 +872,7 @@ export const Backoffice: React.FC<BackofficeProps> = ({
           <button
             onClick={() => setActiveTab('PRODUCTION')}
             className={`flex items-center gap-2 px-3 py-2 rounded-lg transition-colors whitespace-nowrap ${
-              activeTab === 'PRODUCTION' ? 'bg-emerald-600 text-white shadow-sm' : 'hover:bg-slate-800'
+              activeTab === 'PRODUCTION' ? 'bg-emerald-700 text-white shadow-sm' : 'hover:bg-slate-800'
             }`}
           >
             <Layers className="w-4 h-4" />
@@ -881,7 +881,7 @@ export const Backoffice: React.FC<BackofficeProps> = ({
           <button
             onClick={() => setActiveTab('CUSTOMERS')}
             className={`flex items-center gap-2 px-3 py-2 rounded-lg transition-colors whitespace-nowrap ${
-              activeTab === 'CUSTOMERS' ? 'bg-emerald-600 text-white shadow-sm' : 'hover:bg-slate-800'
+              activeTab === 'CUSTOMERS' ? 'bg-emerald-700 text-white shadow-sm' : 'hover:bg-slate-800'
             }`}
           >
             <Users className="w-4 h-4" />
@@ -890,7 +890,7 @@ export const Backoffice: React.FC<BackofficeProps> = ({
           <button
             onClick={() => setActiveTab('SUPPLIERS')}
             className={`flex items-center gap-2 px-3 py-2 rounded-lg transition-colors whitespace-nowrap ${
-              activeTab === 'SUPPLIERS' ? 'bg-emerald-600 text-white shadow-sm' : 'hover:bg-slate-800'
+              activeTab === 'SUPPLIERS' ? 'bg-emerald-700 text-white shadow-sm' : 'hover:bg-slate-800'
             }`}
           >
             <Truck className="w-4 h-4" />
@@ -899,7 +899,7 @@ export const Backoffice: React.FC<BackofficeProps> = ({
           <button
             onClick={() => setActiveTab('CONTAINERS')}
             className={`flex items-center gap-2 px-3 py-2 rounded-lg transition-colors whitespace-nowrap ${
-              activeTab === 'CONTAINERS' ? 'bg-emerald-600 text-white shadow-sm' : 'hover:bg-slate-800'
+              activeTab === 'CONTAINERS' ? 'bg-emerald-700 text-white shadow-sm' : 'hover:bg-slate-800'
             }`}
           >
             <Box className="w-4 h-4" />
@@ -908,7 +908,7 @@ export const Backoffice: React.FC<BackofficeProps> = ({
           <button
             onClick={() => setActiveTab('SESSIONS')}
             className={`flex items-center gap-2 px-3 py-2 rounded-lg transition-colors whitespace-nowrap ${
-              activeTab === 'SESSIONS' ? 'bg-emerald-600 text-white shadow-sm' : 'hover:bg-slate-800'
+              activeTab === 'SESSIONS' ? 'bg-emerald-700 text-white shadow-sm' : 'hover:bg-slate-800'
             }`}
           >
             <History className="w-4 h-4" />
@@ -917,7 +917,7 @@ export const Backoffice: React.FC<BackofficeProps> = ({
           <button
             onClick={() => setActiveTab('ACCOUNTING')}
             className={`flex items-center gap-2 px-3 py-2 rounded-lg transition-colors whitespace-nowrap ${
-              activeTab === 'ACCOUNTING' ? 'bg-emerald-600 text-white shadow-sm' : 'hover:bg-slate-800'
+              activeTab === 'ACCOUNTING' ? 'bg-emerald-700 text-white shadow-sm' : 'hover:bg-slate-800'
             }`}
           >
             <TrendingUp className="w-4 h-4" />
@@ -926,7 +926,7 @@ export const Backoffice: React.FC<BackofficeProps> = ({
           <button
             onClick={() => setActiveTab('REPORTS')}
             className={`flex items-center gap-2 px-3 py-2 rounded-lg transition-colors whitespace-nowrap ${
-              activeTab === 'REPORTS' ? 'bg-emerald-600 text-white shadow-sm' : 'hover:bg-slate-800'
+              activeTab === 'REPORTS' ? 'bg-emerald-700 text-white shadow-sm' : 'hover:bg-slate-800'
             }`}
           >
             <BarChart3 className="w-4 h-4" />
@@ -935,7 +935,7 @@ export const Backoffice: React.FC<BackofficeProps> = ({
           <button
             onClick={() => setActiveTab('BACKUPS')}
             className={`flex items-center gap-2 px-3 py-2 rounded-lg transition-colors whitespace-nowrap ${
-              activeTab === 'BACKUPS' ? 'bg-emerald-600 text-white shadow-sm' : 'hover:bg-slate-800'
+              activeTab === 'BACKUPS' ? 'bg-emerald-700 text-white shadow-sm' : 'hover:bg-slate-800'
             }`}
           >
             <Database className="w-4 h-4" />
@@ -944,7 +944,7 @@ export const Backoffice: React.FC<BackofficeProps> = ({
           <button
             onClick={() => setActiveTab('SETTINGS')}
             className={`flex items-center gap-2 px-3 py-2 rounded-lg transition-colors whitespace-nowrap ${
-              activeTab === 'SETTINGS' ? 'bg-emerald-600 text-white shadow-sm' : 'hover:bg-slate-800'
+              activeTab === 'SETTINGS' ? 'bg-emerald-700 text-white shadow-sm' : 'hover:bg-slate-800'
             }`}
           >
             <Settings className="w-4 h-4" />
@@ -997,7 +997,7 @@ export const Backoffice: React.FC<BackofficeProps> = ({
                     setProductToEdit(null);
                     setIsCreateProductOpen(true);
                   }}
-                  className="flex items-center gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold px-3.5 py-2 rounded-xl shadow-sm transition-colors"
+                  className="flex items-center gap-1.5 bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-bold px-3.5 py-2 rounded-xl shadow-sm transition-colors"
                 >
                   <Plus className="w-4 h-4" />
                   New Product / SKU
@@ -1068,7 +1068,7 @@ export const Backoffice: React.FC<BackofficeProps> = ({
                   <h3 className="text-xs font-bold text-slate-700 uppercase tracking-wider">
                     Product Families ({displayedFamilies.length})
                   </h3>
-                  <span className="text-[11px] text-slate-500">Click &quot;Edit&quot; to modify family category, manufacturing type, or recipe</span>
+                  <span className="text-pos-badge text-slate-600">Click &quot;Edit&quot; to modify family category, manufacturing type, or recipe</span>
                 </div>
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
                   {displayedFamilies.map(f => (
@@ -1079,13 +1079,13 @@ export const Backoffice: React.FC<BackofficeProps> = ({
                         <div className="font-bold text-xs text-slate-900 flex items-center gap-1.5">
                           <span>{f.name}</span>
                           {f.active === 0 && (
-                            <span className="px-1.5 py-0.5 rounded text-[9px] font-bold bg-slate-200 text-slate-600 uppercase">
+                            <span className="px-1.5 py-0.5 rounded text-pos-badge font-bold bg-slate-200 text-slate-700 uppercase">
                               Inactif
                             </span>
                           )}
                         </div>
-                        <div className="text-[10px] text-slate-500">
-                          {f.category} • <span className={f.type === 'MANUFACTURED' ? 'text-emerald-700 font-semibold' : 'text-blue-700 font-semibold'}>{f.type}</span>
+                        <div className="text-pos-badge text-slate-600">
+                          {f.category} • <span className={f.type === 'MANUFACTURED' ? 'text-emerald-800 font-semibold' : 'text-blue-800 font-semibold'}>{f.type}</span>
                         </div>
                       </div>
                       <div className="flex items-center gap-1.5">
@@ -1095,7 +1095,7 @@ export const Backoffice: React.FC<BackofficeProps> = ({
                             setFamilyToEdit(f);
                             setIsCreateProductOpen(true);
                           }}
-                          className="px-2 py-1 bg-white hover:bg-slate-100 text-slate-700 font-bold rounded-lg border border-slate-200 text-[11px] flex items-center gap-1 transition-colors shadow-2xs"
+                          className="px-2 py-1 bg-white hover:bg-slate-100 text-slate-700 font-bold rounded-lg border border-slate-200 text-pos-badge flex items-center gap-1 transition-colors shadow-2xs"
                         >
                           <Edit2 className="w-3 h-3 text-slate-500" />
                           Edit Family
@@ -1114,60 +1114,60 @@ export const Backoffice: React.FC<BackofficeProps> = ({
               </div>
             )}
 
-            <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
-              <div className="overflow-x-auto">
-                <table className="w-full text-left border-collapse text-xs min-w-[750px]">
-                <thead>
-                  <tr className="bg-slate-50 border-b border-slate-200 font-bold text-slate-600 uppercase text-[10px]">
-                    <th className="p-3">Product Name</th>
-                    <th className="p-3">Category</th>
-                    <th className="p-3">Size</th>
-                    <th className="p-3">Barcode (Code-128)</th>
-                    <th className="p-3 text-right">Cost Ref.</th>
-                    <th className="p-3 text-right">Retail (TTC)</th>
-                    <th className="p-3 text-right">Wholesale (TTC)</th>
-                    <th className="p-3 text-center">Stock</th>
-                    <th className="p-3 text-right">Actions</th>
+            <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden flex flex-col max-h-[calc(100vh-280px)]">
+              <div className="overflow-x-auto overflow-y-auto flex-1">
+                <table className="w-full text-left border-collapse text-pos-body min-w-[750px]">
+                <thead className="sticky top-0 bg-slate-50 z-10 shadow-xs">
+                  <tr className="bg-slate-50 border-b border-slate-200 font-bold text-slate-700 uppercase text-pos-caption">
+                    <th className="py-2.5 px-3">Product Name</th>
+                    <th className="py-2.5 px-3">Category</th>
+                    <th className="py-2.5 px-3">Size</th>
+                    <th className="py-2.5 px-3">Barcode (Code-128)</th>
+                    <th className="py-2.5 px-3 text-right">Cost Ref.</th>
+                    <th className="py-2.5 px-3 text-right">Retail (TTC)</th>
+                    <th className="py-2.5 px-3 text-right">Wholesale (TTC)</th>
+                    <th className="py-2.5 px-3 text-center">Stock</th>
+                    <th className="py-2.5 px-3 text-right">Actions</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
                   {filteredProducts.map(p => (
                     <tr key={p.id} className={p.active === 0 ? "bg-slate-100/70 opacity-75 hover:bg-slate-100" : "hover:bg-slate-50"}>
-                      <td className="p-3 font-bold text-slate-900">
+                      <td className="py-2 px-3 font-bold text-slate-900">
                         <div className="flex items-center gap-1.5">
                           <span>{p.name}</span>
                           {p.active === 0 && (
-                            <span className="px-1.5 py-0.5 rounded text-[9px] font-bold bg-slate-200 text-slate-600 uppercase">
+                            <span className="px-1.5 py-0.5 rounded text-pos-badge font-bold bg-slate-200 text-slate-700 uppercase">
                               Inactif
                             </span>
                           )}
                         </div>
                       </td>
-                      <td className="p-3 text-slate-500">{p.category}</td>
-                      <td className="p-3">
-                        <span className="bg-slate-100 text-slate-700 px-1.5 py-0.5 rounded font-semibold text-[10px]">
+                      <td className="py-2 px-3 text-slate-700">{p.category}</td>
+                      <td className="py-2 px-3">
+                        <span className="bg-slate-100 text-slate-800 px-1.5 py-0.5 rounded font-semibold text-pos-badge">
                           {p.size_label || 'Piece'}
                         </span>
                       </td>
-                      <td className="p-3 font-mono text-[11px] text-slate-600">{p.barcode || '—'}</td>
-                      <td className="p-3 text-right font-mono text-slate-500">{formatMoney(p.cost_reference)}</td>
-                      <td className="p-3 text-right font-mono font-bold text-emerald-700">{formatMoney(p.retail_price)}</td>
-                      <td className="p-3 text-right font-mono text-blue-700">{formatMoney(p.wholesale_price)}</td>
-                      <td className="p-3 text-center">
-                        <span className={`px-2 py-0.5 rounded font-bold font-mono text-[11px] ${
-                          p.stock_quantity <= p.low_stock_threshold ? 'bg-amber-100 text-amber-800' : 'bg-slate-100 text-slate-700'
+                      <td className="py-2 px-3 font-mono text-pos-badge text-slate-700">{p.barcode || '—'}</td>
+                      <td className="py-2 px-3 text-right font-mono text-slate-700 tabular-nums">{formatMoney(p.cost_reference)}</td>
+                      <td className="py-2 px-3 text-right font-mono font-bold text-emerald-800 tabular-nums">{formatMoney(p.retail_price)}</td>
+                      <td className="py-2 px-3 text-right font-mono text-blue-800 tabular-nums">{formatMoney(p.wholesale_price)}</td>
+                      <td className="py-2 px-3 text-center">
+                        <span className={`px-2 py-0.5 rounded font-bold font-mono text-pos-badge ${
+                          p.stock_quantity <= p.low_stock_threshold ? 'bg-amber-100 text-amber-900' : 'bg-slate-100 text-slate-800'
                         }`}>
                           {p.stock_quantity}
                         </span>
                       </td>
-                      <td className="p-3 text-right whitespace-nowrap space-x-1.5">
+                      <td className="py-2 px-3 text-right whitespace-nowrap space-x-1.5">
                         <button
                           onClick={() => {
                             setFamilyToEdit(null);
                             setProductToEdit(p);
                             setIsCreateProductOpen(true);
                           }}
-                          className="px-2 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-lg text-[11px] inline-flex items-center gap-1 transition-colors"
+                          className="px-2 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-lg text-pos-badge inline-flex items-center gap-1 transition-colors"
                         >
                           <Edit2 className="w-3 h-3 text-slate-500" />
                           Edit SKU
@@ -1241,7 +1241,7 @@ export const Backoffice: React.FC<BackofficeProps> = ({
                     setMaterialToEdit(null);
                     setIsCreateMaterialOpen(true);
                   }}
-                  className="flex items-center gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold px-3.5 py-2 rounded-xl shadow-sm transition-colors"
+                  className="flex items-center gap-1.5 bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-bold px-3.5 py-2 rounded-xl shadow-sm transition-colors"
                 >
                   <Plus className="w-4 h-4" />
                   New Material
@@ -1286,18 +1286,18 @@ export const Backoffice: React.FC<BackofficeProps> = ({
               </div>
             </div>
 
-            <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
-              <div className="overflow-x-auto">
-                <table className="w-full text-left border-collapse text-xs min-w-[700px]">
-                <thead>
-                  <tr className="bg-slate-50 border-b border-slate-200 font-bold text-slate-600 uppercase text-[10px]">
-                    <th className="p-3">Material Name</th>
-                    <th className="p-3">Category</th>
-                    <th className="p-3">Unit</th>
-                    <th className="p-3 text-right">Cost / Unit</th>
-                    <th className="p-3 text-center">Stock</th>
-                    <th className="p-3">Latest Supplier</th>
-                    <th className="p-3 text-right">Actions</th>
+            <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden flex flex-col max-h-[calc(100vh-280px)]">
+              <div className="overflow-x-auto overflow-y-auto flex-1">
+                <table className="w-full text-left border-collapse text-pos-body min-w-[700px]">
+                <thead className="sticky top-0 bg-slate-50 z-10 shadow-xs">
+                  <tr className="bg-slate-50 border-b border-slate-200 font-bold text-slate-700 uppercase text-pos-caption">
+                    <th className="py-2.5 px-3">Material Name</th>
+                    <th className="py-2.5 px-3">Category</th>
+                    <th className="py-2.5 px-3">Unit</th>
+                    <th className="py-2.5 px-3 text-right">Cost / Unit</th>
+                    <th className="py-2.5 px-3 text-center">Stock</th>
+                    <th className="py-2.5 px-3">Latest Supplier</th>
+                    <th className="py-2.5 px-3 text-right">Actions</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
@@ -1306,38 +1306,38 @@ export const Backoffice: React.FC<BackofficeProps> = ({
                     const cost = m.current_cost_per_unit ?? m.latest_purchase_cost ?? 0;
                     return (
                       <tr key={m.id} className="hover:bg-slate-50">
-                        <td className="p-3 font-bold text-slate-900">{m.name}</td>
-                        <td className="p-3">
-                          <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-slate-100 text-slate-700 uppercase">
+                        <td className="py-2 px-3 font-bold text-slate-900">{m.name}</td>
+                        <td className="py-2 px-3">
+                          <span className="px-1.5 py-0.5 rounded text-pos-badge font-bold bg-slate-100 text-slate-800 uppercase">
                             {cat}
                           </span>
                         </td>
-                        <td className="p-3 text-slate-600 font-semibold">{m.unit}</td>
-                        <td className="p-3 text-right font-mono font-bold text-slate-900">{formatMoney(cost)}</td>
-                        <td className="p-3 text-center font-mono font-bold text-slate-800">
-                          <span className={`px-2 py-0.5 rounded font-bold font-mono text-[11px] ${
-                            m.stock_quantity <= (m.low_stock_threshold || 0) ? 'bg-amber-100 text-amber-800' : 'bg-slate-100 text-slate-700'
+                        <td className="py-2 px-3 text-slate-700 font-semibold">{m.unit}</td>
+                        <td className="py-2 px-3 text-right font-mono font-bold text-slate-900 tabular-nums">{formatMoney(cost)}</td>
+                        <td className="py-2 px-3 text-center font-mono font-bold text-slate-800">
+                          <span className={`px-2 py-0.5 rounded font-bold font-mono text-pos-badge ${
+                            m.stock_quantity <= (m.low_stock_threshold || 0) ? 'bg-amber-100 text-amber-900' : 'bg-slate-100 text-slate-800'
                           }`}>
                             {m.stock_quantity}
                           </span>
                         </td>
-                        <td className="p-3 text-slate-500">{m.latest_supplier_name || '—'}</td>
-                        <td className="p-3 text-right space-x-1.5 whitespace-nowrap">
+                        <td className="py-2 px-3 text-slate-700">{m.latest_supplier_name || '—'}</td>
+                        <td className="py-2 px-3 text-right space-x-1.5 whitespace-nowrap">
                           <button
                             onClick={() => {
                               setMaterialToEdit(m);
                               setIsCreateMaterialOpen(true);
                             }}
-                            className="px-2 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-lg text-[11px] inline-flex items-center gap-1 transition-colors"
+                            className="px-2 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-lg text-pos-badge inline-flex items-center gap-1 transition-colors"
                           >
                             <Edit2 className="w-3 h-3 text-slate-500" />
                             Edit
                           </button>
                           <button
                             onClick={() => setMaterialForPriceHistory(m)}
-                            className="px-2 py-1 bg-blue-50 hover:bg-blue-100 text-blue-700 font-bold rounded-lg text-[11px] inline-flex items-center gap-1 transition-colors"
+                            className="px-2 py-1 bg-blue-50 hover:bg-blue-100 text-blue-800 font-bold rounded-lg text-pos-badge inline-flex items-center gap-1 transition-colors"
                           >
-                            <TrendingUp className="w-3 h-3 text-blue-500" />
+                            <TrendingUp className="w-3 h-3 text-blue-600" />
                             Price History
                           </button>
                           <button
@@ -1380,36 +1380,36 @@ export const Backoffice: React.FC<BackofficeProps> = ({
                 </div>
               </div>
               <div className="overflow-x-auto max-h-72 overflow-y-auto">
-                <table className="w-full text-left text-xs border-collapse">
-                  <thead>
-                    <tr className="bg-slate-50 border-b border-slate-200 text-slate-500 font-bold text-[10px] uppercase">
-                      <th className="p-3">Date</th>
-                      <th className="p-3">Type</th>
-                      <th className="p-3">Item</th>
-                      <th className="p-3">Reason</th>
-                      <th className="p-3 text-center">Delta</th>
-                      <th className="p-3 text-right">Actions</th>
+                <table className="w-full text-left text-pos-body border-collapse min-w-[650px]">
+                  <thead className="sticky top-0 bg-slate-50 z-10 shadow-xs">
+                    <tr className="bg-slate-50 border-b border-slate-200 text-slate-700 font-bold text-pos-caption uppercase">
+                      <th className="py-2.5 px-3">Date</th>
+                      <th className="py-2.5 px-3">Type</th>
+                      <th className="py-2.5 px-3">Item</th>
+                      <th className="py-2.5 px-3">Reason</th>
+                      <th className="py-2.5 px-3 text-center">Delta</th>
+                      <th className="py-2.5 px-3 text-right">Actions</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100">
                     {inventoryAdjustments.map(adj => (
                       <tr key={adj.id} className="hover:bg-slate-50">
-                        <td className="p-3 text-slate-500 font-mono text-[11px]">{formatDateTime(adj.date || adj.created_at)}</td>
-                        <td className="p-3">
-                          <span className={`px-1.5 py-0.5 rounded text-[10px] font-bold ${
-                            adj.item_type === 'RAW_MATERIAL' ? 'bg-amber-100 text-amber-800' : 'bg-blue-100 text-blue-800'
+                        <td className="py-2 px-3 text-slate-700 font-mono text-pos-badge">{formatDateTime(adj.date || adj.created_at)}</td>
+                        <td className="py-2 px-3">
+                          <span className={`px-1.5 py-0.5 rounded text-pos-badge font-bold ${
+                            adj.item_type === 'RAW_MATERIAL' ? 'bg-amber-100 text-amber-900' : 'bg-blue-100 text-blue-900'
                           }`}>
                             {adj.item_type}
                           </span>
                         </td>
-                        <td className="p-3 font-bold text-slate-900">{adj.item_name || '—'}</td>
-                        <td className="p-3 text-slate-600">{adj.reason}</td>
-                        <td className="p-3 text-center font-mono font-bold">
-                          <span className={adj.quantity_delta >= 0 ? 'text-emerald-700' : 'text-rose-700'}>
+                        <td className="py-2 px-3 font-bold text-slate-900">{adj.item_name || '—'}</td>
+                        <td className="py-2 px-3 text-slate-700">{adj.reason}</td>
+                        <td className="py-2 px-3 text-center font-mono font-bold tabular-nums">
+                          <span className={adj.quantity_delta >= 0 ? 'text-emerald-800' : 'text-rose-700'}>
                             {adj.quantity_delta > 0 ? `+${adj.quantity_delta}` : adj.quantity_delta} {adj.unit_or_size || ''}
                           </span>
                         </td>
-                        <td className="p-3 text-right">
+                        <td className="py-2 px-3 text-right">
                           <button
                             onClick={() => handleDeleteAdjustment(adj)}
                             className="p-1 text-slate-400 hover:text-rose-600 rounded hover:bg-rose-50 transition-colors inline-flex items-center"
@@ -1446,7 +1446,7 @@ export const Backoffice: React.FC<BackofficeProps> = ({
               </div>
               <button
                 onClick={() => setIsCreateFormulationOpen(true)}
-                className="flex items-center gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold px-3.5 py-2 rounded-xl shadow-sm transition-colors"
+                className="flex items-center gap-1.5 bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-bold px-3.5 py-2 rounded-xl shadow-sm transition-colors"
               >
                 <Plus className="w-4 h-4" />
                 New Formulation
@@ -1574,7 +1574,7 @@ export const Backoffice: React.FC<BackofficeProps> = ({
                       });
                       if (!hasLinked) {
                         return (
-                          <p className="text-[11px] text-amber-700 font-semibold mt-1">
+                          <p className="text-pos-badge text-amber-800 font-semibold mt-1">
                             ℹ️ Cette formule n'est pas encore liée à une famille spécifique. Vous pouvez choisir n'importe quel produit fabriqué ci-dessus.
                           </p>
                         );
@@ -1586,7 +1586,7 @@ export const Backoffice: React.FC<BackofficeProps> = ({
                   <button
                     type="submit"
                     disabled={isExecutingBatch}
-                    className="w-full py-3 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white font-bold rounded-xl shadow text-xs transition-colors flex items-center justify-center gap-1.5"
+                    className="w-full py-3 bg-emerald-700 hover:bg-emerald-800 disabled:opacity-50 text-white font-bold rounded-xl shadow text-xs transition-colors flex items-center justify-center gap-1.5"
                   >
                     <FlaskConical className="w-4 h-4" />
                     {isExecutingBatch ? 'Executing Batch...' : 'Execute Production Batch'}
@@ -1604,17 +1604,17 @@ export const Backoffice: React.FC<BackofficeProps> = ({
                     </div>
                   ) : (
                   <div className="space-y-3">
-                    <div className="flex items-center gap-2 text-emerald-700 font-bold text-sm">
+                    <div className="flex items-center gap-2 text-emerald-800 font-bold text-sm">
                       <Check className="w-5 h-5" />
                       <span>Batch Completed Successfully!</span>
                     </div>
                     <div className="bg-white p-3 rounded-xl border border-slate-200 text-xs space-y-1 font-mono">
                       <div>Batch Number: <span className="font-bold">{batchResult.batch_number}</span></div>
-                      <div>Total Cost: <span className="font-bold">{formatMoney(batchResult.total_batch_cost)}</span></div>
-                      <div>Cost / Unit: <span className="font-bold text-emerald-700">{formatMoney(batchResult.cost_per_unit)}</span></div>
+                      <div>Total Cost: <span className="font-bold tabular-nums">{formatMoney(batchResult.total_batch_cost)}</span></div>
+                      <div>Cost / Unit: <span className="font-bold text-emerald-800 tabular-nums">{formatMoney(batchResult.cost_per_unit)}</span></div>
                     </div>
                     {batchResult.warnings && batchResult.warnings.length > 0 && (
-                      <div className="bg-amber-50 border border-amber-200 p-3 rounded-xl text-xs text-amber-800 space-y-1">
+                      <div className="bg-amber-50 border border-amber-200 p-3 rounded-xl text-xs text-amber-900 space-y-1">
                         <span className="font-bold block flex items-center gap-1">
                           <AlertTriangle className="w-3.5 h-3.5" />
                           Stock Deficit Warnings (Allowed to proceed into negative):
@@ -1639,15 +1639,15 @@ export const Backoffice: React.FC<BackofficeProps> = ({
                 <h3 className="text-xs font-bold text-slate-700 uppercase tracking-wider">
                   Configured Formulations & Recipes ({formulations.length})
                 </h3>
-                <span className="text-[11px] text-slate-500">Edit materials, proportions, or test batch cost preview</span>
+                <span className="text-pos-badge text-slate-600">Edit materials, proportions, or test batch cost preview</span>
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
                 {formulations.map(f => (
                   <div key={f.id} className="p-3 bg-slate-50 border border-slate-200 rounded-xl flex items-center justify-between">
                     <div>
                       <h4 className="font-bold text-xs text-slate-900">{f.name}</h4>
-                      <p className="text-[11px] text-slate-500">
-                        Base: <span className="font-semibold text-slate-700">{f.base_volume || (f as any).base_volume_liters || 100}L</span> • Est: <span className="font-bold font-mono text-emerald-700">{formatMoney(f.cost_per_liter)}/L</span>
+                      <p className="text-pos-badge text-slate-600">
+                        Base: <span className="font-semibold text-slate-700">{f.base_volume || (f as any).base_volume_liters || 100}L</span> • Est: <span className="font-bold font-mono text-emerald-800 tabular-nums">{formatMoney(f.cost_per_liter)}/L</span>
                       </p>
                     </div>
                     <button
@@ -1655,7 +1655,7 @@ export const Backoffice: React.FC<BackofficeProps> = ({
                         setFormulationToEdit(f);
                         setIsCreateFormulationOpen(true);
                       }}
-                      className="px-2.5 py-1 bg-white hover:bg-slate-100 text-slate-700 font-bold rounded-lg border border-slate-200 text-[11px] flex items-center gap-1 transition-colors shadow-2xs"
+                      className="px-2.5 py-1 bg-white hover:bg-slate-100 text-slate-700 font-bold rounded-lg border border-slate-200 text-pos-badge flex items-center gap-1 transition-colors shadow-2xs"
                     >
                       <Edit2 className="w-3 h-3 text-slate-500" />
                       View / Edit
@@ -1671,27 +1671,27 @@ export const Backoffice: React.FC<BackofficeProps> = ({
             </div>
 
             {/* Production Batch History Table */}
-            <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
-              <div className="px-5 py-3.5 border-b border-slate-200 bg-slate-50 flex items-center justify-between">
+            <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden flex flex-col max-h-[calc(100vh-280px)]">
+              <div className="px-5 py-3.5 border-b border-slate-200 bg-slate-50 flex items-center justify-between shrink-0">
                 <div className="flex items-center gap-2">
-                  <History className="w-4 h-4 text-emerald-600" />
+                  <History className="w-4 h-4 text-emerald-700" />
                   <h3 className="font-bold text-xs text-slate-800 uppercase tracking-wider">
                     Production Batch History ({productionBatches.length})
                   </h3>
                 </div>
               </div>
-              <div className="overflow-x-auto">
-                <table className="w-full text-left text-xs border-collapse">
-                  <thead>
-                    <tr className="bg-slate-50 border-b border-slate-200 text-slate-500 font-bold text-[10px] uppercase">
-                      <th className="p-3">Batch #</th>
-                      <th className="p-3">Date</th>
-                      <th className="p-3">Recipe</th>
-                      <th className="p-3">Restocked SKU</th>
-                      <th className="p-3 text-center">Batch Vol</th>
-                      <th className="p-3 text-center">Units Produced</th>
-                      <th className="p-3 text-right">Cost / Unit</th>
-                      <th className="p-3 text-right">Total Cost</th>
+              <div className="overflow-x-auto overflow-y-auto flex-1">
+                <table className="w-full text-left text-pos-body border-collapse min-w-[700px]">
+                  <thead className="sticky top-0 bg-slate-50 z-10 shadow-xs">
+                    <tr className="bg-slate-50 border-b border-slate-200 text-slate-700 font-bold text-pos-caption uppercase">
+                      <th className="py-2.5 px-3">Batch #</th>
+                      <th className="py-2.5 px-3">Date</th>
+                      <th className="py-2.5 px-3">Recipe</th>
+                      <th className="py-2.5 px-3">Restocked SKU</th>
+                      <th className="py-2.5 px-3 text-center">Batch Vol</th>
+                      <th className="py-2.5 px-3 text-center">Units Produced</th>
+                      <th className="py-2.5 px-3 text-right">Cost / Unit</th>
+                      <th className="py-2.5 px-3 text-right">Total Cost</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100">
@@ -1702,14 +1702,14 @@ export const Backoffice: React.FC<BackofficeProps> = ({
                         onClick={() => setBatchDetailId(b.id)}
                         title="Voir le détail du lot"
                       >
-                        <td className="p-3 font-mono font-bold text-slate-900">{b.batch_number}</td>
-                        <td className="p-3 text-slate-500 text-[11px]">{formatDateTime(b.date || b.created_at)}</td>
-                        <td className="p-3 font-semibold text-slate-800">{b.formulation_name}</td>
-                        <td className="p-3 font-bold text-slate-900">{b.target_product_name} {b.size_label ? `(${b.size_label})` : ''}</td>
-                        <td className="p-3 text-center font-mono font-bold text-slate-800">{b.batch_volume_liters}L</td>
-                        <td className="p-3 text-center font-mono font-bold text-slate-800">{b.units_produced}</td>
-                        <td className="p-3 text-right font-mono font-bold text-emerald-700">{formatMoney(b.cost_per_unit)}</td>
-                        <td className="p-3 text-right font-mono font-bold text-slate-900">{formatMoney(b.total_batch_cost)}</td>
+                        <td className="py-2 px-3 font-mono font-bold text-slate-900">{b.batch_number}</td>
+                        <td className="py-2 px-3 text-slate-700 font-mono text-pos-badge">{formatDateTime(b.date || b.created_at)}</td>
+                        <td className="py-2 px-3 font-semibold text-slate-800">{b.formulation_name}</td>
+                        <td className="py-2 px-3 font-bold text-slate-900">{b.target_product_name} {b.size_label ? `(${b.size_label})` : ''}</td>
+                        <td className="py-2 px-3 text-center font-mono font-bold text-slate-800 tabular-nums">{b.batch_volume_liters}L</td>
+                        <td className="py-2 px-3 text-center font-mono font-bold text-slate-800 tabular-nums">{b.units_produced}</td>
+                        <td className="py-2 px-3 text-right font-mono font-bold text-emerald-800 tabular-nums">{formatMoney(b.cost_per_unit)}</td>
+                        <td className="py-2 px-3 text-right font-mono font-bold text-slate-900 tabular-nums">{formatMoney(b.total_batch_cost)}</td>
                       </tr>
                     ))}
                     {productionBatches.length === 0 && (
@@ -1739,7 +1739,7 @@ export const Backoffice: React.FC<BackofficeProps> = ({
                   setCustomerToEdit(null);
                   setIsCreateCustomerOpen(true);
                 }}
-                className="flex items-center gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold px-3.5 py-2 rounded-xl shadow-sm transition-colors"
+                className="flex items-center gap-1.5 bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-bold px-3.5 py-2 rounded-xl shadow-sm transition-colors"
               >
                 <Plus className="w-4 h-4" />
                 New Customer
@@ -1774,16 +1774,16 @@ export const Backoffice: React.FC<BackofficeProps> = ({
                         onClick={() => setCustomersSearch('')}
                         className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
                       >
-                        <X className="w-3 h-3" />
+                        <X className="w-3.5 h-3.5" />
                       </button>
                     )}
                   </div>
                   <button
                     type="button"
                     onClick={() => setCustomersOverdueOnly(prev => !prev)}
-                    className={`flex items-center gap-1 text-[11px] font-bold px-2.5 py-1.5 rounded-xl transition-colors border shrink-0 ${
+                    className={`flex items-center gap-1 text-pos-badge font-bold px-2.5 py-1.5 rounded-xl transition-colors border shrink-0 ${
                       customersOverdueOnly
-                        ? 'bg-rose-600 text-white border-rose-600 shadow-xs'
+                        ? 'bg-rose-700 text-white border-rose-700 shadow-xs'
                         : 'bg-white hover:bg-rose-50 text-rose-700 border-rose-200'
                     }`}
                     title="Afficher uniquement les clients avec dettes en retard"
@@ -1798,7 +1798,7 @@ export const Backoffice: React.FC<BackofficeProps> = ({
                     onClick={() => handleSelectCustomerForTickets(c)}
                     className={`p-3 rounded-xl border cursor-pointer transition-all ${
                       selectedCustomer?.id === c.id
-                        ? 'border-emerald-500 bg-emerald-50/50 shadow-sm'
+                        ? 'border-emerald-600 bg-emerald-50/50 shadow-sm'
                         : 'border-slate-200 hover:bg-slate-50'
                     }`}
                   >
@@ -1806,11 +1806,11 @@ export const Backoffice: React.FC<BackofficeProps> = ({
                       <div>
                         <h4 className="font-bold text-xs text-slate-900">{c.name}</h4>
                         <div className="flex items-center gap-1.5 mt-0.5">
-                          <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-slate-100 text-slate-700">
+                          <span className="text-pos-badge font-bold px-1.5 py-0.5 rounded bg-slate-100 text-slate-700">
                             {c.type}
                           </span>
                           {c.has_overdue_tickets && (
-                            <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-rose-100 text-rose-700 uppercase">
+                            <span className="text-pos-badge font-bold px-1.5 py-0.5 rounded bg-rose-100 text-rose-700 uppercase">
                               En retard
                             </span>
                           )}
@@ -1842,9 +1842,9 @@ export const Backoffice: React.FC<BackofficeProps> = ({
                         </button>
                       </div>
                     </div>
-                    <div className="flex justify-between items-center mt-2 text-[11px]">
-                      <span className="text-slate-500">Wallet: {formatMoney(c.wallet_balance)}</span>
-                      <span className={`font-bold font-mono ${c.has_overdue_tickets ? 'text-rose-700 font-black' : c.total_debt ? 'text-amber-700' : 'text-slate-400'}`}>
+                    <div className="flex justify-between items-center mt-2 text-pos-badge">
+                      <span className="text-slate-600">Wallet: {formatMoney(c.wallet_balance)}</span>
+                      <span className={`font-bold font-mono ${c.has_overdue_tickets ? 'text-rose-700 font-black' : c.total_debt ? 'text-amber-800' : 'text-slate-500'}`}>
                         Debt: {formatMoney(c.total_debt)}
                       </span>
                     </div>
@@ -1868,7 +1868,7 @@ export const Backoffice: React.FC<BackofficeProps> = ({
                           <button
                             type="button"
                             onClick={() => setIsCustomerStatementOpen(true)}
-                            className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 text-xs font-bold transition-colors cursor-pointer"
+                            className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-blue-50 hover:bg-blue-100 text-blue-800 border border-blue-200 text-xs font-bold transition-colors cursor-pointer"
                             title="Consulter et imprimer le relevé de compte complet (A4 / PDF)"
                           >
                             <Printer className="w-3.5 h-3.5" />
@@ -1888,7 +1888,7 @@ export const Backoffice: React.FC<BackofficeProps> = ({
                       </div>
                       <div className="text-right">
                         <span className="text-xs text-slate-500 block">Total Open Debt:</span>
-                        <span className="text-lg font-black text-amber-700 font-mono">
+                        <span className="text-lg font-black text-amber-800 font-mono tabular-nums">
                           {formatMoney(selectedCustomer.total_debt)}
                         </span>
                       </div>
@@ -1915,7 +1915,7 @@ export const Backoffice: React.FC<BackofficeProps> = ({
                             type="button"
                             disabled={isPayingCustomerDebt}
                             onClick={handlePayCustomerDebt}
-                            className="bg-amber-600 hover:bg-amber-700 disabled:opacity-50 text-white font-bold px-3 py-1.5 rounded-lg text-xs shrink-0 transition-colors"
+                            className="bg-amber-700 hover:bg-amber-800 disabled:opacity-50 text-white font-bold px-3 py-1.5 rounded-lg text-xs shrink-0 transition-colors"
                           >
                             {isPayingCustomerDebt ? 'Paying...' : 'Pay'}
                           </button>
@@ -1941,7 +1941,7 @@ export const Backoffice: React.FC<BackofficeProps> = ({
                             type="button"
                             disabled={isToppingUpWallet}
                             onClick={handleTopUpWallet}
-                            className="bg-purple-600 hover:bg-purple-700 disabled:opacity-50 text-white font-bold px-3 py-1.5 rounded-lg text-xs shrink-0 transition-colors"
+                            className="bg-purple-700 hover:bg-purple-800 disabled:opacity-50 text-white font-bold px-3 py-1.5 rounded-lg text-xs shrink-0 transition-colors"
                           >
                             {isToppingUpWallet ? 'Top Up...' : 'Top Up'}
                           </button>
@@ -1955,26 +1955,26 @@ export const Backoffice: React.FC<BackofficeProps> = ({
                         Open Debt Tickets
                       </h4>
                       <div className="border border-slate-200 rounded-xl max-h-48 overflow-y-auto overflow-x-auto">
-                        <table className="w-full text-left border-collapse text-xs min-w-[500px]">
-                          <thead>
-                            <tr className="bg-slate-50 font-bold text-slate-600 uppercase text-[10px]">
-                              <th className="p-2">Ticket #</th>
-                              <th className="p-2">Date</th>
-                              <th className="p-2 text-right">Original Total</th>
-                              <th className="p-2 text-right">Remaining Due</th>
-                              <th className="p-2 text-center">Status</th>
+                        <table className="w-full text-left border-collapse text-pos-body min-w-[500px]">
+                          <thead className="sticky top-0 bg-slate-50 z-10 shadow-xs">
+                            <tr className="bg-slate-50 border-b border-slate-200 font-bold text-slate-700 uppercase text-pos-caption">
+                              <th className="py-2.5 px-3">Ticket #</th>
+                              <th className="py-2.5 px-3">Date</th>
+                              <th className="py-2.5 px-3 text-right">Original Total</th>
+                              <th className="py-2.5 px-3 text-right">Remaining Due</th>
+                              <th className="py-2.5 px-3 text-center">Status</th>
                             </tr>
                           </thead>
                           <tbody className="divide-y divide-slate-100">
                             {customerTickets.map(t => (
                               <tr key={t.id}>
-                                <td className="p-2 font-mono font-bold text-slate-900">{t.ticket_number}</td>
-                                <td className="p-2 text-slate-500">{formatDate(t.date)}</td>
-                                <td className="p-2 text-right font-mono">{formatMoney(t.total_amount)}</td>
-                                <td className="p-2 text-right font-mono font-bold text-amber-700">{formatMoney(t.remaining_amount)}</td>
-                                <td className="p-2 text-center">
-                                  <span className={`px-1.5 py-0.5 rounded text-[10px] font-bold ${
-                                    t.is_overdue ? 'bg-rose-100 text-rose-800' : 'bg-amber-100 text-amber-800'
+                                <td className="py-2 px-3 font-mono font-bold text-slate-900">{t.ticket_number}</td>
+                                <td className="py-2 px-3 text-slate-700 font-mono text-pos-badge">{formatDate(t.date)}</td>
+                                <td className="py-2 px-3 text-right font-mono tabular-nums">{formatMoney(t.total_amount)}</td>
+                                <td className="py-2 px-3 text-right font-mono font-bold text-amber-800 tabular-nums">{formatMoney(t.remaining_amount)}</td>
+                                <td className="py-2 px-3 text-center">
+                                  <span className={`px-1.5 py-0.5 rounded text-pos-badge font-bold ${
+                                    t.is_overdue ? 'bg-rose-100 text-rose-800' : 'bg-amber-100 text-amber-900'
                                   }`}>
                                     {t.is_overdue ? 'Overdue >30d' : t.status}
                                   </span>
@@ -2017,7 +2017,7 @@ export const Backoffice: React.FC<BackofficeProps> = ({
                     setSupplierToEdit(null);
                     setIsCreateSupplierOpen(true);
                   }}
-                  className="flex items-center gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-3.5 py-2 rounded-xl text-xs shadow transition-colors"
+                  className="flex items-center gap-1.5 bg-emerald-700 hover:bg-emerald-800 text-white font-bold px-3.5 py-2 rounded-xl text-xs shadow transition-colors"
                 >
                   <Plus className="w-4 h-4" />
                   New Supplier
@@ -2069,7 +2069,7 @@ export const Backoffice: React.FC<BackofficeProps> = ({
                     onClick={() => handleSelectSupplierForTickets(s)}
                     className={`p-3 rounded-xl border cursor-pointer transition-all ${
                       selectedSupplier?.id === s.id
-                        ? 'border-emerald-500 bg-emerald-50/50 shadow-sm'
+                        ? 'border-emerald-600 bg-emerald-50/50 shadow-sm'
                         : 'border-slate-200 hover:bg-slate-50'
                     }`}
                   >
@@ -2077,7 +2077,7 @@ export const Backoffice: React.FC<BackofficeProps> = ({
                       <div>
                         <h4 className="font-bold text-xs text-slate-900">{s.name}</h4>
                         {s.phone && (
-                          <span className="text-[10px] font-mono text-slate-500">
+                          <span className="text-pos-badge font-mono text-slate-600">
                             {s.phone}
                           </span>
                         )}
@@ -2108,9 +2108,9 @@ export const Backoffice: React.FC<BackofficeProps> = ({
                         </button>
                       </div>
                     </div>
-                    <div className="flex justify-between items-center mt-2 text-[11px]">
-                      <span className="text-slate-500">{s.address || 'No address'}</span>
-                      <span className={`font-bold font-mono ${s.total_debt ? 'text-rose-700' : 'text-slate-400'}`}>
+                    <div className="flex justify-between items-center mt-2 text-pos-badge">
+                      <span className="text-slate-600">{s.address || 'No address'}</span>
+                      <span className={`font-bold font-mono ${s.total_debt ? 'text-rose-700' : 'text-slate-500'}`}>
                         Debt: {formatMoney(s.total_debt)}
                       </span>
                     </div>
@@ -2138,7 +2138,7 @@ export const Backoffice: React.FC<BackofficeProps> = ({
                       </div>
                       <div className="text-right">
                         <span className="text-xs text-slate-500 block">Total Debt Owed:</span>
-                        <span className="text-lg font-black text-rose-700 font-mono">
+                        <span className="text-lg font-black text-rose-700 font-mono tabular-nums">
                           {formatMoney(selectedSupplier.total_debt)}
                         </span>
                       </div>
@@ -2163,7 +2163,7 @@ export const Backoffice: React.FC<BackofficeProps> = ({
                           type="button"
                           disabled={isPayingSupplierDebt}
                           onClick={handlePaySupplierDebt}
-                          className="bg-rose-600 hover:bg-rose-700 disabled:opacity-50 text-white font-bold px-4 py-2 rounded-lg text-xs shrink-0 transition-colors shadow-sm"
+                          className="bg-rose-700 hover:bg-rose-800 disabled:opacity-50 text-white font-bold px-4 py-2 rounded-lg text-xs shrink-0 transition-colors shadow-sm"
                         >
                           {isPayingSupplierDebt ? 'Paying...' : 'Pay Supplier'}
                         </button>
@@ -2176,27 +2176,27 @@ export const Backoffice: React.FC<BackofficeProps> = ({
                         Open Supplier Debt Tickets
                       </h4>
                       <div className="border border-slate-200 rounded-xl max-h-48 overflow-y-auto overflow-x-auto">
-                        <table className="w-full text-left border-collapse text-xs min-w-[500px]">
-                          <thead>
-                            <tr className="bg-slate-50 font-bold text-slate-600 uppercase text-[10px]">
-                              <th className="p-2">Ticket #</th>
-                              <th className="p-2">Date</th>
-                              <th className="p-2">PO #</th>
-                              <th className="p-2 text-right">Original Total</th>
-                              <th className="p-2 text-right">Remaining Due</th>
-                              <th className="p-2 text-center">Status</th>
+                        <table className="w-full text-left border-collapse text-pos-body min-w-[500px]">
+                          <thead className="sticky top-0 bg-slate-50 z-10 shadow-xs">
+                            <tr className="bg-slate-50 border-b border-slate-200 font-bold text-slate-700 uppercase text-pos-caption">
+                              <th className="py-2.5 px-3">Ticket #</th>
+                              <th className="py-2.5 px-3">Date</th>
+                              <th className="py-2.5 px-3">PO #</th>
+                              <th className="py-2.5 px-3 text-right">Original Total</th>
+                              <th className="py-2.5 px-3 text-right">Remaining Due</th>
+                              <th className="py-2.5 px-3 text-center">Status</th>
                             </tr>
                           </thead>
                           <tbody className="divide-y divide-slate-100">
                             {supplierTickets.map(t => (
                               <tr key={t.id}>
-                                <td className="p-2 font-mono font-bold text-slate-900">{t.ticket_number}</td>
-                                <td className="p-2 text-slate-500">{formatDate(t.date)}</td>
-                                <td className="p-2 text-slate-600 font-mono text-[11px]">{(t as any).purchase_number || '—'}</td>
-                                <td className="p-2 text-right font-mono">{formatMoney(t.total_amount)}</td>
-                                <td className="p-2 text-right font-mono font-bold text-rose-700">{formatMoney(t.remaining_amount)}</td>
-                                <td className="p-2 text-center">
-                                  <span className={`px-1.5 py-0.5 rounded text-[10px] font-bold ${
+                                <td className="py-2 px-3 font-mono font-bold text-slate-900">{t.ticket_number}</td>
+                                <td className="py-2 px-3 text-slate-700 font-mono text-pos-badge">{formatDate(t.date)}</td>
+                                <td className="py-2 px-3 text-slate-700 font-mono text-pos-badge">{(t as any).purchase_number || '—'}</td>
+                                <td className="py-2 px-3 text-right font-mono tabular-nums">{formatMoney(t.total_amount)}</td>
+                                <td className="py-2 px-3 text-right font-mono font-bold text-rose-700 tabular-nums">{formatMoney(t.remaining_amount)}</td>
+                                <td className="py-2 px-3 text-center">
+                                  <span className={`px-1.5 py-0.5 rounded text-pos-badge font-bold ${
                                     t.status === 'PAID' ? 'bg-emerald-100 text-emerald-800' : 'bg-rose-100 text-rose-800'
                                   }`}>
                                     {t.status}
@@ -2225,10 +2225,10 @@ export const Backoffice: React.FC<BackofficeProps> = ({
             </div>
 
             {/* Purchase History Table */}
-            <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
-              <div className="px-5 py-3.5 border-b border-slate-200 bg-slate-50 flex flex-wrap items-center justify-between gap-3">
+            <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden flex flex-col max-h-[calc(100vh-280px)]">
+              <div className="px-5 py-3.5 border-b border-slate-200 bg-slate-50 flex flex-wrap items-center justify-between gap-3 shrink-0">
                 <div className="flex items-center gap-2">
-                  <Truck className="w-4 h-4 text-emerald-600" />
+                  <Truck className="w-4 h-4 text-emerald-700" />
                   <h3 className="font-bold text-xs text-slate-800 uppercase tracking-wider">
                     Purchase Intake History ({filteredPurchases.length})
                   </h3>
@@ -2253,18 +2253,18 @@ export const Backoffice: React.FC<BackofficeProps> = ({
                   )}
                 </div>
               </div>
-              <div className="overflow-x-auto max-h-72 overflow-y-auto">
-                <table className="w-full text-left text-xs border-collapse">
-                  <thead>
-                    <tr className="bg-slate-50 border-b border-slate-200 text-slate-500 font-bold text-[10px] uppercase">
-                      <th className="p-3">Purchase #</th>
-                      <th className="p-3">Date</th>
-                      <th className="p-3">Supplier</th>
-                      <th className="p-3 text-center">Items</th>
-                      <th className="p-3 text-right">Total TTC</th>
-                      <th className="p-3 text-right">Paid</th>
-                      <th className="p-3 text-right">Debt Added</th>
-                      <th className="p-3 text-center">Status</th>
+              <div className="overflow-x-auto overflow-y-auto flex-1">
+                <table className="w-full text-left text-pos-body border-collapse min-w-[700px]">
+                  <thead className="sticky top-0 bg-slate-50 z-10 shadow-xs">
+                    <tr className="bg-slate-50 border-b border-slate-200 text-slate-700 font-bold text-pos-caption uppercase">
+                      <th className="py-2.5 px-3">Purchase #</th>
+                      <th className="py-2.5 px-3">Date</th>
+                      <th className="py-2.5 px-3">Supplier</th>
+                      <th className="py-2.5 px-3 text-center">Items</th>
+                      <th className="py-2.5 px-3 text-right">Total TTC</th>
+                      <th className="py-2.5 px-3 text-right">Paid</th>
+                      <th className="py-2.5 px-3 text-right">Debt Added</th>
+                      <th className="py-2.5 px-3 text-center">Status</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100">
@@ -2275,16 +2275,16 @@ export const Backoffice: React.FC<BackofficeProps> = ({
                         onClick={() => setPurchaseDetailId(p.id)}
                         title="Voir le détail de l'achat"
                       >
-                        <td className="p-3 font-mono font-bold text-slate-900">{p.purchase_number}</td>
-                        <td className="p-3 text-slate-500 font-mono text-[11px]">{formatDate(p.date)}</td>
-                        <td className="p-3 font-bold text-slate-900">{p.supplier_name}</td>
-                        <td className="p-3 text-center font-mono font-semibold">{p.item_count || 1}</td>
-                        <td className="p-3 text-right font-mono font-bold text-slate-900">{formatMoney(p.total_amount)}</td>
-                        <td className="p-3 text-right font-mono font-bold text-emerald-700">{formatMoney(p.cash_paid)}</td>
-                        <td className="p-3 text-right font-mono font-bold text-rose-700">{formatMoney(p.debt_amount)}</td>
-                        <td className="p-3 text-center">
-                          <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${
-                            p.payment_status === 'PAID' ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'
+                        <td className="py-2 px-3 font-mono font-bold text-slate-900">{p.purchase_number}</td>
+                        <td className="py-2 px-3 text-slate-700 font-mono text-pos-badge">{formatDate(p.date)}</td>
+                        <td className="py-2 px-3 font-bold text-slate-900">{p.supplier_name}</td>
+                        <td className="py-2 px-3 text-center font-mono font-semibold tabular-nums">{p.item_count || 1}</td>
+                        <td className="py-2 px-3 text-right font-mono font-bold text-slate-900 tabular-nums">{formatMoney(p.total_amount)}</td>
+                        <td className="py-2 px-3 text-right font-mono font-bold text-emerald-800 tabular-nums">{formatMoney(p.cash_paid)}</td>
+                        <td className="py-2 px-3 text-right font-mono font-bold text-rose-700 tabular-nums">{formatMoney(p.debt_amount)}</td>
+                        <td className="py-2 px-3 text-center">
+                          <span className={`px-2 py-0.5 rounded text-pos-badge font-bold ${
+                            p.payment_status === 'PAID' ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-900'
                           }`}>
                             {p.payment_status}
                           </span>
@@ -2348,7 +2348,7 @@ export const Backoffice: React.FC<BackofficeProps> = ({
                     setContainerTxInitialContainerTypeId(null);
                     setIsContainerTxOpen(true);
                   }}
-                  className="flex items-center gap-1.5 bg-amber-600 hover:bg-amber-700 text-white font-bold px-3.5 py-2 rounded-xl text-xs shadow transition-colors"
+                  className="flex items-center gap-1.5 bg-amber-700 hover:bg-amber-800 text-white font-bold px-3.5 py-2 rounded-xl text-xs shadow transition-colors"
                 >
                   <ArrowUpRight className="w-4 h-4" />
                   Record Give / Return
@@ -2358,7 +2358,7 @@ export const Backoffice: React.FC<BackofficeProps> = ({
                     setContainerTypeToEdit(null);
                     setIsCreateContainerOpen(true);
                   }}
-                  className="flex items-center gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-3.5 py-2 rounded-xl text-xs shadow transition-colors"
+                  className="flex items-center gap-1.5 bg-emerald-700 hover:bg-emerald-800 text-white font-bold px-3.5 py-2 rounded-xl text-xs shadow transition-colors"
                 >
                   <Plus className="w-4 h-4" />
                   New Container Type
@@ -2373,7 +2373,7 @@ export const Backoffice: React.FC<BackofficeProps> = ({
                   <div>
                     <div className="flex justify-between items-start">
                       <div>
-                        <span className="text-[10px] font-bold text-slate-400 uppercase tracking-tight">Type de Contenant</span>
+                        <span className="text-pos-badge font-bold text-slate-500 uppercase tracking-tight">Type de Contenant</span>
                         <h3 className="font-bold text-slate-900 text-sm mt-0.5">{ct.name}</h3>
                       </div>
                       <div className="flex items-center gap-1">
@@ -2397,12 +2397,12 @@ export const Backoffice: React.FC<BackofficeProps> = ({
                       </div>
                     </div>
                     <div className="mt-3 flex justify-between items-center text-xs">
-                      <span className="text-slate-500">Shop Stock (Empty):</span>
-                      <span className="font-black font-mono text-emerald-700">{ct.stock_quantity}</span>
+                      <span className="text-slate-600">Shop Stock (Empty):</span>
+                      <span className="font-black font-mono text-emerald-800 tabular-nums">{ct.stock_quantity}</span>
                     </div>
                     <div className="mt-1 flex justify-between items-center text-xs">
-                      <span className="text-slate-500">Loaned to Customers:</span>
-                      <span className="font-black font-mono text-amber-700">{ct.total_loaned_out || 0}</span>
+                      <span className="text-slate-600">Loaned to Customers:</span>
+                      <span className="font-black font-mono text-amber-800 tabular-nums">{ct.total_loaned_out || 0}</span>
                     </div>
                   </div>
                   <div className="mt-4 pt-2.5 border-t border-slate-100 flex items-center gap-2">
@@ -2412,7 +2412,7 @@ export const Backoffice: React.FC<BackofficeProps> = ({
                         setContainerTxInitialContainerTypeId(ct.id);
                         setIsContainerTxOpen(true);
                       }}
-                      className="flex-1 py-1.5 px-2 bg-amber-50 hover:bg-amber-100 text-amber-800 font-bold text-[11px] rounded-lg transition-colors flex items-center justify-center gap-1"
+                      className="flex-1 py-1.5 px-2 bg-amber-50 hover:bg-amber-100 text-amber-900 font-bold text-pos-badge rounded-lg transition-colors flex items-center justify-center gap-1"
                     >
                       <ArrowUpRight className="w-3 h-3" />
                       Prêter
@@ -2423,7 +2423,7 @@ export const Backoffice: React.FC<BackofficeProps> = ({
                         setContainerTxInitialContainerTypeId(ct.id);
                         setIsContainerTxOpen(true);
                       }}
-                      className="flex-1 py-1.5 px-2 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 font-bold text-[11px] rounded-lg transition-colors flex items-center justify-center gap-1"
+                      className="flex-1 py-1.5 px-2 bg-emerald-50 hover:bg-emerald-100 text-emerald-900 font-bold text-pos-badge rounded-lg transition-colors flex items-center justify-center gap-1"
                     >
                       <ArrowDownLeft className="w-3 h-3" />
                       Retour
@@ -2442,7 +2442,7 @@ export const Backoffice: React.FC<BackofficeProps> = ({
             <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
               <div className="px-5 py-3.5 border-b border-slate-200 bg-slate-50 flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                  <Users className="w-4 h-4 text-emerald-600" />
+                  <Users className="w-4 h-4 text-emerald-700" />
                   <h3 className="font-bold text-xs text-slate-800 uppercase tracking-wider">
                     Active Customer Container Loans ({customerContainerLoans.length})
                   </h3>
@@ -2453,23 +2453,23 @@ export const Backoffice: React.FC<BackofficeProps> = ({
                   Aucun prêt de contenant en cours. Tous les contenants sont restitués.
                 </div>
               ) : (
-                <div className="overflow-x-auto">
-                  <table className="w-full text-left text-xs border-collapse">
-                    <thead>
-                      <tr className="bg-slate-50 border-b border-slate-200 text-slate-500 font-bold text-[10px] uppercase">
-                        <th className="p-3">Client</th>
-                        <th className="p-3">Type de Contenant</th>
-                        <th className="p-3 text-center">Quantité Due</th>
-                        <th className="p-3 text-right">Action Rapide</th>
+                <div className="overflow-x-auto max-h-72 overflow-y-auto">
+                  <table className="w-full text-left text-pos-body border-collapse min-w-[500px]">
+                    <thead className="sticky top-0 bg-slate-50 z-10 shadow-xs">
+                      <tr className="bg-slate-50 border-b border-slate-200 text-slate-700 font-bold text-pos-caption uppercase">
+                        <th className="py-2.5 px-3">Client</th>
+                        <th className="py-2.5 px-3">Type de Contenant</th>
+                        <th className="py-2.5 px-3 text-center">Quantité Due</th>
+                        <th className="py-2.5 px-3 text-right">Action Rapide</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-100">
                       {customerContainerLoans.map(loan => (
                         <tr key={`${loan.customer_id}-${loan.container_type_id}`} className="hover:bg-slate-50">
-                          <td className="p-3 font-bold text-slate-900">{loan.customer_name}</td>
-                          <td className="p-3 text-slate-600">{loan.container_type_name || loan.container_name}</td>
-                          <td className="p-3 text-center font-bold font-mono text-amber-700">{loan.quantity_owed}</td>
-                          <td className="p-3 text-right">
+                          <td className="py-2 px-3 font-bold text-slate-900">{loan.customer_name}</td>
+                          <td className="py-2 px-3 text-slate-700">{loan.container_type_name || loan.container_name}</td>
+                          <td className="py-2 px-3 text-center font-bold font-mono text-amber-800 tabular-nums">{loan.quantity_owed}</td>
+                          <td className="py-2 px-3 text-right">
                             <button
                               onClick={() => {
                                 setContainerTxInitialAction('RETURN');
@@ -2477,7 +2477,7 @@ export const Backoffice: React.FC<BackofficeProps> = ({
                                 setContainerTxInitialContainerTypeId(loan.container_type_id);
                                 setIsContainerTxOpen(true);
                               }}
-                              className="py-1 px-3 bg-emerald-100 hover:bg-emerald-200 text-emerald-800 font-bold text-xs rounded-lg transition-colors inline-flex items-center gap-1"
+                              className="py-1 px-3 bg-emerald-700 hover:bg-emerald-800 text-white font-bold text-pos-badge rounded-lg transition-colors inline-flex items-center gap-1"
                             >
                               <ArrowDownLeft className="w-3 h-3" />
                               Retourner
@@ -2506,35 +2506,35 @@ export const Backoffice: React.FC<BackofficeProps> = ({
                   Aucun mouvement de consigne enregistré.
                 </div>
               ) : (
-                <div className="max-h-64 overflow-y-auto">
-                  <table className="w-full text-left text-xs border-collapse">
-                    <thead>
-                      <tr className="bg-slate-50 border-b border-slate-200 text-slate-500 font-bold text-[10px] uppercase">
-                        <th className="p-3">Date</th>
-                        <th className="p-3">Client</th>
-                        <th className="p-3">Contenant</th>
-                        <th className="p-3 text-center">Opération</th>
-                        <th className="p-3 text-center">Quantité</th>
-                        <th className="p-3">Note</th>
+                <div className="max-h-72 overflow-y-auto overflow-x-auto">
+                  <table className="w-full text-left text-pos-body border-collapse min-w-[500px]">
+                    <thead className="sticky top-0 bg-slate-50 z-10 shadow-xs">
+                      <tr className="bg-slate-50 border-b border-slate-200 text-slate-700 font-bold text-pos-caption uppercase">
+                        <th className="py-2.5 px-3">Date</th>
+                        <th className="py-2.5 px-3">Client</th>
+                        <th className="py-2.5 px-3">Contenant</th>
+                        <th className="py-2.5 px-3 text-center">Opération</th>
+                        <th className="py-2.5 px-3 text-center">Quantité</th>
+                        <th className="py-2.5 px-3">Note</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-100">
                       {containerTransactions.map(tx => (
                         <tr key={tx.id} className="hover:bg-slate-50">
-                          <td className="p-3 text-slate-500 text-[11px]">{formatDateTime(tx.date || tx.created_at)}</td>
-                          <td className="p-3 font-bold text-slate-900">{tx.customer_name}</td>
-                          <td className="p-3 text-slate-600">{tx.container_type_name}</td>
-                          <td className="p-3 text-center">
-                            <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${
+                          <td className="py-2 px-3 text-slate-700 font-mono text-pos-badge">{formatDateTime(tx.date || tx.created_at)}</td>
+                          <td className="py-2 px-3 font-bold text-slate-900">{tx.customer_name}</td>
+                          <td className="py-2 px-3 text-slate-700">{tx.container_type_name}</td>
+                          <td className="py-2 px-3 text-center">
+                            <span className={`px-2 py-0.5 rounded text-pos-badge font-bold ${
                               tx.action === 'GIVE'
-                                ? 'bg-amber-100 text-amber-800'
+                                ? 'bg-amber-100 text-amber-900'
                                 : 'bg-emerald-100 text-emerald-800'
                             }`}>
                               {tx.action === 'GIVE' ? 'PRÊT (GIVE)' : 'RETOUR (RETURN)'}
                             </span>
                           </td>
-                          <td className="p-3 text-center font-bold font-mono text-slate-800">{tx.quantity}</td>
-                          <td className="p-3 text-slate-400 text-[11px]">{tx.notes || '—'}</td>
+                          <td className="py-2 px-3 text-center font-bold font-mono text-slate-900 tabular-nums">{tx.quantity}</td>
+                          <td className="py-2 px-3 text-slate-600 text-pos-badge">{tx.notes || '—'}</td>
                         </tr>
                       ))}
                     </tbody>
@@ -2565,54 +2565,54 @@ export const Backoffice: React.FC<BackofficeProps> = ({
                 <span>Manage Counters ({counters.filter(c => c.is_active).length} Active)</span>
               </button>
             </div>
-            <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
-              <div className="overflow-x-auto">
-                <table className="w-full text-left border-collapse text-xs min-w-[850px]">
-                <thead>
-                  <tr className="bg-slate-50 border-b border-slate-200 font-bold text-slate-600 uppercase text-[10px]">
-                    <th className="p-3">Session #</th>
-                    <th className="p-3">Counter</th>
-                    <th className="p-3">Opened</th>
-                    <th className="p-3">Closed</th>
-                    <th className="p-3 text-center">Sales Count</th>
-                    <th className="p-3 text-right">Sales Total</th>
-                    <th className="p-3 text-right">Opening Float</th>
-                    <th className="p-3 text-right">Counted Cash</th>
-                    <th className="p-3 text-right">Variance</th>
-                    <th className="p-3 text-center">Status</th>
-                    <th className="p-3 text-right">Actions</th>
+            <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden flex flex-col max-h-[calc(100vh-280px)]">
+              <div className="overflow-x-auto overflow-y-auto flex-1">
+                <table className="w-full text-left text-pos-body border-collapse min-w-[850px]">
+                <thead className="sticky top-0 bg-slate-50 z-10 shadow-xs">
+                  <tr className="bg-slate-50 border-b border-slate-200 font-bold text-slate-700 uppercase text-pos-caption">
+                    <th className="py-2.5 px-3">Session #</th>
+                    <th className="py-2.5 px-3">Counter</th>
+                    <th className="py-2.5 px-3">Opened</th>
+                    <th className="py-2.5 px-3">Closed</th>
+                    <th className="py-2.5 px-3 text-center">Sales Count</th>
+                    <th className="py-2.5 px-3 text-right">Sales Total</th>
+                    <th className="py-2.5 px-3 text-right">Opening Float</th>
+                    <th className="py-2.5 px-3 text-right">Counted Cash</th>
+                    <th className="py-2.5 px-3 text-right">Variance</th>
+                    <th className="py-2.5 px-3 text-center">Status</th>
+                    <th className="py-2.5 px-3 text-right">Actions</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
                   {sessions.map(s => (
                     <tr key={s.id} className="hover:bg-slate-50">
-                      <td className="p-3 font-mono font-bold text-slate-900">{s.session_number}</td>
-                      <td className="p-3 text-slate-600">{s.counter_name}</td>
-                      <td className="p-3 text-slate-500">{formatDateTime(s.opened_at)}</td>
-                      <td className="p-3 text-slate-500">{formatDateTime(s.closed_at) || 'Active'}</td>
-                      <td className="p-3 text-center font-mono font-bold text-slate-800">{(s as any).sale_count ?? 0}</td>
-                      <td className="p-3 text-right font-mono font-bold text-slate-900">{formatMoney((s as any).sales_total ?? 0)}</td>
-                      <td className="p-3 text-right font-mono">{formatMoney(s.opening_cash)}</td>
-                      <td className="p-3 text-right font-mono">{formatMoney(s.closing_cash_counted)}</td>
-                      <td className="p-3 text-right font-mono font-bold">
+                      <td className="py-2 px-3 font-mono font-bold text-slate-900">{s.session_number}</td>
+                      <td className="py-2 px-3 text-slate-700">{s.counter_name}</td>
+                      <td className="py-2 px-3 text-slate-700 font-mono text-pos-badge">{formatDateTime(s.opened_at)}</td>
+                      <td className="py-2 px-3 text-slate-700 font-mono text-pos-badge">{formatDateTime(s.closed_at) || 'Active'}</td>
+                      <td className="py-2 px-3 text-center font-mono font-bold text-slate-800 tabular-nums">{(s as any).sale_count ?? 0}</td>
+                      <td className="py-2 px-3 text-right font-mono font-bold text-slate-900 tabular-nums">{formatMoney((s as any).sales_total ?? 0)}</td>
+                      <td className="py-2 px-3 text-right font-mono tabular-nums">{formatMoney(s.opening_cash)}</td>
+                      <td className="py-2 px-3 text-right font-mono tabular-nums">{formatMoney(s.closing_cash_counted)}</td>
+                      <td className="py-2 px-3 text-right font-mono font-bold tabular-nums">
                         {s.variance !== null && s.variance !== undefined ? (
-                          <span className={s.variance === 0 ? 'text-emerald-700' : s.variance > 0 ? 'text-blue-700' : 'text-rose-700'}>
+                          <span className={s.variance === 0 ? 'text-emerald-800' : s.variance > 0 ? 'text-blue-800' : 'text-rose-700'}>
                             {formatMoney(s.variance)}
                           </span>
                         ) : '—'}
                       </td>
-                      <td className="p-3 text-center">
-                        <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${
-                          s.status === 'OPEN' ? 'bg-emerald-100 text-emerald-800' : 'bg-slate-100 text-slate-700'
+                      <td className="py-2 px-3 text-center">
+                        <span className={`px-2 py-0.5 rounded text-pos-badge font-bold ${
+                          s.status === 'OPEN' ? 'bg-emerald-100 text-emerald-800' : 'bg-slate-100 text-slate-800'
                         }`}>
                           {s.status}
                         </span>
                       </td>
-                      <td className="p-3 text-right">
+                      <td className="py-2 px-3 text-right">
                         <div className="flex items-center justify-end gap-1.5">
                           <button
                             onClick={() => handlePrintZReport(s)}
-                            className="px-2.5 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-lg text-[11px] inline-flex items-center gap-1 transition-colors"
+                            className="px-2.5 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-lg text-pos-badge inline-flex items-center gap-1 transition-colors"
                             title="Imprimer / Réimprimer Rapport Z"
                           >
                             <Printer className="w-3.5 h-3.5 text-slate-500" />
@@ -2620,7 +2620,7 @@ export const Backoffice: React.FC<BackofficeProps> = ({
                           </button>
                           <button
                             onClick={() => handleOpenSessionDetail(s)}
-                            className="px-2.5 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-lg text-[11px] inline-flex items-center gap-1 transition-colors"
+                            className="px-2.5 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-lg text-pos-badge inline-flex items-center gap-1 transition-colors"
                           >
                             <Eye className="w-3.5 h-3.5 text-slate-500" />
                             Details
@@ -2643,14 +2643,14 @@ export const Backoffice: React.FC<BackofficeProps> = ({
 
             {/* Session Drill-down Modal */}
             {isSessionDetailOpen && (
-              <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
-                <div className="bg-white rounded-2xl shadow-2xl max-w-3xl w-full max-h-[85vh] overflow-hidden flex flex-col border border-slate-200">
-                  <div className="p-4 border-b border-slate-100 bg-slate-50 flex items-center justify-between">
+              <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-2 sm:p-4">
+                <div className="bg-white rounded-2xl shadow-2xl max-w-3xl w-full max-h-[calc(100dvh-1rem)] sm:max-h-[85vh] overflow-hidden flex flex-col border border-slate-200">
+                  <div className="p-3 sm:p-4 border-b border-slate-100 bg-slate-50 flex items-center justify-between shrink-0">
                     <div>
                       <h3 className="text-sm font-black text-slate-900">
                         Session Breakdown: {selectedSessionDetail?.session?.session_number || selectedSessionDetail?.session_number || 'Loading...'}
                       </h3>
-                      <p className="text-[11px] text-slate-500">
+                      <p className="text-pos-badge text-slate-600">
                         {selectedSessionDetail?.session?.counter_name || selectedSessionDetail?.counter_name} • Opened: {formatDateTime(selectedSessionDetail?.session?.opened_at || selectedSessionDetail?.opened_at)}
                       </p>
                     </div>
@@ -2671,7 +2671,7 @@ export const Backoffice: React.FC<BackofficeProps> = ({
                     </div>
                   </div>
 
-                  <div className="p-5 overflow-y-auto space-y-4">
+                  <div className="p-3 sm:p-5 overflow-y-auto min-h-0 flex-1 space-y-4">
                     {loadingSessionDetail ? (
                       <div className="text-center py-12 text-slate-400 text-xs">Loading session data...</div>
                     ) : selectedSessionDetail ? (
@@ -2679,26 +2679,26 @@ export const Backoffice: React.FC<BackofficeProps> = ({
                         {/* Live Cash Breakdown Cards */}
                         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
                           <div className="bg-slate-50 p-3 rounded-xl border border-slate-200">
-                            <span className="text-slate-500 text-[10px] uppercase font-bold block">Opening Float</span>
-                            <span className="font-mono font-bold text-slate-900 text-sm">
+                            <span className="text-slate-600 text-pos-badge uppercase font-bold block">Opening Float</span>
+                            <span className="font-mono font-bold text-slate-900 text-sm tabular-nums">
                               {formatMoney(selectedSessionDetail?.session?.opening_cash ?? selectedSessionDetail?.opening_cash ?? 0)}
                             </span>
                           </div>
                           <div className="bg-emerald-50/70 p-3 rounded-xl border border-emerald-200">
-                            <span className="text-emerald-700 text-[10px] uppercase font-bold block">Cash Sales Inflow</span>
-                            <span className="font-mono font-bold text-emerald-800 text-sm">
+                            <span className="text-emerald-800 text-pos-badge uppercase font-bold block">Cash Sales Inflow</span>
+                            <span className="font-mono font-bold text-emerald-900 text-sm tabular-nums">
                               {formatMoney(selectedSessionDetail?.live_cash_breakdown?.cash_sales ?? selectedSessionDetail?.cash_sales ?? 0)}
                             </span>
                           </div>
                           <div className="bg-blue-50/70 p-3 rounded-xl border border-blue-200">
-                            <span className="text-blue-700 text-[10px] uppercase font-bold block">Expected Cash</span>
-                            <span className="font-mono font-bold text-blue-800 text-sm">
+                            <span className="text-blue-800 text-pos-badge uppercase font-bold block">Expected Cash</span>
+                            <span className="font-mono font-bold text-blue-900 text-sm tabular-nums">
                               {formatMoney(selectedSessionDetail?.live_cash_breakdown?.expected_cash ?? selectedSessionDetail?.session?.expected_cash ?? selectedSessionDetail?.expected_cash ?? 0)}
                             </span>
                           </div>
                           <div className="bg-slate-50 p-3 rounded-xl border border-slate-200">
-                            <span className="text-slate-500 text-[10px] uppercase font-bold block">Counted / Variance</span>
-                            <span className="font-mono font-bold text-slate-900 text-sm">
+                            <span className="text-slate-600 text-pos-badge uppercase font-bold block">Counted / Variance</span>
+                            <span className="font-mono font-bold text-slate-900 text-sm tabular-nums">
                               {(selectedSessionDetail?.session?.closing_cash_counted !== null && selectedSessionDetail?.session?.closing_cash_counted !== undefined)
                                 ? `${formatMoney(selectedSessionDetail.session.closing_cash_counted)} (${formatMoney(selectedSessionDetail.session.variance || 0)})`
                                 : (selectedSessionDetail?.closing_cash_counted !== null && selectedSessionDetail?.closing_cash_counted !== undefined)
@@ -2714,28 +2714,28 @@ export const Backoffice: React.FC<BackofficeProps> = ({
                             Session Sales Receipts ({selectedSessionDetail.sales?.length || 0})
                           </div>
                           <div className="max-h-56 overflow-y-auto overflow-x-auto">
-                            <table className="w-full text-left text-xs border-collapse min-w-[550px]">
-                              <thead>
-                                <tr className="bg-slate-50 text-slate-500 font-bold text-[10px] uppercase border-b border-slate-200">
-                                  <th className="p-2.5">Receipt #</th>
-                                  <th className="p-2.5">Time</th>
-                                  <th className="p-2.5">Customer</th>
-                                  <th className="p-2.5 text-right">Total TTC</th>
-                                  <th className="p-2.5 text-right">Cash Paid</th>
-                                  <th className="p-2.5 text-center">Status</th>
+                            <table className="w-full text-left text-pos-body border-collapse min-w-[550px]">
+                              <thead className="sticky top-0 bg-slate-50 z-10 shadow-xs">
+                                <tr className="bg-slate-50 text-slate-700 font-bold text-pos-caption uppercase border-b border-slate-200">
+                                  <th className="py-2.5 px-3">Receipt #</th>
+                                  <th className="py-2.5 px-3">Time</th>
+                                  <th className="py-2.5 px-3">Customer</th>
+                                  <th className="py-2.5 px-3 text-right">Total TTC</th>
+                                  <th className="py-2.5 px-3 text-right">Cash Paid</th>
+                                  <th className="py-2.5 px-3 text-center">Status</th>
                                 </tr>
                               </thead>
                               <tbody className="divide-y divide-slate-100">
                                 {selectedSessionDetail.sales?.map((sale: any) => (
                                   <tr key={sale.id} className="hover:bg-slate-50">
-                                    <td className="p-2.5 font-mono font-bold text-slate-900">{sale.receipt_number}</td>
-                                    <td className="p-2.5 text-slate-500 text-[11px]">{formatDateTime(sale.date)}</td>
-                                    <td className="p-2.5 text-slate-700">{sale.customer_name || 'Walk-in'}</td>
-                                    <td className="p-2.5 text-right font-mono font-bold text-slate-900">{formatMoney(sale.total_ttc)}</td>
-                                    <td className="p-2.5 text-right font-mono text-emerald-700 font-bold">{formatMoney(sale.cash_paid)}</td>
-                                    <td className="p-2.5 text-center">
-                                      <span className={`px-1.5 py-0.5 rounded text-[10px] font-bold ${
-                                        sale.status === 'COMPLETED' ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'
+                                    <td className="py-2 px-3 font-mono font-bold text-slate-900">{sale.receipt_number}</td>
+                                    <td className="py-2 px-3 text-slate-700 font-mono text-pos-badge">{formatDateTime(sale.date)}</td>
+                                    <td className="py-2 px-3 text-slate-800">{sale.customer_name || 'Walk-in'}</td>
+                                    <td className="py-2 px-3 text-right font-mono font-bold text-slate-900 tabular-nums">{formatMoney(sale.total_ttc)}</td>
+                                    <td className="py-2 px-3 text-right font-mono text-emerald-800 font-bold tabular-nums">{formatMoney(sale.cash_paid)}</td>
+                                    <td className="py-2 px-3 text-center">
+                                      <span className={`px-1.5 py-0.5 rounded text-pos-badge font-bold ${
+                                        sale.status === 'COMPLETED' ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-900'
                                       }`}>
                                         {sale.status}
                                       </span>
@@ -2760,29 +2760,29 @@ export const Backoffice: React.FC<BackofficeProps> = ({
                             <div className="px-4 py-2 bg-slate-50 border-b border-slate-200 font-bold text-xs text-slate-700 uppercase tracking-wide">
                               Cash Movements ({selectedSessionDetail.movements.length})
                             </div>
-                            <div className="overflow-x-auto">
-                              <table className="w-full text-left text-xs border-collapse min-w-[400px]">
-                                <thead>
-                                  <tr className="bg-slate-50 text-slate-500 font-bold text-[10px] uppercase border-b border-slate-200">
-                                    <th className="p-2">Type</th>
-                                    <th className="p-2 text-right">Amount</th>
-                                    <th className="p-2">Reason</th>
-                                    <th className="p-2">Time</th>
+                            <div className="overflow-x-auto max-h-56 overflow-y-auto">
+                              <table className="w-full text-left text-pos-body border-collapse min-w-[400px]">
+                                <thead className="sticky top-0 bg-slate-50 z-10 shadow-xs">
+                                  <tr className="bg-slate-50 text-slate-700 font-bold text-pos-caption uppercase border-b border-slate-200">
+                                    <th className="py-2.5 px-3">Type</th>
+                                    <th className="py-2.5 px-3 text-right">Amount</th>
+                                    <th className="py-2.5 px-3">Reason</th>
+                                    <th className="py-2.5 px-3">Time</th>
                                   </tr>
                                 </thead>
                                 <tbody className="divide-y divide-slate-100">
                                   {selectedSessionDetail.movements.map((m: any) => (
                                     <tr key={m.id}>
-                                      <td className="p-2 font-bold">
-                                        <span className={`px-1.5 py-0.5 rounded text-[10px] ${
+                                      <td className="py-2 px-3 font-bold">
+                                        <span className={`px-1.5 py-0.5 rounded text-pos-badge ${
                                           m.type === 'CASH_IN' ? 'bg-emerald-100 text-emerald-800' : 'bg-rose-100 text-rose-800'
                                         }`}>
                                           {m.type}
                                         </span>
                                       </td>
-                                      <td className="p-2 text-right font-mono font-bold">{formatMoney(m.amount)}</td>
-                                      <td className="p-2 text-slate-600">{m.reason}</td>
-                                      <td className="p-2 text-slate-500 text-[11px]">{formatDateTime(m.created_at || m.date)}</td>
+                                      <td className="py-2 px-3 text-right font-mono font-bold tabular-nums">{formatMoney(m.amount)}</td>
+                                      <td className="py-2 px-3 text-slate-700">{m.reason}</td>
+                                      <td className="py-2 px-3 text-slate-700 font-mono text-pos-badge">{formatDateTime(m.created_at || m.date)}</td>
                                     </tr>
                                   ))}
                                 </tbody>
@@ -2799,16 +2799,16 @@ export const Backoffice: React.FC<BackofficeProps> = ({
 
             {/* Counters Management Modal */}
             {isCountersModalOpen && (
-              <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
-                <div className="bg-white rounded-2xl shadow-2xl max-w-lg w-full overflow-hidden border border-slate-200 animate-in fade-in zoom-in-95 duration-150">
-                  <div className="p-4 border-b border-slate-100 bg-slate-50 flex items-center justify-between">
+              <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-2 sm:p-4">
+                <div className="bg-white rounded-2xl shadow-2xl max-w-lg w-full max-h-[calc(100dvh-1rem)] sm:max-h-[85vh] overflow-hidden flex flex-col border border-slate-200 animate-in fade-in zoom-in-95 duration-150">
+                  <div className="p-3 sm:p-4 border-b border-slate-100 bg-slate-50 flex items-center justify-between shrink-0">
                     <div className="flex items-center gap-2">
                       <div className="w-8 h-8 rounded-xl bg-slate-200 text-slate-800 flex items-center justify-center">
                         <Settings className="w-4 h-4" />
                       </div>
                       <div>
                         <h3 className="text-sm font-black text-slate-900">Register / Counter Management</h3>
-                        <p className="text-[11px] text-slate-500">Configure defined physical counters and mobile registers</p>
+                        <p className="text-pos-badge text-slate-600">Configure defined physical counters and mobile registers</p>
                       </div>
                     </div>
                     <button
@@ -2819,7 +2819,7 @@ export const Backoffice: React.FC<BackofficeProps> = ({
                     </button>
                   </div>
 
-                  <div className="p-5 space-y-4">
+                  <div className="p-3 sm:p-5 space-y-4 overflow-y-auto min-h-0 flex-1">
                     {/* Add Counter Form */}
                     <form onSubmit={handleCreateCounter} className="flex gap-2">
                       <input
@@ -2831,7 +2831,7 @@ export const Backoffice: React.FC<BackofficeProps> = ({
                       />
                       <button
                         type="submit"
-                        className="px-3.5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl text-xs flex items-center gap-1 shadow-sm transition-colors"
+                        className="px-3.5 py-2 bg-emerald-700 hover:bg-emerald-800 text-white font-bold rounded-xl text-xs flex items-center gap-1 shadow-sm transition-colors"
                       >
                         <Plus className="w-3.5 h-3.5" />
                         <span>Add</span>
@@ -2843,26 +2843,26 @@ export const Backoffice: React.FC<BackofficeProps> = ({
 
                     {/* Counters Table */}
                     <div className="border border-slate-200 rounded-xl overflow-hidden max-h-60 overflow-y-auto">
-                      <table className="w-full text-left border-collapse text-xs">
-                        <thead>
-                          <tr className="bg-slate-50 border-b border-slate-200 font-bold text-slate-600 uppercase text-[10px]">
-                            <th className="p-2.5">Counter Name</th>
-                            <th className="p-2.5 text-center">Status</th>
-                            <th className="p-2.5 text-right">Actions</th>
+                      <table className="w-full text-left border-collapse text-pos-body">
+                        <thead className="sticky top-0 bg-slate-50 z-10 shadow-xs">
+                          <tr className="bg-slate-50 border-b border-slate-200 font-bold text-slate-700 uppercase text-pos-caption">
+                            <th className="py-2.5 px-3">Counter Name</th>
+                            <th className="py-2.5 px-3 text-center">Status</th>
+                            <th className="py-2.5 px-3 text-right">Actions</th>
                           </tr>
                         </thead>
                         <tbody className="divide-y divide-slate-100">
                           {counters.map(c => (
                             <tr key={c.id} className="hover:bg-slate-50">
-                              <td className="p-2.5 font-bold text-slate-800">{c.name}</td>
-                              <td className="p-2.5 text-center">
-                                <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${
-                                  c.is_active ? 'bg-emerald-100 text-emerald-800' : 'bg-slate-100 text-slate-500'
+                              <td className="py-2 px-3 font-bold text-slate-800">{c.name}</td>
+                              <td className="py-2 px-3 text-center">
+                                <span className={`px-2 py-0.5 rounded text-pos-badge font-bold ${
+                                  c.is_active ? 'bg-emerald-100 text-emerald-800' : 'bg-slate-100 text-slate-600'
                                 }`}>
                                   {c.is_active ? 'Active' : 'Inactive'}
                                 </span>
                               </td>
-                              <td className="p-2.5 text-right">
+                              <td className="py-2 px-3 text-right">
                                 {c.is_active ? (
                                   <button
                                     type="button"
@@ -2873,7 +2873,7 @@ export const Backoffice: React.FC<BackofficeProps> = ({
                                     <Trash2 className="w-3.5 h-3.5" />
                                   </button>
                                 ) : (
-                                  <span className="text-[10px] text-slate-400 italic">Deactivated</span>
+                                  <span className="text-pos-badge text-slate-500 italic">Deactivated</span>
                                 )}
                               </td>
                             </tr>
@@ -2890,7 +2890,7 @@ export const Backoffice: React.FC<BackofficeProps> = ({
                     </div>
                   </div>
 
-                  <div className="p-3 bg-slate-50 border-t border-slate-100 flex justify-end">
+                  <div className="p-3 bg-slate-50 border-t border-slate-100 flex justify-end shrink-0">
                     <button
                       type="button"
                       onClick={() => setIsCountersModalOpen(false)}
@@ -2926,7 +2926,7 @@ export const Backoffice: React.FC<BackofficeProps> = ({
                 </button>
                 <button
                   onClick={() => setIsCreateExpenseOpen(true)}
-                  className="flex items-center gap-1.5 bg-rose-600 hover:bg-rose-700 text-white font-bold px-3.5 py-2 rounded-xl text-xs shadow transition-colors"
+                  className="flex items-center gap-1.5 bg-rose-700 hover:bg-rose-800 text-white font-bold px-3.5 py-2 rounded-xl text-xs shadow transition-colors"
                 >
                   <Receipt className="w-4 h-4" />
                   Record Expense
@@ -2941,31 +2941,31 @@ export const Backoffice: React.FC<BackofficeProps> = ({
                   <div className="space-y-2 text-xs">
                     <div className="flex justify-between text-slate-600">
                       <span>Total Sales Cash Inflow:</span>
-                      <span className="font-mono font-bold text-emerald-700">
+                      <span className="font-mono font-bold text-emerald-800 tabular-nums">
                         {formatMoney(accountingData.cashFlow?.money_in?.sales_cash || 0)}
                       </span>
                     </div>
                     <div className="flex justify-between text-slate-600">
                       <span>Customer Debt Collections:</span>
-                      <span className="font-mono font-bold text-emerald-700">
+                      <span className="font-mono font-bold text-emerald-800 tabular-nums">
                         {formatMoney(accountingData.cashFlow?.money_in?.customer_debt_repayments || 0)}
                       </span>
                     </div>
                     <div className="flex justify-between text-slate-600">
                       <span>Purchases Cash Outflow:</span>
-                      <span className="font-mono font-bold text-rose-700">
+                      <span className="font-mono font-bold text-rose-700 tabular-nums">
                         {formatMoney(accountingData.cashFlow?.money_out?.paid_purchases || 0)}
                       </span>
                     </div>
                     <div className="flex justify-between text-slate-600">
                       <span>General Expenses Paid:</span>
-                      <span className="font-mono font-bold text-rose-700">
+                      <span className="font-mono font-bold text-rose-700 tabular-nums">
                         {formatMoney(accountingData.cashFlow?.money_out?.general_expenses || 0)}
                       </span>
                     </div>
                     <div className="pt-2 border-t border-slate-200 flex justify-between text-sm font-black text-slate-900">
                       <span>Net Cash Position:</span>
-                      <span className="font-mono text-base text-blue-700">
+                      <span className="font-mono text-base text-blue-800 tabular-nums">
                         {formatMoney(accountingData.cashFlow?.net_cash_flow || 0)}
                       </span>
                     </div>
@@ -2978,19 +2978,19 @@ export const Backoffice: React.FC<BackofficeProps> = ({
                   <div className="space-y-2 text-xs">
                     <div className="flex justify-between text-slate-600">
                       <span>Raw Materials Stock Value:</span>
-                      <span className="font-mono font-bold text-slate-900">
+                      <span className="font-mono font-bold text-slate-900 tabular-nums">
                         {formatMoney(accountingData.stockValuation?.raw_materials_valuation || 0)}
                       </span>
                     </div>
                     <div className="flex justify-between text-slate-600">
                       <span>Finished Products Stock Value:</span>
-                      <span className="font-mono font-bold text-slate-900">
+                      <span className="font-mono font-bold text-slate-900 tabular-nums">
                         {formatMoney(accountingData.stockValuation?.finished_goods_valuation || 0)}
                       </span>
                     </div>
                     <div className="pt-2 border-t border-slate-200 flex justify-between text-sm font-black text-slate-900">
                       <span>Total Inventory Asset Value:</span>
-                      <span className="font-mono text-base text-emerald-700">
+                      <span className="font-mono text-base text-emerald-800 tabular-nums">
                         {formatMoney(accountingData.stockValuation?.total_stock_valuation || 0)}
                       </span>
                     </div>
@@ -3010,37 +3010,37 @@ export const Backoffice: React.FC<BackofficeProps> = ({
                 </div>
                 <button
                   onClick={() => setIsCreateExpenseOpen(true)}
-                  className="px-2.5 py-1 bg-rose-600 hover:bg-rose-700 text-white font-bold rounded-lg text-[11px] inline-flex items-center gap-1 transition-colors"
+                  className="px-2.5 py-1 bg-rose-700 hover:bg-rose-800 text-white font-bold rounded-lg text-pos-badge inline-flex items-center gap-1 transition-colors"
                 >
                   <Plus className="w-3 h-3" />
                   Add Expense
                 </button>
               </div>
               <div className="overflow-x-auto max-h-72 overflow-y-auto">
-                <table className="w-full text-left text-xs border-collapse min-w-[600px]">
-                  <thead>
-                    <tr className="bg-slate-50 border-b border-slate-200 text-slate-500 font-bold text-[10px] uppercase">
-                      <th className="p-3">Date</th>
-                      <th className="p-3">Category</th>
-                      <th className="p-3">Description</th>
-                      <th className="p-3">Payment Source</th>
-                      <th className="p-3 text-right">Amount</th>
-                      <th className="p-3 text-right">Actions</th>
+                <table className="w-full text-left text-pos-body border-collapse min-w-[600px]">
+                  <thead className="sticky top-0 bg-slate-50 z-10 shadow-xs">
+                    <tr className="bg-slate-50 border-b border-slate-200 text-slate-700 font-bold text-pos-caption uppercase">
+                      <th className="py-2.5 px-3">Date</th>
+                      <th className="py-2.5 px-3">Category</th>
+                      <th className="py-2.5 px-3">Description</th>
+                      <th className="py-2.5 px-3">Payment Source</th>
+                      <th className="py-2.5 px-3 text-right">Amount</th>
+                      <th className="py-2.5 px-3 text-right">Actions</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100">
                     {expensesHistory.map(exp => (
                       <tr key={exp.id} className="hover:bg-slate-50">
-                        <td className="p-3 text-slate-500 font-mono text-[11px]">{formatDateTime(exp.date || exp.created_at)}</td>
-                        <td className="p-3">
-                          <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-slate-100 text-slate-700">
+                        <td className="py-2 px-3 text-slate-700 font-mono text-pos-badge">{formatDateTime(exp.date || exp.created_at)}</td>
+                        <td className="py-2 px-3">
+                          <span className="px-1.5 py-0.5 rounded text-pos-badge font-bold bg-slate-100 text-slate-800">
                             {exp.category}
                           </span>
                         </td>
-                        <td className="p-3 text-slate-800 font-medium">{exp.description || '—'}</td>
-                        <td className="p-3 text-slate-500 font-mono text-[11px]">{exp.payment_source}</td>
-                        <td className="p-3 text-right font-mono font-bold text-rose-700">{formatMoney(exp.amount)}</td>
-                        <td className="p-3 text-right">
+                        <td className="py-2 px-3 text-slate-800 font-medium">{exp.description || '—'}</td>
+                        <td className="py-2 px-3 text-slate-700 font-mono text-pos-badge">{exp.payment_source}</td>
+                        <td className="py-2 px-3 text-right font-mono font-bold text-rose-700 tabular-nums">{formatMoney(exp.amount)}</td>
+                        <td className="py-2 px-3 text-right">
                           <button
                             onClick={() => handleDeleteExpense(exp)}
                             className="p-1 text-slate-400 hover:text-rose-600 rounded hover:bg-rose-50 transition-colors inline-flex items-center"

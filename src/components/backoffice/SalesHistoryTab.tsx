@@ -221,19 +221,19 @@ export const SalesHistoryTab: React.FC<SalesHistoryTabProps> = ({
       )}
 
       {/* Sales Table */}
-      <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
-        <div className="overflow-x-auto">
+      <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden flex flex-col max-h-[calc(100vh-280px)]">
+        <div className="overflow-x-auto overflow-y-auto flex-1">
           <table className="w-full text-left border-collapse text-xs min-w-[760px]">
-            <thead>
-              <tr className="bg-slate-50 border-b border-slate-200 font-bold text-slate-600 uppercase text-[10px]">
-                <th className="p-3">N° Reçu</th>
-                <th className="p-3">Date</th>
-                <th className="p-3">Client</th>
-                <th className="p-3">Caisse</th>
-                <th className="p-3 text-right">Total TTC</th>
-                <th className="p-3 text-right">Règlement (Esp/Port/Créd)</th>
-                <th className="p-3 text-center">Statut</th>
-                <th className="p-3 text-right">Actions</th>
+            <thead className="sticky top-0 bg-slate-50 z-10 shadow-xs">
+              <tr className="border-b border-slate-200 font-bold text-slate-700 uppercase text-pos-caption">
+                <th className="py-2.5 px-3">N° Reçu</th>
+                <th className="py-2.5 px-3">Date</th>
+                <th className="py-2.5 px-3">Client</th>
+                <th className="py-2.5 px-3">Caisse</th>
+                <th className="py-2.5 px-3 text-right">Total TTC</th>
+                <th className="py-2.5 px-3 text-right">Règlement (Esp/Port/Créd)</th>
+                <th className="py-2.5 px-3 text-center">Statut</th>
+                <th className="py-2.5 px-3 text-right">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
@@ -246,30 +246,30 @@ export const SalesHistoryTab: React.FC<SalesHistoryTabProps> = ({
                     className="hover:bg-slate-50/80 transition-colors cursor-pointer group"
                     onClick={() => handleOpenDetail(s)}
                   >
-                    <td className="p-3 font-mono font-bold text-slate-900 group-hover:text-emerald-700">
+                    <td className="py-2 px-3 font-mono font-bold text-slate-900 group-hover:text-emerald-700 text-pos-body">
                       {s.receipt_number}
                     </td>
-                    <td className="p-3 text-slate-500 whitespace-nowrap">
+                    <td className="py-2 px-3 text-slate-600 whitespace-nowrap text-pos-body">
                       {formatDateTime(s.date)}
                     </td>
-                    <td className="p-3 font-medium text-slate-800">
+                    <td className="py-2 px-3 font-medium text-slate-900 text-pos-body">
                       {s.customer_name || <span className="text-slate-400 italic">Passager</span>}
                     </td>
-                    <td className="p-3 text-slate-500">
+                    <td className="py-2 px-3 text-slate-600 text-pos-body">
                       {s.counter_name || s.session_number || '—'}
                     </td>
-                    <td className="p-3 text-right font-mono font-bold text-slate-900 whitespace-nowrap">
+                    <td className="py-2 px-3 text-right font-mono font-bold text-slate-900 whitespace-nowrap text-pos-body tabular-nums">
                       {formatMoney(s.total_ttc)}
                     </td>
-                    <td className="p-3 text-right font-mono text-[11px] text-slate-600 whitespace-nowrap">
+                    <td className="py-2 px-3 text-right font-mono text-pos-badge text-slate-700 whitespace-nowrap tabular-nums">
                       <span>{formatMoney(s.cash_paid || 0)}</span>
-                      <span className="text-slate-300 mx-1">/</span>
-                      <span className="text-purple-700">{formatMoney(s.wallet_paid || 0)}</span>
-                      <span className="text-slate-300 mx-1">/</span>
-                      <span className="text-amber-700">{formatMoney(s.credit_amount || 0)}</span>
+                      <span className="text-slate-400 mx-1">/</span>
+                      <span className="text-purple-800 font-bold">{formatMoney(s.wallet_paid || 0)}</span>
+                      <span className="text-slate-400 mx-1">/</span>
+                      <span className="text-amber-800 font-bold">{formatMoney(s.credit_amount || 0)}</span>
                     </td>
-                    <td className="p-3 text-center">
-                      <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${
+                    <td className="py-2 px-3 text-center">
+                      <span className={`px-2 py-0.5 rounded text-pos-badge font-bold ${
                         isFullRefund 
                           ? 'bg-rose-100 text-rose-800' 
                           : isPartRefund 
@@ -279,7 +279,7 @@ export const SalesHistoryTab: React.FC<SalesHistoryTabProps> = ({
                         {isFullRefund ? 'Remboursé' : isPartRefund ? 'Partiel' : 'Payé'}
                       </span>
                     </td>
-                    <td className="p-3 text-right" onClick={e => e.stopPropagation()}>
+                    <td className="py-2 px-3 text-right" onClick={e => e.stopPropagation()}>
                       <div className="flex items-center justify-end gap-1">
                         <button
                           type="button"
@@ -362,25 +362,26 @@ export const SalesHistoryTab: React.FC<SalesHistoryTabProps> = ({
 
       {/* Sale Detail Modal */}
       {selectedSaleId && (
-        <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl shadow-xl border border-slate-200 w-full max-w-2xl max-h-[90vh] flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-100">
-            <div className="p-4 border-b border-slate-100 flex items-center justify-between bg-slate-50">
+        <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-2 sm:p-4 overflow-y-auto">
+          <div className="bg-white rounded-2xl shadow-xl border border-slate-200 w-full max-w-2xl max-h-[calc(100dvh-1rem)] sm:max-h-[calc(100dvh-2rem)] flex flex-col overflow-hidden">
+            <div className="shrink-0 px-5 py-4 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
               <div className="flex items-center gap-2">
-                <FileText className="w-4 h-4 text-emerald-600" />
-                <h3 className="font-bold text-slate-800 text-sm">
+                <FileText className="w-4 h-4 text-emerald-700" />
+                <h3 className="font-bold text-slate-900 text-sm">
                   Détail Vente : {saleDetail?.receipt_number || 'Chargement...'}
                 </h3>
               </div>
               <button
                 type="button"
                 onClick={() => setSelectedSaleId(null)}
-                className="text-slate-400 hover:text-slate-600 p-1 rounded-lg"
+                aria-label="Fermer"
+                className="text-slate-400 hover:text-slate-600 p-1.5 rounded-lg hover:bg-slate-100 transition-colors"
               >
-                <X className="w-4 h-4" />
+                <X className="w-5 h-5" />
               </button>
             </div>
 
-            <div className="p-4 overflow-y-auto space-y-4 text-xs flex-1">
+            <div className="p-5 overflow-y-auto space-y-4 text-xs flex-1 min-h-0">
               {loadingDetail && (
                 <div className="py-8 text-center text-slate-400">
                   <RefreshCw className="w-5 h-5 animate-spin mx-auto mb-2 text-slate-400" />
@@ -400,20 +401,20 @@ export const SalesHistoryTab: React.FC<SalesHistoryTabProps> = ({
                   {/* Meta info grid */}
                   <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 bg-slate-50 p-3 rounded-xl border border-slate-200">
                     <div>
-                      <span className="text-[10px] text-slate-400 block uppercase font-bold">Date</span>
-                      <span className="font-medium text-slate-700">{formatDateTime(saleDetail.date)}</span>
+                      <span className="text-pos-badge text-slate-600 block uppercase font-bold">Date</span>
+                      <span className="font-medium text-slate-700 text-pos-body">{formatDateTime(saleDetail.date)}</span>
                     </div>
                     <div>
-                      <span className="text-[10px] text-slate-400 block uppercase font-bold">Client</span>
-                      <span className="font-medium text-slate-700">{saleDetail.customer_name || 'Passager'}</span>
+                      <span className="text-pos-badge text-slate-600 block uppercase font-bold">Client</span>
+                      <span className="font-medium text-slate-700 text-pos-body">{saleDetail.customer_name || 'Passager'}</span>
                     </div>
                     <div>
-                      <span className="text-[10px] text-slate-400 block uppercase font-bold">Caisse</span>
-                      <span className="font-medium text-slate-700">{saleDetail.session_number || '—'}</span>
+                      <span className="text-pos-badge text-slate-600 block uppercase font-bold">Caisse</span>
+                      <span className="font-medium text-slate-700 text-pos-body">{saleDetail.session_number || '—'}</span>
                     </div>
                     <div>
-                      <span className="text-[10px] text-slate-400 block uppercase font-bold">Statut</span>
-                      <span className="font-bold text-slate-900">{saleDetail.status}</span>
+                      <span className="text-pos-badge text-slate-600 block uppercase font-bold">Statut</span>
+                      <span className="font-bold text-slate-900 text-pos-body">{saleDetail.status}</span>
                     </div>
                   </div>
 
@@ -423,32 +424,32 @@ export const SalesHistoryTab: React.FC<SalesHistoryTabProps> = ({
                     <div className="border border-slate-200 rounded-xl overflow-hidden">
                       <table className="w-full text-left border-collapse">
                         <thead>
-                          <tr className="bg-slate-50 border-b border-slate-200 text-[10px] uppercase font-bold text-slate-500">
-                            <th className="p-2">Article</th>
-                            <th className="p-2 text-center">Qté</th>
-                            <th className="p-2 text-right">P.U.</th>
-                            <th className="p-2 text-center">Remise</th>
-                            <th className="p-2 text-right">Total</th>
-                            <th className="p-2 text-center">Remboursé</th>
+                          <tr className="bg-slate-50 border-b border-slate-200 text-pos-caption uppercase font-bold text-slate-700">
+                            <th className="py-2.5 px-3">Article</th>
+                            <th className="py-2.5 px-3 text-center">Qté</th>
+                            <th className="py-2.5 px-3 text-right">P.U.</th>
+                            <th className="py-2.5 px-3 text-center">Remise</th>
+                            <th className="py-2.5 px-3 text-right">Total</th>
+                            <th className="py-2.5 px-3 text-center">Remboursé</th>
                           </tr>
                         </thead>
                         <tbody className="divide-y divide-slate-100">
                           {saleDetail.items?.map((item: any) => (
-                            <tr key={item.id} className="hover:bg-slate-50/50">
-                              <td className="p-2 font-medium text-slate-800">
+                            <tr key={item.id} className="hover:bg-slate-50/50 transition-colors">
+                              <td className="py-2 px-3 font-medium text-slate-900 text-pos-body">
                                 {item.catalog_product_name || item.quick_add_name || item.name || 'Article'}
                               </td>
-                              <td className="p-2 text-center font-mono">{item.quantity}</td>
-                              <td className="p-2 text-right font-mono">{formatMoney(item.unit_price)}</td>
-                              <td className="p-2 text-center font-mono">
+                              <td className="py-2 px-3 text-center font-mono text-pos-body">{item.quantity}</td>
+                              <td className="py-2 px-3 text-right font-mono text-pos-body tabular-nums">{formatMoney(item.unit_price)}</td>
+                              <td className="py-2 px-3 text-center font-mono text-pos-body">
                                 {item.discount_percent ? `${item.discount_percent}%` : '—'}
                               </td>
-                              <td className="p-2 text-right font-mono font-bold text-slate-900">
+                              <td className="py-2 px-3 text-right font-mono font-bold text-slate-900 text-pos-body tabular-nums">
                                 {formatMoney(item.line_total)}
                               </td>
-                              <td className="p-2 text-center font-mono">
+                              <td className="py-2 px-3 text-center font-mono text-pos-body">
                                 {item.quantity_refunded > 0 ? (
-                                  <span className="text-rose-600 font-bold">-{item.quantity_refunded}</span>
+                                  <span className="text-rose-700 font-bold">-{item.quantity_refunded}</span>
                                 ) : '0'}
                               </td>
                             </tr>
@@ -461,21 +462,21 @@ export const SalesHistoryTab: React.FC<SalesHistoryTabProps> = ({
                   {/* Payment Breakdown */}
                   <div className="bg-slate-50 p-3 rounded-xl border border-slate-200 space-y-1">
                     <div className="flex justify-between font-medium">
-                      <span className="text-slate-500">Sous-total HT:</span>
+                      <span className="text-slate-600">Sous-total HT:</span>
                       <span className="font-mono">{formatMoney(saleDetail.subtotal_ht || 0)}</span>
                     </div>
                     <div className="flex justify-between font-medium">
-                      <span className="text-slate-500">TVA (19%):</span>
+                      <span className="text-slate-600">TVA (19%):</span>
                       <span className="font-mono">{formatMoney(saleDetail.tva_amount || 0)}</span>
                     </div>
                     <div className="flex justify-between font-bold text-slate-900 text-sm pt-1 border-t border-slate-200">
                       <span>Total TTC:</span>
                       <span className="font-mono">{formatMoney(saleDetail.total_ttc)}</span>
                     </div>
-                    <div className="grid grid-cols-3 gap-2 pt-2 text-[11px] border-t border-slate-200 text-slate-600">
+                    <div className="grid grid-cols-3 gap-2 pt-2 text-pos-badge border-t border-slate-200 text-slate-700">
                       <div>Espèces: <span className="font-bold text-slate-900">{formatMoney(saleDetail.cash_paid || 0)}</span></div>
-                      <div>Portefeuille: <span className="font-bold text-purple-700">{formatMoney(saleDetail.wallet_paid || 0)}</span></div>
-                      <div>Crédit: <span className="font-bold text-amber-700">{formatMoney(saleDetail.credit_amount || 0)}</span></div>
+                      <div>Portefeuille: <span className="font-bold text-purple-800">{formatMoney(saleDetail.wallet_paid || 0)}</span></div>
+                      <div>Crédit: <span className="font-bold text-amber-800">{formatMoney(saleDetail.credit_amount || 0)}</span></div>
                     </div>
                   </div>
 
@@ -490,7 +491,7 @@ export const SalesHistoryTab: React.FC<SalesHistoryTabProps> = ({
                               <span>{rf.refund_number} ({formatDateTime(rf.date)})</span>
                               <span className="font-mono">-{formatMoney(rf.total_refunded)}</span>
                             </div>
-                            <div className="text-[11px] text-rose-700 mt-1">
+                            <div className="text-pos-badge text-rose-800 mt-1">
                               Raison : {rf.reason || 'Retour article'} • Espèces: {formatMoney(rf.cash_refunded)} • Crédit réduit: {formatMoney(rf.credit_reduced)}
                             </div>
                           </div>
@@ -502,7 +503,7 @@ export const SalesHistoryTab: React.FC<SalesHistoryTabProps> = ({
               )}
             </div>
 
-            <div className="p-3 border-t border-slate-200 bg-slate-50 flex items-center justify-between">
+            <div className="shrink-0 px-5 py-3 border-t border-slate-100 bg-slate-50/50 flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <button
                   type="button"
@@ -530,7 +531,7 @@ export const SalesHistoryTab: React.FC<SalesHistoryTabProps> = ({
                     onClick={() => {
                       if (saleDetail) onPrintDeliveryNote(saleDetail.id);
                     }}
-                    className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl text-xs flex items-center gap-1.5 shadow-sm"
+                    className="px-3 py-1.5 bg-emerald-700 hover:bg-emerald-800 text-white font-bold rounded-xl text-xs flex items-center gap-1.5 shadow-sm"
                   >
                     <Truck className="w-3.5 h-3.5" />
                     <span>Bon de Livraison</span>

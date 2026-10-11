@@ -149,10 +149,10 @@ export const CreateMaterialModal: React.FC<CreateMaterialModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4 overflow-y-auto">
-      <div className="bg-white rounded-2xl shadow-xl w-full max-w-lg overflow-hidden border border-slate-200">
+    <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-2 sm:p-4 overflow-y-auto">
+      <div className="bg-white rounded-2xl shadow-xl w-full max-w-lg max-h-[calc(100dvh-1rem)] sm:max-h-[calc(100dvh-2rem)] flex flex-col overflow-hidden border border-slate-200">
         {/* Modal Header */}
-        <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100 bg-slate-50/50">
+        <div className="shrink-0 flex items-center justify-between px-5 py-4 border-b border-slate-100 bg-slate-50/50">
           <div className="flex items-center gap-2.5">
             <div className="w-8 h-8 rounded-xl bg-emerald-100 text-emerald-700 flex items-center justify-center">
               <FlaskConical className="w-4 h-4" />
@@ -161,7 +161,7 @@ export const CreateMaterialModal: React.FC<CreateMaterialModalProps> = ({
               <h3 className="text-sm font-black text-slate-900">
                 {materialToEdit ? 'Edit Raw Material / Packaging' : 'Add Raw Material or Packaging'}
               </h3>
-              <p className="text-[11px] text-slate-500">
+              <p className="text-pos-badge text-slate-600">
                 {materialToEdit ? 'Update properties and pricing' : 'Register new input ingredient, chemical, or packaging item'}
               </p>
             </div>
@@ -175,7 +175,8 @@ export const CreateMaterialModal: React.FC<CreateMaterialModalProps> = ({
         </div>
 
         {/* Modal Body */}
-        <form onSubmit={handleSubmit} className="p-5 space-y-4">
+        <form onSubmit={handleSubmit} className="flex-1 min-h-0 flex flex-col">
+          <div className="p-5 space-y-4 flex-1 min-h-0 overflow-y-auto">
           {error && (
             <div className="p-3 bg-rose-50 border border-rose-200 text-rose-800 rounded-xl text-xs flex items-center gap-2">
               <AlertCircle className="w-4 h-4 shrink-0" />
@@ -253,7 +254,7 @@ export const CreateMaterialModal: React.FC<CreateMaterialModalProps> = ({
               {materialToEdit ? (
                 <div className="w-full text-xs font-bold font-mono px-3 py-2 border border-slate-200 rounded-xl bg-slate-50 text-slate-700 flex items-center justify-between">
                   <span>{stockQuantity} {unit}</span>
-                  <span className="text-[10px] text-slate-400 font-normal">Ajuster via Inventaire</span>
+                  <span className="text-pos-badge text-slate-600 font-normal">Ajuster via Inventaire</span>
                 </div>
               ) : (
                 <input
@@ -279,7 +280,7 @@ export const CreateMaterialModal: React.FC<CreateMaterialModalProps> = ({
                 onChange={e => setLatestPurchaseCost(e.target.value)}
                 className="w-full text-xs font-bold font-mono px-3 py-2 border border-slate-300 rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none"
               />
-              <p className="text-[10px] text-slate-500 mt-1">
+              <p className="text-pos-badge text-slate-600 mt-1">
                 Used only when there is no purchase this year; otherwise the average of this year's purchases is used.
               </p>
             </div>
@@ -314,9 +315,10 @@ export const CreateMaterialModal: React.FC<CreateMaterialModalProps> = ({
               ))}
             </select>
           </div>
+          </div>
 
           {/* Modal Footer */}
-          <div className="flex gap-2.5 pt-2 border-t border-slate-100">
+          <div className="shrink-0 flex gap-2.5 px-5 py-3 border-t border-slate-100 bg-slate-50/50">
             <button
               type="button"
               onClick={onClose}
@@ -327,7 +329,7 @@ export const CreateMaterialModal: React.FC<CreateMaterialModalProps> = ({
             <button
               type="submit"
               disabled={isSubmitting}
-              className="flex-1 py-2.5 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white font-bold rounded-xl text-xs shadow-sm transition-colors flex items-center justify-center gap-1.5"
+              className="flex-1 py-2.5 bg-emerald-700 hover:bg-emerald-800 disabled:opacity-50 text-white font-bold rounded-xl text-xs shadow-sm transition-colors flex items-center justify-center gap-1.5"
             >
               <FlaskConical className="w-4 h-4" />
               <span>{isSubmitting ? 'Saving...' : (materialToEdit ? 'Save Changes' : 'Create Material')}</span>

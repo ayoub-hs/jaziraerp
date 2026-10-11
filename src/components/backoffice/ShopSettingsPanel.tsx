@@ -167,7 +167,7 @@ export const ShopSettingsPanel: React.FC = () => {
             disabled={isLoading || isSaving}
             className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-emerald-500 text-sm font-semibold text-slate-900 bg-white disabled:bg-slate-50"
           />
-          <p className="text-[11px] text-slate-400 mt-1">Affiché en en-tête principal (max 60 caractères).</p>
+          <p className="text-pos-badge text-slate-600 mt-1">Affiché en en-tête principal (max 60 caractères).</p>
         </div>
 
         {/* Shop Subtitle */}
@@ -184,7 +184,7 @@ export const ShopSettingsPanel: React.FC = () => {
             disabled={isLoading || isSaving}
             className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-emerald-500 text-sm font-semibold text-slate-900 bg-white disabled:bg-slate-50"
           />
-          <p className="text-[11px] text-slate-400 mt-1">Activité ou slogan, affiché sous le nom (max 60 caractères).</p>
+          <p className="text-pos-badge text-slate-600 mt-1">Activité ou slogan, affiché sous le nom (max 60 caractères).</p>
         </div>
 
         {/* Address */}
@@ -201,7 +201,7 @@ export const ShopSettingsPanel: React.FC = () => {
             disabled={isLoading || isSaving}
             className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-emerald-500 text-sm font-semibold text-slate-900 bg-white disabled:bg-slate-50"
           />
-          <p className="text-[11px] text-slate-400 mt-1">Adresse physique complète (max 120 caractères). Si vide, non imprimée.</p>
+          <p className="text-pos-badge text-slate-600 mt-1">Adresse physique complète (max 120 caractères). Si vide, non imprimée.</p>
         </div>
 
         {/* Grid: Phone & Tax ID */}
@@ -220,7 +220,7 @@ export const ShopSettingsPanel: React.FC = () => {
               disabled={isLoading || isSaving}
               className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-emerald-500 text-sm font-semibold text-slate-900 bg-white disabled:bg-slate-50"
             />
-            <p className="text-[11px] text-slate-400 mt-1">Numéro de contact (max 30 caractères). Si vide, non imprimé.</p>
+            <p className="text-pos-badge text-slate-600 mt-1">Numéro de contact (max 30 caractères). Si vide, non imprimé.</p>
           </div>
 
           {/* Tax ID */}
@@ -237,7 +237,7 @@ export const ShopSettingsPanel: React.FC = () => {
               disabled={isLoading || isSaving}
               className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-emerald-500 text-sm font-mono font-semibold text-slate-900 bg-white disabled:bg-slate-50"
             />
-            <p className="text-[11px] text-slate-400 mt-1">Identifiant fiscal légal (max 30 caractères).</p>
+            <p className="text-pos-badge text-slate-600 mt-1">Identifiant fiscal légal (max 30 caractères).</p>
           </div>
         </div>
 
@@ -246,7 +246,7 @@ export const ShopSettingsPanel: React.FC = () => {
           <h2 className="text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">
             Marges par défaut / Default Markups (%)
           </h2>
-          <p className="text-[11px] text-slate-400 mb-3">
+          <p className="text-pos-badge text-slate-600 mb-3">
             Pourcentages de marge utilisés pour suggérer les prix de vente dans le formulaire de création de produit. Laisser vide si aucune suggestion par défaut.
           </p>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -265,7 +265,7 @@ export const ShopSettingsPanel: React.FC = () => {
                 disabled={isLoading || isSaving}
                 className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-emerald-500 text-sm font-mono font-semibold text-slate-900 bg-white disabled:bg-slate-50"
               />
-              <p className="text-[11px] text-slate-400 mt-1">Entre 0 et 1000 % (ex: 30 pour 30%).</p>
+              <p className="text-pos-badge text-slate-600 mt-1">Entre 0 et 1000 % (ex: 30 pour 30%).</p>
             </div>
             <div>
               <label className="block text-xs font-bold text-slate-700 mb-1">
@@ -282,7 +282,7 @@ export const ShopSettingsPanel: React.FC = () => {
                 disabled={isLoading || isSaving}
                 className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-emerald-500 text-sm font-mono font-semibold text-slate-900 bg-white disabled:bg-slate-50"
               />
-              <p className="text-[11px] text-slate-400 mt-1">Entre 0 et 1000 % (ex: 20 pour 20%).</p>
+              <p className="text-pos-badge text-slate-600 mt-1">Entre 0 et 1000 % (ex: 20 pour 20%).</p>
             </div>
           </div>
         </div>
@@ -292,7 +292,7 @@ export const ShopSettingsPanel: React.FC = () => {
           <button
             type="submit"
             disabled={isLoading || isSaving}
-            className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white font-bold text-sm shadow-sm transition-all active:scale-95"
+            className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-emerald-700 hover:bg-emerald-800 disabled:opacity-50 text-white font-bold text-sm shadow-sm transition-all active:scale-95"
           >
             {isSaving ? (
               <RefreshCw className="w-4 h-4 animate-spin" />

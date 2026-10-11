@@ -148,10 +148,10 @@ export const CameraScannerModal: React.FC<CameraScannerModalProps> = ({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-md p-4">
-      <div className="bg-slate-900 text-white rounded-3xl shadow-2xl max-w-sm w-full overflow-hidden flex flex-col border border-slate-800">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-md p-2 sm:p-4 overflow-y-auto">
+      <div className="bg-slate-900 text-white rounded-3xl shadow-2xl max-w-sm w-full max-h-[calc(100dvh-1rem)] sm:max-h-[calc(100dvh-2rem)] overflow-hidden flex flex-col border border-slate-800">
         {/* Top Header */}
-        <div className="p-4 flex items-center justify-between border-b border-slate-800">
+        <div className="p-3 sm:p-4 shrink-0 flex items-center justify-between border-b border-slate-800">
           <div className="flex items-center gap-2">
             <Camera className="w-5 h-5 text-emerald-400" />
             <h3 className="font-bold text-sm">{title}</h3>
@@ -180,7 +180,7 @@ export const CameraScannerModal: React.FC<CameraScannerModalProps> = ({
         </div>
 
         {/* Viewfinder Container */}
-        <div className="relative bg-black aspect-[3/4] flex items-center justify-center overflow-hidden">
+        <div className="relative bg-black flex-1 min-h-[160px] flex items-center justify-center overflow-hidden">
           <video
             ref={videoRef}
             playsInline
@@ -192,7 +192,7 @@ export const CameraScannerModal: React.FC<CameraScannerModalProps> = ({
           {/* Aiming Reticle with animated red/green laser line */}
           <div className="absolute inset-x-8 inset-y-16 border-2 border-dashed border-emerald-400/80 rounded-2xl pointer-events-none flex flex-col justify-center items-center shadow-[0_0_15px_rgba(52,211,153,0.3)]">
             <div className="w-full h-0.5 bg-red-500 shadow-[0_0_8px_red] animate-pulse"></div>
-            <span className="text-[10px] font-semibold text-white/70 bg-black/60 px-2 py-0.5 rounded mt-4">
+            <span className="text-pos-badge font-semibold text-white/90 bg-black/60 px-2 py-0.5 rounded mt-4">
               Align barcode within frame
             </span>
           </div>
@@ -206,8 +206,8 @@ export const CameraScannerModal: React.FC<CameraScannerModalProps> = ({
         </div>
 
         {/* Bottom Bar & Manual Entry Fallback */}
-        <div className="p-3 bg-slate-950 border-t border-slate-800 space-y-2">
-          <p className="text-[11px] text-slate-400 text-center">
+        <div className="p-3 shrink-0 bg-slate-950 border-t border-slate-800 space-y-2">
+          <p className="text-xs text-slate-300 text-center">
             Hold steady over bottle or box barcode
           </p>
           <form
@@ -232,7 +232,7 @@ export const CameraScannerModal: React.FC<CameraScannerModalProps> = ({
             />
             <button
               type="submit"
-              className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs px-3 py-1 rounded-xl transition-colors"
+              className="bg-emerald-700 hover:bg-emerald-800 text-white font-bold text-xs px-3 py-1 rounded-xl transition-colors"
             >
               Scan
             </button>

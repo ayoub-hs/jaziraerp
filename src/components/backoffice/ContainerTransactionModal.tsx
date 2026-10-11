@@ -104,15 +104,15 @@ export const ContainerTransactionModal: React.FC<ContainerTransactionModalProps>
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
-      <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full overflow-hidden border border-slate-200 animate-in fade-in zoom-in duration-150">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-2 sm:p-4 overflow-y-auto">
+      <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full max-h-[calc(100dvh-1rem)] sm:max-h-[calc(100dvh-2rem)] flex flex-col overflow-hidden border border-slate-200 animate-in fade-in zoom-in duration-150">
         {/* Header */}
-        <div className="bg-slate-900 text-white px-5 py-4 flex items-center justify-between">
+        <div className="bg-slate-900 text-white px-5 py-4 flex items-center justify-between shrink-0">
           <div className="flex items-center gap-2">
             <Package className="w-5 h-5 text-emerald-400" />
             <div>
               <h3 className="font-bold text-base">Consignes — Prêt / Restitution</h3>
-              <p className="text-[11px] text-slate-400">Enregistrer un mouvement de contenant consigné</p>
+              <p className="text-pos-badge text-slate-300">Enregistrer un mouvement de contenant consigné</p>
             </div>
           </div>
           <button
@@ -124,7 +124,8 @@ export const ContainerTransactionModal: React.FC<ContainerTransactionModalProps>
         </div>
 
         {/* Form Body */}
-        <form onSubmit={handleSubmit} className="p-5 space-y-4">
+        <form onSubmit={handleSubmit} className="flex-1 min-h-0 flex flex-col">
+          <div className="p-5 space-y-4 flex-1 min-h-0 overflow-y-auto">
           {error && (
             <div className="p-3 bg-rose-50 border border-rose-200 text-rose-700 rounded-xl text-xs flex items-center gap-2">
               <AlertCircle className="w-4 h-4 shrink-0" />
@@ -163,7 +164,7 @@ export const ContainerTransactionModal: React.FC<ContainerTransactionModalProps>
                 <span>Retour (Entrée magasin)</span>
               </button>
             </div>
-            <p className="text-[11px] text-slate-500 mt-1.5">
+            <p className="text-pos-badge text-slate-600 mt-1.5">
               {action === 'GIVE'
                 ? 'Diminue le stock magasin et augmente la dette consigne du client.'
                 : 'Augmente le stock magasin et diminue la dette consigne du client.'}
@@ -209,7 +210,7 @@ export const ContainerTransactionModal: React.FC<ContainerTransactionModalProps>
               ))}
             </select>
             {selectedContainer && (
-              <div className="flex justify-between items-center mt-1 text-[11px] text-slate-500">
+              <div className="flex justify-between items-center mt-1 text-pos-badge text-slate-600">
                 <span>Stock vide disponible: <strong className="text-slate-800">{selectedContainer.stock_quantity}</strong></span>
                 <span>Total actuellement prêté: <strong className="text-amber-800">{selectedContainer.total_loaned_out || 0}</strong></span>
               </div>
@@ -257,8 +258,10 @@ export const ContainerTransactionModal: React.FC<ContainerTransactionModalProps>
             </label>
           )}
 
+          </div>
+
           {/* Actions */}
-          <div className="pt-3 border-t border-slate-100 flex items-center justify-end gap-2">
+          <div className="shrink-0 px-5 py-3 border-t border-slate-100 bg-slate-50/50 flex items-center justify-end gap-2">
             <button
               type="button"
               onClick={onClose}
@@ -272,7 +275,7 @@ export const ContainerTransactionModal: React.FC<ContainerTransactionModalProps>
               className={`px-5 py-2 font-bold rounded-xl text-xs text-white shadow transition-all ${
                 action === 'GIVE'
                   ? 'bg-amber-600 hover:bg-amber-700 disabled:bg-amber-300'
-                  : 'bg-emerald-600 hover:bg-emerald-700 disabled:bg-emerald-300'
+                  : 'bg-emerald-700 hover:bg-emerald-800 disabled:bg-emerald-300'
               }`}
             >
               {isSubmitting

@@ -194,7 +194,7 @@ export const BackupManager: React.FC = () => {
             type="button"
             onClick={handleCreateBackup}
             disabled={isCreating}
-            className="flex items-center gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold px-3 py-2 rounded-xl shadow-sm transition-colors disabled:opacity-50"
+            className="flex items-center gap-1.5 bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-bold px-3 py-2 rounded-xl shadow-sm transition-colors disabled:opacity-50"
           >
             {isCreating ? (
               <>
@@ -230,7 +230,7 @@ export const BackupManager: React.FC = () => {
       )}
 
       {/* Snapshot List Table */}
-      <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+      <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden flex flex-col max-h-[calc(100vh-280px)]">
         {loading && backups.length === 0 ? (
           <div className="p-8 text-center text-slate-400 text-xs">Loading database snapshots...</div>
         ) : backups.length === 0 ? (
@@ -238,35 +238,35 @@ export const BackupManager: React.FC = () => {
             No backups found. Click &quot;Create Backup Now&quot; to generate an immediate snapshot.
           </div>
         ) : (
-          <div className="overflow-x-auto">
+          <div className="overflow-x-auto overflow-y-auto flex-1">
             <table className="w-full text-left text-xs border-collapse">
-              <thead>
-                <tr className="bg-slate-50 border-b border-slate-200 font-bold text-slate-600 uppercase text-[10px]">
-                  <th className="p-3">Snapshot File</th>
-                  <th className="p-3">Size</th>
-                  <th className="p-3">Created Date & Time</th>
-                  <th className="p-3 text-right">Actions</th>
+              <thead className="sticky top-0 bg-slate-50 z-10 shadow-xs">
+                <tr className="border-b border-slate-200 font-bold text-slate-700 uppercase text-pos-caption">
+                  <th className="py-2.5 px-3">Snapshot File</th>
+                  <th className="py-2.5 px-3">Size</th>
+                  <th className="py-2.5 px-3">Created Date & Time</th>
+                  <th className="py-2.5 px-3 text-right">Actions</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
                 {backups.map(item => (
                   <tr key={item.filename} className="hover:bg-slate-50 transition-colors">
-                    <td className="p-3 font-mono font-bold text-slate-900 flex items-center gap-2">
-                      <ShieldCheck className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                    <td className="py-2 px-3 font-mono font-bold text-slate-900 text-pos-body flex items-center gap-2">
+                      <ShieldCheck className="w-3.5 h-3.5 text-emerald-700 shrink-0" />
                       {item.filename}
                     </td>
-                    <td className="p-3 font-mono text-slate-600">{formatFileSize(item.size_bytes)}</td>
-                    <td className="p-3 text-slate-600 flex items-center gap-1.5">
+                    <td className="py-2 px-3 font-mono text-slate-700 text-pos-body">{formatFileSize(item.size_bytes)}</td>
+                    <td className="py-2 px-3 text-slate-700 text-pos-body flex items-center gap-1.5">
                       <Clock className="w-3.5 h-3.5 text-slate-400 shrink-0" />
                       {formatDateTime(item.created_at)}
                     </td>
-                    <td className="p-3 text-right">
+                    <td className="py-2 px-3 text-right">
                       <div className="inline-flex items-center gap-2">
                         <button
                           type="button"
                           onClick={() => handleRestoreSnapshot(item.filename)}
                           disabled={isRestoring}
-                          className="inline-flex items-center gap-1 bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-200 font-bold px-2.5 py-1 rounded-lg text-xs transition-colors disabled:opacity-50"
+                          className="inline-flex items-center gap-1 bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-200 font-bold px-2.5 py-1 rounded-lg text-xs transition-colors disabled:opacity-50"
                           title="Restore this snapshot"
                         >
                           <RotateCcw className="w-3.5 h-3.5 text-amber-700" />

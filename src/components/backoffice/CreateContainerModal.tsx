@@ -85,10 +85,10 @@ export const CreateContainerModal: React.FC<CreateContainerModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4 overflow-y-auto">
-      <div className="bg-white rounded-2xl shadow-xl max-w-md w-full overflow-hidden border border-slate-200">
+    <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-2 sm:p-4 overflow-y-auto">
+      <div className="bg-white rounded-2xl shadow-xl max-w-md w-full max-h-[calc(100dvh-1rem)] sm:max-h-[calc(100dvh-2rem)] flex flex-col overflow-hidden border border-slate-200">
         {/* Header */}
-        <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100 bg-slate-50/50">
+        <div className="shrink-0 flex items-center justify-between px-5 py-4 border-b border-slate-100 bg-slate-50/50">
           <div className="flex items-center gap-2.5">
             <div className="w-8 h-8 rounded-xl bg-teal-100 text-teal-700 flex items-center justify-center">
               <Box className="w-4 h-4" />
@@ -97,7 +97,7 @@ export const CreateContainerModal: React.FC<CreateContainerModalProps> = ({
               <h3 className="text-sm font-black text-slate-900">
                 {containerTypeToEdit ? 'Edit Container Type' : 'Add Returnable Container Type'}
               </h3>
-              <p className="text-[11px] text-slate-500">
+              <p className="text-pos-badge text-slate-600">
                 {containerTypeToEdit ? 'Update container specifications and stock' : 'Register consignable jug, crate, or drum'}
               </p>
             </div>
@@ -111,55 +111,57 @@ export const CreateContainerModal: React.FC<CreateContainerModalProps> = ({
         </div>
 
         {/* Form */}
-        <form onSubmit={handleSubmit} className="p-5 space-y-3.5 text-xs">
-          {error && (
-            <div className="p-3 bg-rose-50 border border-rose-200 text-rose-800 rounded-xl flex items-center gap-2">
-              <AlertCircle className="w-4 h-4 shrink-0" />
-              <span>{error}</span>
-            </div>
-          )}
+        <form onSubmit={handleSubmit} className="flex-1 min-h-0 flex flex-col">
+          <div className="p-5 space-y-3.5 text-xs flex-1 min-h-0 overflow-y-auto">
+            {error && (
+              <div className="p-3 bg-rose-50 border border-rose-200 text-rose-800 rounded-xl flex items-center gap-2">
+                <AlertCircle className="w-4 h-4 shrink-0" />
+                <span>{error}</span>
+              </div>
+            )}
 
-          <div>
-            <label className="block font-bold text-slate-700 mb-1">Container Name *</label>
-            <input
-              type="text"
-              required
-              placeholder="e.g. Bidon 5L Consigné, Fût 200L Plastique..."
-              value={name}
-              onChange={e => setName(e.target.value)}
-              className="w-full font-semibold px-3 py-2 border border-slate-300 rounded-xl focus:ring-2 focus:ring-teal-500 outline-none"
-            />
-          </div>
-
-          <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block font-bold text-slate-700 mb-1">Capacity (Liters)</label>
+              <label className="block font-bold text-slate-700 mb-1">Container Name *</label>
               <input
-                type="number"
-                step="any"
-                min="0"
-                placeholder="5"
-                value={capacityLiters}
-                onChange={e => setCapacityLiters(e.target.value)}
-                className="w-full font-bold font-mono px-3 py-2 border border-slate-300 rounded-xl focus:ring-2 focus:ring-teal-500 outline-none"
+                type="text"
+                required
+                placeholder="e.g. Bidon 5L Consigné, Fût 200L Plastique..."
+                value={name}
+                onChange={e => setName(e.target.value)}
+                className="w-full font-semibold px-3 py-2 border border-slate-300 rounded-xl focus:ring-2 focus:ring-teal-500 outline-none"
               />
             </div>
 
-            <div>
-              <label className="block font-bold text-slate-700 mb-1">Initial Shop Stock</label>
-              <input
-                type="number"
-                step="1"
-                min="0"
-                value={stockQuantity}
-                onChange={e => setStockQuantity(e.target.value)}
-                className="w-full font-bold font-mono px-3 py-2 border border-slate-300 rounded-xl focus:ring-2 focus:ring-teal-500 outline-none"
-              />
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="block font-bold text-slate-700 mb-1">Capacity (Liters)</label>
+                <input
+                  type="number"
+                  step="any"
+                  min="0"
+                  placeholder="5"
+                  value={capacityLiters}
+                  onChange={e => setCapacityLiters(e.target.value)}
+                  className="w-full font-bold font-mono px-3 py-2 border border-slate-300 rounded-xl focus:ring-2 focus:ring-teal-500 outline-none"
+                />
+              </div>
+
+              <div>
+                <label className="block font-bold text-slate-700 mb-1">Initial Shop Stock</label>
+                <input
+                  type="number"
+                  step="1"
+                  min="0"
+                  value={stockQuantity}
+                  onChange={e => setStockQuantity(e.target.value)}
+                  className="w-full font-bold font-mono px-3 py-2 border border-slate-300 rounded-xl focus:ring-2 focus:ring-teal-500 outline-none"
+                />
+              </div>
             </div>
           </div>
 
           {/* Footer */}
-          <div className="flex gap-2.5 pt-2 border-t border-slate-100">
+          <div className="shrink-0 flex gap-2.5 px-5 py-3 border-t border-slate-100 bg-slate-50/50">
             <button
               type="button"
               onClick={onClose}

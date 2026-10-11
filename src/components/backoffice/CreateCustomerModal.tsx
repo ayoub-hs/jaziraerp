@@ -110,10 +110,10 @@ export const CreateCustomerModal: React.FC<CreateCustomerModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
-      <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full overflow-hidden border border-slate-200 animate-in fade-in zoom-in-95 duration-150">
+    <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-2 sm:p-4 overflow-y-auto">
+      <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full max-h-[calc(100dvh-1rem)] sm:max-h-[calc(100dvh-2rem)] flex flex-col overflow-hidden border border-slate-200 animate-in fade-in zoom-in-95 duration-150">
         {/* Header */}
-        <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100 bg-slate-50/50">
+        <div className="shrink-0 flex items-center justify-between px-5 py-4 border-b border-slate-100 bg-slate-50/50">
           <div className="flex items-center gap-2.5">
             <div className="w-8 h-8 rounded-xl bg-amber-100 text-amber-700 flex items-center justify-center">
               <Users className="w-4 h-4" />
@@ -122,7 +122,7 @@ export const CreateCustomerModal: React.FC<CreateCustomerModalProps> = ({
               <h3 className="text-sm font-black text-slate-900">
                 {customerToEdit ? 'Edit Customer Account' : 'Add Customer Account'}
               </h3>
-              <p className="text-[11px] text-slate-500">
+              <p className="text-pos-badge text-slate-600">
                 {customerToEdit ? 'Update client details and discount tier' : 'Create retail client, wholesale buyer, or reseller profile'}
               </p>
             </div>
@@ -136,7 +136,8 @@ export const CreateCustomerModal: React.FC<CreateCustomerModalProps> = ({
         </div>
 
         {/* Form */}
-        <form onSubmit={handleSubmit} className="p-5 space-y-3.5 text-xs">
+        <form onSubmit={handleSubmit} className="flex-1 min-h-0 flex flex-col">
+          <div className="p-5 space-y-3.5 text-xs flex-1 min-h-0 overflow-y-auto">
           {error && (
             <div className="p-3 bg-rose-50 border border-rose-200 text-rose-800 rounded-xl flex items-center gap-2">
               <AlertCircle className="w-4 h-4 shrink-0" />
@@ -233,9 +234,10 @@ export const CreateCustomerModal: React.FC<CreateCustomerModalProps> = ({
               </div>
             )}
           </div>
+          </div>
 
           {/* Footer */}
-          <div className="flex gap-2.5 pt-2 border-t border-slate-100">
+          <div className="shrink-0 flex gap-2.5 px-5 py-3 border-t border-slate-100 bg-slate-50/50">
             <button
               type="button"
               onClick={onClose}
