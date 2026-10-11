@@ -36,15 +36,15 @@ export const QuickAddModal: React.FC<QuickAddModalProps> = ({
     const parsedQty = parseFloat(quantity);
 
     if (!name.trim()) {
-      setError('Item description is required');
+      setError('La description de l\'article est requise');
       return;
     }
     if (isNaN(parsedPrice) || parsedPrice <= 0) {
-      setError('Price must be greater than 0 DT');
+      setError('Le prix doit être supérieur à 0 DT');
       return;
     }
     if (isNaN(parsedQty) || parsedQty <= 0) {
-      setError('Quantity must be greater than 0');
+      setError('La quantité doit être supérieure à 0');
       return;
     }
 
@@ -71,7 +71,7 @@ export const QuickAddModal: React.FC<QuickAddModalProps> = ({
         <div className="shrink-0 bg-slate-900 text-white px-5 py-4 flex items-center justify-between">
           <div className="flex items-center gap-2">
             <Tag className="w-5 h-5 text-emerald-400" />
-            <h2 className="text-base font-bold">Quick-Add Uncataloged Item</h2>
+            <h2 className="text-base font-bold">Ajout Rapide Hors Catalogue</h2>
           </div>
           <button
             onClick={onClose}
@@ -85,7 +85,7 @@ export const QuickAddModal: React.FC<QuickAddModalProps> = ({
           <div className="flex-1 min-h-0 overflow-y-auto p-5 space-y-4">
             <div>
               <label className="block text-xs font-bold text-slate-700 mb-1">
-                Item Description / Name *
+                Désignation / Nom de l'article *
               </label>
               <input
                 type="text"
@@ -93,7 +93,7 @@ export const QuickAddModal: React.FC<QuickAddModalProps> = ({
                 autoFocus
                 value={name}
                 onChange={e => setName(e.target.value)}
-                placeholder="e.g. Special Degreaser Sample 500ml"
+                placeholder="ex. Dégraissant spécial 500ml"
                 className="w-full text-sm font-semibold px-3 py-2 border border-slate-300 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:outline-none"
               />
             </div>
@@ -101,7 +101,7 @@ export const QuickAddModal: React.FC<QuickAddModalProps> = ({
             <div className="grid grid-cols-2 gap-3">
               <div>
                 <label className="block text-xs font-bold text-slate-700 mb-1">
-                  Price (TTC in DT) *
+                  Prix unitaire (TTC en DT) *
                 </label>
                 <input
                   type="number"
@@ -116,7 +116,7 @@ export const QuickAddModal: React.FC<QuickAddModalProps> = ({
               </div>
               <div>
                 <label className="block text-xs font-bold text-slate-700 mb-1">
-                  Quantity *
+                  Quantité *
                 </label>
                 <input
                   type="number"
@@ -144,14 +144,14 @@ export const QuickAddModal: React.FC<QuickAddModalProps> = ({
               onClick={onClose}
               className="flex-1 min-h-[44px] py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl text-sm transition-colors"
             >
-              Cancel
+              Annuler
             </button>
             <button
               type="submit"
               className="flex-1 min-h-[44px] py-2.5 bg-emerald-700 hover:bg-emerald-800 text-white font-bold rounded-xl text-sm shadow transition-colors flex items-center justify-center gap-1"
             >
               <Plus className="w-4 h-4" />
-              Add to Cart
+              Ajouter au Panier
             </button>
           </div>
         </form>

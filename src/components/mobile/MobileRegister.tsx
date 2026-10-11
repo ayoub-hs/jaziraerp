@@ -603,7 +603,7 @@ export const MobileRegister: React.FC<MobileRegisterProps> = ({
       });
       if (res.ok) {
         const data = await res.json();
-        setPaymentMsg(`Payment of ${formatMoney(val)} recorded via FIFO debt tickets.`);
+        setPaymentMsg(`Paiement de ${formatMoney(val)} enregistré (règlement dette FIFO).`);
         setPaymentAmount('');
         onRefreshData();
       } else {
@@ -611,7 +611,7 @@ export const MobileRegister: React.FC<MobileRegisterProps> = ({
         setPaymentMsg(data.error || `Erreur paiement (${res.status})`);
       }
     } catch (err: any) {
-      setPaymentMsg(err.message || 'Error processing payment');
+      setPaymentMsg(err.message || 'Erreur lors du traitement du paiement');
     } finally {
       isSubmittingPaymentRef.current = false;
       setIsSubmittingPayment(false);
@@ -697,7 +697,7 @@ export const MobileRegister: React.FC<MobileRegisterProps> = ({
                 <Search className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
                 <input
                   type="text"
-                  placeholder="Search products..."
+                  placeholder="Rechercher des produits..."
                   value={searchQuery}
                   onChange={e => setSearchQuery(e.target.value)}
                   onKeyDown={handleSearchKeyDown}
@@ -711,7 +711,7 @@ export const MobileRegister: React.FC<MobileRegisterProps> = ({
                   setIsCameraOpen(true);
                 }}
                 className="px-2.5 py-1.5 bg-slate-100 hover:bg-slate-200 border border-slate-300 rounded-xl flex items-center justify-center shrink-0 text-slate-700"
-                title="Scan Barcode with Camera"
+                title="Scanner code-barres caméra"
               >
                 <Camera className="w-4 h-4" />
               </button>
@@ -825,7 +825,7 @@ export const MobileRegister: React.FC<MobileRegisterProps> = ({
 
             {familyGroups.length === 0 && (
               <div className="col-span-full py-16 text-center text-slate-400 text-xs">
-                No products found.
+                Aucun produit trouvé.
               </div>
             )}
           </div>
@@ -839,7 +839,7 @@ export const MobileRegister: React.FC<MobileRegisterProps> = ({
             className={`fixed ${
               cart.length > 0 ? 'bottom-32' : 'bottom-16'
             } right-4 z-20 bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white p-3.5 rounded-full shadow-2xl flex items-center justify-center transition-all border-2 border-white`}
-            title="Scan Barcode with Camera"
+            title="Scanner code-barres caméra"
           >
             <Camera className="w-5 h-5" />
           </button>
@@ -856,9 +856,9 @@ export const MobileRegister: React.FC<MobileRegisterProps> = ({
                 </div>
                 <div>
                   <span className="text-xs font-bold block">
-                    {totals.itemCount} items in cart
+                    {totals.itemCount} article(s) au panier
                   </span>
-                  <span className="text-xs text-slate-400">Tap to review & checkout</span>
+                  <span className="text-xs text-slate-400">Appuyer pour voir & encaisser</span>
                 </div>
               </div>
               <div className="flex items-center gap-2">
@@ -1202,9 +1202,9 @@ export const MobileRegister: React.FC<MobileRegisterProps> = ({
             {/* Drawer Header */}
             <div className="px-4 py-2 bg-slate-900 text-white flex items-center justify-between shrink-0">
               <div>
-                <h3 className="font-bold text-sm">Shopping Cart ({totals.itemCount} items)</h3>
+                <h3 className="font-bold text-sm">Panier d'achat ({totals.itemCount} articles)</h3>
                 <p className="text-xs text-slate-400">
-                  {selectedCustomer ? selectedCustomer.name : 'Walk-in Retail'}
+                  {selectedCustomer ? selectedCustomer.name : 'Client Passager'}
                 </p>
               </div>
               <div className="flex items-center gap-2">
@@ -1578,7 +1578,7 @@ export const MobileRegister: React.FC<MobileRegisterProps> = ({
         <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
           <div className="bg-white rounded-2xl shadow-2xl max-w-sm w-full p-5 space-y-4">
             <h3 className="text-sm font-bold text-slate-900">
-              Returnable Containers — {selectedCustDetails.name}
+              Gestion des Consignes — {selectedCustDetails.name}
             </h3>
 
             <div className="grid grid-cols-2 gap-2 p-1 bg-slate-100 rounded-xl">
@@ -1589,7 +1589,7 @@ export const MobileRegister: React.FC<MobileRegisterProps> = ({
                   containerAction === 'GIVE' ? 'bg-white text-emerald-700 shadow-sm' : 'text-slate-600'
                 }`}
               >
-                GIVE (Prêt)
+                Prêt de consigne
               </button>
               <button
                 type="button"
@@ -1598,28 +1598,28 @@ export const MobileRegister: React.FC<MobileRegisterProps> = ({
                   containerAction === 'RETURN' ? 'bg-white text-blue-700 shadow-sm' : 'text-slate-600'
                 }`}
               >
-                RETURN (Retour)
+                Retour de consigne
               </button>
             </div>
 
             <div>
-              <label className="block text-xs font-bold text-slate-700 mb-1">Container Type</label>
+              <label className="block text-xs font-bold text-slate-700 mb-1">Type d'emballage / consigne</label>
               <select
                 value={selectedContainerTypeId}
                 onChange={e => setSelectedContainerTypeId(e.target.value)}
                 className="w-full text-xs font-semibold px-2.5 py-2 border border-slate-300 rounded-xl"
               >
-                <option value="">Select container type...</option>
+                <option value="">Sélectionner le type...</option>
                 {containerTypes.map(ct => (
                   <option key={ct.id} value={ct.id}>
-                    {ct.name} (Shop Stock: {ct.stock_quantity})
+                    {ct.name} (Stock magasin : {ct.stock_quantity})
                   </option>
                 ))}
               </select>
             </div>
 
             <div>
-              <label className="block text-xs font-bold text-slate-700 mb-1">Quantity</label>
+              <label className="block text-xs font-bold text-slate-700 mb-1">Quantité</label>
               <input
                 type="number"
                 min="1"
@@ -1644,7 +1644,7 @@ export const MobileRegister: React.FC<MobileRegisterProps> = ({
                 }}
                 className="flex-1 py-2 bg-slate-100 font-bold rounded-xl text-xs text-slate-700 hover:bg-slate-200 transition-colors"
               >
-                Cancel
+                Annuler
               </button>
               <button
                 type="button"
@@ -1652,7 +1652,7 @@ export const MobileRegister: React.FC<MobileRegisterProps> = ({
                 onClick={handleContainerTransaction}
                 className="flex-1 py-2 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 font-bold rounded-xl text-xs text-white transition-colors"
               >
-                {isSubmittingContainer ? 'Enregistrement...' : 'Save'}
+                {isSubmittingContainer ? 'Enregistrement...' : 'Enregistrer'}
               </button>
             </div>
           </div>

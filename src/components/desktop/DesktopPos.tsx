@@ -583,7 +583,7 @@ export const DesktopPos: React.FC<DesktopPosProps> = ({
                 value={searchQuery}
                 onChange={e => setSearchQuery(e.target.value)}
                 onKeyDown={handleSearchKeyDown}
-                placeholder="Search products by name or scan barcode... (F1 / /)"
+                placeholder="Rechercher des produits ou scanner code-barres... (F1 / /)"
                 className="w-full pl-9 pr-3 py-1.5 text-xs sm:text-sm border border-slate-300 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:outline-none"
               />
             </div>
@@ -591,11 +591,11 @@ export const DesktopPos: React.FC<DesktopPosProps> = ({
             {/* Camera Scan Button */}
             <button
               onClick={() => setIsCameraOpen(true)}
-              title="Camera Barcode Scanner"
+              title="Scanner code-barres caméra"
               className="flex items-center gap-1 bg-white hover:bg-slate-50 text-slate-700 font-bold px-3 py-1.5 rounded-xl text-xs border border-slate-300 transition-colors shrink-0"
             >
               <Camera className="w-3.5 h-3.5 text-slate-600" />
-              Scan
+              Scanner
             </button>
 
             {/* Quick Price/Stock Lookup Button */}
@@ -614,7 +614,7 @@ export const DesktopPos: React.FC<DesktopPosProps> = ({
               className="flex items-center gap-1 bg-slate-800 hover:bg-slate-900 text-white font-bold px-3 py-1.5 rounded-xl text-xs transition-colors shrink-0"
             >
               <Tag className="w-3.5 h-3.5 text-emerald-400" />
-              Quick Add
+              Ajout Rapide
             </button>
 
             {/* Returns / Refund Button */}
@@ -623,7 +623,7 @@ export const DesktopPos: React.FC<DesktopPosProps> = ({
               className="flex items-center gap-1 bg-amber-50 hover:bg-amber-100 text-amber-800 font-bold px-3 py-1.5 rounded-xl text-xs border border-amber-200 transition-colors shrink-0"
             >
               <RotateCcw className="w-3.5 h-3.5" />
-              Refund
+              Retours
             </button>
           </div>
 
@@ -698,7 +698,7 @@ export const DesktopPos: React.FC<DesktopPosProps> = ({
 
           {familyGroups.length === 0 && (
             <div className="col-span-full py-16 text-center text-slate-400 text-xs">
-              No products found matching your search.
+              Aucun produit correspondant trouvé.
             </div>
           )}
         </div>
@@ -764,7 +764,7 @@ export const DesktopPos: React.FC<DesktopPosProps> = ({
                       }}
                       className="p-2.5 text-xs font-semibold hover:bg-slate-50 cursor-pointer flex items-center justify-between text-slate-600 bg-slate-50/50"
                     >
-                      <span>Passager / Walk-in Retail</span>
+                      <span>Passager / Vente au détail</span>
                       <span className="text-xs text-slate-400">Sans compte</span>
                     </div>
                     {filteredCustomers.length === 0 ? (
@@ -1100,8 +1100,8 @@ export const DesktopPos: React.FC<DesktopPosProps> = ({
           {cart.length === 0 && (
             <div className="h-full flex flex-col items-center justify-center text-slate-400 py-12">
               <Package className="w-8 h-8 stroke-1 text-slate-300 mb-2" />
-              <p className="text-xs font-medium">Cart is empty</p>
-              <p className="text-xs text-slate-400">Scan barcode or click items to begin sale</p>
+              <p className="text-xs font-medium">Le panier est vide</p>
+              <p className="text-xs text-slate-400">Scannez un code-barres ou sélectionnez un article</p>
             </div>
           )}
         </div>

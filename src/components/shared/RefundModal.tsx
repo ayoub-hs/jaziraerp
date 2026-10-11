@@ -34,7 +34,7 @@ export const RefundModal: React.FC<RefundModalProps> = ({
   const [selectedItemId, setSelectedItemId] = useState<string>('');
   const [refundQuantity, setRefundQuantity] = useState<string>('1');
   const [refundMethod, setRefundMethod] = useState<'CASH' | 'WALLET' | 'CREDIT_REDUCTION'>('CASH');
-  const [reason, setReason] = useState<string>('Customer returned goods');
+  const [reason, setReason] = useState<string>('Marchandise retournée par le client');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Register sessions for cash refunds
@@ -129,7 +129,7 @@ export const RefundModal: React.FC<RefundModalProps> = ({
           } else {
             setSelectedItemId(fullSale.items[0].id);
             setRefundQuantity('');
-            setError('All items in this sale have already been fully refunded.');
+            setError('Tous les articles de cette vente ont déjà été intégralement remboursés.');
           }
         }
         // Auto default to CREDIT_REDUCTION if debt ticket has open balance
@@ -149,7 +149,7 @@ export const RefundModal: React.FC<RefundModalProps> = ({
         setSaleRefunds([]);
       }
     } catch (err: any) {
-      setError(err.message || 'Failed to fetch sale details');
+      setError(err.message || 'Échec de la récupération des détails de la vente');
     } finally {
       setLoading(false);
     }
@@ -161,19 +161,19 @@ export const RefundModal: React.FC<RefundModalProps> = ({
 
     const qty = parseFloat(refundQuantity);
     if (isNaN(qty) || qty <= 0) {
-      setError('Refund quantity must be greater than 0');
+      setError('La quantité à rembourser doit être supérieure à 0');
       return;
     }
 
     const item = selectedSale.items?.find(i => i.id === selectedItemId);
     if (!item) {
-      setError('Item not found in sale');
+      setError('Article introuvable dans la vente');
       return;
     }
 
     const maxAllowed = (item.quantity || 0) - (item.refunded_quantity || 0);
     if (qty > maxAllowed) {
-      setError(`Cannot refund ${qty} units. Maximum refundable is ${maxAllowed}`);
+      setError(`Impossible de rembourser ${qty} unité(s). Maximum remboursable : ${maxAllowed}`);
       return;
     }
 
@@ -199,16 +199,16 @@ export const RefundModal: React.FC<RefundModalProps> = ({
 
       if (!res.ok) {
         const data = await res.json();
-        throw new Error(data.error || 'Refund failed');
+        throw new Error(data.error || 'Échec du remboursement');
       }
 
-      setSuccess(`Refund completed successfully for ${qty} x ${item.description}`);
+      setSuccess(`Remboursement validé avec succès pour ${qty} x ${item.description}`);
       onRefundCompleted();
       setTimeout(() => {
         onClose();
       }, 1500);
     } catch (err: any) {
-      setError(err.message || 'Error executing refund');
+      setError(err.message || 'Erreur lors de l\'enregistrement du remboursement');
     } finally {
       setIsSubmitting(false);
     }
@@ -228,7 +228,7 @@ export const RefundModal: React.FC<RefundModalProps> = ({
         <div className="shrink-0 bg-slate-900 text-white px-4 py-3 sm:px-6 sm:py-4 flex items-center justify-between">
           <div className="flex items-center gap-2">
             <RotateCcw className="w-5 h-5 text-amber-400" />
-            <h2 className="text-base font-bold">Returns & Partial Refunds</h2>
+            <h2 className="text-base font-bold">Retours & Remboursements Partiels</h2>
           </div>
           <button
             onClick={onClose}
@@ -243,7 +243,7 @@ export const RefundModal: React.FC<RefundModalProps> = ({
           <div className="flex-1 min-h-0 flex flex-col overflow-hidden">
             <div className="flex-1 min-h-0 overflow-y-auto p-6 space-y-4 text-center py-8">
               <CheckCircle className="w-12 h-12 text-emerald-500 mx-auto" />
-              <h3 className="text-lg font-bold text-slate-800">Refund Successful</h3>
+              <h3 className="text-lg font-bold text-slate-800">Remboursement Validé</h3>
               <p className="text-sm text-slate-600">{success}</p>
             </div>
             <div className="shrink-0 p-3 sm:p-4 bg-slate-50 border-t border-slate-200 flex justify-end">
@@ -263,7 +263,7 @@ export const RefundModal: React.FC<RefundModalProps> = ({
                 <Search className="w-4 h-4 text-slate-400 absolute left-3 top-3" />
                 <input
                   type="text"
-                  placeholder="Filter recent receipts..."
+                  placeholder="Filtrer les reçus récents..."
                   value={searchReceipt}
                   onChange={e => setSearchReceipt(e.target.value)}
                   className="w-full pl-9 pr-3 py-2 text-sm border border-slate-300 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:outline-none"
@@ -272,7 +272,7 @@ export const RefundModal: React.FC<RefundModalProps> = ({
 
               <div>
                 <h3 className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">
-                  Select Recent Sale to Refund
+                  Sélectionner une vente récente à rembourser
                 </h3>
                 <div className="divide-y divide-slate-100 border border-slate-200 rounded-xl max-h-60 overflow-y-auto">
                   {recentSales
@@ -291,7 +291,7 @@ export const RefundModal: React.FC<RefundModalProps> = ({
                             {sale.receipt_number}
                           </div>
                           <div className="text-xs text-slate-500">
-                            {sale.customer_name || 'Walk-in'} • {formatDateTime(sale.date)}
+                            {sale.customer_name || 'Passager'} • {formatDateTime(sale.date)}
                           </div>
                         </div>
                         <div className="text-right">
@@ -308,7 +308,7 @@ export const RefundModal: React.FC<RefundModalProps> = ({
                     ))}
                   {recentSales.length === 0 && (
                     <div className="p-4 text-center text-xs text-slate-500">
-                      No recent sales found
+                      Aucune vente récente trouvée
                     </div>
                   )}
                 </div>
@@ -333,7 +333,7 @@ export const RefundModal: React.FC<RefundModalProps> = ({
                 <div>
                   <span className="font-bold text-slate-900 font-mono">{selectedSale.receipt_number}</span>
                   <div className="text-slate-500">
-                    {selectedSale.customer_name || 'Walk-in'} • {formatDateTime(selectedSale.date)}
+                    {selectedSale.customer_name || 'Passager'} • {formatDateTime(selectedSale.date)}
                   </div>
                   {(selectedSale as any).debt_ticket && (
                     <div className="text-xs font-semibold text-amber-800 mt-0.5">
@@ -346,7 +346,7 @@ export const RefundModal: React.FC<RefundModalProps> = ({
                   onClick={() => setSelectedSale(null)}
                   className="text-emerald-700 hover:text-emerald-900 font-bold underline text-xs"
                 >
-                  Change Sale
+                  Changer de ticket
                 </button>
               </div>
 
@@ -354,14 +354,14 @@ export const RefundModal: React.FC<RefundModalProps> = ({
               {saleRefunds.length > 0 && (
                 <div className="bg-amber-50/70 border border-amber-200 rounded-xl p-3 space-y-2">
                   <h4 className="text-xs font-bold text-amber-950 uppercase tracking-wider">
-                    Prior Refunds for this Receipt ({saleRefunds.length})
+                    Remboursements antérieurs pour ce ticket ({saleRefunds.length})
                   </h4>
                   <div className="space-y-1.5 max-h-32 overflow-y-auto">
                     {saleRefunds.map((rf: any) => (
                       <div key={rf.id} className="text-xs bg-white p-2 rounded-lg border border-amber-100 flex justify-between items-center">
                         <div>
                           <span className="font-bold text-slate-800">{formatMoney(rf.refund_amount)}</span> via <span className="font-semibold text-slate-600">{rf.refund_method}</span>
-                          <div className="text-slate-600 text-xs">{rf.reason || 'No reason specified'} • {formatDateTime(rf.created_at)}</div>
+                          <div className="text-slate-600 text-xs">{rf.reason || 'Aucun motif spécifié'} • {formatDateTime(rf.created_at)}</div>
                         </div>
                         <span className="text-xs font-bold px-2 py-0.5 bg-amber-100 text-amber-950 rounded">
                           {rf.status || 'COMPLETED'}
@@ -375,7 +375,7 @@ export const RefundModal: React.FC<RefundModalProps> = ({
               {/* Choose Line Item */}
               <div>
                 <label className="block text-xs font-bold text-slate-700 mb-1">
-                  Select Item to Return *
+                  Sélectionner l'article à retourner *
                 </label>
                 <select
                   value={selectedItemId}
@@ -389,7 +389,7 @@ export const RefundModal: React.FC<RefundModalProps> = ({
                         setError(null);
                       } else {
                         setRefundQuantity('');
-                        setError('This item has already been fully refunded.');
+                        setError('Cet article a déjà été totalement remboursé.');
                       }
                     }
                   }}
@@ -399,7 +399,7 @@ export const RefundModal: React.FC<RefundModalProps> = ({
                     const remaining = (item.quantity || 0) - (item.refunded_quantity || 0);
                     return (
                       <option key={item.id} value={item.id} disabled={remaining <= 0}>
-                        {item.description} — {formatMoney(item.unit_price)} (Purchased: {item.quantity}, Remaining: {remaining})
+                        {item.description} — {formatMoney(item.unit_price)} (Acheté : {item.quantity}, Restant : {remaining})
                       </option>
                     );
                   })}
@@ -410,7 +410,7 @@ export const RefundModal: React.FC<RefundModalProps> = ({
                 {/* Quantity */}
                 <div>
                   <label className="block text-xs font-bold text-slate-700 mb-1">
-                    Refund Quantity *
+                    Quantité à rembourser *
                   </label>
                   <input
                     type="number"
@@ -425,20 +425,20 @@ export const RefundModal: React.FC<RefundModalProps> = ({
                 {/* Refund Method */}
                 <div>
                   <label className="block text-xs font-bold text-slate-700 mb-1">
-                    Refund Method *
+                    Mode de remboursement *
                   </label>
                   <select
                     value={refundMethod}
                     onChange={e => setRefundMethod(e.target.value as any)}
                     className="w-full text-sm font-semibold px-3 py-2 border border-slate-300 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:outline-none"
                   >
-                    <option value="CASH">Cash Refund (Espèces)</option>
+                    <option value="CASH">Remboursement Espèces</option>
                     {selectedSale?.customer_id && (
-                      <option value="WALLET">Wallet (Solde Client)</option>
+                      <option value="WALLET">Portefeuille (Avoir client)</option>
                     )}
                     {((selectedSale as any)?.debt_ticket ? Number((selectedSale as any).debt_ticket.remaining_amount) > 0 : (selectedSale?.credit_amount ?? 0) > 0) && (
                       <option value="CREDIT_REDUCTION">
-                        Credit Reduction {(selectedSale as any)?.debt_ticket ? `(Reste: ${formatMoney((selectedSale as any).debt_ticket.remaining_amount)})` : ''}
+                        Réduction dette / crédit {(selectedSale as any)?.debt_ticket ? `(Reste: ${formatMoney((selectedSale as any).debt_ticket.remaining_amount)})` : ''}
                       </option>
                     )}
                   </select>
@@ -488,7 +488,7 @@ export const RefundModal: React.FC<RefundModalProps> = ({
               {/* Return Reason */}
               <div>
                 <label className="block text-xs font-bold text-slate-700 mb-1">
-                  Return Reason
+                  Motif du retour
                 </label>
                 <input
                   type="text"
@@ -512,14 +512,14 @@ export const RefundModal: React.FC<RefundModalProps> = ({
                 onClick={onClose}
                 className="flex-1 min-h-[44px] py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl text-sm transition-colors"
               >
-                Cancel
+                Annuler
               </button>
               <button
                 type="submit"
                 disabled={isSubmitDisabled}
                 className="flex-1 min-h-[44px] py-2.5 bg-amber-400 hover:bg-amber-300 disabled:opacity-50 text-amber-950 font-bold rounded-xl text-sm shadow transition-colors flex items-center justify-center"
               >
-                {isSubmitting ? 'Refunding...' : 'Confirm Refund & Restock'}
+                {isSubmitting ? 'Traitement...' : 'Confirmer le Remboursement & Réintégrer Stock'}
               </button>
             </div>
           </form>

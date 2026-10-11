@@ -153,7 +153,7 @@ export const SessionModal: React.FC<SessionModalProps> = ({
     e.preventDefault();
     const floatVal = parseFloat(openingCash);
     if (isNaN(floatVal) || floatVal < 0) {
-      setError('Opening cash float must be 0 or more');
+      setError('Le fond de caisse initial doit être supérieur ou égal à 0');
       return;
     }
 
@@ -171,7 +171,7 @@ export const SessionModal: React.FC<SessionModalProps> = ({
 
       if (!res.ok) {
         const data = await res.json();
-        throw new Error(data.error || 'Failed to open register session');
+        throw new Error(data.error || 'Échec de l\'ouverture de la session de caisse');
       }
 
       const newSess = await res.json();
@@ -182,7 +182,7 @@ export const SessionModal: React.FC<SessionModalProps> = ({
       onSessionUpdated();
       onClose();
     } catch (err: any) {
-      setError(err.message || 'Error opening session');
+      setError(err.message || 'Erreur lors de l\'ouverture de la session');
     } finally {
       setSubmitting(false);
     }
@@ -198,7 +198,7 @@ export const SessionModal: React.FC<SessionModalProps> = ({
 
     const countedVal = parseFloat(closingCountedCash);
     if (isNaN(countedVal) || countedVal < 0) {
-      setError('Counted cash must be 0 or more');
+      setError('Le montant compté doit être supérieur ou égal à 0');
       return;
     }
 
@@ -218,7 +218,7 @@ export const SessionModal: React.FC<SessionModalProps> = ({
 
       if (!res.ok) {
         const data = await res.json();
-        throw new Error(data.error || 'Failed to close register session');
+        throw new Error(data.error || 'Échec de la clôture de la session de caisse');
       }
 
       const closed = await res.json();
@@ -257,7 +257,7 @@ export const SessionModal: React.FC<SessionModalProps> = ({
         setPrintFeedback('Échec d\'impression du ticket');
       }
     } catch (err: any) {
-      setError(err.message || 'Error closing session');
+      setError(err.message || 'Erreur lors de la clôture de la session');
     } finally {
       setSubmitting(false);
     }
@@ -279,8 +279,8 @@ export const SessionModal: React.FC<SessionModalProps> = ({
               {closedReportData
                 ? 'Session Clôturée — Rapport Z'
                 : mode === 'OPEN'
-                ? 'Open Register Session'
-                : 'Close Session & Cash Audit'}
+                ? 'Ouverture de Session de Caisse'
+                : 'Clôture de Session & Audit Caisse'}
             </h2>
           </div>
           <button
@@ -383,7 +383,7 @@ export const SessionModal: React.FC<SessionModalProps> = ({
             <div className="flex-1 min-h-0 overflow-y-auto p-5 space-y-4">
               <div>
                 <label className="block text-xs font-bold text-slate-700 mb-1">
-                  Register / Counter Name *
+                  Nom de la caisse / Poste *
                 </label>
                 {!isAddingCounter ? (
                   <div className="flex gap-2">
@@ -404,18 +404,18 @@ export const SessionModal: React.FC<SessionModalProps> = ({
                       ))}
                       {counters.length === 0 && (
                         <>
-                          <option value="Countertop">Countertop (Main Station)</option>
-                          <option value="Mobile Register">Mobile Register (Phone / PWA)</option>
+                          <option value="Countertop">Caisse principale (Comptoir)</option>
+                          <option value="Mobile Register">Caisse mobile (Téléphone / PWA)</option>
                         </>
                       )}
-                      <option value="__NEW__">+ Add New Register / Counter...</option>
+                      <option value="__NEW__">+ Ajouter une nouvelle caisse...</option>
                     </select>
                   </div>
                 ) : (
                   <div className="flex gap-2 items-center">
                     <input
                       type="text"
-                      placeholder="e.g. Counter 2, Drive-thru..."
+                      placeholder="ex. Caisse 2, Caisse rapide..."
                       value={newCounterName}
                       onChange={e => setNewCounterName(e.target.value)}
                       className="flex-1 text-xs font-semibold px-3 py-2 border border-slate-300 rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none"
@@ -443,10 +443,10 @@ export const SessionModal: React.FC<SessionModalProps> = ({
                             setIsAddingCounter(false);
                           } else {
                             const errData = await res.json().catch(() => ({}));
-                            setError(errData.error || 'Failed to add counter');
+                            setError(errData.error || 'Échec de l\'ajout de la caisse');
                           }
                         } catch (err: any) {
-                          setError(err.message || 'Error adding counter');
+                          setError(err.message || 'Erreur lors de l\'ajout de la caisse');
                         } finally {
                           isSavingCounterRef.current = false;
                           setIsSavingCounter(false);
@@ -454,14 +454,14 @@ export const SessionModal: React.FC<SessionModalProps> = ({
                       }}
                       className="px-3 py-2 bg-emerald-700 hover:bg-emerald-800 disabled:opacity-50 text-white rounded-xl text-xs font-bold transition-colors"
                     >
-                      {isSavingCounter ? 'Saving...' : 'Save'}
+                      {isSavingCounter ? 'Enregistrement...' : 'Enregistrer'}
                     </button>
                     <button
                       type="button"
                       onClick={() => setIsAddingCounter(false)}
                       className="px-2.5 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-semibold transition-colors"
                     >
-                      Cancel
+                      Annuler
                     </button>
                   </div>
                 )}
@@ -469,7 +469,7 @@ export const SessionModal: React.FC<SessionModalProps> = ({
 
               <div>
                 <label className="block text-xs font-bold text-slate-700 mb-1">
-                  Opening Cash Float (DT) *
+                  Fond de caisse initial (DT) *
                 </label>
                 <input
                   type="number"
@@ -482,7 +482,7 @@ export const SessionModal: React.FC<SessionModalProps> = ({
                   className="w-full text-pos-input font-bold font-mono px-3 py-2 border border-slate-300 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:outline-none"
                 />
                 <span className="text-xs text-slate-600 mt-1 block">
-                  Cash drawer starting balance
+                  Montant de départ dans le tiroir-caisse
                 </span>
               </div>
 
@@ -499,14 +499,14 @@ export const SessionModal: React.FC<SessionModalProps> = ({
                 onClick={onClose}
                 className="flex-1 min-h-[44px] py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl text-sm transition-colors"
               >
-                Cancel
+                Annuler
               </button>
               <button
                 type="submit"
                 disabled={submitting}
                 className="flex-1 min-h-[44px] py-2.5 bg-emerald-700 hover:bg-emerald-800 text-white font-bold rounded-xl text-sm shadow transition-colors"
               >
-                {submitting ? 'Opening...' : 'Start Session'}
+                {submitting ? 'Ouverture...' : 'Ouvrir la session'}
               </button>
             </div>
           </form>
@@ -568,7 +568,7 @@ export const SessionModal: React.FC<SessionModalProps> = ({
                   </span>
                 </div>
                 <div className="flex justify-between text-slate-600">
-                  <span>Expected Cash in Drawer:</span>
+                  <span>Espèces attendues en caisse :</span>
                   <span className="font-bold text-slate-900 font-mono">
                     {formatMoney(expectedCash)}
                   </span>
@@ -577,7 +577,7 @@ export const SessionModal: React.FC<SessionModalProps> = ({
 
               <div>
                 <label className="block text-xs font-bold text-slate-700 mb-1">
-                  Counted Physical Cash (DT) *
+                  Espèces réelles comptées (DT) *
                 </label>
                 <input
                   type="number"
@@ -602,23 +602,23 @@ export const SessionModal: React.FC<SessionModalProps> = ({
                     : 'bg-rose-50 border-rose-200 text-rose-800'
                 }`}
               >
-                <span className="text-sm font-bold">Cash Variance:</span>
+                <span className="text-sm font-bold">Écart de caisse :</span>
                 <span className={`text-lg font-mono font-black ${
                   variance === 0 ? 'text-emerald-700' : variance > 0 ? 'text-amber-800' : 'text-rose-700'
                 }`}>
-                  {variance > 0 ? `+${formatMoney(variance)} (Over)` : variance < 0 ? `${formatMoney(variance)} (Short)` : '0.000 DT (Exact)'}
+                  {variance > 0 ? `+${formatMoney(variance)} (Excédent)` : variance < 0 ? `${formatMoney(variance)} (Déficit)` : '0.000 DT (Exact)'}
                 </span>
               </div>
 
               <div>
                 <label className="block text-xs font-bold text-slate-700 mb-1">
-                  Closing Notes / Audit Remarks
+                  Notes de clôture / Remarques d'audit
                 </label>
                 <input
                   type="text"
                   value={notes}
                   onChange={e => setNotes(e.target.value)}
-                  placeholder="e.g. End of shift, drawer reconciled cleanly"
+                  placeholder="ex. Fin de service, caisse équilibrée"
                   className="w-full text-sm px-3 py-2 border border-slate-300 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:outline-none"
                 />
               </div>
@@ -636,14 +636,14 @@ export const SessionModal: React.FC<SessionModalProps> = ({
                 onClick={onClose}
                 className="flex-1 min-h-[44px] py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl text-sm transition-colors"
               >
-                Cancel
+                Annuler
               </button>
               <button
                 type="submit"
                 disabled={submitting}
                 className="flex-1 min-h-[44px] py-2.5 bg-rose-700 hover:bg-rose-800 text-white font-bold rounded-xl text-sm shadow transition-colors"
               >
-                {submitting ? 'Closing...' : 'Close Session'}
+                {submitting ? 'Clôture...' : 'Clôturer la session'}
               </button>
             </div>
           </form>

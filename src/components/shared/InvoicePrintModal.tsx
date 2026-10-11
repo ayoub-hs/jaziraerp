@@ -65,7 +65,7 @@ export const InvoicePrintModal: React.FC<InvoicePrintModalProps> = ({
         <div className="shrink-0 bg-slate-900 text-white px-4 sm:px-6 py-3 sm:py-4 flex items-center justify-between print:hidden">
           <div className="flex items-center gap-2">
             <FileText className="w-5 h-5 text-blue-400" />
-            <h2 className="text-base font-bold">A4 Professional Invoice Preview</h2>
+            <h2 className="text-base font-bold">Aperçu de la Facture A4</h2>
           </div>
           <button
             onClick={onClose}
@@ -84,7 +84,7 @@ export const InvoicePrintModal: React.FC<InvoicePrintModalProps> = ({
             </div>
           )}
           {loading || !sale ? (
-            <div className="py-16 text-center text-sm text-slate-500">Loading invoice document...</div>
+            <div className="py-16 text-center text-sm text-slate-500">Chargement de la facture...</div>
           ) : (
             <div className="bg-white p-4 sm:p-8 shadow-md border border-slate-300 w-full max-w-2xl text-slate-800 text-xs flex flex-col justify-between min-h-[700px] print:w-full print:max-w-none print:shadow-none print:border-none print:p-0">
               <div>

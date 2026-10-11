@@ -36,17 +36,17 @@ export const CashMovementModal: React.FC<CashMovementModalProps> = ({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!activeSession) {
-      setError('No active register session found');
+      setError('Aucune session de caisse active trouvée');
       return;
     }
 
     const parsedAmount = parseFloat(amount);
     if (isNaN(parsedAmount) || parsedAmount <= 0) {
-      setError('Amount must be greater than 0 DT');
+      setError('Le montant doit être supérieur à 0 DT');
       return;
     }
     if (!reason.trim()) {
-      setError('Reason / description is required');
+      setError('Le motif / justificatif est requis');
       return;
     }
 
@@ -68,7 +68,7 @@ export const CashMovementModal: React.FC<CashMovementModalProps> = ({
         onClose();
         return;
       } catch (err: any) {
-        setError(err.message || 'Error queueing offline cash movement');
+        setError(err.message || 'Erreur lors de la mise en attente hors ligne du mouvement de caisse');
         setSubmitting(false);
         return;
       }
@@ -83,7 +83,7 @@ export const CashMovementModal: React.FC<CashMovementModalProps> = ({
 
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
-        throw new Error(data.error || 'Failed to record cash movement');
+        throw new Error(data.error || 'Échec de l\'enregistrement du mouvement de caisse');
       }
 
       onSuccess();
@@ -96,11 +96,11 @@ export const CashMovementModal: React.FC<CashMovementModalProps> = ({
           onClose();
           return;
         } catch (queueErr: any) {
-          setError(queueErr.message || 'Failed to queue offline cash movement');
+          setError(queueErr.message || 'Échec de la mise en attente hors ligne du mouvement de caisse');
           return;
         }
       }
-      setError(err.message || 'Error executing cash movement');
+      setError(err.message || 'Erreur lors de l\'enregistrement du mouvement de caisse');
     } finally {
       setSubmitting(false);
     }
@@ -110,7 +110,7 @@ export const CashMovementModal: React.FC<CashMovementModalProps> = ({
     <div className="fixed inset-0 z-50 flex items-start sm:items-center justify-center bg-black/60 backdrop-blur-sm p-2 sm:p-4 overflow-y-auto">
       <div className="my-auto bg-white rounded-2xl shadow-2xl max-w-md w-full max-h-[calc(100dvh-1rem)] flex flex-col overflow-hidden border border-slate-200">
         <div className="shrink-0 bg-slate-900 text-white px-5 py-4 flex items-center justify-between">
-          <h2 className="text-base font-bold">Register Cash Movement</h2>
+          <h2 className="text-base font-bold">Mouvement de Caisse (Entrée / Sortie)</h2>
           <button
             onClick={onClose}
             className="text-slate-400 hover:text-white p-1 rounded-lg hover:bg-slate-800 transition-colors"
@@ -133,7 +133,7 @@ export const CashMovementModal: React.FC<CashMovementModalProps> = ({
                 }`}
               >
                 <ArrowUpRight className="w-4 h-4" />
-                Cash Out (Expense/Payout)
+                Décaissement (Dépense / Retrait)
               </button>
               <button
                 type="button"
@@ -145,13 +145,13 @@ export const CashMovementModal: React.FC<CashMovementModalProps> = ({
                 }`}
               >
                 <ArrowDownRight className="w-4 h-4" />
-                Cash In (Float Top-up)
+                Encaissement (Ajout fond de caisse)
               </button>
             </div>
 
             <div>
               <label className="block text-xs font-bold text-slate-700 mb-1">
-                Amount (DT) *
+                Montant (DT) *
               </label>
               <input
                 type="number"
@@ -168,14 +168,14 @@ export const CashMovementModal: React.FC<CashMovementModalProps> = ({
 
             <div>
               <label className="block text-xs font-bold text-slate-700 mb-1">
-                Reason / Expense Note *
+                Motif / Justificatif de dépense *
               </label>
               <input
                 type="text"
                 required
                 value={reason}
                 onChange={e => setReason(e.target.value)}
-                placeholder={type === 'CASH_OUT' ? 'e.g. Purchased coffee/cleaning supplies' : 'e.g. Added 50 DT change float'}
+                placeholder={type === 'CASH_OUT' ? 'ex. Café, fournitures, entretien...' : 'ex. Ajout de 50 DT en monnaie...'}
                 className="w-full text-sm px-3 py-2 border border-slate-300 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:outline-none"
               />
             </div>
@@ -194,7 +194,7 @@ export const CashMovementModal: React.FC<CashMovementModalProps> = ({
               onClick={onClose}
               className="flex-1 min-h-[44px] py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl text-sm transition-colors"
             >
-              Cancel
+              Annuler
             </button>
             <button
               type="submit"
@@ -205,7 +205,11 @@ export const CashMovementModal: React.FC<CashMovementModalProps> = ({
                   : 'bg-emerald-700 hover:bg-emerald-800'
               }`}
             >
-              {submitting ? 'Saving...' : `Record ${type === 'CASH_OUT' ? 'Cash Out' : 'Cash In'}`}
+              {submitting
+                ? 'Enregistrement...'
+                : type === 'CASH_OUT'
+                ? 'Enregistrer Décaissement'
+                : 'Enregistrer Encaissement'}
             </button>
           </div>
         </form>

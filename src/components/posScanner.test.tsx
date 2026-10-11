@@ -84,7 +84,7 @@ describe('Component tests for scanner bursts and checkout cash guards (Batch 3 I
       />
     );
 
-    const searchInput = screen.getByPlaceholderText(/search products/i);
+    const searchInput = screen.getByPlaceholderText(/Rechercher des produits|search products/i);
     searchInput.focus();
 
     simulateScannerBurst(searchInput, '619000333001');
@@ -108,15 +108,15 @@ describe('Component tests for scanner bursts and checkout cash guards (Batch 3 I
       />
     );
 
-    const searchInput = screen.getByPlaceholderText(/search products/i);
+    const searchInput = screen.getByPlaceholderText(/Rechercher des produits|search products/i);
     searchInput.focus();
 
     simulateScannerBurst(searchInput, '619000333001');
 
     // Bottom cart pill should show 1 items in cart and 1 piece total
-    expect(screen.getByText(/1 items in cart/i)).toBeTruthy();
+    expect(screen.getByText(/1 article\(s\) au panier|1 items in cart/i)).toBeTruthy();
     // The pill circle displays totalPieces
-    const pill = screen.getByText(/1 items in cart/i).closest('.flex-1, div');
+    const pill = screen.getByText(/1 article\(s\) au panier|1 items in cart/i).closest('.flex-1, div');
     expect(screen.getByText('1')).toBeTruthy();
   });
 
@@ -177,8 +177,8 @@ describe('Component tests for scanner bursts and checkout cash guards (Batch 3 I
     expect(screen.getByText(/Articles \(0 items \/ 0 pcs\)/i)).toBeTruthy();
 
     // Open Quick Add modal
-    fireEvent.click(screen.getByText(/Quick Add/i));
-    expect(screen.getByText(/Quick-Add Uncataloged Item/i)).toBeTruthy();
+    fireEvent.click(screen.getByText(/Ajout Rapide|Quick Add/i));
+    expect(screen.getByText(/Ajout Rapide Hors Catalogue|Quick-Add Uncataloged Item/i)).toBeTruthy();
 
     // Trigger a scan while modal is open
     act(() => {
@@ -189,8 +189,8 @@ describe('Component tests for scanner bursts and checkout cash guards (Batch 3 I
     expect(screen.getByText(/Articles \(0 items \/ 0 pcs\)/i)).toBeTruthy();
 
     // Close the modal
-    fireEvent.click(screen.getByText('Cancel'));
-    expect(screen.queryByText(/Quick-Add Uncataloged Item/i)).toBeNull();
+    fireEvent.click(screen.getByText(/Annuler|Cancel/i));
+    expect(screen.queryByText(/Ajout Rapide Hors Catalogue|Quick-Add Uncataloged Item/i)).toBeNull();
 
     // Trigger scan now that modal is closed
     act(() => {

@@ -624,7 +624,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
                           setCashPaid(remaining.toFixed(3));
                           setCreditAmount('0.000');
                         }}
-                        className="text-[11px] font-bold text-emerald-700 bg-emerald-100 hover:bg-emerald-200 px-2 py-0.5 rounded transition-colors"
+                        className="text-xs font-bold text-emerald-700 bg-emerald-100 hover:bg-emerald-200 px-2 py-0.5 rounded transition-colors"
                       >
                         Payer le reste ({formatMoney(Math.max(0, roundMoney(totalTTC - (parseFloat(walletPaid) || 0))))})
                       </button>
@@ -659,7 +659,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
                         <button
                           type="button"
                           onClick={handleApplyMaxWallet}
-                          className="text-[11px] font-bold text-purple-700 bg-purple-100 hover:bg-purple-200 px-2 py-0.5 rounded transition-colors"
+                          className="text-xs font-bold text-purple-700 bg-purple-100 hover:bg-purple-200 px-2 py-0.5 rounded transition-colors"
                         >
                           Max
                         </button>
@@ -691,7 +691,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
                       <button
                         type="button"
                         onClick={handleApplyCredit}
-                        className="text-[11px] font-bold text-amber-700 bg-amber-100 hover:bg-amber-200 px-2 py-0.5 rounded transition-colors"
+                        className="text-xs font-bold text-amber-700 bg-amber-100 hover:bg-amber-200 px-2 py-0.5 rounded transition-colors"
                       >
                         {(parseFloat(walletPaid) || 0) > 0
                           ? `Reporter reste (${formatMoney(Math.max(0, roundMoney(totalTTC - (parseFloat(walletPaid) || 0))))})`

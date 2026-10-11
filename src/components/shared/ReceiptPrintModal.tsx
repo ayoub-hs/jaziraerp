@@ -175,7 +175,7 @@ export const ReceiptPrintModal: React.FC<ReceiptPrintModalProps> = ({
         <div className="shrink-0 bg-slate-900 text-white px-4 py-3 flex items-center justify-between print:hidden">
           <div className="flex items-center gap-2">
             <Printer className="w-4 h-4 text-emerald-400" />
-            <span className="text-sm font-bold">58mm Thermal Receipt</span>
+            <span className="text-sm font-bold">Ticket Thermique 58mm</span>
           </div>
           <button
             onClick={onClose}
@@ -188,7 +188,7 @@ export const ReceiptPrintModal: React.FC<ReceiptPrintModalProps> = ({
         {/* Receipt Container */}
         <div className="flex-1 min-h-0 overflow-y-auto p-4 bg-slate-100 flex justify-center print:p-0 print:bg-white print:m-0 print:overflow-visible">
           {loading || !sale ? (
-            <div className="py-12 text-center text-xs text-slate-500">Loading receipt data...</div>
+            <div className="py-12 text-center text-xs text-slate-500">Chargement du ticket...</div>
           ) : (
             <div
               ref={printRef}

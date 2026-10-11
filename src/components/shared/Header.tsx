@@ -438,7 +438,7 @@ export const Header: React.FC<HeaderProps> = ({
             }`}
           >
             <Archive className={`w-3.5 h-3.5 text-amber-400 ${drawerKicking ? 'animate-bounce' : ''}`} />
-            <span className="hidden md:inline">{drawerKicking ? 'Popped!' : 'Drawer'}</span>
+            <span className="hidden md:inline">{drawerKicking ? 'Ouvert !' : 'Tiroir'}</span>
             {serialPortInfo && !drawerKicking && (
               <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" title={`Connected on ${serialPortInfo}`} />
             )}
@@ -448,20 +448,20 @@ export const Header: React.FC<HeaderProps> = ({
             <>
               <button
                 onClick={onOpenCashMovement}
-                title="Cash In / Cash Out float movement"
+                title="Mouvement de caisse (Entrée / Sortie)"
                 className="flex items-center gap-1 bg-slate-800 hover:bg-slate-700 text-slate-200 hover:text-white px-2.5 py-1 rounded-lg text-xs font-semibold border border-slate-700 transition-colors"
               >
                 <DollarSign className="w-3.5 h-3.5 text-emerald-400" />
-                <span className="hidden md:inline">Cash In/Out</span>
+                <span className="hidden md:inline">Mouvement</span>
               </button>
 
               <button
                 onClick={onCloseSessionModal}
-                title="Close Register Session and audit cash"
+                title="Clôturer la session de caisse et auditer les espèces"
                 className="flex items-center gap-1 bg-rose-900/40 hover:bg-rose-900/60 text-rose-300 hover:text-rose-100 px-2 sm:px-2.5 py-1 rounded-lg text-xs font-semibold border border-rose-800/60 transition-colors"
               >
                 <Archive className="w-3.5 h-3.5" />
-                <span className="inline">Close</span>
+                <span className="inline">Clôturer</span>
               </button>
             </>
           )}
