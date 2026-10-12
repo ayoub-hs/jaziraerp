@@ -655,7 +655,7 @@ export const MobileRegister: React.FC<MobileRegisterProps> = ({
   };
 
   return (
-    <div className="flex-1 flex flex-col bg-slate-100 overflow-hidden relative pb-14">
+    <div className="flex-1 flex flex-col bg-slate-100 overflow-hidden relative pb-[calc(var(--nav-h)+var(--sab))]">
       {/* Barcode Scan Notification Alert Toast */}
       {scanAlert && (
         <div
@@ -779,7 +779,10 @@ export const MobileRegister: React.FC<MobileRegisterProps> = ({
           </div>
 
           {/* Product Grid Grouped by Family */}
-          <div className="flex-1 p-3 overflow-y-auto grid grid-cols-2 gap-2 content-start pb-24">
+          <div
+            className="flex-1 p-3 overflow-y-auto grid grid-cols-2 gap-2 content-start"
+            style={{ paddingBottom: 'calc(var(--nav-h) + var(--sab) + 80px)' }}
+          >
             {familyGroups.map(group => (
               <div
                 key={group.familyKey}
@@ -836,9 +839,12 @@ export const MobileRegister: React.FC<MobileRegisterProps> = ({
               setCameraMode('REGISTER');
               setIsCameraOpen(true);
             }}
-            className={`fixed ${
-              cart.length > 0 ? 'bottom-32' : 'bottom-16'
-            } right-4 z-20 bg-emerald-700 hover:bg-emerald-800 active:scale-95 text-white p-3.5 rounded-full shadow-2xl flex items-center justify-center transition-all border-2 border-white`}
+            className="absolute right-4 z-20 bg-emerald-700 hover:bg-emerald-800 active:scale-95 text-white p-3.5 rounded-full shadow-2xl flex items-center justify-center transition-all border-2 border-white"
+            style={{
+              bottom: cart.length > 0
+                ? 'calc(var(--nav-h) + var(--sab) + 76px)'
+                : 'calc(var(--nav-h) + var(--sab) + 8px)'
+            }}
             title="Scanner code-barres caméra"
           >
             <Camera className="w-5 h-5" />
@@ -848,7 +854,10 @@ export const MobileRegister: React.FC<MobileRegisterProps> = ({
           {cart.length > 0 && (
             <div
               onClick={() => setIsCartDrawerOpen(true)}
-              className="absolute bottom-16 inset-x-3 bg-slate-900 text-white p-3.5 rounded-2xl shadow-xl flex items-center justify-between cursor-pointer active:scale-[0.99] transition-transform z-20"
+              className="absolute inset-x-3 min-h-[60px] bg-slate-900 text-white p-3.5 rounded-2xl shadow-xl flex items-center justify-between cursor-pointer active:scale-[0.99] transition-transform z-20"
+              style={{
+                bottom: 'calc(var(--nav-h) + var(--sab) + 8px)'
+              }}
             >
               <div className="flex items-center gap-2.5">
                 <div className="w-8 h-8 rounded-xl bg-emerald-700 flex items-center justify-center font-bold text-xs">
@@ -873,7 +882,10 @@ export const MobileRegister: React.FC<MobileRegisterProps> = ({
           {cart.length === 0 && heldCartCount > 0 && (
             <div
               onClick={() => setIsHeldCartsModalOpen(true)}
-              className="absolute bottom-16 inset-x-3 bg-amber-500 hover:bg-amber-600 text-slate-950 p-3.5 rounded-2xl shadow-xl flex items-center justify-between cursor-pointer active:scale-[0.99] transition-transform z-20 font-bold"
+              className="absolute inset-x-3 min-h-[60px] bg-amber-500 hover:bg-amber-600 text-slate-950 p-3.5 rounded-2xl shadow-xl flex items-center justify-between cursor-pointer active:scale-[0.99] transition-transform z-20 font-bold"
+              style={{
+                bottom: 'calc(var(--nav-h) + var(--sab) + 8px)'
+              }}
             >
               <div className="flex items-center gap-2.5">
                 <div className="w-8 h-8 rounded-xl bg-amber-900 text-white flex items-center justify-center font-bold text-xs">
@@ -1760,7 +1772,7 @@ export const MobileRegister: React.FC<MobileRegisterProps> = ({
       />
 
       {/* FIXED BOTTOM NAVIGATION BAR (4 TABS) */}
-      <nav className="fixed bottom-0 inset-x-0 bg-slate-900 border-t border-slate-800 grid grid-cols-4 min-h-[64px] pb-[env(safe-area-inset-bottom,0px)] z-30 select-none">
+      <nav className="fixed bottom-0 inset-x-0 bg-slate-900 border-t border-slate-800 grid grid-cols-4 h-[calc(var(--nav-h)+var(--sab))] pb-[var(--sab)] z-30 select-none">
         <button
           onClick={() => setActiveTab('REGISTER')}
           className={`flex flex-col items-center justify-center gap-1 min-h-[48px] py-1.5 w-full transition-colors border-t-2 ${
