@@ -1,0 +1,1514 @@
+[
+  {
+    "file": "src/components/backoffice/Backoffice.tsx",
+    "line": 840,
+    "oldContent": "<span className=\"text-pos-badge font-bold text-slate-400 uppercase tracking-wider\">",
+    "newContent": "<span className=\"text-pos-badge font-bold text-slate-600 uppercase tracking-wider\">",
+    "category": "MEANINGFUL TEXT",
+    "action": "CHANGED"
+  },
+  {
+    "file": "src/components/backoffice/Backoffice.tsx",
+    "line": 1018,
+    "oldContent": "<Search className=\"w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2\" />",
+    "newContent": "<Search className=\"w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2\" />",
+    "category": "icon",
+    "action": "PRESERVED"
+  },
+  {
+    "file": "src/components/backoffice/Backoffice.tsx",
+    "line": 1030,
+    "oldContent": "className=\"absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 p-0.5\"",
+    "newContent": "className=\"absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-600 hover:text-slate-600 p-0.5\"",
+    "category": "MEANINGFUL TEXT",
+    "action": "CHANGED"
+  },
+  {
+    "file": "src/components/backoffice/Backoffice.tsx",
+    "line": 1105,
+    "oldContent": "className=\"p-1.5 bg-white hover:bg-rose-50 text-slate-400 hover:text-rose-600 rounded-lg border border-slate-200 transition-colors shadow-2xs\"",
+    "newContent": "className=\"p-1.5 bg-white hover:bg-rose-50 text-slate-400 hover:text-rose-600 rounded-lg border border-slate-200 transition-colors shadow-2xs\"",
+    "category": "icon",
+    "action": "PRESERVED"
+  },
+  {
+    "file": "src/components/backoffice/Backoffice.tsx",
+    "line": 1177,
+    "oldContent": "className=\"p-1 text-slate-400 hover:text-rose-600 rounded hover:bg-rose-50 transition-colors inline-flex items-center\"",
+    "newContent": "className=\"p-1 text-slate-400 hover:text-rose-600 rounded hover:bg-rose-50 transition-colors inline-flex items-center\"",
+    "category": "icon",
+    "action": "PRESERVED"
+  },
+  {
+    "file": "src/components/backoffice/Backoffice.tsx",
+    "line": 1187,
+    "oldContent": "<td colSpan={9} className=\"p-8 text-center text-slate-400\">",
+    "newContent": "<td colSpan={9} className=\"p-8 text-center text-slate-600\">",
+    "category": "MEANINGFUL TEXT",
+    "action": "CHANGED"
+  },
+  {
+    "file": "src/components/backoffice/Backoffice.tsx",
+    "line": 1193,
+    "oldContent": "<td colSpan={9} className=\"p-8 text-center text-slate-400\">",
+    "newContent": "<td colSpan={9} className=\"p-8 text-center text-slate-600\">",
+    "category": "MEANINGFUL TEXT",
+    "action": "CHANGED"
+  },
+  {
+    "file": "src/components/backoffice/Backoffice.tsx",
+    "line": 1255,
+    "oldContent": "<Search className=\"w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2\" />",
+    "newContent": "<Search className=\"w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2\" />",
+    "category": "icon",
+    "action": "PRESERVED"
+  },
+  {
+    "file": "src/components/backoffice/Backoffice.tsx",
+    "line": 1267,
+    "oldContent": "className=\"absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 p-0.5\"",
+    "newContent": "className=\"absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-600 hover:text-slate-600 p-0.5\"",
+    "category": "MEANINGFUL TEXT",
+    "action": "CHANGED"
+  },
+  {
+    "file": "src/components/backoffice/Backoffice.tsx",
+    "line": 1345,
+    "oldContent": "className=\"p-1 text-slate-400 hover:text-rose-600 rounded hover:bg-rose-50 transition-colors inline-flex items-center\"",
+    "newContent": "className=\"p-1 text-slate-400 hover:text-rose-600 rounded hover:bg-rose-50 transition-colors inline-flex items-center\"",
+    "category": "icon",
+    "action": "PRESERVED"
+  },
+  {
+    "file": "src/components/backoffice/Backoffice.tsx",
+    "line": 1356,
+    "oldContent": "<td colSpan={7} className=\"p-8 text-center text-slate-400\">",
+    "newContent": "<td colSpan={7} className=\"p-8 text-center text-slate-600\">",
+    "category": "MEANINGFUL TEXT",
+    "action": "CHANGED"
+  },
+  {
+    "file": "src/components/backoffice/Backoffice.tsx",
+    "line": 1362,
+    "oldContent": "<td colSpan={7} className=\"p-8 text-center text-slate-400\">",
+    "newContent": "<td colSpan={7} className=\"p-8 text-center text-slate-600\">",
+    "category": "MEANINGFUL TEXT",
+    "action": "CHANGED"
+  },
+  {
+    "file": "src/components/backoffice/Backoffice.tsx",
+    "line": 1415,
+    "oldContent": "className=\"p-1 text-slate-400 hover:text-rose-600 rounded hover:bg-rose-50 transition-colors inline-flex items-center\"",
+    "newContent": "className=\"p-1 text-slate-400 hover:text-rose-600 rounded hover:bg-rose-50 transition-colors inline-flex items-center\"",
+    "category": "icon",
+    "action": "PRESERVED"
+  },
+  {
+    "file": "src/components/backoffice/Backoffice.tsx",
+    "line": 1425,
+    "oldContent": "<td colSpan={6} className=\"p-6 text-center text-slate-400\">",
+    "newContent": "<td colSpan={6} className=\"p-6 text-center text-slate-600\">",
+    "category": "MEANINGFUL TEXT",
+    "action": "CHANGED"
+  },
+  {
+    "file": "src/components/backoffice/Backoffice.tsx",
+    "line": 1629,
+    "oldContent": "<div className=\"text-center text-slate-400 text-xs py-12\">",
+    "newContent": "<div className=\"text-center text-slate-600 text-xs py-12\">",
+    "category": "MEANINGFUL TEXT",
+    "action": "CHANGED"
+  },
+  {
+    "file": "src/components/backoffice/Backoffice.tsx",
+    "line": 1666,
+    "oldContent": "<div className=\"col-span-3 text-center py-6 text-slate-400 text-xs\">",
+    "newContent": "<div className=\"col-span-3 text-center py-6 text-slate-600 text-xs\">",
+    "category": "MEANINGFUL TEXT",
+    "action": "CHANGED"
+  },
+  {
+    "file": "src/components/backoffice/Backoffice.tsx",
+    "line": 1717,
+    "oldContent": "<td colSpan={8} className=\"p-8 text-center text-slate-400\">",
+    "newContent": "<td colSpan={8} className=\"p-8 text-center text-slate-600\">",
+    "category": "MEANINGFUL TEXT",
+    "action": "CHANGED"
+  },
+  {
+    "file": "src/components/backoffice/Backoffice.tsx",
+    "line": 1758,
+    "oldContent": "<h3 className=\"text-xs font-bold text-slate-400 uppercase tracking-wide px-1\">",
+    "newContent": "<h3 className=\"text-xs font-bold text-slate-600 uppercase tracking-wide px-1\">",
+    "category": "MEANINGFUL TEXT",
+    "action": "CHANGED"
+  },
+  {
+    "file": "src/components/backoffice/Backoffice.tsx",
+    "line": 1763,
+    "oldContent": "<Search className=\"w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-1/2 -translate-y-1/2\" />",
+    "newContent": "<Search className=\"w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-1/2 -translate-y-1/2\" />",
+    "category": "icon",
+    "action": "PRESERVED"
+  },
+  {
+    "file": "src/components/backoffice/Backoffice.tsx",
+    "line": 1775,
+    "oldContent": "className=\"absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600\"",
+    "newContent": "className=\"absolute right-2 top-1/2 -translate-y-1/2 text-slate-600 hover:text-slate-600\"",
+    "category": "MEANINGFUL TEXT",
+    "action": "CHANGED"
+  },
+  {
+    "file": "src/components/backoffice/Backoffice.tsx",
+    "line": 1827,
+    "oldContent": "className=\"p-1 text-slate-400 hover:text-slate-700 hover:bg-slate-200/60 rounded-lg transition-colors\"",
+    "newContent": "className=\"p-1 text-slate-600 hover:text-slate-700 hover:bg-slate-200/60 rounded-lg transition-colors\"",
+    "category": "MEANINGFUL TEXT",
+    "action": "CHANGED"
+  },
+  {
+    "file": "src/components/backoffice/Backoffice.tsx",
+    "line": 1838,
+    "oldContent": "className=\"p-1 text-slate-400 hover:text-rose-600 hover:bg-rose-100/60 rounded-lg transition-colors\"",
+    "newContent": "className=\"p-1 text-slate-400 hover:text-rose-600 hover:bg-rose-100/60 rounded-lg transition-colors\"",
+    "category": "icon",
+    "action": "PRESERVED"
+  },
+  {
+    "file": "src/components/backoffice/Backoffice.tsx",
+    "line": 1854,
+    "oldContent": "<div className=\"p-6 text-center text-slate-400 text-xs\">",
+    "newContent": "<div className=\"p-6 text-center text-slate-600 text-xs\">",
+    "category": "MEANINGFUL TEXT",
+    "action": "CHANGED"
+  },
+  {
+    "file": "src/components/backoffice/Backoffice.tsx",
+    "line": 1986,
+    "oldContent": "<td colSpan={5} className=\"p-4 text-center text-slate-400\">",
+    "newContent": "<td colSpan={5} className=\"p-4 text-center text-slate-600\">",
+    "category": "MEANINGFUL TEXT",
+    "action": "CHANGED"
+  },
+  {
+    "file": "src/components/backoffice/Backoffice.tsx",
+    "line": 1997,
+    "oldContent": "<div className=\"py-24 text-center text-slate-400 text-xs\">",
+    "newContent": "<div className=\"py-24 text-center text-slate-600 text-xs\">",
+    "category": "MEANINGFUL TEXT",
+    "action": "CHANGED"
+  },
+  {
+    "file": "src/components/backoffice/Backoffice.tsx",
+    "line": 2044,
+    "oldContent": "<h3 className=\"text-xs font-bold text-slate-400 uppercase tracking-wide px-1\">",
+    "newContent": "<h3 className=\"text-xs font-bold text-slate-600 uppercase tracking-wide px-1\">",
+    "category": "MEANINGFUL TEXT",
+    "action": "CHANGED"
+  },
+  {
+    "file": "src/components/backoffice/Backoffice.tsx",
+    "line": 2048,
+    "oldContent": "<Search className=\"w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-1/2 -translate-y-1/2\" />",
+    "newContent": "<Search className=\"w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-1/2 -translate-y-1/2\" />",
+    "category": "icon",
+    "action": "PRESERVED"
+  },
+  {
+    "file": "src/components/backoffice/Backoffice.tsx",
+    "line": 2060,
+    "oldContent": "className=\"absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600\"",
+    "newContent": "className=\"absolute right-2 top-1/2 -translate-y-1/2 text-slate-600 hover:text-slate-600\"",
+    "category": "MEANINGFUL TEXT",
+    "action": "CHANGED"
+  },
+  {
+    "file": "src/components/backoffice/Backoffice.tsx",
+    "line": 2093,
+    "oldContent": "className=\"p-1 text-slate-400 hover:text-slate-700 hover:bg-slate-200/60 rounded-lg transition-colors\"",
+    "newContent": "className=\"p-1 text-slate-600 hover:text-slate-700 hover:bg-slate-200/60 rounded-lg transition-colors\"",
+    "category": "MEANINGFUL TEXT",
+    "action": "CHANGED"
+  },
+  {
+    "file": "src/components/backoffice/Backoffice.tsx",
+    "line": 2104,
+    "oldContent": "className=\"p-1 text-slate-400 hover:text-rose-600 hover:bg-rose-100/60 rounded-lg transition-colors\"",
+    "newContent": "className=\"p-1 text-slate-400 hover:text-rose-600 hover:bg-rose-100/60 rounded-lg transition-colors\"",
+    "category": "icon",
+    "action": "PRESERVED"
+  },
+  {
+    "file": "src/components/backoffice/Backoffice.tsx",
+    "line": 2120,
+    "oldContent": "<div className=\"p-4 text-center text-slate-400 text-xs\">",
+    "newContent": "<div className=\"p-4 text-center text-slate-600 text-xs\">",
+    "category": "MEANINGFUL TEXT",
+    "action": "CHANGED"
+  },
+  {
+    "file": "src/components/backoffice/Backoffice.tsx",
+    "line": 2124,
+    "oldContent": "<div className=\"p-6 text-center text-slate-400 text-xs\">",
+    "newContent": "<div className=\"p-6 text-center text-slate-600 text-xs\">",
+    "category": "MEANINGFUL TEXT",
+    "action": "CHANGED"
+  },
+  {
+    "file": "src/components/backoffice/Backoffice.tsx",
+    "line": 2209,
+    "oldContent": "<td colSpan={6} className=\"p-4 text-center text-slate-400\">",
+    "newContent": "<td colSpan={6} className=\"p-4 text-center text-slate-600\">",
+    "category": "MEANINGFUL TEXT",
+    "action": "CHANGED"
+  },
+  {
+    "file": "src/components/backoffice/Backoffice.tsx",
+    "line": 2220,
+    "oldContent": "<div className=\"py-24 text-center text-slate-400 text-xs\">",
+    "newContent": "<div className=\"py-24 text-center text-slate-600 text-xs\">",
+    "category": "MEANINGFUL TEXT",
+    "action": "CHANGED"
+  },
+  {
+    "file": "src/components/backoffice/Backoffice.tsx",
+    "line": 2237,
+    "oldContent": "<Search className=\"w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-1/2 -translate-y-1/2\" />",
+    "newContent": "<Search className=\"w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-1/2 -translate-y-1/2\" />",
+    "category": "icon",
+    "action": "PRESERVED"
+  },
+  {
+    "file": "src/components/backoffice/Backoffice.tsx",
+    "line": 2249,
+    "oldContent": "className=\"absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600\"",
+    "newContent": "className=\"absolute right-2 top-1/2 -translate-y-1/2 text-slate-600 hover:text-slate-600\"",
+    "category": "MEANINGFUL TEXT",
+    "action": "CHANGED"
+  },
+  {
+    "file": "src/components/backoffice/Backoffice.tsx",
+    "line": 2296,
+    "oldContent": "<td colSpan={8} className=\"p-8 text-center text-slate-400\">",
+    "newContent": "<td colSpan={8} className=\"p-8 text-center text-slate-600\">",
+    "category": "MEANINGFUL TEXT",
+    "action": "CHANGED"
+  },
+  {
+    "file": "src/components/backoffice/Backoffice.tsx",
+    "line": 2302,
+    "oldContent": "<td colSpan={8} className=\"p-8 text-center text-slate-400\">",
+    "newContent": "<td colSpan={8} className=\"p-8 text-center text-slate-600\">",
+    "category": "MEANINGFUL TEXT",
+    "action": "CHANGED"
+  },
+  {
+    "file": "src/components/backoffice/Backoffice.tsx",
+    "line": 2385,
+    "oldContent": "className=\"p-1 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-lg transition-colors\"",
+    "newContent": "className=\"p-1 text-slate-600 hover:text-slate-700 hover:bg-slate-100 rounded-lg transition-colors\"",
+    "category": "MEANINGFUL TEXT",
+    "action": "CHANGED"
+  },
+  {
+    "file": "src/components/backoffice/Backoffice.tsx",
+    "line": 2392,
+    "oldContent": "className=\"p-1 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors\"",
+    "newContent": "className=\"p-1 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors\"",
+    "category": "icon",
+    "action": "PRESERVED"
+  },
+  {
+    "file": "src/components/backoffice/Backoffice.tsx",
+    "line": 2435,
+    "oldContent": "<div className=\"sm:col-span-3 p-8 text-center text-slate-400 text-xs bg-white rounded-2xl border border-slate-200\">",
+    "newContent": "<div className=\"sm:col-span-3 p-8 text-center text-slate-600 text-xs bg-white rounded-2xl border border-slate-200\">",
+    "category": "MEANINGFUL TEXT",
+    "action": "CHANGED"
+  },
+  {
+    "file": "src/components/backoffice/Backoffice.tsx",
+    "line": 2452,
+    "oldContent": "<div className=\"p-6 text-center text-xs text-slate-400\">",
+    "newContent": "<div className=\"p-6 text-center text-xs text-slate-600\">",
+    "category": "MEANINGFUL TEXT",
+    "action": "CHANGED"
+  },
+  {
+    "file": "src/components/backoffice/Backoffice.tsx",
+    "line": 2505,
+    "oldContent": "<div className=\"p-6 text-center text-xs text-slate-400\">",
+    "newContent": "<div className=\"p-6 text-center text-xs text-slate-600\">",
+    "category": "MEANINGFUL TEXT",
+    "action": "CHANGED"
+  },
+  {
+    "file": "src/components/backoffice/Backoffice.tsx",
+    "line": 2634,
+    "oldContent": "<td colSpan={11} className=\"p-8 text-center text-slate-400\">",
+    "newContent": "<td colSpan={11} className=\"p-8 text-center text-slate-600\">",
+    "category": "MEANINGFUL TEXT",
+    "action": "CHANGED"
+  },
+  {
+    "file": "src/components/backoffice/Backoffice.tsx",
+    "line": 2667,
+    "oldContent": "className=\"p-1 rounded-lg hover:bg-slate-200 text-slate-400 hover:text-slate-600 transition-colors\"",
+    "newContent": "className=\"p-1 rounded-lg hover:bg-slate-200 text-slate-400 hover:text-slate-600 transition-colors\"",
+    "category": "icon",
+    "action": "PRESERVED"
+  },
+  {
+    "file": "src/components/backoffice/Backoffice.tsx",
+    "line": 2676,
+    "oldContent": "<div className=\"text-center py-12 text-slate-400 text-xs\">Chargement des données de session...</div>",
+    "newContent": "<div className=\"text-center py-12 text-slate-600 text-xs\">Chargement des données de session...</div>",
+    "category": "MEANINGFUL TEXT",
+    "action": "CHANGED"
+  },
+  {
+    "file": "src/components/backoffice/Backoffice.tsx",
+    "line": 2747,
+    "oldContent": "<td colSpan={6} className=\"p-4 text-center text-slate-400 text-xs\">",
+    "newContent": "<td colSpan={6} className=\"p-4 text-center text-slate-600 text-xs\">",
+    "category": "MEANINGFUL TEXT",
+    "action": "CHANGED"
+  },
+  {
+    "file": "src/components/backoffice/Backoffice.tsx",
+    "line": 2816,
+    "oldContent": "className=\"p-1 rounded-lg hover:bg-slate-200 text-slate-400 hover:text-slate-600 transition-colors\"",
+    "newContent": "className=\"p-1 rounded-lg hover:bg-slate-200 text-slate-400 hover:text-slate-600 transition-colors\"",
+    "category": "icon",
+    "action": "PRESERVED"
+  },
+  {
+    "file": "src/components/backoffice/Backoffice.tsx",
+    "line": 2870,
+    "oldContent": "className=\"p-1 hover:bg-rose-50 text-slate-400 hover:text-rose-600 rounded-lg transition-colors\"",
+    "newContent": "className=\"p-1 hover:bg-rose-50 text-slate-400 hover:text-rose-600 rounded-lg transition-colors\"",
+    "category": "icon",
+    "action": "PRESERVED"
+  },
+  {
+    "file": "src/components/backoffice/Backoffice.tsx",
+    "line": 2883,
+    "oldContent": "<td colSpan={3} className=\"p-4 text-center text-slate-400\">",
+    "newContent": "<td colSpan={3} className=\"p-4 text-center text-slate-600\">",
+    "category": "MEANINGFUL TEXT",
+    "action": "CHANGED"
+  },
+  {
+    "file": "src/components/backoffice/Backoffice.tsx",
+    "line": 3046,
+    "oldContent": "className=\"p-1 text-slate-400 hover:text-rose-600 rounded hover:bg-rose-50 transition-colors inline-flex items-center\"",
+    "newContent": "className=\"p-1 text-slate-400 hover:text-rose-600 rounded hover:bg-rose-50 transition-colors inline-flex items-center\"",
+    "category": "icon",
+    "action": "PRESERVED"
+  },
+  {
+    "file": "src/components/backoffice/Backoffice.tsx",
+    "line": 3056,
+    "oldContent": "<td colSpan={6} className=\"p-8 text-center text-slate-400\">",
+    "newContent": "<td colSpan={6} className=\"p-8 text-center text-slate-600\">",
+    "category": "MEANINGFUL TEXT",
+    "action": "CHANGED"
+  },
+  {
+    "file": "src/components/backoffice/BackupManager.tsx",
+    "line": 235,
+    "oldContent": "<div className=\"p-8 text-center text-slate-400 text-xs\">Chargement des instantanés de la base de données...</div>",
+    "newContent": "<div className=\"p-8 text-center text-slate-600 text-xs\">Chargement des instantanés de la base de données...</div>",
+    "category": "MEANINGFUL TEXT",
+    "action": "CHANGED"
+  },
+  {
+    "file": "src/components/backoffice/BackupManager.tsx",
+    "line": 237,
+    "oldContent": "<div className=\"p-8 text-center text-slate-400 text-xs\">",
+    "newContent": "<div className=\"p-8 text-center text-slate-600 text-xs\">",
+    "category": "MEANINGFUL TEXT",
+    "action": "CHANGED"
+  },
+  {
+    "file": "src/components/backoffice/BackupManager.tsx",
+    "line": 260,
+    "oldContent": "<Clock className=\"w-3.5 h-3.5 text-slate-400 shrink-0\" />",
+    "newContent": "<Clock className=\"w-3.5 h-3.5 text-slate-400 shrink-0\" />",
+    "category": "icon",
+    "action": "PRESERVED"
+  },
+  {
+    "file": "src/components/backoffice/BarcodeLabelPrinter.tsx",
+    "line": 71,
+    "oldContent": "className=\"text-slate-400 hover:text-white p-1 rounded-lg hover:bg-slate-800 transition-colors\"",
+    "newContent": "className=\"text-slate-400 hover:text-white p-1 rounded-lg hover:bg-slate-800 transition-colors\"",
+    "category": "icon",
+    "action": "PRESERVED"
+  },
+  {
+    "file": "src/components/backoffice/BarcodeLabelPrinter.tsx",
+    "line": 149,
+    "oldContent": "<div className=\"py-12 text-center text-xs text-slate-400\">",
+    "newContent": "<div className=\"py-12 text-center text-xs text-slate-600\">",
+    "category": "MEANINGFUL TEXT",
+    "action": "CHANGED"
+  },
+  {
+    "file": "src/components/backoffice/BatchDetailModal.tsx",
+    "line": 120,
+    "oldContent": "<p className=\"text-xs text-slate-400 mt-0.5\">",
+    "newContent": "<p className=\"text-xs text-slate-600 mt-0.5\">",
+    "category": "MEANINGFUL TEXT",
+    "action": "CHANGED"
+  },
+  {
+    "file": "src/components/backoffice/BatchDetailModal.tsx",
+    "line": 131,
+    "oldContent": "className=\"p-1.5 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800 transition-colors\"",
+    "newContent": "className=\"p-1.5 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800 transition-colors\"",
+    "category": "icon",
+    "action": "PRESERVED"
+  },
+  {
+    "file": "src/components/backoffice/BatchDetailModal.tsx",
+    "line": 139,
+    "oldContent": "className=\"p-1.5 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800 transition-colors\"",
+    "newContent": "className=\"p-1.5 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800 transition-colors\"",
+    "category": "icon",
+    "action": "PRESERVED"
+  },
+  {
+    "file": "src/components/backoffice/BatchDetailModal.tsx",
+    "line": 162,
+    "oldContent": "<div className=\"py-16 text-center text-slate-400\">",
+    "newContent": "<div className=\"py-16 text-center text-slate-600\">",
+    "category": "MEANINGFUL TEXT",
+    "action": "CHANGED"
+  },
+  {
+    "file": "src/components/backoffice/BatchDetailModal.tsx",
+    "line": 172,
+    "oldContent": "<Calendar className=\"w-3.5 h-3.5 text-slate-400\" />",
+    "newContent": "<Calendar className=\"w-3.5 h-3.5 text-slate-400\" />",
+    "category": "icon",
+    "action": "PRESERVED"
+  },
+  {
+    "file": "src/components/backoffice/ConfirmDeleteModal.tsx",
+    "line": 61,
+    "oldContent": "className=\"p-1 text-slate-400 hover:text-slate-600 rounded-lg hover:bg-slate-100 transition-colors\"",
+    "newContent": "className=\"p-1 text-slate-400 hover:text-slate-600 rounded-lg hover:bg-slate-100 transition-colors\"",
+    "category": "icon",
+    "action": "PRESERVED"
+  },
+  {
+    "file": "src/components/backoffice/ContainerTransactionModal.tsx",
+    "line": 120,
+    "oldContent": "className=\"text-slate-400 hover:text-white p-1 rounded-lg hover:bg-slate-800 transition-colors\"",
+    "newContent": "className=\"text-slate-400 hover:text-white p-1 rounded-lg hover:bg-slate-800 transition-colors\"",
+    "category": "icon",
+    "action": "PRESERVED"
+  },
+  {
+    "file": "src/components/backoffice/CreateContainerModal.tsx",
+    "line": 107,
+    "oldContent": "className=\"text-slate-400 hover:text-slate-600 p-1.5 rounded-lg hover:bg-slate-100 transition-colors\"",
+    "newContent": "className=\"text-slate-400 hover:text-slate-600 p-1.5 rounded-lg hover:bg-slate-100 transition-colors\"",
+    "category": "icon",
+    "action": "PRESERVED"
+  },
+  {
+    "file": "src/components/backoffice/CreateCustomerModal.tsx",
+    "line": 132,
+    "oldContent": "className=\"text-slate-400 hover:text-slate-600 p-1.5 rounded-lg hover:bg-slate-100 transition-colors\"",
+    "newContent": "className=\"text-slate-400 hover:text-slate-600 p-1.5 rounded-lg hover:bg-slate-100 transition-colors\"",
+    "category": "icon",
+    "action": "PRESERVED"
+  },
+  {
+    "file": "src/components/backoffice/CreateCustomerModal.tsx",
+    "line": 213,
+    "oldContent": "<label className=\"block font-bold text-slate-400 mb-1\">Remise Revendeur %</label>",
+    "newContent": "<label className=\"block font-bold text-slate-400 mb-1\">Remise Revendeur %</label>",
+    "category": "disabled",
+    "action": "PRESERVED"
+  },
+  {
+    "file": "src/components/backoffice/CreateCustomerModal.tsx",
+    "line": 218,
+    "oldContent": "className=\"w-full font-semibold text-slate-400 px-3 py-2 border border-slate-200 rounded-xl bg-slate-50 cursor-not-allowed\"",
+    "newContent": "className=\"w-full font-semibold text-slate-400 px-3 py-2 border border-slate-200 rounded-xl bg-slate-50 cursor-not-allowed\"",
+    "category": "disabled",
+    "action": "PRESERVED"
+  },
+  {
+    "file": "src/components/backoffice/CreateExpenseModal.tsx",
+    "line": 131,
+    "oldContent": "className=\"text-slate-400 hover:text-slate-600 p-1.5 rounded-lg hover:bg-slate-100 transition-colors\"",
+    "newContent": "className=\"text-slate-400 hover:text-slate-600 p-1.5 rounded-lg hover:bg-slate-100 transition-colors\"",
+    "category": "icon",
+    "action": "PRESERVED"
+  },
+  {
+    "file": "src/components/backoffice/CreateFormulationModal.tsx",
+    "line": 280,
+    "oldContent": "className=\"text-slate-400 hover:text-slate-600 p-1.5 rounded-lg hover:bg-slate-100 transition-colors\"",
+    "newContent": "className=\"text-slate-400 hover:text-slate-600 p-1.5 rounded-lg hover:bg-slate-100 transition-colors\"",
+    "category": "icon",
+    "action": "PRESERVED"
+  },
+  {
+    "file": "src/components/backoffice/CreateFormulationModal.tsx",
+    "line": 445,
+    "oldContent": "className=\"text-slate-400 hover:text-rose-600 p-1 transition-colors\"",
+    "newContent": "className=\"text-slate-600 hover:text-rose-600 p-1 transition-colors\"",
+    "category": "MEANINGFUL TEXT",
+    "action": "CHANGED"
+  },
+  {
+    "file": "src/components/backoffice/CreateMaterialModal.tsx",
+    "line": 171,
+    "oldContent": "className=\"text-slate-400 hover:text-slate-600 p-1.5 rounded-lg hover:bg-slate-100 transition-colors\"",
+    "newContent": "className=\"text-slate-400 hover:text-slate-600 p-1.5 rounded-lg hover:bg-slate-100 transition-colors\"",
+    "category": "icon",
+    "action": "PRESERVED"
+  },
+  {
+    "file": "src/components/backoffice/CreateProductModal.tsx",
+    "line": 531,
+    "oldContent": "className=\"text-slate-400 hover:text-slate-600 p-1.5 rounded-lg hover:bg-slate-100 transition-colors\"",
+    "newContent": "className=\"text-slate-400 hover:text-slate-600 p-1.5 rounded-lg hover:bg-slate-100 transition-colors\"",
+    "category": "icon",
+    "action": "PRESERVED"
+  },
+  {
+    "file": "src/components/backoffice/CreateProductModal.tsx",
+    "line": 1096,
+    "oldContent": "className=\"p-1 text-slate-400 hover:text-rose-600 rounded-lg hover:bg-rose-50 transition-colors\"",
+    "newContent": "className=\"p-1 text-slate-400 hover:text-rose-600 rounded-lg hover:bg-rose-50 transition-colors\"",
+    "category": "icon",
+    "action": "PRESERVED"
+  },
+  {
+    "file": "src/components/backoffice/CreatePurchaseModal.tsx",
+    "line": 254,
+    "oldContent": "className=\"w-8 h-8 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 flex items-center justify-center transition-colors\"",
+    "newContent": "className=\"w-8 h-8 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 flex items-center justify-center transition-colors\"",
+    "category": "icon",
+    "action": "PRESERVED"
+  },
+  {
+    "file": "src/components/backoffice/CreatePurchaseModal.tsx",
+    "line": 424,
+    "oldContent": "className=\"p-1 text-slate-400 hover:text-rose-600 rounded hover:bg-rose-50 transition-colors\"",
+    "newContent": "className=\"p-1 text-slate-400 hover:text-rose-600 rounded hover:bg-rose-50 transition-colors\"",
+    "category": "icon",
+    "action": "PRESERVED"
+  },
+  {
+    "file": "src/components/backoffice/CreateSupplierModal.tsx",
+    "line": 107,
+    "oldContent": "className=\"text-slate-400 hover:text-slate-600 p-1.5 rounded-lg hover:bg-slate-100 transition-colors\"",
+    "newContent": "className=\"text-slate-400 hover:text-slate-600 p-1.5 rounded-lg hover:bg-slate-100 transition-colors\"",
+    "category": "icon",
+    "action": "PRESERVED"
+  },
+  {
+    "file": "src/components/backoffice/CustomerStatementModal.tsx",
+    "line": 272,
+    "oldContent": "<p className=\"text-xs text-slate-400 mt-0.5\">",
+    "newContent": "<p className=\"text-xs text-slate-600 mt-0.5\">",
+    "category": "MEANINGFUL TEXT",
+    "action": "CHANGED"
+  },
+  {
+    "file": "src/components/backoffice/CustomerStatementModal.tsx",
+    "line": 303,
+    "oldContent": "className=\"w-11 h-11 flex items-center justify-center text-slate-400 hover:text-white rounded-lg hover:bg-slate-800 transition-colors cursor-pointer shrink-0\"",
+    "newContent": "className=\"w-11 h-11 flex items-center justify-center text-slate-400 hover:text-white rounded-lg hover:bg-slate-800 transition-colors cursor-pointer shrink-0\"",
+    "category": "dark background (preserved)",
+    "action": "PRESERVED"
+  },
+  {
+    "file": "src/components/backoffice/CustomerStatementModal.tsx",
+    "line": 311,
+    "oldContent": "className=\"w-11 h-11 flex items-center justify-center text-slate-400 hover:text-white rounded-lg hover:bg-slate-800 transition-colors cursor-pointer shrink-0\"",
+    "newContent": "className=\"w-11 h-11 flex items-center justify-center text-slate-400 hover:text-white rounded-lg hover:bg-slate-800 transition-colors cursor-pointer shrink-0\"",
+    "category": "dark background (preserved)",
+    "action": "PRESERVED"
+  },
+  {
+    "file": "src/components/backoffice/CustomerStatementModal.tsx",
+    "line": 363,
+    "oldContent": "<FileText className=\"w-10 h-10 text-slate-400 mx-auto mb-2\" />",
+    "newContent": "<FileText className=\"w-10 h-10 text-slate-400 mx-auto mb-2\" />",
+    "category": "icon",
+    "action": "PRESERVED"
+  },
+  {
+    "file": "src/components/backoffice/CustomerStatementModal.tsx",
+    "line": 547,
+    "oldContent": "<span className=\"text-xs text-slate-400 italic\">Pour Al Jazira SHSP</span>",
+    "newContent": "<span className=\"text-xs text-slate-600 italic\">Pour Al Jazira SHSP</span>",
+    "category": "MEANINGFUL TEXT",
+    "action": "CHANGED"
+  },
+  {
+    "file": "src/components/backoffice/InventoryAdjustmentModal.tsx",
+    "line": 151,
+    "oldContent": "className=\"text-slate-400 hover:text-slate-600 p-1.5 rounded-lg hover:bg-slate-100 transition-colors\"",
+    "newContent": "className=\"text-slate-400 hover:text-slate-600 p-1.5 rounded-lg hover:bg-slate-100 transition-colors\"",
+    "category": "icon",
+    "action": "PRESERVED"
+  },
+  {
+    "file": "src/components/backoffice/ManageCategoriesModal.tsx",
+    "line": 185,
+    "oldContent": "className=\"p-1.5 rounded-lg hover:bg-slate-200 text-slate-400 hover:text-slate-600 transition-colors\"",
+    "newContent": "className=\"p-1.5 rounded-lg hover:bg-slate-200 text-slate-400 hover:text-slate-600 transition-colors\"",
+    "category": "icon",
+    "action": "PRESERVED"
+  },
+  {
+    "file": "src/components/backoffice/ManageCategoriesModal.tsx",
+    "line": 248,
+    "oldContent": "<div className=\"p-8 text-center text-slate-400 text-xs\">Chargement des catégories...</div>",
+    "newContent": "<div className=\"p-8 text-center text-slate-600 text-xs\">Chargement des catégories...</div>",
+    "category": "MEANINGFUL TEXT",
+    "action": "CHANGED"
+  },
+  {
+    "file": "src/components/backoffice/ManageCategoriesModal.tsx",
+    "line": 250,
+    "oldContent": "<div className=\"p-8 text-center text-slate-400 text-xs\">Aucune catégorie trouvée.</div>",
+    "newContent": "<div className=\"p-8 text-center text-slate-600 text-xs\">Aucune catégorie trouvée.</div>",
+    "category": "MEANINGFUL TEXT",
+    "action": "CHANGED"
+  },
+  {
+    "file": "src/components/backoffice/ManageCategoriesModal.tsx",
+    "line": 306,
+    "oldContent": "className=\"p-1 hover:bg-purple-50 text-slate-400 hover:text-purple-600 rounded-lg transition-colors\"",
+    "newContent": "className=\"p-1 hover:bg-purple-50 text-slate-400 hover:text-purple-600 rounded-lg transition-colors\"",
+    "category": "icon",
+    "action": "PRESERVED"
+  },
+  {
+    "file": "src/components/backoffice/ManageCategoriesModal.tsx",
+    "line": 316,
+    "oldContent": "className=\"p-1 hover:bg-rose-50 text-slate-400 hover:text-rose-600 rounded-lg transition-colors\"",
+    "newContent": "className=\"p-1 hover:bg-rose-50 text-slate-400 hover:text-rose-600 rounded-lg transition-colors\"",
+    "category": "icon",
+    "action": "PRESERVED"
+  },
+  {
+    "file": "src/components/backoffice/MaterialPriceHistoryModal.tsx",
+    "line": 82,
+    "oldContent": "className=\"text-slate-400 hover:text-slate-600 p-1.5 rounded-lg hover:bg-slate-100 transition-colors\"",
+    "newContent": "className=\"text-slate-400 hover:text-slate-600 p-1.5 rounded-lg hover:bg-slate-100 transition-colors\"",
+    "category": "icon",
+    "action": "PRESERVED"
+  },
+  {
+    "file": "src/components/backoffice/MaterialPriceHistoryModal.tsx",
+    "line": 97,
+    "oldContent": "<div className=\"py-12 text-center text-slate-400 text-xs\">",
+    "newContent": "<div className=\"py-12 text-center text-slate-600 text-xs\">",
+    "category": "MEANINGFUL TEXT",
+    "action": "CHANGED"
+  },
+  {
+    "file": "src/components/backoffice/MaterialPriceHistoryModal.tsx",
+    "line": 101,
+    "oldContent": "<div className=\"py-12 text-center text-slate-400 text-xs\">",
+    "newContent": "<div className=\"py-12 text-center text-slate-600 text-xs\">",
+    "category": "MEANINGFUL TEXT",
+    "action": "CHANGED"
+  },
+  {
+    "file": "src/components/backoffice/MaterialPriceHistoryModal.tsx",
+    "line": 122,
+    "oldContent": "<Clock className=\"w-3.5 h-3.5 text-slate-400 shrink-0\" />",
+    "newContent": "<Clock className=\"w-3.5 h-3.5 text-slate-400 shrink-0\" />",
+    "category": "icon",
+    "action": "PRESERVED"
+  },
+  {
+    "file": "src/components/backoffice/MaterialPriceHistoryModal.tsx",
+    "line": 127,
+    "oldContent": "<Building2 className=\"w-3.5 h-3.5 text-slate-400\" />",
+    "newContent": "<Building2 className=\"w-3.5 h-3.5 text-slate-400\" />",
+    "category": "icon",
+    "action": "PRESERVED"
+  },
+  {
+    "file": "src/components/backoffice/MaterialPriceHistoryModal.tsx",
+    "line": 144,
+    "oldContent": "<span className=\"text-pos-badge text-slate-400 font-mono\">—</span>",
+    "newContent": "<span className=\"text-pos-badge text-slate-600 font-mono\">—</span>",
+    "category": "MEANINGFUL TEXT",
+    "action": "CHANGED"
+  },
+  {
+    "file": "src/components/backoffice/PurchaseDetailModal.tsx",
+    "line": 127,
+    "oldContent": "<p className=\"text-xs text-slate-400 mt-0.5\">",
+    "newContent": "<p className=\"text-xs text-slate-600 mt-0.5\">",
+    "category": "MEANINGFUL TEXT",
+    "action": "CHANGED"
+  },
+  {
+    "file": "src/components/backoffice/PurchaseDetailModal.tsx",
+    "line": 138,
+    "oldContent": "className=\"p-1.5 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800 transition-colors\"",
+    "newContent": "className=\"p-1.5 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800 transition-colors\"",
+    "category": "icon",
+    "action": "PRESERVED"
+  },
+  {
+    "file": "src/components/backoffice/PurchaseDetailModal.tsx",
+    "line": 146,
+    "oldContent": "className=\"p-1.5 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800 transition-colors\"",
+    "newContent": "className=\"p-1.5 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800 transition-colors\"",
+    "category": "icon",
+    "action": "PRESERVED"
+  },
+  {
+    "file": "src/components/backoffice/PurchaseDetailModal.tsx",
+    "line": 169,
+    "oldContent": "<div className=\"py-16 text-center text-slate-400\">",
+    "newContent": "<div className=\"py-16 text-center text-slate-600\">",
+    "category": "MEANINGFUL TEXT",
+    "action": "CHANGED"
+  },
+  {
+    "file": "src/components/backoffice/PurchaseDetailModal.tsx",
+    "line": 179,
+    "oldContent": "<Calendar className=\"w-3.5 h-3.5 text-slate-400\" />",
+    "newContent": "<Calendar className=\"w-3.5 h-3.5 text-slate-400\" />",
+    "category": "icon",
+    "action": "PRESERVED"
+  },
+  {
+    "file": "src/components/backoffice/PurchaseDetailModal.tsx",
+    "line": 219,
+    "oldContent": "<Truck className=\"w-4 h-4 text-slate-400\" />",
+    "newContent": "<Truck className=\"w-4 h-4 text-slate-400\" />",
+    "category": "icon",
+    "action": "PRESERVED"
+  },
+  {
+    "file": "src/components/backoffice/ReportsTab.tsx",
+    "line": 264,
+    "oldContent": "<Calendar className=\"w-3.5 h-3.5 text-slate-400\" />",
+    "newContent": "<Calendar className=\"w-3.5 h-3.5 text-slate-400\" />",
+    "category": "icon",
+    "action": "PRESERVED"
+  },
+  {
+    "file": "src/components/backoffice/ReportsTab.tsx",
+    "line": 274,
+    "oldContent": "<span className=\"text-slate-400 font-bold\">au</span>",
+    "newContent": "<span className=\"text-slate-600 font-bold\">au</span>",
+    "category": "MEANINGFUL TEXT",
+    "action": "CHANGED"
+  },
+  {
+    "file": "src/components/backoffice/ReportsTab.tsx",
+    "line": 317,
+    "oldContent": "<Search className=\"w-3.5 h-3.5 absolute left-2.5 top-2.5 text-slate-400\" />",
+    "newContent": "<Search className=\"w-3.5 h-3.5 absolute left-2.5 top-2.5 text-slate-400\" />",
+    "category": "icon",
+    "action": "PRESERVED"
+  },
+  {
+    "file": "src/components/backoffice/ReportsTab.tsx",
+    "line": 470,
+    "oldContent": "<td colSpan={11} className=\"p-8 text-center text-slate-400\">",
+    "newContent": "<td colSpan={11} className=\"p-8 text-center text-slate-600\">",
+    "category": "MEANINGFUL TEXT",
+    "action": "CHANGED"
+  },
+  {
+    "file": "src/components/backoffice/ReportsTab.tsx",
+    "line": 519,
+    "oldContent": "<td colSpan={11} className=\"p-8 text-center text-slate-400\">",
+    "newContent": "<td colSpan={11} className=\"p-8 text-center text-slate-600\">",
+    "category": "MEANINGFUL TEXT",
+    "action": "CHANGED"
+  },
+  {
+    "file": "src/components/backoffice/ReportsTab.tsx",
+    "line": 558,
+    "oldContent": "<td colSpan={6} className=\"p-8 text-center text-slate-400\">",
+    "newContent": "<td colSpan={6} className=\"p-8 text-center text-slate-600\">",
+    "category": "MEANINGFUL TEXT",
+    "action": "CHANGED"
+  },
+  {
+    "file": "src/components/backoffice/ReportsTab.tsx",
+    "line": 620,
+    "oldContent": "<td className=\"py-2 px-3 text-right font-mono text-slate-400\">—</td>",
+    "newContent": "<td className=\"py-2 px-3 text-right font-mono text-slate-600\">—</td>",
+    "category": "MEANINGFUL TEXT",
+    "action": "CHANGED"
+  },
+  {
+    "file": "src/components/backoffice/ReportsTab.tsx",
+    "line": 621,
+    "oldContent": "<td className=\"py-2 px-3 text-right font-mono text-slate-400\">—</td>",
+    "newContent": "<td className=\"py-2 px-3 text-right font-mono text-slate-600\">—</td>",
+    "category": "MEANINGFUL TEXT",
+    "action": "CHANGED"
+  },
+  {
+    "file": "src/components/backoffice/ReportsTab.tsx",
+    "line": 627,
+    "oldContent": "<td colSpan={8} className=\"p-8 text-center text-slate-400\">",
+    "newContent": "<td colSpan={8} className=\"p-8 text-center text-slate-600\">",
+    "category": "MEANINGFUL TEXT",
+    "action": "CHANGED"
+  },
+  {
+    "file": "src/components/backoffice/SalesHistoryTab.tsx",
+    "line": 163,
+    "oldContent": "<Search className=\"w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-1/2 -translate-y-1/2\" />",
+    "newContent": "<Search className=\"w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-1/2 -translate-y-1/2\" />",
+    "category": "icon",
+    "action": "PRESERVED"
+  },
+  {
+    "file": "src/components/backoffice/SalesHistoryTab.tsx",
+    "line": 182,
+    "oldContent": "<Calendar className=\"w-3 h-3 text-slate-400\" />",
+    "newContent": "<Calendar className=\"w-3 h-3 text-slate-400\" />",
+    "category": "icon",
+    "action": "PRESERVED"
+  },
+  {
+    "file": "src/components/backoffice/SalesHistoryTab.tsx",
+    "line": 190,
+    "oldContent": "<span className=\"text-slate-400\">à</span>",
+    "newContent": "<span className=\"text-slate-600\">à</span>",
+    "category": "MEANINGFUL TEXT",
+    "action": "CHANGED"
+  },
+  {
+    "file": "src/components/backoffice/SalesHistoryTab.tsx",
+    "line": 201,
+    "oldContent": "<Filter className=\"w-3 h-3 text-slate-400\" />",
+    "newContent": "<Filter className=\"w-3 h-3 text-slate-400\" />",
+    "category": "icon",
+    "action": "PRESERVED"
+  },
+  {
+    "file": "src/components/backoffice/SalesHistoryTab.tsx",
+    "line": 256,
+    "oldContent": "{s.customer_name || <span className=\"text-slate-400 italic\">Passager</span>}",
+    "newContent": "{s.customer_name || <span className=\"text-slate-600 italic\">Passager</span>}",
+    "category": "MEANINGFUL TEXT",
+    "action": "CHANGED"
+  },
+  {
+    "file": "src/components/backoffice/SalesHistoryTab.tsx",
+    "line": 266,
+    "oldContent": "<span className=\"text-slate-400 mx-1\">/</span>",
+    "newContent": "<span className=\"text-slate-600 mx-1\">/</span>",
+    "category": "MEANINGFUL TEXT",
+    "action": "CHANGED"
+  },
+  {
+    "file": "src/components/backoffice/SalesHistoryTab.tsx",
+    "line": 268,
+    "oldContent": "<span className=\"text-slate-400 mx-1\">/</span>",
+    "newContent": "<span className=\"text-slate-600 mx-1\">/</span>",
+    "category": "MEANINGFUL TEXT",
+    "action": "CHANGED"
+  },
+  {
+    "file": "src/components/backoffice/SalesHistoryTab.tsx",
+    "line": 341,
+    "oldContent": "<div className=\"py-12 text-center text-slate-400 text-xs\">",
+    "newContent": "<div className=\"py-12 text-center text-slate-600 text-xs\">",
+    "category": "MEANINGFUL TEXT",
+    "action": "CHANGED"
+  },
+  {
+    "file": "src/components/backoffice/SalesHistoryTab.tsx",
+    "line": 378,
+    "oldContent": "className=\"text-slate-400 hover:text-slate-600 p-1.5 rounded-lg hover:bg-slate-100 transition-colors\"",
+    "newContent": "className=\"text-slate-400 hover:text-slate-600 p-1.5 rounded-lg hover:bg-slate-100 transition-colors\"",
+    "category": "icon",
+    "action": "PRESERVED"
+  },
+  {
+    "file": "src/components/backoffice/SalesHistoryTab.tsx",
+    "line": 386,
+    "oldContent": "<div className=\"py-8 text-center text-slate-400\">",
+    "newContent": "<div className=\"py-8 text-center text-slate-600\">",
+    "category": "MEANINGFUL TEXT",
+    "action": "CHANGED"
+  },
+  {
+    "file": "src/components/backoffice/SalesHistoryTab.tsx",
+    "line": 387,
+    "oldContent": "<RefreshCw className=\"w-5 h-5 animate-spin mx-auto mb-2 text-slate-400\" />",
+    "newContent": "<RefreshCw className=\"w-5 h-5 animate-spin mx-auto mb-2 text-slate-400\" />",
+    "category": "icon",
+    "action": "PRESERVED"
+  },
+  {
+    "file": "src/components/desktop/DesktopPos.tsx",
+    "line": 578,
+    "oldContent": "<Search className=\"w-4 h-4 text-slate-400 absolute left-3 top-2.5\" />",
+    "newContent": "<Search className=\"w-4 h-4 text-slate-400 absolute left-3 top-2.5\" />",
+    "category": "icon",
+    "action": "PRESERVED"
+  },
+  {
+    "file": "src/components/desktop/DesktopPos.tsx",
+    "line": 700,
+    "oldContent": "<div className=\"col-span-full py-16 text-center text-slate-400 text-xs\">",
+    "newContent": "<div className=\"col-span-full py-16 text-center text-slate-600 text-xs\">",
+    "category": "MEANINGFUL TEXT",
+    "action": "CHANGED"
+  },
+  {
+    "file": "src/components/desktop/DesktopPos.tsx",
+    "line": 734,
+    "oldContent": "className=\"text-slate-400 hover:text-rose-600 hover:bg-rose-50 p-0.5 rounded ml-auto transition-colors shrink-0\"",
+    "newContent": "className=\"text-slate-400 hover:text-rose-600 hover:bg-rose-50 p-0.5 rounded ml-auto transition-colors shrink-0\"",
+    "category": "icon",
+    "action": "PRESERVED"
+  },
+  {
+    "file": "src/components/desktop/DesktopPos.tsx",
+    "line": 743,
+    "oldContent": "<Search className=\"w-3.5 h-3.5 absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400\" />",
+    "newContent": "<Search className=\"w-3.5 h-3.5 absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400\" />",
+    "category": "icon",
+    "action": "PRESERVED"
+  },
+  {
+    "file": "src/components/desktop/DesktopPos.tsx",
+    "line": 768,
+    "oldContent": "<span className=\"text-xs text-slate-400\">Sans compte</span>",
+    "newContent": "<span className=\"text-xs text-slate-600\">Sans compte</span>",
+    "category": "MEANINGFUL TEXT",
+    "action": "CHANGED"
+  },
+  {
+    "file": "src/components/desktop/DesktopPos.tsx",
+    "line": 771,
+    "oldContent": "<div className=\"p-4 text-xs text-slate-400 text-center\">",
+    "newContent": "<div className=\"p-4 text-xs text-slate-600 text-center\">",
+    "category": "MEANINGFUL TEXT",
+    "action": "CHANGED"
+  },
+  {
+    "file": "src/components/desktop/DesktopPos.tsx",
+    "line": 934,
+    "oldContent": "<span className=\"text-pos-badge line-through text-slate-400 font-mono\">",
+    "newContent": "<span className=\"text-pos-badge line-through text-slate-600 font-mono\">",
+    "category": "MEANINGFUL TEXT",
+    "action": "CHANGED"
+  },
+  {
+    "file": "src/components/desktop/DesktopPos.tsx",
+    "line": 945,
+    "oldContent": "className=\"text-slate-400 hover:text-rose-600 min-w-[36px] min-h-[36px] flex items-center justify-center p-1 rounded-lg hover:bg-rose-50 transition-colors\"",
+    "newContent": "className=\"text-slate-400 hover:text-rose-600 min-w-[36px] min-h-[36px] flex items-center justify-center p-1 rounded-lg hover:bg-rose-50 transition-colors\"",
+    "category": "icon",
+    "action": "PRESERVED"
+  },
+  {
+    "file": "src/components/desktop/DesktopPos.tsx",
+    "line": 967,
+    "oldContent": "<span className=\"text-pos-badge font-mono text-slate-400\">DT</span>",
+    "newContent": "<span className=\"text-pos-badge font-mono text-slate-600\">DT</span>",
+    "category": "MEANINGFUL TEXT",
+    "action": "CHANGED"
+  },
+  {
+    "file": "src/components/desktop/DesktopPos.tsx",
+    "line": 1102,
+    "oldContent": "<div className=\"h-full flex flex-col items-center justify-center text-slate-400 py-12\">",
+    "newContent": "<div className=\"h-full flex flex-col items-center justify-center text-slate-600 py-12\">",
+    "category": "MEANINGFUL TEXT",
+    "action": "CHANGED"
+  },
+  {
+    "file": "src/components/desktop/DesktopPos.tsx",
+    "line": 1105,
+    "oldContent": "<p className=\"text-xs text-slate-400\">Scannez un code-barres ou sélectionnez un article</p>",
+    "newContent": "<p className=\"text-xs text-slate-600\">Scannez un code-barres ou sélectionnez un article</p>",
+    "category": "MEANINGFUL TEXT",
+    "action": "CHANGED"
+  },
+  {
+    "file": "src/components/mobile/MobileRegister.tsx",
+    "line": 697,
+    "oldContent": "<Search className=\"w-4 h-4 text-slate-400 absolute left-3 top-2.5\" />",
+    "newContent": "<Search className=\"w-4 h-4 text-slate-400 absolute left-3 top-2.5\" />",
+    "category": "icon",
+    "action": "PRESERVED"
+  },
+  {
+    "file": "src/components/mobile/MobileRegister.tsx",
+    "line": 827,
+    "oldContent": "<div className=\"col-span-full py-16 text-center text-slate-400 text-xs\">",
+    "newContent": "<div className=\"col-span-full py-16 text-center text-slate-600 text-xs\">",
+    "category": "MEANINGFUL TEXT",
+    "action": "CHANGED"
+  },
+  {
+    "file": "src/components/mobile/MobileRegister.tsx",
+    "line": 861,
+    "oldContent": "<span className=\"text-xs text-slate-400\">Appuyer pour voir & encaisser</span>",
+    "newContent": "<span className=\"text-xs text-slate-400\">Appuyer pour voir & encaisser</span>",
+    "category": "dark background (preserved)",
+    "action": "PRESERVED"
+  },
+  {
+    "file": "src/components/mobile/MobileRegister.tsx",
+    "line": 868,
+    "oldContent": "<ChevronUp className=\"w-5 h-5 text-slate-400\" />",
+    "newContent": "<ChevronUp className=\"w-5 h-5 text-slate-400\" />",
+    "category": "icon",
+    "action": "PRESERVED"
+  },
+  {
+    "file": "src/components/mobile/MobileRegister.tsx",
+    "line": 902,
+    "oldContent": "<Search className=\"w-4 h-4 text-slate-400 absolute left-3 top-3\" />",
+    "newContent": "<Search className=\"w-4 h-4 text-slate-400 absolute left-3 top-3\" />",
+    "category": "icon",
+    "action": "PRESERVED"
+  },
+  {
+    "file": "src/components/mobile/MobileRegister.tsx",
+    "line": 928,
+    "oldContent": "<span className=\"text-xs font-bold text-slate-400 uppercase\">",
+    "newContent": "<span className=\"text-xs font-bold text-slate-600 uppercase\">",
+    "category": "MEANINGFUL TEXT",
+    "action": "CHANGED"
+  },
+  {
+    "file": "src/components/mobile/MobileRegister.tsx",
+    "line": 994,
+    "oldContent": "<div className=\"py-16 text-center text-slate-400 text-xs\">",
+    "newContent": "<div className=\"py-16 text-center text-slate-600 text-xs\">",
+    "category": "MEANINGFUL TEXT",
+    "action": "CHANGED"
+  },
+  {
+    "file": "src/components/mobile/MobileRegister.tsx",
+    "line": 1008,
+    "oldContent": "<Search className=\"w-4 h-4 text-slate-400 absolute left-3 top-3\" />",
+    "newContent": "<Search className=\"w-4 h-4 text-slate-400 absolute left-3 top-3\" />",
+    "category": "icon",
+    "action": "PRESERVED"
+  },
+  {
+    "file": "src/components/mobile/MobileRegister.tsx",
+    "line": 1116,
+    "oldContent": "<Search className=\"w-4 h-4 text-slate-400 absolute left-3 top-3\" />",
+    "newContent": "<Search className=\"w-4 h-4 text-slate-400 absolute left-3 top-3\" />",
+    "category": "icon",
+    "action": "PRESERVED"
+  },
+  {
+    "file": "src/components/mobile/MobileRegister.tsx",
+    "line": 1145,
+    "oldContent": "<span className=\"text-xs text-slate-400 block font-semibold\">Total Dû:</span>",
+    "newContent": "<span className=\"text-xs text-slate-600 block font-semibold\">Total Dû:</span>",
+    "category": "MEANINGFUL TEXT",
+    "action": "CHANGED"
+  },
+  {
+    "file": "src/components/mobile/MobileRegister.tsx",
+    "line": 1146,
+    "oldContent": "<span className={`text-base font-black font-mono ${hasDebt ? 'text-amber-700' : 'text-slate-400'}`}>",
+    "newContent": "<span className={`text-base font-black font-mono ${hasDebt ? 'text-amber-700' : 'text-slate-600'}`}>",
+    "category": "MEANINGFUL TEXT",
+    "action": "CHANGED"
+  },
+  {
+    "file": "src/components/mobile/MobileRegister.tsx",
+    "line": 1206,
+    "oldContent": "<p className=\"text-xs text-slate-400\">",
+    "newContent": "<p className=\"text-xs text-slate-600\">",
+    "category": "MEANINGFUL TEXT",
+    "action": "CHANGED"
+  },
+  {
+    "file": "src/components/mobile/MobileRegister.tsx",
+    "line": 1228,
+    "oldContent": ": 'bg-slate-800 text-slate-400 border-slate-700 hover:text-white'",
+    "newContent": ": 'bg-slate-800 text-slate-400 border-slate-700 hover:text-white'",
+    "category": "dark background (preserved)",
+    "action": "PRESERVED"
+  },
+  {
+    "file": "src/components/mobile/MobileRegister.tsx",
+    "line": 1237,
+    "oldContent": "className=\"min-w-[44px] min-h-[44px] flex items-center justify-center text-slate-400 hover:text-white rounded-lg transition-colors\"",
+    "newContent": "className=\"min-w-[44px] min-h-[44px] flex items-center justify-center text-slate-400 hover:text-white rounded-lg transition-colors\"",
+    "category": "dark background (preserved)",
+    "action": "PRESERVED"
+  },
+  {
+    "file": "src/components/mobile/MobileRegister.tsx",
+    "line": 1345,
+    "oldContent": "<span className=\"text-pos-badge line-through text-slate-400 font-mono\">",
+    "newContent": "<span className=\"text-pos-badge line-through text-slate-600 font-mono\">",
+    "category": "MEANINGFUL TEXT",
+    "action": "CHANGED"
+  },
+  {
+    "file": "src/components/mobile/MobileRegister.tsx",
+    "line": 1379,
+    "oldContent": "className=\"min-w-[44px] min-h-[44px] w-11 h-11 flex items-center justify-center text-slate-400 hover:text-rose-600 rounded-xl hover:bg-rose-50 transition-colors\"",
+    "newContent": "className=\"min-w-[44px] min-h-[44px] w-11 h-11 flex items-center justify-center text-slate-400 hover:text-rose-600 rounded-xl hover:bg-rose-50 transition-colors\"",
+    "category": "icon",
+    "action": "PRESERVED"
+  },
+  {
+    "file": "src/components/mobile/MobileRegister.tsx",
+    "line": 1495,
+    "oldContent": "<span className=\"text-slate-400\">|</span>",
+    "newContent": "<span className=\"text-slate-600\">|</span>",
+    "category": "MEANINGFUL TEXT",
+    "action": "CHANGED"
+  },
+  {
+    "file": "src/components/mobile/MobileRegister.tsx",
+    "line": 1500,
+    "oldContent": "<span className=\"text-slate-400\">|</span>",
+    "newContent": "<span className=\"text-slate-600\">|</span>",
+    "category": "MEANINGFUL TEXT",
+    "action": "CHANGED"
+  },
+  {
+    "file": "src/components/mobile/MobileRegister.tsx",
+    "line": 1769,
+    "oldContent": ": 'border-transparent text-slate-400 hover:text-white font-bold'",
+    "newContent": ": 'border-transparent text-slate-400 hover:text-white font-bold'",
+    "category": "dark background (preserved)",
+    "action": "PRESERVED"
+  },
+  {
+    "file": "src/components/mobile/MobileRegister.tsx",
+    "line": 1781,
+    "oldContent": ": 'border-transparent text-slate-400 hover:text-white font-bold'",
+    "newContent": ": 'border-transparent text-slate-400 hover:text-white font-bold'",
+    "category": "dark background (preserved)",
+    "action": "PRESERVED"
+  },
+  {
+    "file": "src/components/mobile/MobileRegister.tsx",
+    "line": 1793,
+    "oldContent": ": 'border-transparent text-slate-400 hover:text-white font-bold'",
+    "newContent": ": 'border-transparent text-slate-400 hover:text-white font-bold'",
+    "category": "dark background (preserved)",
+    "action": "PRESERVED"
+  },
+  {
+    "file": "src/components/mobile/MobileRegister.tsx",
+    "line": 1805,
+    "oldContent": ": 'border-transparent text-slate-400 hover:text-white font-bold'",
+    "newContent": ": 'border-transparent text-slate-400 hover:text-white font-bold'",
+    "category": "dark background (preserved)",
+    "action": "PRESERVED"
+  },
+  {
+    "file": "src/components/shared/AuthCredentialsModal.tsx",
+    "line": 183,
+    "oldContent": "className=\"text-slate-400 hover:text-slate-600 p-1.5 rounded-lg hover:bg-slate-100 transition-colors\"",
+    "newContent": "className=\"text-slate-400 hover:text-slate-600 p-1.5 rounded-lg hover:bg-slate-100 transition-colors\"",
+    "category": "icon",
+    "action": "PRESERVED"
+  },
+  {
+    "file": "src/components/shared/CashMovementModal.tsx",
+    "line": 116,
+    "oldContent": "className=\"text-slate-400 hover:text-white p-1 rounded-lg hover:bg-slate-800 transition-colors\"",
+    "newContent": "className=\"text-slate-400 hover:text-white p-1 rounded-lg hover:bg-slate-800 transition-colors\"",
+    "category": "icon",
+    "action": "PRESERVED"
+  },
+  {
+    "file": "src/components/shared/CheckoutModal.tsx",
+    "line": 400,
+    "oldContent": "<p className=\"text-xs text-slate-400\">",
+    "newContent": "<p className=\"text-xs text-slate-600\">",
+    "category": "MEANINGFUL TEXT",
+    "action": "CHANGED"
+  },
+  {
+    "file": "src/components/shared/CheckoutModal.tsx",
+    "line": 407,
+    "oldContent": "<span className=\"text-pos-badge text-slate-400 uppercase tracking-wider block font-semibold leading-none\">TOTAL À PAYER</span>",
+    "newContent": "<span className=\"text-pos-badge text-slate-600 uppercase tracking-wider block font-semibold leading-none\">TOTAL À PAYER</span>",
+    "category": "MEANINGFUL TEXT",
+    "action": "CHANGED"
+  },
+  {
+    "file": "src/components/shared/CheckoutModal.tsx",
+    "line": 412,
+    "oldContent": "className=\"text-slate-400 hover:text-white p-1 rounded-lg hover:bg-slate-800 transition-colors\"",
+    "newContent": "className=\"text-slate-400 hover:text-white p-1 rounded-lg hover:bg-slate-800 transition-colors\"",
+    "category": "icon",
+    "action": "PRESERVED"
+  },
+  {
+    "file": "src/components/shared/CheckoutModal.tsx",
+    "line": 421,
+    "oldContent": "className=\"text-slate-400 hover:text-white p-1 rounded-lg hover:bg-slate-800 transition-colors\"",
+    "newContent": "className=\"text-slate-400 hover:text-white p-1 rounded-lg hover:bg-slate-800 transition-colors\"",
+    "category": "icon",
+    "action": "PRESERVED"
+  },
+  {
+    "file": "src/components/shared/CheckoutModal.tsx",
+    "line": 494,
+    "oldContent": "className=\"text-slate-400 hover:text-slate-600 underline\"",
+    "newContent": "className=\"text-slate-600 hover:text-slate-600 underline\"",
+    "category": "MEANINGFUL TEXT",
+    "action": "CHANGED"
+  },
+  {
+    "file": "src/components/shared/CheckoutModal.tsx",
+    "line": 677,
+    "oldContent": "className=\"w-full text-base font-bold font-mono px-3 py-1.5 border border-purple-200 rounded-lg focus:ring-2 focus:ring-purple-500 focus:outline-none disabled:bg-slate-100 disabled:text-slate-400\"",
+    "newContent": "className=\"w-full text-base font-bold font-mono px-3 py-1.5 border border-purple-200 rounded-lg focus:ring-2 focus:ring-purple-500 focus:outline-none disabled:bg-slate-100 disabled:text-slate-400\"",
+    "category": "disabled",
+    "action": "PRESERVED"
+  },
+  {
+    "file": "src/components/shared/DeliveryNotePrintModal.tsx",
+    "line": 130,
+    "oldContent": "className=\"text-slate-400 hover:text-white p-1 rounded-lg hover:bg-slate-800 transition-colors\"",
+    "newContent": "className=\"text-slate-400 hover:text-white p-1 rounded-lg hover:bg-slate-800 transition-colors\"",
+    "category": "icon",
+    "action": "PRESERVED"
+  },
+  {
+    "file": "src/components/shared/DeliveryNotePrintModal.tsx",
+    "line": 159,
+    "oldContent": "<div className=\"py-16 text-center text-sm text-slate-400 italic\">",
+    "newContent": "<div className=\"py-16 text-center text-sm text-slate-600 italic\">",
+    "category": "MEANINGFUL TEXT",
+    "action": "CHANGED"
+  },
+  {
+    "file": "src/components/shared/FamilySizesModal.tsx",
+    "line": 46,
+    "oldContent": "className=\"text-slate-400 hover:text-white p-1 rounded-lg hover:bg-slate-800 transition-colors\"",
+    "newContent": "className=\"text-slate-400 hover:text-white p-1 rounded-lg hover:bg-slate-800 transition-colors\"",
+    "category": "icon",
+    "action": "PRESERVED"
+  },
+  {
+    "file": "src/components/shared/Header.tsx",
+    "line": 169,
+    "oldContent": "<p className=\"text-xs text-slate-400 font-medium\">",
+    "newContent": "<p className=\"text-xs text-slate-400 font-medium\">",
+    "category": "dark background (preserved)",
+    "action": "PRESERVED"
+  },
+  {
+    "file": "src/components/shared/Header.tsx",
+    "line": 505,
+    "oldContent": "className=\"text-slate-400 hover:text-white p-1 rounded-lg hover:bg-slate-800 transition-colors\"",
+    "newContent": "className=\"text-slate-400 hover:text-white p-1 rounded-lg hover:bg-slate-800 transition-colors\"",
+    "category": "dark background (preserved)",
+    "action": "PRESERVED"
+  },
+  {
+    "file": "src/components/shared/Header.tsx",
+    "line": 516,
+    "oldContent": "<span className=\"text-pos-badge text-slate-400\">{item.temp_client_id}</span>",
+    "newContent": "<span className=\"text-pos-badge text-slate-400\">{item.temp_client_id}</span>",
+    "category": "dark background (preserved)",
+    "action": "PRESERVED"
+  },
+  {
+    "file": "src/components/shared/Header.tsx",
+    "line": 524,
+    "oldContent": "<div className=\"text-center py-6 text-slate-400 text-xs\">",
+    "newContent": "<div className=\"text-center py-6 text-slate-400 text-xs\">",
+    "category": "dark background (preserved)",
+    "action": "PRESERVED"
+  },
+  {
+    "file": "src/components/shared/HeldCartsModal.tsx",
+    "line": 119,
+    "oldContent": "className=\"text-slate-400 hover:text-white p-1 rounded-lg hover:bg-slate-800 transition-colors\"",
+    "newContent": "className=\"text-slate-400 hover:text-white p-1 rounded-lg hover:bg-slate-800 transition-colors\"",
+    "category": "icon",
+    "action": "PRESERVED"
+  },
+  {
+    "file": "src/components/shared/HeldCartsModal.tsx",
+    "line": 166,
+    "oldContent": "<div className=\"py-12 text-center text-slate-400 space-y-2\">",
+    "newContent": "<div className=\"py-12 text-center text-slate-600 space-y-2\">",
+    "category": "MEANINGFUL TEXT",
+    "action": "CHANGED"
+  },
+  {
+    "file": "src/components/shared/HeldCartsModal.tsx",
+    "line": 169,
+    "oldContent": "<p className=\"text-xs text-slate-400\">",
+    "newContent": "<p className=\"text-xs text-slate-600\">",
+    "category": "MEANINGFUL TEXT",
+    "action": "CHANGED"
+  },
+  {
+    "file": "src/components/shared/HeldCartsModal.tsx",
+    "line": 194,
+    "oldContent": "<Clock className=\"w-3 h-3 text-slate-400\" />",
+    "newContent": "<Clock className=\"w-3 h-3 text-slate-400\" />",
+    "category": "icon",
+    "action": "PRESERVED"
+  },
+  {
+    "file": "src/components/shared/HeldCartsModal.tsx",
+    "line": 261,
+    "oldContent": "className=\"text-slate-400 hover:text-rose-600 p-1.5 rounded-lg hover:bg-rose-50 transition-colors flex items-center gap-1 text-xs\"",
+    "newContent": "className=\"text-slate-400 hover:text-rose-600 p-1.5 rounded-lg hover:bg-rose-50 transition-colors flex items-center gap-1 text-xs\"",
+    "category": "icon",
+    "action": "PRESERVED"
+  },
+  {
+    "file": "src/components/shared/InvoicePrintModal.tsx",
+    "line": 72,
+    "oldContent": "className=\"text-slate-400 hover:text-white p-1 rounded-lg hover:bg-slate-800 transition-colors\"",
+    "newContent": "className=\"text-slate-400 hover:text-white p-1 rounded-lg hover:bg-slate-800 transition-colors\"",
+    "category": "icon",
+    "action": "PRESERVED"
+  },
+  {
+    "file": "src/components/shared/LockScreenModal.tsx",
+    "line": 161,
+    "oldContent": "<p className=\"text-xs text-slate-400 mt-0.5\">",
+    "newContent": "<p className=\"text-xs text-slate-400 mt-0.5\">",
+    "category": "dark background (preserved)",
+    "action": "PRESERVED"
+  },
+  {
+    "file": "src/components/shared/LockScreenModal.tsx",
+    "line": 210,
+    "oldContent": "className=\"h-10 sm:h-14 rounded-xl sm:rounded-2xl bg-slate-800/40 hover:bg-slate-700/60 text-slate-400 font-bold text-xs border border-slate-800 transition-colors flex items-center justify-center active:scale-95\"",
+    "newContent": "className=\"h-10 sm:h-14 rounded-xl sm:rounded-2xl bg-slate-800/40 hover:bg-slate-700/60 text-slate-400 font-bold text-xs border border-slate-800 transition-colors flex items-center justify-center active:scale-95\"",
+    "category": "dark background (preserved)",
+    "action": "PRESERVED"
+  },
+  {
+    "file": "src/components/shared/LockScreenModal.tsx",
+    "line": 226,
+    "oldContent": "className=\"h-10 sm:h-14 rounded-xl sm:rounded-2xl bg-slate-800/40 hover:bg-slate-700/60 text-slate-400 font-bold text-xs border border-slate-800 transition-colors flex items-center justify-center active:scale-95\"",
+    "newContent": "className=\"h-10 sm:h-14 rounded-xl sm:rounded-2xl bg-slate-800/40 hover:bg-slate-700/60 text-slate-400 font-bold text-xs border border-slate-800 transition-colors flex items-center justify-center active:scale-95\"",
+    "category": "dark background (preserved)",
+    "action": "PRESERVED"
+  },
+  {
+    "file": "src/components/shared/LockScreenModal.tsx",
+    "line": 240,
+    "oldContent": "className=\"text-xs text-slate-400 hover:text-emerald-400 font-semibold transition-colors flex items-center justify-center gap-1 mx-auto\"",
+    "newContent": "className=\"text-xs text-slate-400 hover:text-emerald-400 font-semibold transition-colors flex items-center justify-center gap-1 mx-auto\"",
+    "category": "dark background (preserved)",
+    "action": "PRESERVED"
+  },
+  {
+    "file": "src/components/shared/QuickAddModal.tsx",
+    "line": 78,
+    "oldContent": "className=\"text-slate-400 hover:text-white p-1 rounded-lg hover:bg-slate-800 transition-colors\"",
+    "newContent": "className=\"text-slate-400 hover:text-white p-1 rounded-lg hover:bg-slate-800 transition-colors\"",
+    "category": "icon",
+    "action": "PRESERVED"
+  },
+  {
+    "file": "src/components/shared/QuickPriceLookupModal.tsx",
+    "line": 133,
+    "oldContent": "<p className=\"text-xs text-slate-400\">",
+    "newContent": "<p className=\"text-xs text-slate-600\">",
+    "category": "MEANINGFUL TEXT",
+    "action": "CHANGED"
+  },
+  {
+    "file": "src/components/shared/QuickPriceLookupModal.tsx",
+    "line": 141,
+    "oldContent": "className=\"text-slate-400 hover:text-white p-1.5 rounded-lg hover:bg-slate-800 transition-colors\"",
+    "newContent": "className=\"text-slate-400 hover:text-white p-1.5 rounded-lg hover:bg-slate-800 transition-colors\"",
+    "category": "icon",
+    "action": "PRESERVED"
+  },
+  {
+    "file": "src/components/shared/QuickPriceLookupModal.tsx",
+    "line": 150,
+    "oldContent": "<Search className=\"w-5 h-5 text-slate-400 absolute left-3.5 top-3\" />",
+    "newContent": "<Search className=\"w-5 h-5 text-slate-400 absolute left-3.5 top-3\" />",
+    "category": "icon",
+    "action": "PRESERVED"
+  },
+  {
+    "file": "src/components/shared/QuickPriceLookupModal.tsx",
+    "line": 167,
+    "oldContent": "className=\"absolute right-3 top-3 text-slate-400 hover:text-slate-600 p-0.5 rounded\"",
+    "newContent": "className=\"absolute right-3 top-3 text-slate-400 hover:text-slate-600 p-0.5 rounded\"",
+    "category": "icon",
+    "action": "PRESERVED"
+  },
+  {
+    "file": "src/components/shared/QuickPriceLookupModal.tsx",
+    "line": 199,
+    "oldContent": "<p className=\"text-xs text-slate-400\">",
+    "newContent": "<p className=\"text-xs text-slate-600\">",
+    "category": "MEANINGFUL TEXT",
+    "action": "CHANGED"
+  },
+  {
+    "file": "src/components/shared/QuickPriceLookupModal.tsx",
+    "line": 231,
+    "oldContent": "<BarcodeIcon className=\"w-3 h-3 text-slate-400\" />",
+    "newContent": "<BarcodeIcon className=\"w-3 h-3 text-slate-400\" />",
+    "category": "icon",
+    "action": "PRESERVED"
+  },
+  {
+    "file": "src/components/shared/ReceiptPrintModal.tsx",
+    "line": 182,
+    "oldContent": "className=\"text-slate-400 hover:text-white p-1 rounded-lg hover:bg-slate-800 transition-colors\"",
+    "newContent": "className=\"text-slate-400 hover:text-white p-1 rounded-lg hover:bg-slate-800 transition-colors\"",
+    "category": "icon",
+    "action": "PRESERVED"
+  },
+  {
+    "file": "src/components/shared/RefundModal.tsx",
+    "line": 235,
+    "oldContent": "className=\"w-11 h-11 flex items-center justify-center text-slate-400 hover:text-white rounded-lg hover:bg-slate-800 transition-colors shrink-0 cursor-pointer\"",
+    "newContent": "className=\"w-11 h-11 flex items-center justify-center text-slate-400 hover:text-white rounded-lg hover:bg-slate-800 transition-colors shrink-0 cursor-pointer\"",
+    "category": "dark background (preserved)",
+    "action": "PRESERVED"
+  },
+  {
+    "file": "src/components/shared/RefundModal.tsx",
+    "line": 263,
+    "oldContent": "<Search className=\"w-4 h-4 text-slate-400 absolute left-3 top-3\" />",
+    "newContent": "<Search className=\"w-4 h-4 text-slate-400 absolute left-3 top-3\" />",
+    "category": "icon",
+    "action": "PRESERVED"
+  },
+  {
+    "file": "src/components/shared/SessionModal.tsx",
+    "line": 288,
+    "oldContent": "className=\"text-slate-400 hover:text-white p-1 rounded-lg hover:bg-slate-800 transition-colors\"",
+    "newContent": "className=\"text-slate-400 hover:text-white p-1 rounded-lg hover:bg-slate-800 transition-colors\"",
+    "category": "icon",
+    "action": "PRESERVED"
+  }
+]

@@ -233,6 +233,14 @@ async function runAudit() {
       await page.goto('http://127.0.0.1:3344');
       await page.waitForTimeout(1000);
 
+      if (vp.name === 'phone_384x725' || vp.name === 'phone_384x790') {
+        await page.evaluate(() => {
+          document.documentElement.style.setProperty('--safe-area-inset-top', '28px');
+          document.documentElement.style.setProperty('--safe-area-inset-bottom', '24px');
+        });
+        await page.waitForTimeout(200);
+      }
+
       async function takeShot(screenName: string) {
         const file = path.join(SCREENSHOTS_DIR, `${screenName}_${vp.name}.png`);
         await page.screenshot({ path: file, fullPage: false });
@@ -298,6 +306,82 @@ async function runAudit() {
       });
       console.log(`  Header height: ${headerHeight}px`);
 
+      if (vp.name === 'phone_384x725' || vp.name === 'phone_384x790') {
+        if (headerHeight > 56 + 28) {
+          violations.push({
+            target: 'Phone header height <= 56+28',
+            screen: 'header',
+            viewport: vp.name,
+            details: `Header height is ${headerHeight}px (target <= ${56 + 28}px with 28px inset)`,
+            severity: 'Blocker'
+          });
+        }
+      }
+
+      if (vp.isMobile) {
+        const docScroll = await page.evaluate(() => {
+          return {
+            scrollHeight: document.documentElement.scrollHeight,
+            innerHeight: window.innerHeight,
+            scrollWidth: document.documentElement.scrollWidth,
+            clientWidth: document.documentElement.clientWidth
+          };
+        });
+        if (docScroll.scrollHeight > docScroll.innerHeight) {
+          violations.push({
+            target: 'Zero page scroll (document scrollHeight <= innerHeight)',
+            screen: 'phone_shell',
+            viewport: vp.name,
+            details: `scrollHeight (${docScroll.scrollHeight}px) > innerHeight (${docScroll.innerHeight}px)`,
+            severity: 'Blocker'
+          });
+        }
+        if (docScroll.scrollWidth > docScroll.clientWidth) {
+          violations.push({
+            target: 'No horizontal overflow (scrollWidth <= clientWidth)',
+            screen: 'phone_shell',
+            viewport: vp.name,
+            details: `scrollWidth (${docScroll.scrollWidth}px) > clientWidth (${docScroll.clientWidth}px)`,
+            severity: 'Blocker'
+          });
+        }
+
+        if (vp.name !== 'phone_384x400') {
+          const menuBtn = page.locator('header button[aria-label="Menu"]');
+          if (await menuBtn.isVisible()) {
+            await menuBtn.click();
+            await page.waitForTimeout(300);
+            const menuActions = [
+              'Mouvement de caisse',
+              'Ouvrir',
+              'Ouvrir le tiroir',
+              'Imprimante',
+              'Verrouiller',
+              'Paramètres'
+            ];
+            for (const act of menuActions) {
+              const btn = page.locator(`button:has-text("${act}")`).first();
+              const vis = await btn.isVisible();
+              if (!vis) {
+                violations.push({
+                  target: 'Every action reachable from ⋮',
+                  screen: 'compact_header_menu',
+                  viewport: vp.name,
+                  details: `Action "${act}" was not visible in compact header ⋮ menu`,
+                  severity: 'High'
+                });
+              }
+            }
+            await page.keyboard.press('Escape');
+            await page.waitForTimeout(200);
+            if (await page.locator('.fixed.inset-0.bg-black\\/40').isVisible()) {
+              await page.locator('.fixed.inset-0.bg-black\\/40').click().catch(() => {});
+              await page.waitForTimeout(200);
+            }
+          }
+        }
+      }
+
       if (vp.name === 'desktop_1280x720') {
         afterBatch5Results.viewports[vp.name] = { headerHeight, cart: null };
         await takeShot('header_desktop_1280x720');
@@ -331,6 +415,92 @@ async function runAudit() {
         await page.click('button:has-text("Mobile")').catch(() => {});
         await page.waitForTimeout(300);
         await takeShot('pos_cart_empty');
+
+        if (vp.name !== 'phone_384x400') {
+          const fabEmpty = await page.locator('button.rounded-full[title="Scanner code-barres caméra"]').boundingBox();
+          const navEmpty = await page.locator('nav.fixed.bottom-0').boundingBox();
+          if (fabEmpty && navEmpty) {
+            if (fabEmpty.y + fabEmpty.height > navEmpty.y - 7.5) {
+              violations.push({
+                target: 'FAB doesn\'t intersect pill or nav',
+                screen: 'pos_cart_empty',
+                viewport: vp.name,
+                details: `Empty cart FAB bottom (${fabEmpty.y + fabEmpty.height}px) is too close to or intersects nav top (${navEmpty.y}px)`,
+                severity: 'Blocker'
+              });
+            }
+          }
+
+          // Add 1 item to cart to test 1-item state & pill & scrolled product row
+          const firstProduct = page.locator('.grid.grid-cols-2 > div').first();
+          if (await firstProduct.isVisible()) {
+            await firstProduct.click();
+            await page.waitForTimeout(400);
+          }
+          await takeShot('pos_cart_1item');
+
+          const pill = page.locator('.absolute.inset-x-3.bg-slate-900, .min-h-\\[60px\\].bg-slate-900').first();
+          const pillBox = await pill.boundingBox();
+          const fabBox = await page.locator('button.rounded-full[title="Scanner code-barres caméra"]').boundingBox();
+          const navBox = await page.locator('nav.fixed.bottom-0').boundingBox();
+
+          if (pillBox && navBox) {
+            const pillInside = pillBox.y >= 0 && (pillBox.y + pillBox.height) <= vp.height && pillBox.x >= 0 && (pillBox.x + pillBox.width) <= vp.width;
+            const pillAboveNav = (pillBox.y + pillBox.height) <= (navBox.y - 7.5);
+            if (!pillInside || !pillAboveNav) {
+              violations.push({
+                target: 'Cart pill rect fully inside viewport AND bottom <= nav top - 8',
+                screen: 'pos_cart_1item',
+                viewport: vp.name,
+                details: `Pill rect [top:${pillBox.y}, bottom:${pillBox.y + pillBox.height}], inside: ${pillInside}, nav top: ${navBox.y}, gap: ${navBox.y - (pillBox.y + pillBox.height)}px`,
+                severity: 'Blocker'
+              });
+            }
+
+            if (fabBox) {
+              const fabAbovePill = (fabBox.y + fabBox.height) <= (pillBox.y - 7.5);
+              if (!fabAbovePill) {
+                violations.push({
+                  target: 'FAB doesn\'t intersect pill or nav',
+                  screen: 'pos_cart_1item',
+                  viewport: vp.name,
+                  details: `FAB bottom (${fabBox.y + fabBox.height}px) is too close to or intersects pill top (${pillBox.y}px)`,
+                  severity: 'Blocker'
+                });
+              }
+            }
+
+            // Scroll product grid to end
+            await page.evaluate(() => {
+              const grid = document.querySelector('.overflow-y-auto.grid');
+              if (grid) grid.scrollTop = grid.scrollHeight;
+            });
+            await page.waitForTimeout(300);
+
+            const lastCardBottom = await page.evaluate(() => {
+              const cards = Array.from(document.querySelectorAll('.overflow-y-auto.grid > div'));
+              const last = cards[cards.length - 1];
+              return last ? last.getBoundingClientRect().bottom : null;
+            });
+
+            if (lastCardBottom !== null && lastCardBottom > pillBox.y) {
+              violations.push({
+                target: 'Last product row fully visible above the pill when scrolled to end',
+                screen: 'pos_product_grid_mobile',
+                viewport: vp.name,
+                details: `Last card bottom (${lastCardBottom}px) is below pill top (${pillBox.y}px)`,
+                severity: 'Blocker'
+              });
+            }
+
+            // Scroll grid back to top
+            await page.evaluate(() => {
+              const grid = document.querySelector('.overflow-y-auto.grid');
+              if (grid) grid.scrollTop = 0;
+            });
+            await page.waitForTimeout(100);
+          }
+        }
       }
 
       // ----------------------------------------------------------------------
@@ -738,7 +908,7 @@ async function runAudit() {
           }
         }
         // Open Cart Drawer
-        const cartPill = page.locator('.absolute.bottom-16.inset-x-3');
+        const cartPill = page.locator('.absolute.inset-x-3.bg-slate-900, .min-h-\\[60px\\].bg-slate-900, .absolute.bottom-16.inset-x-3');
         if (await cartPill.isVisible()) {
           await cartPill.click();
           await page.waitForTimeout(400);
@@ -1692,12 +1862,38 @@ async function runAudit() {
     console.log('------------------------------------------------------');
     console.log(`Total Batch UI-5 Violations: ${batch5Violations.length}`);
 
-    if (batch1Violations.length > 0 || batch2Violations.length > 0 || batch5Violations.length > 0) {
+    const BATCH_6_TARGETS = [
+      'Zero page scroll (document scrollHeight <= innerHeight)',
+      'No horizontal overflow (scrollWidth <= clientWidth)',
+      'Phone header height <= 56+28',
+      'Cart pill rect fully inside viewport AND bottom <= nav top - 8',
+      'FAB doesn\'t intersect pill or nav',
+      'Last product row fully visible above the pill when scrolled to end',
+      'Every action reachable from ⋮',
+      'Phone 384x400: cash field, change due and confirm button all visible'
+    ];
+
+    const batch6Violations = violations.filter(v => BATCH_6_TARGETS.includes(v.target));
+
+    console.log('\n======================================================');
+    console.log('BATCH UI-6 TARGET VERIFICATION REPORT');
+    console.log('======================================================');
+    console.log(String('Batch 6 Target').padEnd(65) + ' | ' + 'Status' + ' | ' + 'Violations');
+    console.log('-'.repeat(85));
+    for (const t of BATCH_6_TARGETS) {
+      const count = targetGroups[t] || 0;
+      const status = count > 0 ? 'FAIL ❌' : 'PASS ✅';
+      console.log(t.padEnd(65) + ' | ' + status.padEnd(6) + ' | ' + count);
+    }
+    console.log('------------------------------------------------------');
+    console.log(`Total Batch UI-6 Violations: ${batch6Violations.length}`);
+
+    if (batch1Violations.length > 0 || batch2Violations.length > 0 || batch5Violations.length > 0 || batch6Violations.length > 0) {
       console.error('\n[BATCH UI HARNESS] Failures detected:');
-      [...batch1Violations, ...batch2Violations, ...batch5Violations].forEach(v => console.error(`  - [${v.viewport}] ${v.target}: ${v.details}`));
+      [...batch1Violations, ...batch2Violations, ...batch5Violations, ...batch6Violations].forEach(v => console.error(`  - [${v.viewport}] ${v.target}: ${v.details}`));
       process.exit(1);
     } else {
-      console.log('\n[BATCH UI HARNESS] All Batch UI-1, Batch UI-2, and Batch UI-5 targets PASSED! ✅');
+      console.log('\n[BATCH UI HARNESS] All Batch UI-1, Batch UI-2, Batch UI-5, and Batch UI-6 targets PASSED! ✅');
       process.exit(0);
     }
   } finally {

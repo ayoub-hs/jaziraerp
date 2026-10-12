@@ -1,0 +1,530 @@
+[
+  {
+    "file": "src/components/backoffice/Backoffice.tsx",
+    "line": 840,
+    "content": "<span className=\"text-pos-badge font-bold text-slate-400 uppercase tracking-wider\">",
+    "category": "MEANINGFUL TEXT"
+  },
+  {
+    "file": "src/components/backoffice/Backoffice.tsx",
+    "line": 1030,
+    "content": "className=\"absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 p-0.5\"",
+    "category": "MEANINGFUL TEXT"
+  },
+  {
+    "file": "src/components/backoffice/Backoffice.tsx",
+    "line": 1187,
+    "content": "<td colSpan={9} className=\"p-8 text-center text-slate-400\">",
+    "category": "MEANINGFUL TEXT"
+  },
+  {
+    "file": "src/components/backoffice/Backoffice.tsx",
+    "line": 1193,
+    "content": "<td colSpan={9} className=\"p-8 text-center text-slate-400\">",
+    "category": "MEANINGFUL TEXT"
+  },
+  {
+    "file": "src/components/backoffice/Backoffice.tsx",
+    "line": 1267,
+    "content": "className=\"absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 p-0.5\"",
+    "category": "MEANINGFUL TEXT"
+  },
+  {
+    "file": "src/components/backoffice/Backoffice.tsx",
+    "line": 1356,
+    "content": "<td colSpan={7} className=\"p-8 text-center text-slate-400\">",
+    "category": "MEANINGFUL TEXT"
+  },
+  {
+    "file": "src/components/backoffice/Backoffice.tsx",
+    "line": 1362,
+    "content": "<td colSpan={7} className=\"p-8 text-center text-slate-400\">",
+    "category": "MEANINGFUL TEXT"
+  },
+  {
+    "file": "src/components/backoffice/Backoffice.tsx",
+    "line": 1425,
+    "content": "<td colSpan={6} className=\"p-6 text-center text-slate-400\">",
+    "category": "MEANINGFUL TEXT"
+  },
+  {
+    "file": "src/components/backoffice/Backoffice.tsx",
+    "line": 1629,
+    "content": "<div className=\"text-center text-slate-400 text-xs py-12\">",
+    "category": "MEANINGFUL TEXT"
+  },
+  {
+    "file": "src/components/backoffice/Backoffice.tsx",
+    "line": 1666,
+    "content": "<div className=\"col-span-3 text-center py-6 text-slate-400 text-xs\">",
+    "category": "MEANINGFUL TEXT"
+  },
+  {
+    "file": "src/components/backoffice/Backoffice.tsx",
+    "line": 1717,
+    "content": "<td colSpan={8} className=\"p-8 text-center text-slate-400\">",
+    "category": "MEANINGFUL TEXT"
+  },
+  {
+    "file": "src/components/backoffice/Backoffice.tsx",
+    "line": 1758,
+    "content": "<h3 className=\"text-xs font-bold text-slate-400 uppercase tracking-wide px-1\">",
+    "category": "MEANINGFUL TEXT"
+  },
+  {
+    "file": "src/components/backoffice/Backoffice.tsx",
+    "line": 1775,
+    "content": "className=\"absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600\"",
+    "category": "MEANINGFUL TEXT"
+  },
+  {
+    "file": "src/components/backoffice/Backoffice.tsx",
+    "line": 1827,
+    "content": "className=\"p-1 text-slate-400 hover:text-slate-700 hover:bg-slate-200/60 rounded-lg transition-colors\"",
+    "category": "MEANINGFUL TEXT"
+  },
+  {
+    "file": "src/components/backoffice/Backoffice.tsx",
+    "line": 1854,
+    "content": "<div className=\"p-6 text-center text-slate-400 text-xs\">",
+    "category": "MEANINGFUL TEXT"
+  },
+  {
+    "file": "src/components/backoffice/Backoffice.tsx",
+    "line": 1986,
+    "content": "<td colSpan={5} className=\"p-4 text-center text-slate-400\">",
+    "category": "MEANINGFUL TEXT"
+  },
+  {
+    "file": "src/components/backoffice/Backoffice.tsx",
+    "line": 1997,
+    "content": "<div className=\"py-24 text-center text-slate-400 text-xs\">",
+    "category": "MEANINGFUL TEXT"
+  },
+  {
+    "file": "src/components/backoffice/Backoffice.tsx",
+    "line": 2044,
+    "content": "<h3 className=\"text-xs font-bold text-slate-400 uppercase tracking-wide px-1\">",
+    "category": "MEANINGFUL TEXT"
+  },
+  {
+    "file": "src/components/backoffice/Backoffice.tsx",
+    "line": 2060,
+    "content": "className=\"absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600\"",
+    "category": "MEANINGFUL TEXT"
+  },
+  {
+    "file": "src/components/backoffice/Backoffice.tsx",
+    "line": 2093,
+    "content": "className=\"p-1 text-slate-400 hover:text-slate-700 hover:bg-slate-200/60 rounded-lg transition-colors\"",
+    "category": "MEANINGFUL TEXT"
+  },
+  {
+    "file": "src/components/backoffice/Backoffice.tsx",
+    "line": 2120,
+    "content": "<div className=\"p-4 text-center text-slate-400 text-xs\">",
+    "category": "MEANINGFUL TEXT"
+  },
+  {
+    "file": "src/components/backoffice/Backoffice.tsx",
+    "line": 2124,
+    "content": "<div className=\"p-6 text-center text-slate-400 text-xs\">",
+    "category": "MEANINGFUL TEXT"
+  },
+  {
+    "file": "src/components/backoffice/Backoffice.tsx",
+    "line": 2209,
+    "content": "<td colSpan={6} className=\"p-4 text-center text-slate-400\">",
+    "category": "MEANINGFUL TEXT"
+  },
+  {
+    "file": "src/components/backoffice/Backoffice.tsx",
+    "line": 2220,
+    "content": "<div className=\"py-24 text-center text-slate-400 text-xs\">",
+    "category": "MEANINGFUL TEXT"
+  },
+  {
+    "file": "src/components/backoffice/Backoffice.tsx",
+    "line": 2249,
+    "content": "className=\"absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600\"",
+    "category": "MEANINGFUL TEXT"
+  },
+  {
+    "file": "src/components/backoffice/Backoffice.tsx",
+    "line": 2296,
+    "content": "<td colSpan={8} className=\"p-8 text-center text-slate-400\">",
+    "category": "MEANINGFUL TEXT"
+  },
+  {
+    "file": "src/components/backoffice/Backoffice.tsx",
+    "line": 2302,
+    "content": "<td colSpan={8} className=\"p-8 text-center text-slate-400\">",
+    "category": "MEANINGFUL TEXT"
+  },
+  {
+    "file": "src/components/backoffice/Backoffice.tsx",
+    "line": 2385,
+    "content": "className=\"p-1 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-lg transition-colors\"",
+    "category": "MEANINGFUL TEXT"
+  },
+  {
+    "file": "src/components/backoffice/Backoffice.tsx",
+    "line": 2435,
+    "content": "<div className=\"sm:col-span-3 p-8 text-center text-slate-400 text-xs bg-white rounded-2xl border border-slate-200\">",
+    "category": "MEANINGFUL TEXT"
+  },
+  {
+    "file": "src/components/backoffice/Backoffice.tsx",
+    "line": 2452,
+    "content": "<div className=\"p-6 text-center text-xs text-slate-400\">",
+    "category": "MEANINGFUL TEXT"
+  },
+  {
+    "file": "src/components/backoffice/Backoffice.tsx",
+    "line": 2505,
+    "content": "<div className=\"p-6 text-center text-xs text-slate-400\">",
+    "category": "MEANINGFUL TEXT"
+  },
+  {
+    "file": "src/components/backoffice/Backoffice.tsx",
+    "line": 2634,
+    "content": "<td colSpan={11} className=\"p-8 text-center text-slate-400\">",
+    "category": "MEANINGFUL TEXT"
+  },
+  {
+    "file": "src/components/backoffice/Backoffice.tsx",
+    "line": 2676,
+    "content": "<div className=\"text-center py-12 text-slate-400 text-xs\">Chargement des données de session...</div>",
+    "category": "MEANINGFUL TEXT"
+  },
+  {
+    "file": "src/components/backoffice/Backoffice.tsx",
+    "line": 2747,
+    "content": "<td colSpan={6} className=\"p-4 text-center text-slate-400 text-xs\">",
+    "category": "MEANINGFUL TEXT"
+  },
+  {
+    "file": "src/components/backoffice/Backoffice.tsx",
+    "line": 2883,
+    "content": "<td colSpan={3} className=\"p-4 text-center text-slate-400\">",
+    "category": "MEANINGFUL TEXT"
+  },
+  {
+    "file": "src/components/backoffice/Backoffice.tsx",
+    "line": 3056,
+    "content": "<td colSpan={6} className=\"p-8 text-center text-slate-400\">",
+    "category": "MEANINGFUL TEXT"
+  },
+  {
+    "file": "src/components/backoffice/BackupManager.tsx",
+    "line": 235,
+    "content": "<div className=\"p-8 text-center text-slate-400 text-xs\">Chargement des instantanés de la base de données...</div>",
+    "category": "MEANINGFUL TEXT"
+  },
+  {
+    "file": "src/components/backoffice/BackupManager.tsx",
+    "line": 237,
+    "content": "<div className=\"p-8 text-center text-slate-400 text-xs\">",
+    "category": "MEANINGFUL TEXT"
+  },
+  {
+    "file": "src/components/backoffice/BarcodeLabelPrinter.tsx",
+    "line": 149,
+    "content": "<div className=\"py-12 text-center text-xs text-slate-400\">",
+    "category": "MEANINGFUL TEXT"
+  },
+  {
+    "file": "src/components/backoffice/BatchDetailModal.tsx",
+    "line": 120,
+    "content": "<p className=\"text-xs text-slate-400 mt-0.5\">",
+    "category": "MEANINGFUL TEXT"
+  },
+  {
+    "file": "src/components/backoffice/BatchDetailModal.tsx",
+    "line": 162,
+    "content": "<div className=\"py-16 text-center text-slate-400\">",
+    "category": "MEANINGFUL TEXT"
+  },
+  {
+    "file": "src/components/backoffice/CreateFormulationModal.tsx",
+    "line": 445,
+    "content": "className=\"text-slate-400 hover:text-rose-600 p-1 transition-colors\"",
+    "category": "MEANINGFUL TEXT"
+  },
+  {
+    "file": "src/components/backoffice/CustomerStatementModal.tsx",
+    "line": 272,
+    "content": "<p className=\"text-xs text-slate-400 mt-0.5\">",
+    "category": "MEANINGFUL TEXT"
+  },
+  {
+    "file": "src/components/backoffice/CustomerStatementModal.tsx",
+    "line": 547,
+    "content": "<span className=\"text-xs text-slate-400 italic\">Pour Al Jazira SHSP</span>",
+    "category": "MEANINGFUL TEXT"
+  },
+  {
+    "file": "src/components/backoffice/ManageCategoriesModal.tsx",
+    "line": 248,
+    "content": "<div className=\"p-8 text-center text-slate-400 text-xs\">Chargement des catégories...</div>",
+    "category": "MEANINGFUL TEXT"
+  },
+  {
+    "file": "src/components/backoffice/ManageCategoriesModal.tsx",
+    "line": 250,
+    "content": "<div className=\"p-8 text-center text-slate-400 text-xs\">Aucune catégorie trouvée.</div>",
+    "category": "MEANINGFUL TEXT"
+  },
+  {
+    "file": "src/components/backoffice/MaterialPriceHistoryModal.tsx",
+    "line": 97,
+    "content": "<div className=\"py-12 text-center text-slate-400 text-xs\">",
+    "category": "MEANINGFUL TEXT"
+  },
+  {
+    "file": "src/components/backoffice/MaterialPriceHistoryModal.tsx",
+    "line": 101,
+    "content": "<div className=\"py-12 text-center text-slate-400 text-xs\">",
+    "category": "MEANINGFUL TEXT"
+  },
+  {
+    "file": "src/components/backoffice/MaterialPriceHistoryModal.tsx",
+    "line": 144,
+    "content": "<span className=\"text-pos-badge text-slate-400 font-mono\">—</span>",
+    "category": "MEANINGFUL TEXT"
+  },
+  {
+    "file": "src/components/backoffice/PurchaseDetailModal.tsx",
+    "line": 127,
+    "content": "<p className=\"text-xs text-slate-400 mt-0.5\">",
+    "category": "MEANINGFUL TEXT"
+  },
+  {
+    "file": "src/components/backoffice/PurchaseDetailModal.tsx",
+    "line": 169,
+    "content": "<div className=\"py-16 text-center text-slate-400\">",
+    "category": "MEANINGFUL TEXT"
+  },
+  {
+    "file": "src/components/backoffice/ReportsTab.tsx",
+    "line": 274,
+    "content": "<span className=\"text-slate-400 font-bold\">au</span>",
+    "category": "MEANINGFUL TEXT"
+  },
+  {
+    "file": "src/components/backoffice/ReportsTab.tsx",
+    "line": 470,
+    "content": "<td colSpan={11} className=\"p-8 text-center text-slate-400\">",
+    "category": "MEANINGFUL TEXT"
+  },
+  {
+    "file": "src/components/backoffice/ReportsTab.tsx",
+    "line": 519,
+    "content": "<td colSpan={11} className=\"p-8 text-center text-slate-400\">",
+    "category": "MEANINGFUL TEXT"
+  },
+  {
+    "file": "src/components/backoffice/ReportsTab.tsx",
+    "line": 558,
+    "content": "<td colSpan={6} className=\"p-8 text-center text-slate-400\">",
+    "category": "MEANINGFUL TEXT"
+  },
+  {
+    "file": "src/components/backoffice/ReportsTab.tsx",
+    "line": 620,
+    "content": "<td className=\"py-2 px-3 text-right font-mono text-slate-400\">—</td>",
+    "category": "MEANINGFUL TEXT"
+  },
+  {
+    "file": "src/components/backoffice/ReportsTab.tsx",
+    "line": 621,
+    "content": "<td className=\"py-2 px-3 text-right font-mono text-slate-400\">—</td>",
+    "category": "MEANINGFUL TEXT"
+  },
+  {
+    "file": "src/components/backoffice/ReportsTab.tsx",
+    "line": 627,
+    "content": "<td colSpan={8} className=\"p-8 text-center text-slate-400\">",
+    "category": "MEANINGFUL TEXT"
+  },
+  {
+    "file": "src/components/backoffice/SalesHistoryTab.tsx",
+    "line": 190,
+    "content": "<span className=\"text-slate-400\">à</span>",
+    "category": "MEANINGFUL TEXT"
+  },
+  {
+    "file": "src/components/backoffice/SalesHistoryTab.tsx",
+    "line": 256,
+    "content": "{s.customer_name || <span className=\"text-slate-400 italic\">Passager</span>}",
+    "category": "MEANINGFUL TEXT"
+  },
+  {
+    "file": "src/components/backoffice/SalesHistoryTab.tsx",
+    "line": 266,
+    "content": "<span className=\"text-slate-400 mx-1\">/</span>",
+    "category": "MEANINGFUL TEXT"
+  },
+  {
+    "file": "src/components/backoffice/SalesHistoryTab.tsx",
+    "line": 268,
+    "content": "<span className=\"text-slate-400 mx-1\">/</span>",
+    "category": "MEANINGFUL TEXT"
+  },
+  {
+    "file": "src/components/backoffice/SalesHistoryTab.tsx",
+    "line": 341,
+    "content": "<div className=\"py-12 text-center text-slate-400 text-xs\">",
+    "category": "MEANINGFUL TEXT"
+  },
+  {
+    "file": "src/components/backoffice/SalesHistoryTab.tsx",
+    "line": 386,
+    "content": "<div className=\"py-8 text-center text-slate-400\">",
+    "category": "MEANINGFUL TEXT"
+  },
+  {
+    "file": "src/components/desktop/DesktopPos.tsx",
+    "line": 700,
+    "content": "<div className=\"col-span-full py-16 text-center text-slate-400 text-xs\">",
+    "category": "MEANINGFUL TEXT"
+  },
+  {
+    "file": "src/components/desktop/DesktopPos.tsx",
+    "line": 768,
+    "content": "<span className=\"text-xs text-slate-400\">Sans compte</span>",
+    "category": "MEANINGFUL TEXT"
+  },
+  {
+    "file": "src/components/desktop/DesktopPos.tsx",
+    "line": 771,
+    "content": "<div className=\"p-4 text-xs text-slate-400 text-center\">",
+    "category": "MEANINGFUL TEXT"
+  },
+  {
+    "file": "src/components/desktop/DesktopPos.tsx",
+    "line": 934,
+    "content": "<span className=\"text-pos-badge line-through text-slate-400 font-mono\">",
+    "category": "MEANINGFUL TEXT"
+  },
+  {
+    "file": "src/components/desktop/DesktopPos.tsx",
+    "line": 967,
+    "content": "<span className=\"text-pos-badge font-mono text-slate-400\">DT</span>",
+    "category": "MEANINGFUL TEXT"
+  },
+  {
+    "file": "src/components/desktop/DesktopPos.tsx",
+    "line": 1102,
+    "content": "<div className=\"h-full flex flex-col items-center justify-center text-slate-400 py-12\">",
+    "category": "MEANINGFUL TEXT"
+  },
+  {
+    "file": "src/components/desktop/DesktopPos.tsx",
+    "line": 1105,
+    "content": "<p className=\"text-xs text-slate-400\">Scannez un code-barres ou sélectionnez un article</p>",
+    "category": "MEANINGFUL TEXT"
+  },
+  {
+    "file": "src/components/mobile/MobileRegister.tsx",
+    "line": 827,
+    "content": "<div className=\"col-span-full py-16 text-center text-slate-400 text-xs\">",
+    "category": "MEANINGFUL TEXT"
+  },
+  {
+    "file": "src/components/mobile/MobileRegister.tsx",
+    "line": 928,
+    "content": "<span className=\"text-xs font-bold text-slate-400 uppercase\">",
+    "category": "MEANINGFUL TEXT"
+  },
+  {
+    "file": "src/components/mobile/MobileRegister.tsx",
+    "line": 994,
+    "content": "<div className=\"py-16 text-center text-slate-400 text-xs\">",
+    "category": "MEANINGFUL TEXT"
+  },
+  {
+    "file": "src/components/mobile/MobileRegister.tsx",
+    "line": 1145,
+    "content": "<span className=\"text-xs text-slate-400 block font-semibold\">Total Dû:</span>",
+    "category": "MEANINGFUL TEXT"
+  },
+  {
+    "file": "src/components/mobile/MobileRegister.tsx",
+    "line": 1146,
+    "content": "<span className={`text-base font-black font-mono ${hasDebt ? 'text-amber-700' : 'text-slate-400'}`}>",
+    "category": "MEANINGFUL TEXT"
+  },
+  {
+    "file": "src/components/mobile/MobileRegister.tsx",
+    "line": 1206,
+    "content": "<p className=\"text-xs text-slate-400\">",
+    "category": "MEANINGFUL TEXT"
+  },
+  {
+    "file": "src/components/mobile/MobileRegister.tsx",
+    "line": 1345,
+    "content": "<span className=\"text-pos-badge line-through text-slate-400 font-mono\">",
+    "category": "MEANINGFUL TEXT"
+  },
+  {
+    "file": "src/components/mobile/MobileRegister.tsx",
+    "line": 1495,
+    "content": "<span className=\"text-slate-400\">|</span>",
+    "category": "MEANINGFUL TEXT"
+  },
+  {
+    "file": "src/components/mobile/MobileRegister.tsx",
+    "line": 1500,
+    "content": "<span className=\"text-slate-400\">|</span>",
+    "category": "MEANINGFUL TEXT"
+  },
+  {
+    "file": "src/components/shared/CheckoutModal.tsx",
+    "line": 400,
+    "content": "<p className=\"text-xs text-slate-400\">",
+    "category": "MEANINGFUL TEXT"
+  },
+  {
+    "file": "src/components/shared/CheckoutModal.tsx",
+    "line": 407,
+    "content": "<span className=\"text-pos-badge text-slate-400 uppercase tracking-wider block font-semibold leading-none\">TOTAL À PAYER</span>",
+    "category": "MEANINGFUL TEXT"
+  },
+  {
+    "file": "src/components/shared/CheckoutModal.tsx",
+    "line": 494,
+    "content": "className=\"text-slate-400 hover:text-slate-600 underline\"",
+    "category": "MEANINGFUL TEXT"
+  },
+  {
+    "file": "src/components/shared/DeliveryNotePrintModal.tsx",
+    "line": 159,
+    "content": "<div className=\"py-16 text-center text-sm text-slate-400 italic\">",
+    "category": "MEANINGFUL TEXT"
+  },
+  {
+    "file": "src/components/shared/HeldCartsModal.tsx",
+    "line": 166,
+    "content": "<div className=\"py-12 text-center text-slate-400 space-y-2\">",
+    "category": "MEANINGFUL TEXT"
+  },
+  {
+    "file": "src/components/shared/HeldCartsModal.tsx",
+    "line": 169,
+    "content": "<p className=\"text-xs text-slate-400\">",
+    "category": "MEANINGFUL TEXT"
+  },
+  {
+    "file": "src/components/shared/QuickPriceLookupModal.tsx",
+    "line": 133,
+    "content": "<p className=\"text-xs text-slate-400\">",
+    "category": "MEANINGFUL TEXT"
+  },
+  {
+    "file": "src/components/shared/QuickPriceLookupModal.tsx",
+    "line": 199,
+    "content": "<p className=\"text-xs text-slate-400\">",
+    "category": "MEANINGFUL TEXT"
+  }
+]

@@ -80,6 +80,15 @@ export const Header: React.FC<HeaderProps> = ({
   }, []);
 
   useEffect(() => {
+    if (!isMobileMenuOpen) return;
+    const handleKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setIsMobileMenuOpen(false);
+    };
+    window.addEventListener('keydown', handleKey);
+    return () => window.removeEventListener('keydown', handleKey);
+  }, [isMobileMenuOpen]);
+
+  useEffect(() => {
     const unsubUsb = webUsbPrinter.subscribeStatus(setUsbStatus);
     const unsubBt = webBluetoothPrinter.subscribeStatus(setBtStatus);
     const unsubSpp = nativeSppPrinter.subscribeStatus(setSppStatus);
