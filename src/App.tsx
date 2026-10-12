@@ -28,6 +28,7 @@ import { ServerSetup } from './components/shared/ServerSetup.js';
 import { updateRegisterSessionState } from './utils/keepScreen.js';
 import { useBackButton } from './utils/backButton.js';
 import { UpdateBanner } from './components/shared/UpdateBanner.js';
+import { DebugOverlay } from './components/shared/DebugOverlay.js';
 
 export default function App() {
   const [currentView, setCurrentView] = useState<'DESKTOP_POS' | 'MOBILE_REGISTER' | 'BACKOFFICE'>('DESKTOP_POS');
@@ -318,6 +319,8 @@ export default function App() {
 
   return (
     <div className="h-dvh flex flex-col bg-slate-100 font-sans select-none antialiased print:h-auto print:overflow-visible">
+      {/* Diagnostics overlay (?debug=1) */}
+      <DebugOverlay />
       {/* Native mobile first-launch: server URL required before anything else */}
       {isNativeApp() && !serverUrl && (
         <ServerSetup onSaved={url => setServerUrl(url)} />
