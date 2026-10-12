@@ -14,7 +14,8 @@ import {
   Usb,
   Bluetooth,
   AlertCircle,
-  X
+  X,
+  MoreVertical
 } from 'lucide-react';
 import type { RegisterSession } from '../../types/index.js';
 import { syncManager, type SyncState } from '../../services/syncManager.js';
@@ -72,6 +73,7 @@ export const Header: React.FC<HeaderProps> = ({
   const [isReviewModalOpen, setIsReviewModalOpen] = useState(false);
   const [reviewItems, setReviewItems] = useState<PendingSyncItem[]>([]);
   const [isRetryingReview, setIsRetryingReview] = useState(false);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   useEffect(() => {
     authService.syncStatus().then(st => setIsAuthConfigured(st.configured));
@@ -155,7 +157,168 @@ export const Header: React.FC<HeaderProps> = ({
   };
   return (
     <header className="bg-slate-900 text-white shadow-md select-none sticky top-0 z-30 shrink-0 pt-[var(--sat)]">
-      <div className="w-full px-3 sm:px-4 py-1.5 flex items-center justify-between gap-2 overflow-x-auto">
+      {/* Compact Mobile Header (<640px only) */}
+      <div className="flex sm:hidden w-full px-3 h-14 max-h-[56px] items-center justify-between gap-2 relative">
+        {/* [logo/short company name, truncate, single line] */}
+        <div className="flex items-center gap-2 min-w-0 shrink">
+          <div className="w-7 h-7 rounded-lg bg-emerald-700 flex items-center justify-center font-black text-sm text-white shadow-inner shrink-0">
+            J
+          </div>
+          <span className="text-sm font-bold tracking-tight text-white truncate whitespace-nowrap">
+            Al Jazira
+          </span>
+        </div>
+
+        {/* [session name, truncate] */}
+        <div className="min-w-0 flex-1 flex justify-center px-1">
+          {activeSession && activeSession.status === 'OPEN' ? (
+            <div
+              className="flex items-center gap-1.5 bg-slate-800 border border-slate-700 px-2 py-1 rounded-lg text-xs max-w-full"
+              title={activeSession.session_number}
+            >
+              <span className="inline-block w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse shrink-0"></span>
+              <span className="font-semibold text-emerald-400 truncate whitespace-nowrap">
+                {activeSession.counter_name}
+              </span>
+            </div>
+          ) : openSessions && openSessions.length > 0 ? (
+            <div
+              className="flex items-center gap-1 bg-amber-950/40 border border-amber-500/40 px-2 py-1 rounded-lg text-xs max-w-full"
+              title={openSessions[0].session_number}
+            >
+              <span className="text-amber-300 font-medium truncate whitespace-nowrap">
+                {openSessions[0].counter_name}
+              </span>
+            </div>
+          ) : (
+            <button
+              onClick={onOpenSessionModal}
+              className="bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold px-2.5 py-1 rounded-lg text-xs truncate whitespace-nowrap"
+            >
+              Ouvrir
+            </button>
+          )}
+        </div>
+
+        {/* [⋮ menu] (44px target) */}
+        <button
+          onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+          className="w-11 h-11 flex items-center justify-center rounded-xl text-slate-300 hover:text-white hover:bg-slate-800 transition-colors shrink-0"
+          title="Menu des options"
+          aria-label="Menu"
+        >
+          <MoreVertical className="w-5 h-5" />
+        </button>
+
+        {/* ⋮ Menu dropdown */}
+        {isMobileMenuOpen && (
+          <>
+            <div
+              className="fixed inset-0 z-40 bg-black/40 backdrop-blur-xs"
+              onClick={() => setIsMobileMenuOpen(false)}
+            />
+            <div className="absolute top-full right-2 mt-1 z-50 w-64 bg-slate-900 border border-slate-700 rounded-2xl shadow-2xl py-1.5 text-xs text-slate-200 divide-y divide-slate-800 animate-in fade-in slide-in-from-top-2 duration-150">
+              <div className="p-1 space-y-0.5">
+                <button
+                  onClick={() => {
+                    setIsMobileMenuOpen(false);
+                    onOpenCashMovement();
+                  }}
+                  className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl hover:bg-slate-800 font-semibold text-slate-200 transition-colors text-left"
+                >
+                  <DollarSign className="w-4 h-4 text-emerald-400 shrink-0" />
+                  <span>Mouvement de caisse</span>
+                </button>
+
+                <button
+                  onClick={() => {
+                    setIsMobileMenuOpen(false);
+                    if (activeSession?.status === 'OPEN') {
+                      onCloseSessionModal();
+                    } else {
+                      onOpenSessionModal();
+                    }
+                  }}
+                  className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl hover:bg-slate-800 font-semibold text-slate-200 transition-colors text-left"
+                >
+                  <Archive className="w-4 h-4 text-rose-400 shrink-0" />
+                  <span>{activeSession?.status === 'OPEN' ? 'Clôturer la caisse' : 'Ouvrir la caisse'}</span>
+                </button>
+
+                <button
+                  onClick={() => {
+                    setIsMobileMenuOpen(false);
+                    handleDrawerClick();
+                  }}
+                  className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl hover:bg-slate-800 font-semibold text-slate-200 transition-colors text-left"
+                >
+                  <Archive className="w-4 h-4 text-amber-400 shrink-0" />
+                  <span>Ouvrir le tiroir</span>
+                </button>
+
+                <button
+                  onClick={() => {
+                    setIsMobileMenuOpen(false);
+                    handlePrintClick();
+                  }}
+                  className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl hover:bg-slate-800 font-semibold text-slate-200 transition-colors text-left"
+                >
+                  <Printer className="w-4 h-4 text-blue-400 shrink-0" />
+                  <span>Imprimante</span>
+                </button>
+
+                <button
+                  onClick={() => {
+                    setIsMobileMenuOpen(false);
+                    if (!isAuthConfigured) {
+                      setIsAuthModalOpen(true);
+                    } else {
+                      onLockSession();
+                    }
+                  }}
+                  className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl hover:bg-slate-800 font-semibold text-slate-200 transition-colors text-left"
+                >
+                  <Lock className="w-4 h-4 text-amber-400 shrink-0" />
+                  <span>Verrouiller</span>
+                </button>
+
+                <button
+                  onClick={() => {
+                    setIsMobileMenuOpen(false);
+                    onSelectView('BACKOFFICE');
+                  }}
+                  className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl hover:bg-slate-800 font-semibold text-slate-200 transition-colors text-left"
+                >
+                  <Settings className="w-4 h-4 text-slate-400 shrink-0" />
+                  <span>Paramètres</span>
+                </button>
+              </div>
+
+              <div className="p-2.5 flex items-center justify-between text-pos-badge text-slate-400">
+                <span>Statut Sync:</span>
+                <button
+                  onClick={() => {
+                    setIsMobileMenuOpen(false);
+                    onManualSync();
+                  }}
+                  className="flex items-center gap-1 font-bold text-slate-300 hover:text-white"
+                >
+                  {syncState === 'ONLINE_SYNCED' ? (
+                    <span className="text-emerald-400">En ligne</span>
+                  ) : syncState === 'SYNCING' ? (
+                    <span className="text-blue-400">Sync...</span>
+                  ) : (
+                    <span className="text-amber-400">Hors ligne ({pendingSyncCount})</span>
+                  )}
+                </button>
+              </div>
+            </div>
+          </>
+        )}
+      </div>
+
+      {/* Desktop / Tablet Header (>=640px) */}
+      <div className="hidden sm:flex w-full px-3 sm:px-4 py-1.5 items-center justify-between gap-2 overflow-x-auto">
         {/* Brand & View Switcher */}
         <div className="flex items-center gap-3">
           <div className="flex items-center gap-2">
