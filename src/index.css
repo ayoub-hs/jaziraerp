@@ -2,6 +2,20 @@
 @tailwind components;
 @tailwind utilities;
 
+:root {
+  --sat: var(--safe-area-inset-top, env(safe-area-inset-top, 0px));
+  --sab: var(--safe-area-inset-bottom, env(safe-area-inset-bottom, 0px));
+  --sal: var(--safe-area-inset-left, env(safe-area-inset-left, 0px));
+  --sar: var(--safe-area-inset-right, env(safe-area-inset-right, 0px));
+  --nav-h: 64px;
+}
+
+html, body, #root {
+  height: 100%;
+  overflow: hidden;
+  overscroll-behavior: none;
+}
+
 @layer base {
   body {
     font-feature-settings: "cv02", "cv03", "cv04", "cv11";
@@ -26,11 +40,16 @@
 
 /* Print Media Styles */
 @media print {
+  html, body, #root {
+    height: auto !important;
+    overflow: visible !important;
+  }
+
   /* Hide standard page UI */
   body > #root > div > header,
   body > #root > div > main,
   .no-print,
-  .print\\:hidden {
+  .print\:hidden {
     display: none !important;
   }
 
@@ -74,10 +93,7 @@ html.native-app {
 
 html.native-app body {
   overscroll-behavior-y: none;
-  padding-top: env(safe-area-inset-top, 0px);
-  padding-bottom: env(safe-area-inset-bottom, 0px);
-  padding-left: env(safe-area-inset-left, 0px);
-  padding-right: env(safe-area-inset-right, 0px);
+  padding: 0;
 }
 
 html.native-app button,
