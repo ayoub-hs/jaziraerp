@@ -1,9 +1,25 @@
 import React, { useState, useEffect } from 'react';
-import { CLIENT_BUILD_ID } from '../../version.js';
+import { CLIENT_BUILD_ID, CLIENT_VERSION } from '../../version.js';
+import { isNativeApp } from '../../services/serverUrl.js';
+import { evaluateUpdate, isDismissed, markDismissed, type UpdateInfo } from '../../utils/updateCheck.js';
+
+async function reloadWithFreshWorker(): Promise<void> {
+  try {
+    if ('serviceWorker' in navigator) {
+      const reg = await navigator.serviceWorker.getRegistration();
+      if (reg) {
+        await reg.update();
+        reg.waiting?.postMessage({ type: 'SKIP_WAITING' });
+      }
+    }
+  } catch {
+    /* fall through to plain reload */
+  }
+  window.location.reload();
+}
 
 export const UpdateBanner: React.FC = () => {
-  const [updateAvailable, setUpdateAvailable] = useState(false);
-  const [serverVersion, setServerVersion] = useState<string>('');
+  const [info, setInfo] = useState<UpdateInfo | null>(null);
   const [dismissed, setDismissed] = useState(false);
 
   useEffect(() => {
@@ -14,9 +30,14 @@ export const UpdateBanner: React.FC = () => {
         const res = await fetch('/api/version');
         if (!res.ok) return;
         const data = await res.json();
-        if (isMounted && data.build_id && data.build_id !== CLIENT_BUILD_ID) {
-          setUpdateAvailable(true);
-          setServerVersion(data.version || data.build_id);
+        const result = evaluateUpdate(
+          data,
+          { version: CLIENT_VERSION, buildId: CLIENT_BUILD_ID },
+          isNativeApp()
+        );
+        if (isMounted && result) {
+          setInfo(result);
+          setDismissed(isDismissed(result.buildId));
         }
       } catch {
         // Offline or server unreachable: silent no-op
@@ -34,29 +55,40 @@ export const UpdateBanner: React.FC = () => {
     }
   }, []);
 
-  if (!updateAvailable || dismissed) return null;
+  if (!info || dismissed) return null;
+
+  const dismiss = () => {
+    markDismissed(info.buildId);
+    setDismissed(true);
+  };
 
   return (
     <div
       role="alert"
-      className="bg-amber-500 text-slate-950 px-4 py-2 flex items-center justify-between text-xs sm:text-sm font-semibold shadow-md z-50 shrink-0"
+      className="bg-amber-500 text-slate-950 px-4 py-2 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 text-xs sm:text-sm font-semibold shadow-md z-50 shrink-0"
     >
-      <div className="flex items-center gap-2">
+      <div className="flex flex-wrap items-center gap-x-2">
         <span className="font-bold">Mise à jour disponible :</span>
-        <span>Nouvelle version du serveur détectée ({serverVersion}).</span>
+        <span>
+          {info.kind === 'app'
+            ? `Nouvelle version de l'application (${info.label}). Réinstallez l'APK.`
+            : `Nouvelle version du serveur détectée (${info.label}).`}
+        </span>
       </div>
-      <div className="flex items-center gap-2">
+      <div className="flex items-center gap-2 self-end sm:self-auto">
+        {info.kind === 'web' && (
+          <button
+            type="button"
+            onClick={() => void reloadWithFreshWorker()}
+            className="bg-white text-slate-950 hover:bg-amber-50 font-bold px-3 min-h-[44px] sm:min-h-0 sm:py-1 rounded shadow-sm text-xs transition-colors"
+          >
+            Recharger
+          </button>
+        )}
         <button
           type="button"
-          onClick={() => window.location.reload()}
-          className="bg-white text-slate-950 hover:bg-amber-50 font-bold px-3 py-1 rounded shadow-sm text-xs transition-colors"
-        >
-          Recharger
-        </button>
-        <button
-          type="button"
-          onClick={() => setDismissed(true)}
-          className="text-slate-950 hover:text-black p-1 rounded font-bold text-base leading-none"
+          onClick={dismiss}
+          className="text-slate-950 hover:text-black min-w-[44px] min-h-[44px] sm:min-w-0 sm:min-h-0 sm:p-1 rounded font-bold text-lg leading-none"
           aria-label="Ignorer"
         >
           ×

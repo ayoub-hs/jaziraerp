@@ -213,8 +213,12 @@ export default function App() {
       setPrintDeliveryNoteSaleId(null);
       return true;
     }
+    if (currentView === 'BACKOFFICE') {
+      setCurrentView('MOBILE_REGISTER');
+      return true;
+    }
     return false;
-  }, isSessionModalOpen || isCashMovementOpen || Boolean(printReceiptSaleId) || Boolean(printInvoiceSaleId) || Boolean(printDeliveryNoteSaleId));
+  }, currentView === 'BACKOFFICE' || isSessionModalOpen || isCashMovementOpen || Boolean(printReceiptSaleId) || Boolean(printInvoiceSaleId) || Boolean(printDeliveryNoteSaleId));
 
   const triggerDrawerIfCash = (cashPaid: number, sourceView = currentView) => {
     if (cashPaid > 0) {

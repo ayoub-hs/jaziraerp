@@ -1,6 +1,6 @@
 import { App as CapacitorApp } from '@capacitor/app';
 import { Capacitor } from '@capacitor/core';
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 
 export type BackHandler = () => boolean;
 
@@ -63,10 +63,15 @@ export function initBackButton(): void {
 }
 
 export function useBackButton(handler: BackHandler, enabled: boolean = true): void {
+  // Keep the latest handler in a ref so registration order only changes when
+  // `enabled` flips (re-registering on every render would push a parent's
+  // handler above the handlers of child modals opened later).
+  const handlerRef = useRef(handler);
+  handlerRef.current = handler;
   useEffect(() => {
     if (!enabled) return;
-    return registerBackHandler(handler);
-  }, [enabled, handler]);
+    return registerBackHandler(() => handlerRef.current());
+  }, [enabled]);
 }
 
 export function resetBackHandlersForTest(): void {

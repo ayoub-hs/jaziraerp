@@ -15,7 +15,9 @@ import {
   Bluetooth,
   AlertCircle,
   X,
-  MoreVertical
+  MoreVertical,
+  ArrowLeft,
+  Check
 } from 'lucide-react';
 import type { RegisterSession } from '../../types/index.js';
 import { syncManager, type SyncState } from '../../services/syncManager.js';
@@ -168,8 +170,18 @@ export const Header: React.FC<HeaderProps> = ({
     <header className="bg-slate-900 text-white shadow-md select-none sticky top-0 z-30 shrink-0 pt-[var(--sat)]">
       {/* Compact Mobile Header (<640px only) */}
       <div className="flex sm:hidden w-full px-3 h-14 max-h-[56px] items-center justify-between gap-2 relative">
-        {/* [logo/short company name, truncate, single line] */}
-        <div className="flex items-center gap-2 min-w-0 shrink">
+        {/* [back to register when in Backoffice | logo/short company name] */}
+        {currentView === 'BACKOFFICE' && (
+          <button
+            onClick={() => onSelectView('MOBILE_REGISTER')}
+            className="flex items-center gap-1.5 min-h-[44px] px-3 rounded-xl bg-emerald-700 text-white text-sm font-bold shrink-0"
+            aria-label="Retour à la caisse"
+          >
+            <ArrowLeft className="w-4 h-4" />
+            <span>Caisse</span>
+          </button>
+        )}
+        <div className={`${currentView === 'BACKOFFICE' ? 'hidden' : 'flex'} items-center gap-2 min-w-0 shrink`}>
           <div className="w-7 h-7 rounded-lg bg-emerald-700 flex items-center justify-center font-black text-sm text-white shadow-inner shrink-0">
             J
           </div>
@@ -227,6 +239,28 @@ export const Header: React.FC<HeaderProps> = ({
               onClick={() => setIsMobileMenuOpen(false)}
             />
             <div className="absolute top-full right-2 mt-1 z-50 w-64 bg-slate-900 border border-slate-700 rounded-2xl shadow-2xl py-1.5 text-xs text-slate-200 divide-y divide-slate-800 animate-in fade-in slide-in-from-top-2 duration-150">
+              <div className="p-1 space-y-0.5">
+                <p className="px-3 pt-1 pb-0.5 text-pos-badge font-bold uppercase tracking-wide text-slate-400">Aller à</p>
+                {([
+                  ['MOBILE_REGISTER', 'Caisse'],
+                  ['DESKTOP_POS', 'Comptoir'],
+                  ['BACKOFFICE', 'Backoffice']
+                ] as const).map(([view, label]) => (
+                  <button
+                    key={view}
+                    onClick={() => {
+                      setIsMobileMenuOpen(false);
+                      onSelectView(view);
+                    }}
+                    className={`w-full flex items-center justify-between gap-2.5 px-3 min-h-[44px] rounded-xl hover:bg-slate-800 font-semibold text-left transition-colors ${
+                      currentView === view ? 'text-emerald-400' : 'text-slate-200'
+                    }`}
+                  >
+                    <span>{label}</span>
+                    {currentView === view && <Check className="w-4 h-4 shrink-0" />}
+                  </button>
+                ))}
+              </div>
               <div className="p-1 space-y-0.5">
                 <button
                   onClick={() => {
