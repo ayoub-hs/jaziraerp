@@ -5,12 +5,14 @@ import './index.css';
 import { initPwa } from './pwa';
 import { installApiUrlPatch, isNativeApp } from './services/serverUrl.js';
 import { BluetoothLowEnergy } from '@capgo/capacitor-bluetooth-low-energy';
-import { Capacitor } from '@capacitor/core';
+import { Capacitor, SystemBars, SystemBarsStyle, SystemBarType } from '@capacitor/core';
 import { initBackButton } from './utils/backButton.js';
 
 // Mark document root for native-only touch and layout rules
 if (Capacitor.isNativePlatform()) {
   document.documentElement.classList.add('native-app');
+  document.documentElement.style.backgroundColor = '#0f172a';
+  SystemBars.setStyle({ style: SystemBarsStyle.Dark, bar: SystemBarType.StatusBar }).catch(() => {});
 }
 
 // Attach native Android hardware back button handler

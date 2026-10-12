@@ -154,7 +154,7 @@ export const Header: React.FC<HeaderProps> = ({
     }
   };
   return (
-    <header className="bg-slate-900 text-white shadow-md select-none sticky top-0 z-30 shrink-0">
+    <header className="bg-slate-900 text-white shadow-md select-none sticky top-0 z-30 shrink-0 pt-[var(--sat)]">
       <div className="w-full px-3 sm:px-4 py-1.5 flex items-center justify-between gap-2 overflow-x-auto">
         {/* Brand & View Switcher */}
         <div className="flex items-center gap-3">
