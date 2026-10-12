@@ -16,12 +16,12 @@ describe('Capacitor CORS and Scheme Hardening', () => {
     expect(res.headers['access-control-allow-origin']).toBe('https://localhost');
   });
 
-  it('allows requests with any Tailscale HTTPS Origin (*.ts.net)', async () => {
+  it('rejects CORS for foreign *.ts.net origins (no wildcard)', async () => {
     const res = await request(app)
       .get('/api/auth/status')
-      .set('Origin', 'https://my-tailscale-node.ts.net');
+      .set('Origin', 'https://foreign-node.ts.net');
 
-    expect(res.headers['access-control-allow-origin']).toBe('https://my-tailscale-node.ts.net');
+    expect(res.headers['access-control-allow-origin']).toBeUndefined();
   });
 
   it('rejects CORS for disallowed external origins', async () => {

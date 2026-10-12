@@ -40,11 +40,7 @@ if (!allowedOrigins.includes('https://localhost')) allowedOrigins.push('https://
 
 app.use(cors({
   origin: (origin, callback) => {
-    if (
-      !origin ||
-      allowedOrigins.includes(origin) ||
-      (origin.startsWith('https://') && origin.endsWith('.ts.net'))
-    ) {
+    if (!origin || allowedOrigins.includes(origin)) {
       callback(null, true);
     } else {
       callback(null, false);
