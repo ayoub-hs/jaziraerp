@@ -60,7 +60,8 @@ export default defineConfig({
     fileParallelism: false,
     include: ['server/**/*.test.ts', 'src/**/*.test.ts', 'src/**/*.test.tsx', 'tests/**/*.test.ts'],
     env: {
-      DATABASE_PATH: path.join(os.tmpdir(), 'erp-test.sqlite')
+      DATABASE_PATH: path.join(os.tmpdir(), 'erp-test.sqlite'),
+      HARDWARE_DISABLED: '1'
     }
   }
 });

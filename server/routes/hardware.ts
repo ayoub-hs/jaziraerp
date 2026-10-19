@@ -1,6 +1,6 @@
 import { Router, Request, Response } from 'express';
 import fs from 'fs';
-import { execFileSync, spawnSync } from 'child_process';
+import child_process, { execFileSync, spawnSync } from 'child_process';
 import path from 'path';
 import { getDb } from '../db/index.js';
 import { getShopSettingsFromDb } from './settings.js';
@@ -11,6 +11,9 @@ export const hardwareRouter = Router();
  * Find candidate USB serial ports on Linux
  */
 export function findSerialPort(): string | null {
+  if (process.env.HARDWARE_DISABLED === '1') {
+    return null;
+  }
   const candidates = ['/dev/ttyUSB0', '/dev/ttyUSB1', '/dev/ttyACM0', '/dev/ttyACM1'];
   for (const port of candidates) {
     if (fs.existsSync(port)) {
@@ -27,6 +30,14 @@ export function kickSerialDrawer(portPath?: string): { success: boolean; port: s
   const isValidPort = typeof portPath === 'string' && /^\/dev\/(ttyUSB|ttyACM|ttyS)\d+$/.test(portPath.trim());
   const validatedPort = isValidPort ? portPath.trim() : null;
   const targetPort = validatedPort || findSerialPort() || '/dev/ttyUSB0';
+
+  if (process.env.HARDWARE_DISABLED === '1') {
+    return {
+      success: false,
+      port: targetPort,
+      error: `Serial port ${targetPort} not found. Ensure USB cash drawer is plugged in.`
+    };
+  }
 
   if (!fs.existsSync(targetPort)) {
     return {
@@ -80,6 +91,7 @@ hardwareRouter.get('/drawer/status', (req: Request, res: Response) => {
 
   res.json({
     detected: Boolean(port),
+    connected: Boolean(port),
     port: port || null,
     device_name: port ? usbDeviceName : null
   });
@@ -120,10 +132,21 @@ export function checkPrinterStatus(): {
   driver_type?: string;
   error?: string;
 } {
+  if (process.env.HARDWARE_DISABLED === '1') {
+    return {
+      connected: false,
+      vendor_id: '0x0483',
+      product_id: '0x5840',
+      device_name: null,
+      endpoint: '0x04',
+      driver_type: 'none'
+    };
+  }
+
   // 1. Direct libusb driver check (matches Kotlin DesktopReceiptPrinter)
   try {
     const scriptPath = path.resolve(process.cwd(), 'server/hardware/usb_printer.py');
-    const proc = spawnSync('python3', [scriptPath, 'status'], { timeout: 3000, encoding: 'utf-8' });
+    const proc = child_process.spawnSync('python3', [scriptPath, 'status'], { timeout: 3000, encoding: 'utf-8' });
     if (proc.stdout) {
       const data = JSON.parse(proc.stdout.trim());
       if (data.connected) {
@@ -333,12 +356,19 @@ export function printHardwareReceipt(payload: Buffer | Uint8Array): {
   error?: string;
   driver_type?: string;
 } {
+  if (process.env.HARDWARE_DISABLED === '1') {
+    return {
+      success: false,
+      error: 'Printer device not found (VID: 0x0483, PID: 0x5840). Ensure the H313 POS printer is switched ON and connected via USB.'
+    };
+  }
+
   const inputBuf = Buffer.isBuffer(payload) ? payload : Buffer.from(payload);
 
   // 1. Try python libusb driver (VID 0x0483 PID 0x5840)
   try {
     const scriptPath = path.resolve(process.cwd(), 'server/hardware/usb_printer.py');
-    const proc = spawnSync('python3', [scriptPath, 'print'], {
+    const proc = child_process.spawnSync('python3', [scriptPath, 'print'], {
       input: inputBuf,
       timeout: 6000
     });

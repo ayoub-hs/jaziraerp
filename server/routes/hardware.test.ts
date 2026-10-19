@@ -1,6 +1,14 @@
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach, vi } from 'vitest';
+import fs from 'fs';
+import child_process from 'child_process';
 import { app, request, resetTestDb, getDb } from '../../tests/testApp.js';
-import { buildReceiptEscPosBuffer } from './hardware.js';
+import {
+  buildReceiptEscPosBuffer,
+  findSerialPort,
+  kickSerialDrawer,
+  checkPrinterStatus,
+  printHardwareReceipt
+} from './hardware.js';
 
 describe('Hardware Router & USB Serial Cash Drawer (HTTP Routes)', () => {
   beforeEach(() => {
@@ -61,9 +69,57 @@ describe('Hardware Router & USB Serial Cash Drawer (HTTP Routes)', () => {
       .post('/api/hardware/printer/print')
       .send({ sale: sampleSale });
 
-    // Depending on whether physical printer is plugged in, returns 200 or 503
-    expect([200, 503]).toContain(res.status);
-    expect(typeof res.body.success).toBe('boolean');
+    // With HARDWARE_DISABLED=1, printer is simulated as not found (503) without touching device
+    expect(res.status).toBe(503);
+    expect(res.body.success).toBe(false);
+    expect(res.body.error).toContain('Printer device not found');
+  });
+
+  it('does not touch hardware (openSync, writeSync, spawnSync) when HARDWARE_DISABLED=1', async () => {
+    const fsOpenSpy = vi.spyOn(fs, 'openSync');
+    const fsWriteSpy = vi.spyOn(fs, 'writeSync');
+    const spawnSyncSpy = vi.spyOn(child_process, 'spawnSync');
+
+    try {
+      // 1. Drawer detection & kick operations
+      findSerialPort();
+      kickSerialDrawer();
+      kickSerialDrawer('/dev/ttyUSB0');
+      kickSerialDrawer('/etc/passwd');
+      await request(app).get('/api/hardware/drawer/status');
+      await request(app).post('/api/hardware/drawer/kick').send({ port: '/dev/ttyUSB0' });
+      await request(app).post('/api/hardware/drawer/kick').send({ port: '/etc/passwd' });
+
+      // 2. Printer detection & print operations
+      checkPrinterStatus();
+      printHardwareReceipt(Buffer.from([0x1b, 0x40]));
+      await request(app).get('/api/hardware/printer/status');
+      await request(app).post('/api/hardware/printer/print').send({ rawBytes: [0x1b, 0x40] });
+
+      const hardwareRegex = /^\/dev\/(tty|usb|lp)/;
+
+      // Assert fs.openSync is never called with hardware paths
+      for (const call of fsOpenSpy.mock.calls) {
+        const pathArg = String(call[0]);
+        expect(pathArg).not.toMatch(hardwareRegex);
+      }
+
+      // Assert fs.writeSync is never called
+      expect(fsWriteSpy).not.toHaveBeenCalled();
+
+      // Assert spawnSync is never called with usb_printer.py or hardware paths
+      for (const call of spawnSyncSpy.mock.calls) {
+        const cmd = String(call[0]);
+        const args = Array.isArray(call[1]) ? call[1].map(String).join(' ') : '';
+        const fullCall = `${cmd} ${args}`;
+        expect(fullCall).not.toContain('usb_printer.py');
+        expect(fullCall).not.toMatch(hardwareRegex);
+      }
+    } finally {
+      fsOpenSpy.mockRestore();
+      fsWriteSpy.mockRestore();
+      spawnSyncSpy.mockRestore();
+    }
   });
 
   it('POST /api/hardware/printer/print returns 404 for unknown sale_id', async () => {
