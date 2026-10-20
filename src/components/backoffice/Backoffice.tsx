@@ -563,11 +563,11 @@ export const Backoffice: React.FC<BackofficeProps> = ({
         loadBackofficeData();
       } else {
         const data = await res.json().catch(() => ({}));
-        setBatchResult({ error: data.error || `Batch wizard failed (${res.status})` });
+        setBatchResult({ error: data.error || `Échec de l'exécution du lot (${res.status})` });
       }
     } catch (err: any) {
       console.warn('Batch wizard failed:', err);
-      setBatchResult({ error: err.message || 'Batch wizard failed' });
+      setBatchResult({ error: err.message || "Échec de l'exécution du lot" });
     } finally {
       isExecutingBatchRef.current = false;
       setIsExecutingBatch(false);
@@ -626,12 +626,12 @@ export const Backoffice: React.FC<BackofficeProps> = ({
     confirmDelete({
       title: 'Supprimer la Famille de Produits',
       itemName: fam.name,
-      message: `Êtes-vous sûr de vouloir supprimer la famille "${fam.name}" ? Tous les articles associés seront désactivés et archivés en toute sécurité.`,
+      message: `Êtes-vous sûr de vouloir supprimer la famille "${fam.name}" ? Une famille contenant des articles existants ne peut pas être supprimée (désactivez-la plutôt).`,
       onConfirm: async () => {
         const res = await fetch(`/api/products/families/${fam.id}`, { method: 'DELETE' });
         if (!res.ok) {
           if (res.status === 409) {
-            throw new Error('Impossible de supprimer: déjà référencé. Désactivez-le plutôt.');
+            throw new Error('Impossible de supprimer: cette famille contient des articles existants. Désactivez-la plutôt.');
           }
           const data = await res.json().catch(() => ({}));
           throw new Error(data.error || 'Échec de la suppression de la famille');

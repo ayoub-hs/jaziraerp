@@ -400,7 +400,7 @@ export const DesktopPos: React.FC<DesktopPosProps> = ({
 
   const handleClearCart = () => {
     if (cart.length === 0) return;
-    if (window.confirm('Clear all items from cart?')) {
+    if (window.confirm('Voulez-vous vraiment vider tout le panier ?')) {
       setCart([]);
       setSaleDiscount(0);
     }

@@ -572,7 +572,7 @@ export const MobileRegister: React.FC<MobileRegisterProps> = ({
         })
       });
       if (res.ok) {
-        setEditSuccessMsg('Price & Stock updated successfully!');
+        setEditSuccessMsg('Prix et stock mis à jour avec succès !');
         setEditErrorMsg(null);
         onRefreshData();
       } else {
@@ -581,7 +581,7 @@ export const MobileRegister: React.FC<MobileRegisterProps> = ({
         setEditSuccessMsg(null);
       }
     } catch (err: any) {
-      setEditErrorMsg(err.message || 'Quick edit save failed');
+      setEditErrorMsg(err.message || 'Échec de la modification rapide');
       setEditSuccessMsg(null);
     } finally {
       isSubmittingQuickEditRef.current = false;

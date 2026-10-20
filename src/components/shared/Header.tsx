@@ -161,7 +161,7 @@ export const Header: React.FC<HeaderProps> = ({
         await webUsbPrinter.requestAndConnect();
       } catch (err: any) {
         if (err?.name !== 'NotFoundError' && !err?.message?.includes('No device selected')) {
-          alert(err.message || 'Failed to connect USB printer');
+          alert(err.message || "Échec de connexion à l'imprimante USB");
         }
       }
     }
@@ -589,23 +589,23 @@ export const Header: React.FC<HeaderProps> = ({
                         if (sppErr?.code === 'NO_BONDED' || sppErr?.code === 'NOT_NATIVE') {
                           console.warn('[Header] No SPP candidate, trying BLE:', sppErr);
                         } else {
-                          alert(sppErr.message || 'Failed to connect Bluetooth printer');
+                          alert(sppErr.message || "Échec de connexion à l'imprimante Bluetooth");
                           return;
                         }
                       }
                     }
                     await webBluetoothPrinter.requestAndConnect();
                   } catch (err: any) {
-                    alert(err.message || 'Failed to connect Bluetooth printer');
+                    alert(err.message || "Échec de connexion à l'imprimante Bluetooth");
                   }
                 }
               }}
               title={
                 sppStatus.isConnected
-                  ? `Connected (SPP): ${sppStatus.deviceName}`
+                  ? `Connecté (SPP): ${sppStatus.deviceName}`
                   : btStatus.isConnected
-                  ? `Connected: ${btStatus.deviceName}`
-                  : 'Pair 58mm Bluetooth Receipt Printer'
+                  ? `Connecté: ${btStatus.deviceName}`
+                  : "Associer l'imprimante de reçus Bluetooth 58mm"
               }
               className={`flex items-center gap-1 px-2 py-1 rounded-lg text-xs font-semibold border transition-colors ${
                 btStatus.isConnected || sppStatus.isConnected
@@ -614,7 +614,7 @@ export const Header: React.FC<HeaderProps> = ({
               }`}
             >
               <Bluetooth className="w-3.5 h-3.5 text-indigo-400" />
-              <span className="hidden lg:inline">{btStatus.isConnected || sppStatus.isConnected ? 'BT Ready' : 'Pair BT'}</span>
+              <span className="hidden lg:inline">{btStatus.isConnected || sppStatus.isConnected ? 'BT Prêt' : 'Associer BT'}</span>
             </button>
           )}
 
@@ -624,10 +624,10 @@ export const Header: React.FC<HeaderProps> = ({
             onClick={handleDrawerClick}
             title={
               drawerKicking
-                ? 'Solenoid pulse sent!'
+                ? 'Impulsion tiroir envoyée !'
                 : serialPortInfo
-                ? `Pop Cash Drawer (USB Serial: ${serialPortInfo})`
-                : 'Pop Cash Drawer'
+                ? `Ouvrir le tiroir-caisse (USB Série: ${serialPortInfo})`
+                : 'Ouvrir le tiroir-caisse'
             }
             className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-semibold border transition-all ${
               drawerCooldown ? 'opacity-50 cursor-not-allowed ' : ''
