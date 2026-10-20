@@ -105,7 +105,6 @@ export interface CreateSaleInput {
   cash_tendered?: number | string;
   wallet_paid?: number | string;
   credit_amount?: number | string;
-  synced_from_client_id?: string | null;
   /** Optional online idempotency claim, already inserted by the HTTP route. */
   request_id?: string | null;
 }
@@ -143,7 +142,6 @@ export function createSale(db: any, input: CreateSaleInput): CreateSaleResult {
     cash_paid = 0,
     wallet_paid = 0,
     credit_amount = 0,
-    synced_from_client_id = null,
     request_id = null
   } = input;
 
@@ -399,7 +397,7 @@ export function createSale(db: any, input: CreateSaleInput): CreateSaleResult {
       walletAmount,
       creditAmount,
       changeGiven,
-      synced_from_client_id,
+      null,
       now
     );
 

@@ -303,8 +303,7 @@ salesRouter.post('/', (req: Request, res: Response) => {
     cash_tendered = undefined,
     cash_paid = 0,
     wallet_paid = 0,
-    credit_amount = 0,
-    synced_from_client_id = null
+    credit_amount = 0
   } = req.body;
 
   const rawSessionId = directSessionId || register_session_id || null;
@@ -350,7 +349,6 @@ salesRouter.post('/', (req: Request, res: Response) => {
       cash_tendered,
       wallet_paid,
       credit_amount,
-      synced_from_client_id,
       request_id: requestId
     });
     res.status(201).json(result);

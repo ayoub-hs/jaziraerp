@@ -296,6 +296,17 @@ describe('Online financial request idempotency', () => {
     expect((db.prepare('SELECT COUNT(*) AS c FROM customer_payments WHERE customer_id = ?').get(other.body.id) as any).c).toBe(0);
   });
 
+  it('uses processed_requests as the only online sale dedupe path', async () => {
+    const s = await seed();
+    const res = await request(app).post('/api/sales').send({
+      ...saleBody(s, 'idem-single-dedupe-0001'),
+      synced_from_client_id: 'legacy-client-key'
+    });
+    expect(res.status).toBe(201);
+    const row: any = getDb().prepare('SELECT synced_from_client_id FROM sales WHERE id = ?').get(res.body.sale_id);
+    expect(row.synced_from_client_id).toBeNull();
+  });
+
   it('rejects a refund payout that differs by one millime', async () => {
     const s = await seed();
     const sale = await request(app).post('/api/sales').send({
