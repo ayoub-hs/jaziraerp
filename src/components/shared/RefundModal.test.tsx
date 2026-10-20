@@ -103,12 +103,13 @@ describe('RefundModal Component — F6 Field Names & Split-Payout UI', () => {
 
     // 1. Prior refund shows total_refunded (20.000 DT) rather than 0.000 DT
     await waitFor(() => {
-      expect(screen.getByText(/20\.000\s*DT/i)).toBeInTheDocument();
+      expect(screen.getByText(/2 bidons endommagés/i)).toBeTruthy();
     });
+    expect(screen.getByText(/20\.000\s*DT/i)).toBeTruthy();
 
     // 2. Select dropdown option shows correct remaining quantity (5 - 2 = 3 restant)
     const select = screen.getByRole('combobox');
-    expect(select).toHaveTextContent(/Restant\s*:\s*3/i);
+    expect(select.textContent).toMatch(/Restant\s*:\s*3/i);
   });
 
   it('renders split-payout inputs and pre-fills suggested debt-first allocation', async () => {
@@ -144,13 +145,97 @@ describe('RefundModal Component — F6 Field Names & Split-Payout UI', () => {
 
     // Should render split-payout section
     await waitFor(() => {
-      expect(screen.getByLabelText(/Réduction de dette/i)).toBeInTheDocument();
-      expect(screen.getByLabelText(/Espèces/i)).toBeInTheDocument();
-      expect(screen.getByLabelText(/Portefeuille/i)).toBeInTheDocument();
+      expect(screen.getByLabelText(/Réduction de dette/i)).toBeTruthy();
+      expect(screen.getByLabelText(/Espèces/i)).toBeTruthy();
+      expect(screen.getByLabelText(/Portefeuille/i)).toBeTruthy();
     });
 
     // Inputs are pre-filled from preview suggested allocation
-    const creditInput = screen.getByLabelText(/Réduction de dette/i) as HTMLInputElement;
-    expect(Number(creditInput.value)).toBe(10);
+    await waitFor(() => {
+      const creditInput = screen.getByLabelText(/Réduction de dette/i) as HTMLInputElement;
+      expect(Number(creditInput.value)).toBe(10);
+    });
+  });
+
+  it('submits split-payout amounts to the backend refund endpoint', async () => {
+    const saleWith1Remaining = {
+      ...mockSale,
+      items: [
+        {
+          ...mockSale.items[0],
+          quantity: 3,
+          quantity_refunded: 2
+        }
+      ]
+    };
+
+    let capturedBody: any = null;
+    global.fetch = vi.fn().mockImplementation((url: string, init?: any) => {
+      if (url.includes('/api/register/open-sessions')) {
+        return Promise.resolve({
+          ok: true,
+          json: () => Promise.resolve([
+            { id: 'ses-1', session_number: 'SES-001', counter_name: 'Caisse 1' }
+          ])
+        });
+      }
+      if (url.includes('/api/sales/sale-test-123/refunds')) {
+        return Promise.resolve({ ok: true, json: () => Promise.resolve([]) });
+      }
+      if (url.includes('/api/sales/sale-test-123/refund/preview')) {
+        return Promise.resolve({ ok: true, json: () => Promise.resolve(mockPreview) });
+      }
+      if (url.includes('/api/sales/sale-test-123/refund')) {
+        capturedBody = JSON.parse(init.body);
+        return Promise.resolve({
+          ok: true,
+          json: () => Promise.resolve({ id: 'ref-new-1', total_refunded: 10 })
+        });
+      }
+      if (url.includes('/api/sales/sale-test-123')) {
+        return Promise.resolve({ ok: true, json: () => Promise.resolve(saleWith1Remaining) });
+      }
+      return Promise.resolve({ ok: true, json: () => Promise.resolve([]) });
+    });
+
+    const onRefundCompleted = vi.fn();
+
+    render(
+      <RefundModal
+        isOpen={true}
+        onClose={() => {}}
+        onRefundCompleted={onRefundCompleted}
+        initialSaleId="sale-test-123"
+        activeSessionId="ses-1"
+      />
+    );
+
+    // Wait for preview to pre-fill
+    await waitFor(() => {
+      const creditInput = screen.getByLabelText(/Réduction de dette/i) as HTMLInputElement;
+      expect(Number(creditInput.value)).toBe(10);
+    });
+
+    // Change split to 6.000 debt reduction and 4.000 cash
+    const creditInput = screen.getByLabelText(/Réduction de dette/i);
+    const cashInput = screen.getByLabelText(/Espèces/i);
+    fireEvent.change(creditInput, { target: { value: '6.000' } });
+    fireEvent.change(cashInput, { target: { value: '4.000' } });
+
+    // Submit form
+    const submitBtn = screen.getByRole('button', { name: /Confirmer le Remboursement/i });
+    expect((submitBtn as HTMLButtonElement).disabled).toBe(false);
+    fireEvent.click(submitBtn);
+
+    await waitFor(() => {
+      expect(onRefundCompleted).toHaveBeenCalled();
+    });
+
+    expect(capturedBody).toBeTruthy();
+    expect(capturedBody.credit_reduced).toBe(6);
+    expect(capturedBody.cash_refunded).toBe(4);
+    expect(capturedBody.wallet_refunded).toBe(0);
+    expect(capturedBody.items[0].quantity).toBe(1);
+    expect(capturedBody.client_request_id).toBeDefined();
   });
 });

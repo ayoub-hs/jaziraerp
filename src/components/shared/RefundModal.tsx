@@ -35,9 +35,15 @@ export const RefundModal: React.FC<RefundModalProps> = ({
   // Refund form state
   const [selectedItemId, setSelectedItemId] = useState<string>('');
   const [refundQuantity, setRefundQuantity] = useState<string>('1');
-  const [refundMethod, setRefundMethod] = useState<'CASH' | 'WALLET' | 'CREDIT_REDUCTION'>('CASH');
   const [reason, setReason] = useState<string>('Marchandise retournée par le client');
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Split payout state
+  const [splitCredit, setSplitCredit] = useState<string>('0');
+  const [splitCash, setSplitCash] = useState<string>('0');
+  const [splitWallet, setSplitWallet] = useState<string>('0');
+  const [previewData, setPreviewData] = useState<any>(null);
+  const [previewLoading, setPreviewLoading] = useState(false);
 
   // Register sessions for cash refunds
   const [openSessions, setOpenSessions] = useState<any[]>([]);
@@ -63,6 +69,7 @@ export const RefundModal: React.FC<RefundModalProps> = ({
       setSearchReceipt('');
       setSelectedSessionId('');
       setSessionTouched(false);
+      setPreviewData(null);
 
       // Fetch open register sessions
       fetch('/api/register/open-sessions')
@@ -73,6 +80,50 @@ export const RefundModal: React.FC<RefundModalProps> = ({
         .catch(() => setOpenSessions([]));
     }
   }, [isOpen, initialSaleId]);
+
+  // Fetch refund preview and suggested allocation whenever sale, item, or quantity changes
+  useEffect(() => {
+    if (!selectedSale || !selectedItemId) {
+      setPreviewData(null);
+      return;
+    }
+    const qty = parseFloat(refundQuantity);
+    if (isNaN(qty) || qty <= 0) {
+      setPreviewData(null);
+      return;
+    }
+
+    let isMounted = true;
+    setPreviewLoading(true);
+
+    fetch(`/api/sales/${selectedSale.id}/refund/preview`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        items: [{ sale_item_id: selectedItemId, quantity: qty }]
+      })
+    })
+      .then(res => res.ok ? res.json() : null)
+      .then(data => {
+        if (!isMounted || !data) return;
+        setPreviewData(data);
+        if (data.suggested_allocation) {
+          setSplitCredit((data.suggested_allocation.credit_reduced ?? 0).toFixed(3));
+          setSplitCash((data.suggested_allocation.cash_refunded ?? 0).toFixed(3));
+          setSplitWallet((data.suggested_allocation.wallet_refunded ?? 0).toFixed(3));
+        }
+      })
+      .catch(err => {
+        console.warn('Failed to load refund preview:', err);
+      })
+      .finally(() => {
+        if (isMounted) setPreviewLoading(false);
+      });
+
+    return () => {
+      isMounted = false;
+    };
+  }, [selectedSale?.id, selectedItemId, refundQuantity]);
 
   // Default session: POS flow (no initialSaleId) uses the operating counter's
   // own open session; Ventes flow uses the original sale's session if open,
@@ -122,27 +173,17 @@ export const RefundModal: React.FC<RefundModalProps> = ({
         setError(null);
         if (fullSale.items && fullSale.items.length > 0) {
           const refundableItem = fullSale.items.find(
-            (i: any) => (i.quantity || 0) - (i.refunded_quantity || 0) > 0
+            (i: any) => (i.quantity || 0) - (i.quantity_refunded ?? i.refunded_quantity ?? 0) > 0
           );
           if (refundableItem) {
             setSelectedItemId(refundableItem.id);
-            const remaining = (refundableItem.quantity || 0) - (refundableItem.refunded_quantity || 0);
+            const remaining = (refundableItem.quantity || 0) - (refundableItem.quantity_refunded ?? refundableItem.refunded_quantity ?? 0);
             setRefundQuantity(remaining.toString());
           } else {
             setSelectedItemId(fullSale.items[0].id);
             setRefundQuantity('');
             setError('Tous les articles de cette vente ont déjà été intégralement remboursés.');
           }
-        }
-        // Auto default to CREDIT_REDUCTION if debt ticket has open balance
-        if (fullSale.debt_ticket && Number(fullSale.debt_ticket.remaining_amount) > 0) {
-          setRefundMethod('CREDIT_REDUCTION');
-        } else if (fullSale.credit_amount > 0 && !fullSale.debt_ticket) {
-          setRefundMethod('CREDIT_REDUCTION');
-        } else if (fullSale.customer_id) {
-          setRefundMethod('WALLET');
-        } else {
-          setRefundMethod('CASH');
         }
       }
       if (refundsRes.ok) {
@@ -157,9 +198,41 @@ export const RefundModal: React.FC<RefundModalProps> = ({
     }
   };
 
+  const numCredit = Math.max(0, parseFloat(splitCredit) || 0);
+  const numCash = Math.max(0, parseFloat(splitCash) || 0);
+  const numWallet = Math.max(0, parseFloat(splitWallet) || 0);
+  const sumSplit = Math.round((numCredit + numCash + numWallet) * 1000) / 1000;
+  const expectedTotal = previewData ? previewData.total_refunded : 0;
+  const isTotalBalanced = Math.abs(sumSplit - expectedTotal) < 0.001;
+
+  const maxCashCap = previewData?.capacities?.max_cash ?? 0;
+  const maxDebtCap = previewData?.capacities?.open_debt ?? 0;
+  const maxWalletCap = previewData?.capacities?.max_wallet ?? 0;
+
+  const isCashOverCap = numCash > maxCashCap + 0.0001;
+  const isCreditOverCap = numCredit > maxDebtCap + 0.0001;
+  const isCashWithNoSession = numCash > 0 && openSessions.length === 0;
+  const isMultipleSessionsUnselected = numCash > 0 && openSessions.length > 1 && !selectedSessionId;
+
+  const currentItem = selectedSale?.items?.find(i => i.id === selectedItemId);
+  const currentRemaining = currentItem ? (currentItem.quantity || 0) - (currentItem.quantity_refunded ?? currentItem.refunded_quantity ?? 0) : 0;
+
+  const isSubmitDisabled = (
+    isSubmitting ||
+    previewLoading ||
+    currentRemaining <= 0 ||
+    !refundQuantity ||
+    parseFloat(refundQuantity) <= 0 ||
+    !isTotalBalanced ||
+    isCashOverCap ||
+    isCreditOverCap ||
+    isCashWithNoSession ||
+    isMultipleSessionsUnselected
+  );
+
   const handleProcessRefund = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!selectedSale || !selectedItemId) return;
+    if (!selectedSale || !selectedItemId || isSubmitDisabled) return;
 
     const qty = parseFloat(refundQuantity);
     if (isNaN(qty) || qty <= 0) {
@@ -173,7 +246,7 @@ export const RefundModal: React.FC<RefundModalProps> = ({
       return;
     }
 
-    const maxAllowed = (item.quantity || 0) - (item.refunded_quantity || 0);
+    const maxAllowed = (item.quantity || 0) - (item.quantity_refunded ?? item.refunded_quantity ?? 0);
     if (qty > maxAllowed) {
       setError(`Impossible de rembourser ${qty} unité(s). Maximum remboursable : ${maxAllowed}`);
       return;
@@ -183,10 +256,11 @@ export const RefundModal: React.FC<RefundModalProps> = ({
     setError(null);
     try {
       const refundBase = {
-        refund_method: refundMethod,
-        refund_to_credit_debt: refundMethod === 'CREDIT_REDUCTION',
+        credit_reduced: numCredit,
+        cash_refunded: numCash,
+        wallet_refunded: numWallet,
         reason,
-        session_id: refundMethod === 'CASH' ? selectedSessionId || undefined : undefined,
+        session_id: numCash > 0 ? selectedSessionId || undefined : undefined,
         items: [
           {
             sale_item_id: selectedItemId,
@@ -223,11 +297,6 @@ export const RefundModal: React.FC<RefundModalProps> = ({
   };
 
   if (!isOpen) return null;
-
-  const currentItem = selectedSale?.items?.find(i => i.id === selectedItemId);
-  const currentRemaining = currentItem ? (currentItem.quantity || 0) - (currentItem.refunded_quantity || 0) : 0;
-  const isCashWithNoSession = refundMethod === 'CASH' && openSessions.length === 0;
-  const isSubmitDisabled = isSubmitting || currentRemaining <= 0 || !refundQuantity || parseFloat(refundQuantity) <= 0 || isCashWithNoSession;
 
   return (
     <div className="fixed inset-0 m-0 z-50 flex items-center justify-center bg-slate-900/60 p-2 sm:p-4 overflow-y-auto">
@@ -368,7 +437,9 @@ export const RefundModal: React.FC<RefundModalProps> = ({
                     {saleRefunds.map((rf: any) => (
                       <div key={rf.id} className="text-xs bg-white p-2 rounded-lg border border-amber-100 flex justify-between items-center">
                         <div>
-                          <span className="font-bold text-slate-800">{formatMoney(rf.refund_amount)}</span> via <span className="font-semibold text-slate-600">{rf.refund_method}</span>
+                          <span className="font-bold text-slate-800">
+                            {formatMoney(rf.total_refunded ?? rf.refund_amount ?? 0)}
+                          </span> via <span className="font-semibold text-slate-600">{rf.refund_method || ((Number(rf.credit_reduced) || 0) > 0 ? 'CREDIT_REDUCTION' : ((Number(rf.wallet_refunded) || 0) > 0 ? 'WALLET' : 'CASH'))}</span>
                           <div className="text-slate-600 text-xs">{rf.reason || 'Aucun motif spécifié'} • {formatDateTime(rf.created_at)}</div>
                         </div>
                         <span className="text-xs font-bold px-2 py-0.5 bg-amber-100 text-amber-950 rounded">
@@ -391,7 +462,7 @@ export const RefundModal: React.FC<RefundModalProps> = ({
                     setSelectedItemId(e.target.value);
                     const item = selectedSale.items?.find(i => i.id === e.target.value);
                     if (item) {
-                      const remaining = (item.quantity || 0) - (item.refunded_quantity || 0);
+                      const remaining = (item.quantity || 0) - (item.quantity_refunded ?? item.refunded_quantity ?? 0);
                       if (remaining > 0) {
                         setRefundQuantity(remaining.toString());
                         setError(null);
@@ -404,7 +475,7 @@ export const RefundModal: React.FC<RefundModalProps> = ({
                   className="w-full text-sm font-semibold px-3 py-2 border border-slate-300 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:outline-none"
                 >
                   {selectedSale.items?.map(item => {
-                    const remaining = (item.quantity || 0) - (item.refunded_quantity || 0);
+                    const remaining = (item.quantity || 0) - (item.quantity_refunded ?? item.refunded_quantity ?? 0);
                     return (
                       <option key={item.id} value={item.id} disabled={remaining <= 0}>
                         {item.description} — {formatMoney(item.unit_price)} (Acheté : {item.quantity}, Restant : {remaining})
@@ -414,47 +485,133 @@ export const RefundModal: React.FC<RefundModalProps> = ({
                 </select>
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
-                {/* Quantity */}
-                <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-1">
-                    Quantité à rembourser *
-                  </label>
-                  <input
-                    type="number"
-                    step="any"
-                    min="0.001"
-                    value={refundQuantity}
-                    onChange={e => setRefundQuantity(e.target.value)}
-                    className="w-full text-sm font-bold font-mono px-3 py-2 border border-slate-300 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:outline-none"
-                  />
+              {/* Quantity */}
+              <div>
+                <label htmlFor="refund-quantity" className="block text-xs font-bold text-slate-700 mb-1">
+                  Quantité à rembourser *
+                </label>
+                <input
+                  id="refund-quantity"
+                  aria-label="Quantité à rembourser"
+                  type="number"
+                  step="any"
+                  min="0.001"
+                  value={refundQuantity}
+                  onChange={e => setRefundQuantity(e.target.value)}
+                  className="w-full text-sm font-bold font-mono px-3 py-2 border border-slate-300 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:outline-none"
+                />
+              </div>
+
+              {/* Split Payout Section */}
+              <div className="bg-slate-50 border border-slate-200 rounded-xl p-3.5 space-y-3">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-bold text-slate-800 uppercase tracking-wider">
+                    Répartition du remboursement
+                  </span>
+                  {previewData && (
+                    <span className="text-xs font-bold font-mono text-emerald-800 bg-emerald-100 px-2 py-0.5 rounded">
+                      Total : {formatMoney(previewData.total_refunded)}
+                    </span>
+                  )}
                 </div>
 
-                {/* Refund Method */}
-                <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-1">
-                    Mode de remboursement *
-                  </label>
-                  <select
-                    value={refundMethod}
-                    onChange={e => setRefundMethod(e.target.value as any)}
-                    className="w-full text-sm font-semibold px-3 py-2 border border-slate-300 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:outline-none"
-                  >
-                    <option value="CASH">Remboursement Espèces</option>
-                    {selectedSale?.customer_id && (
-                      <option value="WALLET">Portefeuille (Avoir client)</option>
-                    )}
-                    {((selectedSale as any)?.debt_ticket ? Number((selectedSale as any).debt_ticket.remaining_amount) > 0 : (selectedSale?.credit_amount ?? 0) > 0) && (
-                      <option value="CREDIT_REDUCTION">
-                        Réduction dette / crédit {(selectedSale as any)?.debt_ticket ? `(Reste: ${formatMoney((selectedSale as any).debt_ticket.remaining_amount)})` : ''}
-                      </option>
-                    )}
-                  </select>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+                  {/* Credit Reduction */}
+                  <div>
+                    <div className="flex justify-between items-center mb-1">
+                      <label htmlFor="split-credit" className="text-xs font-bold text-slate-700">
+                        Réduction de dette
+                      </label>
+                      <span className="text-xs text-slate-500 font-mono">
+                        Max: {formatMoney(maxDebtCap)}
+                      </span>
+                    </div>
+                    <input
+                      id="split-credit"
+                      aria-label="Réduction de dette"
+                      type="number"
+                      step="0.001"
+                      min="0"
+                      value={splitCredit}
+                      onChange={e => setSplitCredit(e.target.value)}
+                      className={`w-full text-xs font-bold font-mono px-2.5 py-1.5 border rounded-lg focus:ring-2 focus:ring-emerald-500 focus:outline-none ${
+                        isCreditOverCap ? 'border-rose-400 bg-rose-50 text-rose-900' : 'border-slate-300 bg-white'
+                      }`}
+                    />
+                  </div>
+
+                  {/* Cash Payout */}
+                  <div>
+                    <div className="flex justify-between items-center mb-1">
+                      <label htmlFor="split-cash" className="text-xs font-bold text-slate-700">
+                        Espèces
+                      </label>
+                      <span className="text-xs text-slate-500 font-mono">
+                        Max: {formatMoney(maxCashCap)}
+                      </span>
+                    </div>
+                    <input
+                      id="split-cash"
+                      aria-label="Espèces"
+                      type="number"
+                      step="0.001"
+                      min="0"
+                      value={splitCash}
+                      onChange={e => setSplitCash(e.target.value)}
+                      className={`w-full text-xs font-bold font-mono px-2.5 py-1.5 border rounded-lg focus:ring-2 focus:ring-emerald-500 focus:outline-none ${
+                        isCashOverCap ? 'border-rose-400 bg-rose-50 text-rose-900' : 'border-slate-300 bg-white'
+                      }`}
+                    />
+                  </div>
+
+                  {/* Wallet Credit */}
+                  <div>
+                    <div className="flex justify-between items-center mb-1">
+                      <label htmlFor="split-wallet" className="text-xs font-bold text-slate-700">
+                        Portefeuille (Avoir)
+                      </label>
+                      <span className="text-xs text-slate-500 font-mono">
+                        Max: {formatMoney(maxWalletCap)}
+                      </span>
+                    </div>
+                    <input
+                      id="split-wallet"
+                      aria-label="Portefeuille"
+                      type="number"
+                      step="0.001"
+                      min="0"
+                      disabled={!selectedSale?.customer_id}
+                      value={splitWallet}
+                      onChange={e => setSplitWallet(e.target.value)}
+                      className="w-full text-xs font-bold font-mono px-2.5 py-1.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:outline-none bg-white disabled:bg-slate-100 disabled:text-slate-400"
+                    />
+                  </div>
                 </div>
+
+                {/* Live Split Balance Warning */}
+                {previewData && (
+                  <div className="text-xs flex items-center justify-between pt-1 border-t border-slate-200">
+                    <span className="text-slate-600">Total ventilé :</span>
+                    <span className={`font-mono font-bold ${isTotalBalanced ? 'text-emerald-700' : 'text-rose-600'}`}>
+                      {sumSplit.toFixed(3)} DT {isTotalBalanced ? '✓' : `(Différence : ${(sumSplit - expectedTotal).toFixed(3)} DT)`}
+                    </span>
+                  </div>
+                )}
+
+                {isCashOverCap && (
+                  <p className="text-xs text-rose-600 font-semibold">
+                    Le montant en espèces ({numCash.toFixed(3)} DT) dépasse la capacité d'espèces de la vente ({maxCashCap.toFixed(3)} DT).
+                  </p>
+                )}
+                {isCreditOverCap && (
+                  <p className="text-xs text-rose-600 font-semibold">
+                    La réduction de dette ({numCredit.toFixed(3)} DT) dépasse la dette ouverte ({maxDebtCap.toFixed(3)} DT).
+                  </p>
+                )}
               </div>
 
               {/* Cash Refund Register Session Selector */}
-              {refundMethod === 'CASH' && (
+              {numCash > 0 && (
                 <div>
                   {openSessions.length === 0 ? (
                     <div className="p-3 bg-rose-50 border border-rose-200 rounded-xl flex items-center gap-2 text-rose-800 text-xs font-semibold">

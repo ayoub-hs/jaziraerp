@@ -216,6 +216,7 @@ export interface SaleSummary {
     line_total?: number;
     discount_amount?: number;
     refunded_quantity?: number;
+    quantity_refunded?: number;
   }>;
   delivery_note?: DeliveryNote | null;
 }
