@@ -6,6 +6,7 @@ import { calculateContainersNeeded } from '../utils/container.js';
 import { businessDateKey } from '../utils/businessDate.js';
 import { computeExpectedCatalogPrice } from './sales.js';
 import { validateSalePayment } from '../utils/payments.js';
+import { findCompletedRequest } from '../services/idempotencyService.js';
 
 export const syncRouter = Router();
 
@@ -117,6 +118,24 @@ syncRouter.post('/flush', (req: Request, res: Response) => {
       const opTx = db.transaction(() => {
         if (action_type === 'SALE') {
           const clientId = temp_client_id || payload?.temp_client_id;
+          // Cross-path replay: the client may have queued after an online
+          // request committed but the HTTP response was lost. The online key is
+          // carried in payload.client_request_id.
+          const crossPathId = payload?.client_request_id;
+          if (crossPathId) {
+            const completed = findCompletedRequest(db, crossPathId, 'SALE');
+            if (completed) {
+              const completedSaleId = completed.body?.sale_id || completed.body?.id || completed.resourceId;
+              reconciled.push({
+                temp_client_id: clientId,
+                action_type: 'SALE',
+                server_id: completedSaleId,
+                receipt_number: completed.body?.receipt_number,
+                status: 'SYNCED'
+              });
+              return;
+            }
+          }
           if (clientId) {
             const existingSale: any = db.prepare('SELECT id, receipt_number FROM sales WHERE synced_from_client_id = ?').get(clientId);
             if (existingSale) {
@@ -307,7 +326,7 @@ syncRouter.post('/flush', (req: Request, res: Response) => {
         }
         if (!itemsValid) return;
 
-        const rawDiscount = Number(payload.total_discount) || 0;
+        const rawDiscount = round3(Number(payload.total_discount) || 0);
         const totalTTC = Math.max(0, round3(computedSubtotal - rawDiscount));
         const taxBreakdown = calculateTaxBreakdown(totalTTC, 0.19);
 
@@ -375,7 +394,7 @@ syncRouter.post('/flush', (req: Request, res: Response) => {
           0.19,
           taxBreakdown.tvaAmount,
           totalTTC,
-          Number(payload.total_discount) || 0,
+          rawDiscount,
           cashAmount,
           walletAmount,
           creditAmount,
@@ -511,6 +530,20 @@ syncRouter.post('/flush', (req: Request, res: Response) => {
         });
       } else if (action_type === 'CASH_MOVEMENT') {
         const clientId = temp_client_id || payload?.temp_client_id;
+        // Cross-path replay after a lost online response.
+        const crossPathId = payload?.client_request_id;
+        if (crossPathId) {
+          const completed = findCompletedRequest(db, crossPathId, 'CASH_MOVEMENT');
+          if (completed) {
+            reconciled.push({
+              temp_client_id: clientId,
+              action_type: 'CASH_MOVEMENT',
+              server_id: completed.resourceId,
+              status: 'SYNCED'
+            });
+            return;
+          }
+        }
         if (clientId) {
           const already: any = db.prepare('SELECT client_id FROM sync_processed WHERE client_id = ?').get(clientId);
           if (already) {

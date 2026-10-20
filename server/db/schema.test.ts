@@ -59,7 +59,8 @@ describe('SQLite Database Schema & Integrity', () => {
       'refunds',
       'refund_items',
       'inventory_adjustments',
-      'general_expenses'
+      'general_expenses',
+      'processed_requests'
     ];
 
     for (const expected of expectedTables) {

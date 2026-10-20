@@ -48,7 +48,8 @@ export function beginIdempotentRequest(
   db: any,
   req: Request,
   res: Response,
-  actionType: string
+  actionType: string,
+  scope?: string
 ): IdempotencyGate {
   let requestId: string | null = null;
   try {
@@ -59,7 +60,8 @@ export function beginIdempotentRequest(
   }
   if (!requestId) return { kind: 'NONE' };
 
-  const input = { requestId, actionType, payloadHash: hashPayload(req.body) };
+  const payloadHash = hashPayload(scope ? { scope, body: req.body } : req.body);
+  const input = { requestId, actionType, payloadHash };
   try {
     claimRequest(db, input);
     releaseIdempotencyOnResponse(db, res, requestId);

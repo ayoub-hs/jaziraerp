@@ -1,5 +1,6 @@
 import crypto from 'crypto';
 import { round3, addMoney, subtractMoney } from '../utils/money.js';
+import { completeRequest } from './idempotencyService.js';
 
 export interface CustomerPaymentInput {
   customerId: string;
@@ -7,6 +8,7 @@ export interface CustomerPaymentInput {
   paymentMethod: string;
   notes?: string;
   date?: string;
+  requestId?: string | null;
 }
 
 export interface AllocationResult {
@@ -56,6 +58,15 @@ export function allocateCustomerPayment(
 
   let unallocated = amount;
   const ticketsAffected: AllocationResult['tickets_affected'] = [];
+
+  const buildAllocationResult = (): AllocationResult => ({
+    payment_id: paymentId,
+    customer_id: input.customerId,
+    amount_paid: amount,
+    amount_allocated: round3(amount - unallocated),
+    overpayment_wallet_credit: unallocated,
+    tickets_affected: ticketsAffected
+  });
 
   const paymentTx = db.transaction(() => {
     // 1. Record customer payment
@@ -141,18 +152,19 @@ export function allocateCustomerPayment(
         WHERE id = ?
       `).run(unallocated, now, input.customerId);
     }
+
+    if (input.requestId) {
+      completeRequest(db, input.requestId, {
+        statusCode: 200,
+        resourceId: paymentId,
+        body: buildAllocationResult()
+      });
+    }
   });
 
   paymentTx();
 
-  return {
-    payment_id: paymentId,
-    customer_id: input.customerId,
-    amount_paid: amount,
-    amount_allocated: round3(amount - unallocated),
-    overpayment_wallet_credit: unallocated,
-    tickets_affected: ticketsAffected
-  };
+  return buildAllocationResult();
 }
 
 /**
@@ -170,6 +182,7 @@ export interface SupplierPaymentInput {
   paymentMethod: string;
   notes?: string;
   date?: string;
+  requestId?: string | null;
 }
 
 export interface SupplierAllocationResult {
@@ -222,6 +235,14 @@ export function allocateSupplierPayment(
 
   let unallocated = amount;
   const ticketsAffected: SupplierAllocationResult['tickets_affected'] = [];
+
+  const buildAllocationResult = (): SupplierAllocationResult => ({
+    payment_id: paymentId,
+    supplier_id: input.supplierId,
+    amount_paid: amount,
+    amount_allocated: round3(amount - unallocated),
+    tickets_affected: ticketsAffected
+  });
 
   const paymentTx = db.transaction(() => {
     // 1. Record supplier payment
@@ -285,16 +306,28 @@ export function allocateSupplierPayment(
 
       unallocated = round3(unallocated - toAllocate);
     }
+
+    if (input.requestId) {
+      const remainingRow: any = db.prepare(`
+        SELECT COALESCE(SUM(remaining_amount), 0) as total
+        FROM supplier_debt_tickets
+        WHERE supplier_id = ? AND status IN ('UNPAID', 'PARTIALLY_PAID')
+      `).get(input.supplierId);
+      completeRequest(db, input.requestId, {
+        statusCode: 200,
+        resourceId: paymentId,
+        body: {
+          success: true,
+          allocated: round3(amount - unallocated),
+          remaining_balance: round3(remainingRow?.total || 0),
+          ...buildAllocationResult()
+        }
+      });
+    }
   });
 
   paymentTx();
 
-  return {
-    payment_id: paymentId,
-    supplier_id: input.supplierId,
-    amount_paid: amount,
-    amount_allocated: round3(amount - unallocated),
-    tickets_affected: ticketsAffected
-  };
+  return buildAllocationResult();
 }
 

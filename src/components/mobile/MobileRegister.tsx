@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { useRequestKey } from '../../hooks/useRequestKey.js';
 import { 
   ShoppingCart, 
   Search, 
@@ -76,6 +77,7 @@ export const MobileRegister: React.FC<MobileRegisterProps> = ({
   onPrintInvoice,
   onPrintDeliveryNote
 }) => {
+  const customerPaymentKey = useRequestKey();
   const [activeTab, setActiveTab] = useState<'REGISTER' | 'LOOKUP' | 'QUICK_EDIT' | 'CUSTOMERS'>('REGISTER');
 
   // Cart & Customer state
@@ -596,13 +598,23 @@ export const MobileRegister: React.FC<MobileRegisterProps> = ({
     setIsSubmittingPayment(true);
     setPaymentMsg(null);
     try {
+      const clientRequestId = customerPaymentKey.keyFor(JSON.stringify({
+        amount: val,
+        customer_id: customer.id,
+        session_id: activeSession?.id
+      }));
       const res = await fetch(`/api/customers/${customer.id}/payments`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ amount: val, session_id: activeSession?.id })
+        body: JSON.stringify({
+          amount: val,
+          session_id: activeSession?.id,
+          client_request_id: clientRequestId
+        })
       });
       if (res.ok) {
-        const data = await res.json();
+        customerPaymentKey.clear();
+        await res.json();
         setPaymentMsg(`Paiement de ${formatMoney(val)} enregistré (règlement dette FIFO).`);
         setPaymentAmount('');
         onRefreshData();

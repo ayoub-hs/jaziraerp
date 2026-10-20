@@ -4,6 +4,7 @@ import { round3, addMoney, multiplyMoney, calculateTaxBreakdown } from '../utils
 import { calculateContainersNeeded } from '../utils/container.js';
 import { businessDateKey } from '../utils/businessDate.js';
 import { validateSalePayment } from '../utils/payments.js';
+import { completeRequest } from './idempotencyService.js';
 
 export class SaleError extends Error {
   public status: number;
@@ -105,6 +106,8 @@ export interface CreateSaleInput {
   wallet_paid?: number | string;
   credit_amount?: number | string;
   synced_from_client_id?: string | null;
+  /** Optional online idempotency claim, already inserted by the HTTP route. */
+  request_id?: string | null;
 }
 
 export interface CreateSaleResult {
@@ -140,7 +143,8 @@ export function createSale(db: any, input: CreateSaleInput): CreateSaleResult {
     cash_paid = 0,
     wallet_paid = 0,
     credit_amount = 0,
-    synced_from_client_id = null
+    synced_from_client_id = null,
+    request_id = null
   } = input;
 
   if (!Array.isArray(items) || items.length === 0) {
@@ -315,6 +319,47 @@ export function createSale(db: any, input: CreateSaleInput): CreateSaleResult {
   let receiptNumber = generateReceiptNumber(db);
   let createdTicket: any = null;
   const containerLoansCreated: any[] = [];
+
+  const buildResult = (): CreateSaleResult => ({
+    id: saleId,
+    sale_id: saleId,
+    receipt_number: receiptNumber,
+    session_id: session_id || null,
+    date,
+    customer_id,
+    subtotal_ht: taxBreakdown.subtotalHT,
+    tva_amount: taxBreakdown.tvaAmount,
+    total_ttc: totalTTC,
+    cash_paid: cashAmount,
+    wallet_paid: walletAmount,
+    credit_amount: creditAmount,
+    change_given: changeGiven,
+    open_cash_drawer: openCashDrawer,
+    should_kick_drawer: openCashDrawer,
+    debt_ticket: createdTicket,
+    container_loans: containerLoansCreated,
+    items: processedItems,
+    sale: {
+      id: saleId,
+      sale_id: saleId,
+      receipt_number: receiptNumber,
+      session_id: session_id || null,
+      date,
+      customer_id,
+      subtotal_ht: taxBreakdown.subtotalHT,
+      tva_amount: taxBreakdown.tvaAmount,
+      total_ttc: totalTTC,
+      cash_paid: cashAmount,
+      wallet_paid: walletAmount,
+      credit_amount: creditAmount,
+      change_given: changeGiven,
+      open_cash_drawer: openCashDrawer,
+      should_kick_drawer: openCashDrawer,
+      debt_ticket: createdTicket,
+      container_loans: containerLoansCreated,
+      items: processedItems
+    }
+  });
 
   const saleTx = db.transaction(() => {
     // A. Deduct stock for catalog items
@@ -502,6 +547,14 @@ export function createSale(db: any, input: CreateSaleInput): CreateSaleResult {
         }
       }
     }
+
+    if (request_id) {
+      completeRequest(db, request_id, {
+        statusCode: 201,
+        resourceId: saleId,
+        body: buildResult()
+      });
+    }
   });
 
   // Receipt numbers are COUNT(*)+1: on a concurrent duplicate-submit clash,
@@ -526,44 +579,5 @@ export function createSale(db: any, input: CreateSaleInput): CreateSaleResult {
     }
   }
 
-  return {
-    id: saleId,
-    sale_id: saleId,
-    receipt_number: receiptNumber,
-    session_id: session_id || null,
-    date,
-    customer_id,
-    subtotal_ht: taxBreakdown.subtotalHT,
-    tva_amount: taxBreakdown.tvaAmount,
-    total_ttc: totalTTC,
-    cash_paid: cashAmount,
-    wallet_paid: walletAmount,
-    credit_amount: creditAmount,
-    change_given: changeGiven,
-    open_cash_drawer: openCashDrawer,
-    should_kick_drawer: openCashDrawer,
-    debt_ticket: createdTicket,
-    container_loans: containerLoansCreated,
-    items: processedItems,
-    sale: {
-      id: saleId,
-      sale_id: saleId,
-      receipt_number: receiptNumber,
-      session_id: session_id || null,
-      date,
-      customer_id,
-      subtotal_ht: taxBreakdown.subtotalHT,
-      tva_amount: taxBreakdown.tvaAmount,
-      total_ttc: totalTTC,
-      cash_paid: cashAmount,
-      wallet_paid: walletAmount,
-      credit_amount: creditAmount,
-      change_given: changeGiven,
-      open_cash_drawer: openCashDrawer,
-      should_kick_drawer: openCashDrawer,
-      debt_ticket: createdTicket,
-      container_loans: containerLoansCreated,
-      items: processedItems
-    }
-  };
+  return buildResult();
 }

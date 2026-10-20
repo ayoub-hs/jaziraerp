@@ -4,6 +4,8 @@ import { getDb, isUniqueViolation } from '../db/index.js';
 import { round3 } from '../utils/money.js';
 import { calculateSessionExpectedCash } from '../services/registerService.js';
 import { businessDateKey } from '../utils/businessDate.js';
+import { beginIdempotentRequest } from '../utils/idempotency.js';
+import { completeRequest } from '../services/idempotencyService.js';
 
 export const registerRouter = Router();
 
@@ -218,6 +220,11 @@ registerRouter.post('/open', (req: Request, res: Response) => {
 const handleCashMovement = (req: Request, res: Response) => {
   const { session_id, type, amount, reason, date = new Date().toISOString() } = req.body;
 
+  const db = getDb();
+  const idem = beginIdempotentRequest(db, req, res, 'CASH_MOVEMENT');
+  if (idem.kind === 'REPLAYED') return;
+  const requestId = idem.kind === 'CLAIMED' ? idem.requestId : null;
+
   if (!session_id || !type || !amount || !reason) {
     res.status(400).json({ error: 'session_id, type (CASH_IN/CASH_OUT), amount, and reason are required.' });
     return;
@@ -234,7 +241,6 @@ const handleCashMovement = (req: Request, res: Response) => {
     return;
   }
 
-  const db = getDb();
   const session: any = db.prepare('SELECT * FROM register_sessions WHERE id = ?').get(session_id);
   if (!session) {
     res.status(404).json({ error: 'Session not found' });
@@ -249,18 +255,25 @@ const handleCashMovement = (req: Request, res: Response) => {
   const id = crypto.randomUUID();
   const now = new Date().toISOString();
 
-  db.prepare(`
-    INSERT INTO register_cash_movements (id, session_id, date, type, amount, reason, created_at)
-    VALUES (?, ?, ?, ?, ?, ?, ?)
-  `).run(id, session_id, date, type, movementAmount, reason.trim(), now);
+  const movementTx = db.transaction(() => {
+    db.prepare(`
+      INSERT INTO register_cash_movements (id, session_id, date, type, amount, reason, created_at)
+      VALUES (?, ?, ?, ?, ?, ?, ?)
+    `).run(id, session_id, date, type, movementAmount, reason.trim(), now);
 
-  const created = db.prepare('SELECT * FROM register_cash_movements WHERE id = ?').get(id);
-  const updatedCash = calculateSessionExpectedCash(db, session_id);
-
-  res.status(201).json({
-    movement: created,
-    live_cash_status: updatedCash
+    const created = db.prepare('SELECT * FROM register_cash_movements WHERE id = ?').get(id);
+    const updatedCash = calculateSessionExpectedCash(db, session_id);
+    const body = {
+      movement: created,
+      live_cash_status: updatedCash
+    };
+    if (requestId) {
+      completeRequest(db, requestId, { statusCode: 201, resourceId: id, body });
+    }
+    return body;
   });
+
+  res.status(201).json(movementTx());
 };
 
 // POST /api/register/movement & /cash-movement - log cash in or cash out during session

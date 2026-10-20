@@ -4,6 +4,7 @@ import type { RegisterSession } from '../../types/index.js';
 import { syncManager } from '../../services/syncManager.js';
 import { useBackButton } from '../../utils/backButton.js';
 import { useModalScanPause } from '../../hooks/useModalScanPause.js';
+import { useRequestKey } from '../../hooks/useRequestKey.js';
 
 interface CashMovementModalProps {
   isOpen: boolean;
@@ -19,6 +20,7 @@ export const CashMovementModal: React.FC<CashMovementModalProps> = ({
   onSuccess
 }) => {
   useModalScanPause(isOpen);
+  const { keyFor, clear: clearRequestKey } = useRequestKey();
 
   const [type, setType] = useState<'CASH_IN' | 'CASH_OUT'>('CASH_OUT');
   const [amount, setAmount] = useState('');
@@ -53,17 +55,23 @@ export const CashMovementModal: React.FC<CashMovementModalProps> = ({
     setSubmitting(true);
     setError(null);
 
-    const movementPayload = {
+    const movementBase = {
       session_id: activeSession.id,
       type,
       amount: parsedAmount,
       reason: reason.trim(),
       date: new Date().toISOString()
     };
+    const clientRequestId = keyFor(JSON.stringify(movementBase));
+    const movementPayload = {
+      ...movementBase,
+      client_request_id: clientRequestId
+    };
 
     if (typeof navigator !== 'undefined' && !navigator.onLine) {
       try {
-        await syncManager.queueOfflineAction('CASH_MOVEMENT', movementPayload);
+        await syncManager.queueOfflineAction('CASH_MOVEMENT', movementPayload, clientRequestId);
+        clearRequestKey();
         onSuccess();
         onClose();
         return;
@@ -86,12 +94,14 @@ export const CashMovementModal: React.FC<CashMovementModalProps> = ({
         throw new Error(data.error || 'Échec de l\'enregistrement du mouvement de caisse');
       }
 
+      clearRequestKey();
       onSuccess();
       onClose();
     } catch (err: any) {
       if (err.name === 'TypeError' || err.message?.includes('fetch')) {
         try {
-          await syncManager.queueOfflineAction('CASH_MOVEMENT', movementPayload);
+          await syncManager.queueOfflineAction('CASH_MOVEMENT', movementPayload, clientRequestId);
+          clearRequestKey();
           onSuccess();
           onClose();
           return;

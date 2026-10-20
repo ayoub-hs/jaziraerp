@@ -1,8 +1,6 @@
 import crypto from 'crypto';
 
 export const PROCESSED_REQUEST_PROCESSING = 'PROCESSING';
-export const PROCESSED_REQUEST_COMPLETED = 'COMPLETED';
-
 export class IdempotencyBadRequestError extends Error {
   public status = 400;
   public code = 'IDEMPOTENCY_BAD_REQUEST';
@@ -235,18 +233,4 @@ export function findCompletedRequest(
     body,
     resourceId: row.resource_id ?? null
   };
-}
-
-/**
- * A PROCESSING row can only survive a failed request or a crash. It is safe to
- * remove old ones because business writes and the COMPLETED update share one
- * SQLite transaction.
- */
-export function cleanupStaleProcessing(db: any, maxAgeMs: number = 10 * 60 * 1000): void {
-  try {
-    const cutoff = new Date(Date.now() - maxAgeMs).toISOString();
-    db.prepare("DELETE FROM processed_requests WHERE status = 'PROCESSING' AND created_at < ?").run(cutoff);
-  } catch {
-    // Schema may not exist during very early boot.
-  }
 }

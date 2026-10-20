@@ -7,6 +7,7 @@ import type {
   RegisterSession 
 } from './types/index.js';
 import { syncManager, type SyncState } from './services/syncManager.js';
+import { newRequestId } from './services/idempotency.js';
 import { clientDb } from './db/clientDb.js';
 import { Header } from './components/shared/Header.js';
 import { DesktopPos } from './components/desktop/DesktopPos.js';
@@ -246,11 +247,15 @@ export default function App() {
       throw new Error('La caisse est fermée. Veuillez ouvrir une session de caisse avant de finaliser la vente.');
     }
 
+    // One key for the online attempt and any offline fallback of this sale.
+    const clientRequestId = newRequestId();
+
     // Add active register session
     const fullPayload = {
       ...saleData,
       session_id: activeSession.id,
-      register_session_id: activeSession.id
+      register_session_id: activeSession.id,
+      client_request_id: clientRequestId
     };
 
     if (navigator.onLine) {
@@ -263,7 +268,7 @@ export default function App() {
         });
       } catch (networkErr: any) {
         console.warn('Network error during sale, falling back to offline outbox queue:', networkErr);
-        const tempId = await syncManager.queueOfflineSale(fullPayload);
+        const tempId = await syncManager.queueOfflineSale(fullPayload, clientRequestId);
         triggerDrawerIfCash(Number(fullPayload.cash_paid || 0), currentView);
         return {
           sale_id: tempId,
@@ -290,7 +295,7 @@ export default function App() {
       };
     } else {
       // Offline mode: queue in IndexedDB
-      const tempId = await syncManager.queueOfflineSale(fullPayload);
+      const tempId = await syncManager.queueOfflineSale(fullPayload, clientRequestId);
       triggerDrawerIfCash(Number(fullPayload.cash_paid || 0), currentView);
       return {
         sale_id: tempId,

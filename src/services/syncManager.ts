@@ -147,8 +147,11 @@ export class SyncManager {
    * Queues an offline sale, optimistically decrements local product stock in IndexedDB,
    * and attempts immediate background flush if network is available.
    */
-  public async queueOfflineSale(payload: any): Promise<string> {
-    const tempClientId = 'temp_' + crypto.randomUUID();
+  public async queueOfflineSale(payload: any, requestId?: string): Promise<string> {
+    const idempotencyKey = requestId || payload.client_request_id || crypto.randomUUID();
+    const tempClientId = requestId
+      ? (requestId.startsWith('temp_') ? requestId : `temp_${requestId}`)
+      : `temp_${crypto.randomUUID()}`;
 
     // Check and deduct customer wallet balance if used
     const walletPaid = Number(payload.wallet_paid) || 0;
@@ -189,7 +192,11 @@ export class SyncManager {
     await clientDb.pending_sync_queue.add({
       temp_client_id: tempClientId,
       action_type: 'SALE',
-      payload: { ...payload, temp_client_id: tempClientId },
+      payload: {
+        ...payload,
+        temp_client_id: tempClientId,
+        client_request_id: idempotencyKey
+      },
       created_at: new Date().toISOString()
     });
 
@@ -209,14 +216,22 @@ export class SyncManager {
    */
   public async queueOfflineAction(
     actionType: PendingSyncItem['action_type'],
-    payload: any
+    payload: any,
+    requestId?: string
   ): Promise<string> {
-    const tempClientId = 'temp_' + crypto.randomUUID();
+    const idempotencyKey = requestId || payload.client_request_id || crypto.randomUUID();
+    const tempClientId = requestId
+      ? (requestId.startsWith('temp_') ? requestId : `temp_${requestId}`)
+      : `temp_${crypto.randomUUID()}`;
 
     await clientDb.pending_sync_queue.add({
       temp_client_id: tempClientId,
       action_type: actionType,
-      payload: { ...payload, temp_client_id: tempClientId },
+      payload: {
+        ...payload,
+        temp_client_id: tempClientId,
+        client_request_id: idempotencyKey
+      },
       created_at: new Date().toISOString()
     });
 

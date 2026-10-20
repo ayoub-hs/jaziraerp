@@ -5,6 +5,7 @@ import { round3, addMoney, multiplyMoney } from '../utils/money.js';
 import { recordMaterialPriceHistory } from './materials.js';
 import { allocateSupplierPayment } from '../services/debtService.js';
 import { businessDateKey } from '../utils/businessDate.js';
+import { beginIdempotentRequest } from '../utils/idempotency.js';
 
 export const suppliersRouter = Router();
 export const purchasesRouter = Router();
@@ -204,19 +205,24 @@ suppliersRouter.get('/:id/tickets', (req: Request, res: Response) => {
 const handleSupplierPayment = (req: Request, res: Response) => {
   const { amount, payment_method = 'Cash', notes = '', date } = req.body;
 
+  const db = getDb();
+  const idem = beginIdempotentRequest(db, req, res, 'SUPPLIER_PAYMENT', req.params.id);
+  if (idem.kind === 'REPLAYED') return;
+  const requestId = idem.kind === 'CLAIMED' ? idem.requestId : null;
+
   if (!amount || Number(amount) <= 0) {
     res.status(400).json({ error: 'Payment amount must be greater than zero.' });
     return;
   }
 
-  const db = getDb();
   try {
     const result = allocateSupplierPayment(db, {
       supplierId: req.params.id,
       amount: Number(amount),
       paymentMethod: payment_method,
       notes,
-      date
+      date,
+      requestId
     });
 
     const debtSummary: any = db.prepare(`

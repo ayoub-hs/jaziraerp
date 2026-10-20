@@ -1,8 +1,10 @@
 import { Router, Request, Response } from 'express';
 import crypto from 'crypto';
 import { getDb, isUniqueViolation } from '../db/index.js';
-import { round3, addMoney, subtractMoney } from '../utils/money.js';
+import { round3, addMoney, subtractMoney, toMillimes } from '../utils/money.js';
 import { businessDateKey, tunisDayRangeUTC, isFilterDay } from '../utils/businessDate.js';
+import { beginIdempotentRequest } from '../utils/idempotency.js';
+import { completeRequest } from '../services/idempotencyService.js';
 import {
   SaleError,
   createSale,
@@ -307,12 +309,15 @@ salesRouter.post('/', (req: Request, res: Response) => {
 
   const rawSessionId = directSessionId || register_session_id || null;
 
+  const db = getDb();
+  const idem = beginIdempotentRequest(db, req, res, 'SALE');
+  if (idem.kind === 'REPLAYED') return;
+  const requestId = idem.kind === 'CLAIMED' ? idem.requestId : null;
+
   if (!Array.isArray(items) || items.length === 0) {
     res.status(400).json({ error: 'At least one line item is required' });
     return;
   }
-
-  const db = getDb();
 
   // Validate Register Session: Register must be open to process a sale
   let session: any = null;
@@ -345,7 +350,8 @@ salesRouter.post('/', (req: Request, res: Response) => {
       cash_tendered,
       wallet_paid,
       credit_amount,
-      synced_from_client_id
+      synced_from_client_id,
+      request_id: requestId
     });
     res.status(201).json(result);
   } catch (err: any) {
@@ -410,6 +416,10 @@ export function processRefund(saleId: string, req: Request, res: Response) {
   } = req.body;
 
   const db = getDb();
+
+  const idem = beginIdempotentRequest(db, req, res, 'REFUND', saleId);
+  if (idem.kind === 'REPLAYED') return;
+  const requestId = idem.kind === 'CLAIMED' ? idem.requestId : null;
 
   const sale: any = db.prepare('SELECT * FROM sales WHERE id = ? OR receipt_number = ?').get(saleId, saleId);
   if (!sale) {
@@ -618,7 +628,7 @@ export function processRefund(saleId: string, req: Request, res: Response) {
 
   const totalPayout = round3(cashPayout + walletPayout + creditReduction);
 
-  if (Math.abs(totalPayout - totalRefunded) > 0.005) {
+  if (toMillimes(totalPayout) !== toMillimes(totalRefunded)) {
     res.status(400).json({
       error: `Payout total (${totalPayout.toFixed(3)} DT) does not equal refunded item total (${totalRefunded.toFixed(3)} DT). Cash: ${cashPayout}, Wallet: ${walletPayout}, Credit: ${creditReduction}`
     });
@@ -681,6 +691,25 @@ export function processRefund(saleId: string, req: Request, res: Response) {
   let refundNumber = generateRefundNumber(db);
   let updatedTicketStatus: any = null;
   let newSaleStatus = 'PARTIALLY_REFUNDED';
+
+  const buildRefundResult = () => ({
+    id: refundId,
+    refund_number: refundNumber,
+    sale_id: sale.id,
+    date,
+    total_refunded: totalRefunded,
+    cash_refunded: cashPayout,
+    wallet_refunded: walletPayout,
+    credit_reduced: creditReduction,
+    sale_status: newSaleStatus,
+    target_ticket_updated: updatedTicketStatus,
+    items: processedRefundItems.map(i => ({
+      sale_item_id: i.sale_item.id,
+      quantity_refunded: i.quantity_refunded,
+      amount_refunded: i.amount_refunded,
+      stock_restored: i.stock_to_restore
+    }))
+  });
 
   const refundTx = db.transaction(() => {
     // A. Insert refund record
@@ -794,6 +823,14 @@ export function processRefund(saleId: string, req: Request, res: Response) {
     db.prepare(`
       UPDATE sales SET status = ? WHERE id = ?
     `).run(newSaleStatus, sale.id);
+
+    if (requestId) {
+      completeRequest(db, requestId, {
+        statusCode: 201,
+        resourceId: refundId,
+        body: buildRefundResult()
+      });
+    }
   });
 
   for (let attempt = 0; attempt < 3; attempt++) {
@@ -813,24 +850,7 @@ export function processRefund(saleId: string, req: Request, res: Response) {
     }
   }
 
-  res.status(201).json({
-    id: refundId,
-    refund_number: refundNumber,
-    sale_id: sale.id,
-    date,
-    total_refunded: totalRefunded,
-    cash_refunded: cashPayout,
-    wallet_refunded: walletPayout,
-    credit_reduced: creditReduction,
-    sale_status: newSaleStatus,
-    target_ticket_updated: updatedTicketStatus,
-    items: processedRefundItems.map(i => ({
-      sale_item_id: i.sale_item.id,
-      quantity_refunded: i.quantity_refunded,
-      amount_refunded: i.amount_refunded,
-      stock_restored: i.stock_to_restore
-    }))
-  });
+  res.status(201).json(buildRefundResult());
 }
 
 // POST /api/sales/:id/refund - process line-item partial or full refund

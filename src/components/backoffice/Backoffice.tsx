@@ -68,6 +68,7 @@ import { CustomerStatementModal } from './CustomerStatementModal.js';
 import { PurchaseDetailModal } from './PurchaseDetailModal.js';
 import { BatchDetailModal } from './BatchDetailModal.js';
 import { printZReportThermal } from '../../services/hardware/zReportPrinter.js';
+import { useRequestKey } from '../../hooks/useRequestKey.js';
 import type { ZReportSessionData } from '../../services/hardware/escpos.js';
 
 interface BackofficeProps {
@@ -107,6 +108,8 @@ export const Backoffice: React.FC<BackofficeProps> = ({
   onPrintInvoice,
   onPrintDeliveryNote
 }) => {
+  const customerPaymentKey = useRequestKey();
+  const supplierPaymentKey = useRequestKey();
   const [activeTab, setActiveTab] = useState<BackofficeTab>('CATALOG');
 
   // Module states
@@ -418,12 +421,17 @@ export const Backoffice: React.FC<BackofficeProps> = ({
     setIsPayingSupplierDebt(true);
     setSupplierActionNotice(null);
     try {
+      const clientRequestId = supplierPaymentKey.keyFor(JSON.stringify({
+        supplier_id: selectedSupplier.id,
+        amount
+      }));
       const res = await fetch(`/api/suppliers/${selectedSupplier.id}/debt/repay`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ amount })
+        body: JSON.stringify({ amount, client_request_id: clientRequestId })
       });
       if (res.ok) {
+        supplierPaymentKey.clear();
         setSupplierActionNotice(`Paiement de dette de ${formatMoney(amount)} enregistré pour ${selectedSupplier.name}.`);
         setSupplierDebtPayAmount('');
         handleSelectSupplierForTickets(selectedSupplier);
@@ -470,12 +478,17 @@ export const Backoffice: React.FC<BackofficeProps> = ({
     setIsPayingCustomerDebt(true);
     setActionNotice(null);
     try {
+      const clientRequestId = customerPaymentKey.keyFor(JSON.stringify({
+        customer_id: selectedCustomer.id,
+        amount
+      }));
       const res = await fetch(`/api/customers/${selectedCustomer.id}/payments`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ amount })
+        body: JSON.stringify({ amount, client_request_id: clientRequestId })
       });
       if (res.ok) {
+        customerPaymentKey.clear();
         setActionNotice(`Règlement de dette de ${formatMoney(amount)} enregistré.`);
         setDebtPayAmount('');
         handleSelectCustomerForTickets(selectedCustomer);

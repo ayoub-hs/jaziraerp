@@ -787,6 +787,44 @@ describe('Offline Storage & Sync Engine Module (HTTP Routes)', () => {
     const adjustRows: any[] = db.prepare("SELECT * FROM inventory_adjustments WHERE reason = 'SYNC_PRICE_STOCK_EDIT' AND product_id = ?").all('prod-sync-replay');
     expect(adjustRows).toHaveLength(1);
   });
+
+  it('stores the offline total_discount rounded to millimes', async () => {
+    const famRes = await request(app).post('/api/products/families').send({
+      name: 'Sync Discount Family', category: 'Detergents', type: 'RESALE'
+    });
+    const prodRes = await request(app).post('/api/products').send({
+      family_id: famRes.body.id,
+      name: 'Sync Discount Product',
+      barcode: 'SYNC-DISCOUNT-001',
+      stock_quantity: 10,
+      retail_price: 10
+    });
+    const custRes = await request(app).post('/api/customers').send({
+      name: 'Sync Discount Customer', type: 'RETAIL'
+    });
+
+    const flushRes = await request(app).post('/api/sync/flush').send({
+      operations: [{
+        temp_client_id: 'temp-sync-discount-0001',
+        action_type: 'SALE',
+        payload: {
+          customer_id: custRes.body.id,
+          items: [{ product_id: prodRes.body.id, quantity: 1, unit_price: 10, pack_multiplier: 1 }],
+          total_discount: 5.0005,
+          cash_paid: 4.999,
+          cash_tendered: 4.999
+        }
+      }]
+    });
+
+    expect(flushRes.status).toBe(200);
+    expect(flushRes.body.failed).toEqual([]);
+    const sale: any = getDb().prepare(`
+      SELECT total_discount, total_ttc FROM sales WHERE synced_from_client_id = ?
+    `).get('temp-sync-discount-0001');
+    expect(sale.total_discount).toBe(5.001);
+    expect(sale.total_ttc).toBe(4.999);
+  });
 });
 
 

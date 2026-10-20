@@ -176,6 +176,22 @@ describe('SyncManager & Offline Fallback', () => {
     });
   });
 
+  it('queueOfflineSale reuses the online idempotency key for the offline fallback', async () => {
+    const addSpy = vi.spyOn(clientDb.pending_sync_queue, 'add').mockResolvedValue(1 as any);
+    vi.spyOn(syncMgr, 'getPendingCount').mockResolvedValue(1);
+    vi.spyOn(syncMgr, 'getReviewCount').mockResolvedValue(0);
+
+    const tempId = await syncMgr.queueOfflineSale(
+      { items: [], date: '2026-10-20T10:00:00.000Z' },
+      'req-online-1234'
+    );
+
+    expect(tempId).toBe('temp_req-online-1234');
+    const queued: any = addSpy.mock.calls[0][0];
+    expect(queued.temp_client_id).toBe('temp_req-online-1234');
+    expect(queued.payload.client_request_id).toBe('req-online-1234');
+  });
+
   it('flushSyncQueue does NOT send queue items with needs_review: true and preserves OFFLINE_PENDING state', async () => {
     const mockItems = [
       { queue_id: 1, temp_client_id: 't-normal', action_type: 'SALE', payload: {}, created_at: 'now' },

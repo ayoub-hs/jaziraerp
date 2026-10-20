@@ -3,6 +3,7 @@ import crypto from 'crypto';
 import { getDb } from '../db/index.js';
 import { round3 } from '../utils/money.js';
 import { allocateCustomerPayment, isTicketOverdue } from '../services/debtService.js';
+import { beginIdempotentRequest } from '../utils/idempotency.js';
 
 export const customersRouter = Router();
 
@@ -213,19 +214,24 @@ customersRouter.get('/:id/tickets', (req: Request, res: Response) => {
 const handleCustomerPayment = (req: Request, res: Response) => {
   const { amount, payment_method = 'Cash', notes = '', date } = req.body;
 
+  const db = getDb();
+  const idem = beginIdempotentRequest(db, req, res, 'CUSTOMER_PAYMENT', req.params.id);
+  if (idem.kind === 'REPLAYED') return;
+  const requestId = idem.kind === 'CLAIMED' ? idem.requestId : null;
+
   if (!amount || Number(amount) <= 0) {
     res.status(400).json({ error: 'Payment amount must be greater than zero.' });
     return;
   }
 
-  const db = getDb();
   try {
     const result = allocateCustomerPayment(db, {
       customerId: req.params.id,
       amount: Number(amount),
       paymentMethod: payment_method,
       notes,
-      date
+      date,
+      requestId
     });
     res.status(200).json(result);
   } catch (err: any) {

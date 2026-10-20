@@ -4,6 +4,7 @@ import type { SaleSummary } from '../../types/index.js';
 import { formatMoney, formatDateTime } from '../../utils/formatters.js';
 import { useBackButton } from '../../utils/backButton.js';
 import { useModalScanPause } from '../../hooks/useModalScanPause.js';
+import { useRequestKey } from '../../hooks/useRequestKey.js';
 
 interface RefundModalProps {
   isOpen: boolean;
@@ -21,6 +22,7 @@ export const RefundModal: React.FC<RefundModalProps> = ({
   activeSessionId
 }) => {
   useModalScanPause(isOpen);
+  const { keyFor, clear: clearRequestKey } = useRequestKey();
 
   const [searchReceipt, setSearchReceipt] = useState('');
   const [recentSales, setRecentSales] = useState<SaleSummary[]>([]);
@@ -180,20 +182,25 @@ export const RefundModal: React.FC<RefundModalProps> = ({
     setIsSubmitting(true);
     setError(null);
     try {
+      const refundBase = {
+        refund_method: refundMethod,
+        refund_to_credit_debt: refundMethod === 'CREDIT_REDUCTION',
+        reason,
+        session_id: refundMethod === 'CASH' ? selectedSessionId || undefined : undefined,
+        items: [
+          {
+            sale_item_id: selectedItemId,
+            quantity: qty
+          }
+        ]
+      };
+      const clientRequestId = keyFor(JSON.stringify(refundBase));
       const res = await fetch(`/api/sales/${selectedSale.id}/refund`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          refund_method: refundMethod,
-          refund_to_credit_debt: refundMethod === 'CREDIT_REDUCTION',
-          reason,
-          session_id: refundMethod === 'CASH' ? selectedSessionId || undefined : undefined,
-          items: [
-            {
-              sale_item_id: selectedItemId,
-              quantity: qty
-            }
-          ]
+          ...refundBase,
+          client_request_id: clientRequestId
         })
       });
 
@@ -202,6 +209,7 @@ export const RefundModal: React.FC<RefundModalProps> = ({
         throw new Error(data.error || 'Échec du remboursement');
       }
 
+      clearRequestKey();
       setSuccess(`Remboursement validé avec succès pour ${qty} x ${item.description}`);
       onRefundCompleted();
       setTimeout(() => {
