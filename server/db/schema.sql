@@ -443,3 +443,21 @@ CREATE TABLE IF NOT EXISTS sync_processed (
     action_type TEXT NOT NULL,
     processed_at TEXT NOT NULL
 );
+
+-- 14. Online Request Idempotency
+-- One row per client-generated request id. The primary key is the dedupe;
+-- callers insert it inside the same transaction as the business write.
+CREATE TABLE IF NOT EXISTS processed_requests (
+    request_id TEXT PRIMARY KEY,
+    action_type TEXT NOT NULL,
+    payload_hash TEXT NOT NULL,
+    status TEXT NOT NULL CHECK (status IN ('PROCESSING', 'COMPLETED')),
+    status_code INTEGER,
+    resource_id TEXT,
+    response_json TEXT,
+    created_at TEXT NOT NULL,
+    completed_at TEXT
+);
+
+CREATE INDEX IF NOT EXISTS idx_processed_requests_created ON processed_requests(created_at);
+CREATE INDEX IF NOT EXISTS idx_processed_requests_status ON processed_requests(status, created_at);

@@ -34,6 +34,16 @@ export function getDb(customPath?: string): DatabaseType {
   const schemaSql = fs.readFileSync(schemaPath, 'utf8');
   db.exec(schemaSql);
 
+  // A PROCESSING idempotency row can only survive a crash: business writes and
+  // the COMPLETED update share one transaction. Clear stale claims at boot.
+  try {
+    const staleCutoff = new Date(Date.now() - 10 * 60 * 1000).toISOString();
+    db.prepare("DELETE FROM processed_requests WHERE status = 'PROCESSING' AND created_at < ?")
+      .run(staleCutoff);
+  } catch {
+    // Ignore if the table is missing during a partial upgrade.
+  }
+
   // Clean up old placeholder settings
   cleanupOldSettings(db);
 
