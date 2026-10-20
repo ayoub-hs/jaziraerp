@@ -4,6 +4,7 @@ import { getDb, isUniqueViolation } from '../db/index.js';
 import { round3 } from '../utils/money.js';
 import { businessDateKey } from '../utils/businessDate.js';
 import { calculateBatchRequirements } from '../services/costingService.js';
+import { requireFinitePositive } from '../utils/validation.js';
 
 export const productionRouter = Router();
 
@@ -68,8 +69,16 @@ productionRouter.post('/batches', (req: Request, res: Response) => {
     batch_number
   } = req.body;
 
-  if (!formulation_id || !target_product_id || !units_produced || Number(units_produced) <= 0) {
-    res.status(400).json({ error: 'formulation_id, target_product_id, and units_produced (> 0) are required.' });
+  if (!formulation_id || !target_product_id) {
+    res.status(400).json({ error: 'La formule et le produit cible sont obligatoires.' });
+    return;
+  }
+
+  let units: number;
+  try {
+    units = requireFinitePositive(units_produced, 'unités produites');
+  } catch (err: any) {
+    res.status(400).json({ error: err.message });
     return;
   }
 
@@ -97,7 +106,6 @@ productionRouter.post('/batches', (req: Request, res: Response) => {
     return;
   }
 
-  const units = Number(units_produced);
   const batchRequirements = calculateBatchRequirements(db, formulation_id, units);
   const autoNumber = !batch_number || String(batch_number).trim().length === 0;
   let finalBatchNumber = autoNumber ? generateBatchNumber(db) : String(batch_number).trim();

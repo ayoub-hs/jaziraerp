@@ -4,6 +4,7 @@ import { app, request, resetTestDb } from '../../tests/testApp.js';
 describe('Numeric validation and error handling (F9)', () => {
   let seed: {
     familyId: string;
+    formulationId: string;
     productId: string;
     customerId: string;
     supplierId: string;

@@ -6,6 +6,7 @@ import { calculateSessionExpectedCash } from '../services/registerService.js';
 import { businessDateKey } from '../utils/businessDate.js';
 import { beginIdempotentRequest } from '../utils/idempotency.js';
 import { completeRequest } from '../services/idempotencyService.js';
+import { requireFinitePositive, requireFiniteNonNegative } from '../utils/validation.js';
 
 export const registerRouter = Router();
 
@@ -180,9 +181,16 @@ registerRouter.post('/open', (req: Request, res: Response) => {
     return;
   }
 
+  let floatCash: number;
+  try {
+    floatCash = round3(requireFiniteNonNegative(opening_cash, 'fond de caisse (opening_cash)', 0));
+  } catch (err: any) {
+    res.status(400).json({ error: err.message });
+    return;
+  }
+
   const id = crypto.randomUUID();
   const now = new Date().toISOString();
-  const floatCash = round3(Number(opening_cash) || 0);
 
   // The partial unique index idx_one_open_session_per_counter makes the
   // check-then-insert above atomic: a concurrent open for the same counter
@@ -225,19 +233,19 @@ const handleCashMovement = (req: Request, res: Response) => {
   if (idem.kind === 'REPLAYED') return;
   const requestId = idem.kind === 'CLAIMED' ? idem.requestId : null;
 
-  if (!session_id || !type || !amount || !reason) {
-    res.status(400).json({ error: 'session_id, type (CASH_IN/CASH_OUT), amount, and reason are required.' });
-    return;
-  }
-
-  if (type !== 'CASH_IN' && type !== 'CASH_OUT') {
-    res.status(400).json({ error: 'type must be CASH_IN or CASH_OUT' });
-    return;
-  }
-
-  const movementAmount = round3(Number(amount));
-  if (movementAmount <= 0) {
-    res.status(400).json({ error: 'amount must be greater than zero' });
+  let movementAmount: number;
+  try {
+    if (!session_id || !type || amount === undefined || amount === null || amount === '' || !reason) {
+      res.status(400).json({ error: 'session_id, type (CASH_IN/CASH_OUT), amount, and reason are required.' });
+      return;
+    }
+    if (type !== 'CASH_IN' && type !== 'CASH_OUT') {
+      res.status(400).json({ error: 'type must be CASH_IN or CASH_OUT' });
+      return;
+    }
+    movementAmount = round3(requireFinitePositive(amount, 'montant du mouvement'));
+  } catch (err: any) {
+    res.status(400).json({ error: err.message });
     return;
   }
 

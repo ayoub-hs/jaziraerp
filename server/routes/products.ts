@@ -4,6 +4,12 @@ import { getDb } from '../db/index.js';
 import { round3 } from '../utils/money.js';
 import { generateBarcode } from '../utils/barcode.js';
 import { calculateFormulationCost } from '../services/costingService.js';
+import {
+  requireFiniteNonNegative,
+  requireOptionalFiniteNonNegative,
+  ValidationError,
+  sanitizeErrorMessage
+} from '../utils/validation.js';
 
 export const productsRouter = Router();
 
@@ -358,21 +364,44 @@ productsRouter.post('/', (req: Request, res: Response) => {
     ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, ?, ?)
   `);
 
+  let explicitCost: number;
+  let parsedRetail: number;
+  let parsedWholesale: number;
+  let parsedStock: number;
+  let parsedThreshold: number;
   try {
-    const explicitCost = req.body.cost_reference !== undefined 
-      ? Number(req.body.cost_reference) 
-      : (req.body.initial_cost !== undefined ? Number(req.body.initial_cost) : costReference);
+    const rawCost = req.body.cost_reference !== undefined 
+      ? req.body.cost_reference 
+      : (req.body.initial_cost !== undefined ? req.body.initial_cost : costReference);
+    explicitCost = requireFiniteNonNegative(rawCost, 'coût de référence (cost_reference)', costReference);
+    parsedRetail = requireFiniteNonNegative(retail_price, 'prix de détail (retail_price)', 0);
+    parsedWholesale = requireFiniteNonNegative(wholesale_price, 'prix de gros (wholesale_price)', 0);
+    parsedStock = stock_quantity !== undefined && stock_quantity !== null && stock_quantity !== ''
+      ? (typeof stock_quantity === 'number' ? stock_quantity : Number(stock_quantity))
+      : 0;
+    if (!Number.isFinite(parsedStock)) {
+      throw new ValidationError('La quantité en stock doit être un nombre fini.');
+    }
+    parsedThreshold = low_stock_threshold !== undefined && low_stock_threshold !== null && low_stock_threshold !== ''
+      ? requireFiniteNonNegative(low_stock_threshold, 'seuil de stock bas')
+      : 5;
+  } catch (err: any) {
+    res.status(400).json({ error: err.message });
+    return;
+  }
+
+  try {
     insert.run(
       id,
       family_id,
       finalName,
       size_label ? size_label.trim() : null,
       finalBarcode,
-      Number(stock_quantity) || 0,
-      Number(low_stock_threshold) >= 0 ? Number(low_stock_threshold) : 5,
+      parsedStock,
+      parsedThreshold,
       round3(explicitCost),
-      round3(Number(retail_price) || 0),
-      round3(Number(wholesale_price) || 0),
+      round3(parsedRetail),
+      round3(parsedWholesale),
       container_type_id || null,
       now,
       now
@@ -382,7 +411,8 @@ productsRouter.post('/', (req: Request, res: Response) => {
       res.status(400).json({ error: `Barcode ${finalBarcode} already in use.` });
       return;
     }
-    throw err;
+    res.status(400).json({ error: sanitizeErrorMessage(err, 'Échec de la création du produit.') });
+    return;
   }
 
   const created = db.prepare('SELECT * FROM products WHERE id = ?').get(id);
@@ -411,26 +441,26 @@ productsRouter.put('/:id', (req: Request, res: Response) => {
     return;
   }
 
-  if (retail_price !== undefined) {
-    const num = Number(retail_price);
-    if (!Number.isFinite(num) || num < 0) {
-      res.status(400).json({ error: 'retail_price must be a finite non-negative number' });
-      return;
+  let validRetail: number | undefined;
+  let validWholesale: number | undefined;
+  let validCost: number | undefined;
+  let validStock: number | undefined;
+  let validThreshold: number | undefined;
+  try {
+    validRetail = requireOptionalFiniteNonNegative(retail_price, 'prix de détail (retail_price)');
+    validWholesale = requireOptionalFiniteNonNegative(wholesale_price, 'prix de gros (wholesale_price)');
+    validCost = requireOptionalFiniteNonNegative(cost_reference, 'coût de référence (cost_reference)');
+    validThreshold = requireOptionalFiniteNonNegative(low_stock_threshold, 'seuil de stock bas');
+    if (stock_quantity !== undefined && stock_quantity !== null && stock_quantity !== '') {
+      const num = typeof stock_quantity === 'number' ? stock_quantity : Number(stock_quantity);
+      if (!Number.isFinite(num)) {
+        throw new ValidationError('La quantité en stock doit être un nombre fini.');
+      }
+      validStock = num;
     }
-  }
-  if (wholesale_price !== undefined) {
-    const num = Number(wholesale_price);
-    if (!Number.isFinite(num) || num < 0) {
-      res.status(400).json({ error: 'wholesale_price must be a finite non-negative number' });
-      return;
-    }
-  }
-  if (stock_quantity !== undefined) {
-    const num = Number(stock_quantity);
-    if (!Number.isFinite(num)) {
-      res.status(400).json({ error: 'stock_quantity must be a finite number' });
-      return;
-    }
+  } catch (err: any) {
+    res.status(400).json({ error: err.message });
+    return;
   }
 
   const now = new Date().toISOString();
@@ -454,11 +484,11 @@ productsRouter.put('/:id', (req: Request, res: Response) => {
       name !== undefined ? name.trim() : null,
       size_label !== undefined ? size_label.trim() : null,
       barcode !== undefined ? barcode.trim() : null,
-      stock_quantity !== undefined ? Number(stock_quantity) : null,
-      low_stock_threshold !== undefined ? Number(low_stock_threshold) : null,
-      retail_price !== undefined ? round3(Number(retail_price)) : null,
-      wholesale_price !== undefined ? round3(Number(wholesale_price)) : null,
-      cost_reference !== undefined ? round3(Number(cost_reference)) : null,
+      validStock !== undefined ? validStock : null,
+      validThreshold !== undefined ? validThreshold : null,
+      validRetail !== undefined ? round3(validRetail) : null,
+      validWholesale !== undefined ? round3(validWholesale) : null,
+      validCost !== undefined ? round3(validCost) : null,
       container_type_id !== undefined ? container_type_id : null,
       active !== undefined ? Number(active) : null,
       now,
@@ -469,7 +499,8 @@ productsRouter.put('/:id', (req: Request, res: Response) => {
       res.status(400).json({ error: `Barcode already in use.` });
       return;
     }
-    throw err;
+    res.status(400).json({ error: sanitizeErrorMessage(err, 'Échec de la mise à jour du produit.') });
+    return;
   }
 
   const updated = db.prepare('SELECT * FROM products WHERE id = ?').get(req.params.id);

@@ -6,6 +6,7 @@ import { recordMaterialPriceHistory } from './materials.js';
 import { allocateSupplierPayment } from '../services/debtService.js';
 import { businessDateKey } from '../utils/businessDate.js';
 import { beginIdempotentRequest } from '../utils/idempotency.js';
+import { requireFinitePositive, requireFiniteNonNegative, sanitizeErrorMessage } from '../utils/validation.js';
 
 export const suppliersRouter = Router();
 export const purchasesRouter = Router();
@@ -205,20 +206,23 @@ suppliersRouter.get('/:id/tickets', (req: Request, res: Response) => {
 const handleSupplierPayment = (req: Request, res: Response) => {
   const { amount, payment_method = 'Cash', notes = '', date } = req.body;
 
+  let validAmount: number;
+  try {
+    validAmount = requireFinitePositive(amount, 'montant du règlement');
+  } catch (err: any) {
+    res.status(400).json({ error: err.message });
+    return;
+  }
+
   const db = getDb();
   const idem = beginIdempotentRequest(db, req, res, 'SUPPLIER_PAYMENT', req.params.id);
   if (idem.kind === 'REPLAYED') return;
   const requestId = idem.kind === 'CLAIMED' ? idem.requestId : null;
 
-  if (!amount || Number(amount) <= 0) {
-    res.status(400).json({ error: 'Payment amount must be greater than zero.' });
-    return;
-  }
-
   try {
     const result = allocateSupplierPayment(db, {
       supplierId: req.params.id,
-      amount: Number(amount),
+      amount: validAmount,
       paymentMethod: payment_method,
       notes,
       date,
@@ -238,7 +242,7 @@ const handleSupplierPayment = (req: Request, res: Response) => {
       ...result
     });
   } catch (err: any) {
-    res.status(400).json({ error: err.message });
+    res.status(400).json({ error: sanitizeErrorMessage(err, 'Échec du paiement fournisseur') });
   }
 };
 
@@ -361,14 +365,16 @@ purchasesRouter.post('/', (req: Request, res: Response) => {
   const processedItems: any[] = [];
 
   for (const item of rawItems) {
-    const qty = Number(item.quantity);
-    const unitCost = round3(Number(item.unit_cost));
-    const lineTotal = multiplyMoney(unitCost, qty);
-
-    if (qty <= 0 || unitCost < 0) {
-      res.status(400).json({ error: 'Quantity must be > 0 and unit_cost >= 0' });
+    let qty: number;
+    let unitCost: number;
+    try {
+      qty = requireFinitePositive(item.quantity, "quantité de l'article");
+      unitCost = round3(requireFiniteNonNegative(item.unit_cost, 'coût unitaire', 0));
+    } catch (err: any) {
+      res.status(400).json({ error: err.message });
       return;
     }
+    const lineTotal = multiplyMoney(unitCost, qty);
 
     const itemType = item.item_type || (item.material_id ? 'RAW_MATERIAL' : 'RESALE_PRODUCT');
     if (itemType !== 'RAW_MATERIAL' && itemType !== 'RESALE_PRODUCT') {

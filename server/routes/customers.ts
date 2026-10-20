@@ -4,6 +4,7 @@ import { getDb } from '../db/index.js';
 import { round3 } from '../utils/money.js';
 import { allocateCustomerPayment, isTicketOverdue } from '../services/debtService.js';
 import { beginIdempotentRequest } from '../utils/idempotency.js';
+import { requireFinitePositive, sanitizeErrorMessage } from '../utils/validation.js';
 
 export const customersRouter = Router();
 
@@ -214,20 +215,23 @@ customersRouter.get('/:id/tickets', (req: Request, res: Response) => {
 const handleCustomerPayment = (req: Request, res: Response) => {
   const { amount, payment_method = 'Cash', notes = '', date } = req.body;
 
+  let validAmount: number;
+  try {
+    validAmount = requireFinitePositive(amount, 'montant du paiement');
+  } catch (err: any) {
+    res.status(400).json({ error: err.message });
+    return;
+  }
+
   const db = getDb();
   const idem = beginIdempotentRequest(db, req, res, 'CUSTOMER_PAYMENT', req.params.id);
   if (idem.kind === 'REPLAYED') return;
   const requestId = idem.kind === 'CLAIMED' ? idem.requestId : null;
 
-  if (!amount || Number(amount) <= 0) {
-    res.status(400).json({ error: 'Payment amount must be greater than zero.' });
-    return;
-  }
-
   try {
     const result = allocateCustomerPayment(db, {
       customerId: req.params.id,
-      amount: Number(amount),
+      amount: validAmount,
       paymentMethod: payment_method,
       notes,
       date,
@@ -235,7 +239,7 @@ const handleCustomerPayment = (req: Request, res: Response) => {
     });
     res.status(200).json(result);
   } catch (err: any) {
-    res.status(400).json({ error: err.message });
+    res.status(400).json({ error: sanitizeErrorMessage(err, 'Échec du paiement client') });
   }
 };
 
@@ -248,9 +252,11 @@ customersRouter.post('/:id/pay-debt', handleCustomerPayment);
 const handleWalletTopUp = (req: Request, res: Response) => {
   const { amount, notes = '', date = new Date().toISOString() } = req.body;
 
-  const topUpAmount = round3(Number(amount) || 0);
-  if (topUpAmount <= 0) {
-    res.status(400).json({ error: 'Top up amount must be greater than zero.' });
+  let topUpAmount: number;
+  try {
+    topUpAmount = round3(requireFinitePositive(amount, 'montant de recharge'));
+  } catch (err: any) {
+    res.status(400).json({ error: err.message });
     return;
   }
 

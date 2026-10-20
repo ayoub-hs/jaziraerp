@@ -112,8 +112,13 @@ if (fs.existsSync(distPath)) {
 // Global Express error handler
 app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
   console.error('[Unhandled Server Error]', err);
-  res.status(err.status || 500).json({
-    error: err.message || 'Internal server error'
+  const status = Number(err.status) || 500;
+  let message = err.message || 'Une erreur interne est survenue';
+  if (status >= 500 || /SQLITE|constraint failed|syntax error|no such table/i.test(message)) {
+    message = 'Une erreur interne est survenue. Veuillez réessayer.';
+  }
+  res.status(status).json({
+    error: message
   });
 });
 

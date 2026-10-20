@@ -3,6 +3,12 @@ import crypto from 'crypto';
 import { getDb } from '../db/index.js';
 import { round3 } from '../utils/money.js';
 import { getMaterialUnitCosts, getMaterialUnitCost } from '../services/costingService.js';
+import {
+  requireFiniteNonNegative,
+  requireOptionalFiniteNonNegative,
+  ValidationError,
+  sanitizeErrorMessage
+} from '../utils/validation.js';
 
 export const materialsRouter = Router();
 
@@ -156,7 +162,8 @@ materialsRouter.post('/', (req: Request, res: Response) => {
     name,
     category,
     unit,
-    stock_quantity = 0,
+    stock_quantity,
+    initial_stock,
     latest_supplier_id = null,
     latest_purchase_cost = 0,
     low_stock_threshold = 0
@@ -170,9 +177,28 @@ materialsRouter.post('/', (req: Request, res: Response) => {
   const db = getDb();
   const id = crypto.randomUUID();
   const now = new Date().toISOString();
-  const cost = round3(Number(latest_purchase_cost) || 0);
-  const stock = Number(stock_quantity || req.body.initial_stock) || 0;
-  const threshold = Number(low_stock_threshold) || 0;
+
+  let cost: number;
+  let stock: number;
+  let threshold: number;
+  try {
+    cost = round3(requireFiniteNonNegative(latest_purchase_cost, "coût d'achat (latest_purchase_cost)", 0));
+    const rawStock = stock_quantity !== undefined && stock_quantity !== null && stock_quantity !== ''
+      ? stock_quantity
+      : (req.body.initial_stock !== undefined && req.body.initial_stock !== null && req.body.initial_stock !== ''
+          ? req.body.initial_stock
+          : 0);
+    stock = typeof rawStock === 'number' ? rawStock : Number(rawStock);
+    if (!Number.isFinite(stock)) {
+      throw new ValidationError('La quantité en stock doit être un nombre fini.');
+    }
+    threshold = low_stock_threshold !== undefined && low_stock_threshold !== null && low_stock_threshold !== ''
+      ? requireFiniteNonNegative(low_stock_threshold, 'seuil de stock bas')
+      : 0;
+  } catch (err: any) {
+    res.status(400).json({ error: err.message });
+    return;
+  }
 
   const insert = db.prepare(`
     INSERT INTO raw_materials (
@@ -230,6 +256,16 @@ materialsRouter.put('/:id', (req: Request, res: Response) => {
     return;
   }
 
+  let validThreshold: number | undefined;
+  let validCost: number | undefined;
+  try {
+    validThreshold = requireOptionalFiniteNonNegative(low_stock_threshold, 'seuil de stock bas');
+    validCost = requireOptionalFiniteNonNegative(req.body.latest_purchase_cost, "coût d'achat");
+  } catch (err: any) {
+    res.status(400).json({ error: err.message });
+    return;
+  }
+
   const now = new Date().toISOString();
   db.prepare(`
     UPDATE raw_materials
@@ -244,16 +280,16 @@ materialsRouter.put('/:id', (req: Request, res: Response) => {
     name !== undefined ? name.trim() : null,
     category !== undefined ? category.trim() : null,
     unit !== undefined ? unit.trim() : null,
-    low_stock_threshold !== undefined ? Number(low_stock_threshold) : null,
+    validThreshold !== undefined ? validThreshold : null,
     latest_supplier_id !== undefined ? latest_supplier_id : null,
     now,
     req.params.id
   );
 
-  if (req.body.latest_purchase_cost !== undefined && Number(req.body.latest_purchase_cost) >= 0) {
+  if (validCost !== undefined) {
     recordMaterialPriceHistory(db, {
       materialId: req.params.id,
-      costPerUnit: Number(req.body.latest_purchase_cost),
+      costPerUnit: round3(validCost),
       supplierId: latest_supplier_id !== undefined ? latest_supplier_id : existing.latest_supplier_id,
       date: now
     });

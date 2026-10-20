@@ -1,6 +1,12 @@
 import { Router, Request, Response } from 'express';
 import crypto from 'crypto';
 import { getDb } from '../db/index.js';
+import {
+  requireFinitePositive,
+  requireFiniteNonNegative,
+  requireOptionalFinitePositive,
+  requireOptionalFiniteNonNegative
+} from '../utils/validation.js';
 
 export const containersRouter = Router();
 
@@ -31,8 +37,20 @@ containersRouter.get('/', listContainerTypes);
 const createContainerType = (req: Request, res: Response) => {
   const { name, capacity_liters = null, stock_quantity = 0 } = req.body;
 
-  if (!name) {
+  if (!name || !name.trim()) {
     res.status(400).json({ error: 'Container type name is required.' });
+    return;
+  }
+
+  let validCapacity: number | null = null;
+  let validStock: number = 0;
+  try {
+    if (capacity_liters !== null && capacity_liters !== undefined && capacity_liters !== '') {
+      validCapacity = requireFinitePositive(capacity_liters, 'capacité en litres');
+    }
+    validStock = requireFiniteNonNegative(stock_quantity, 'quantité en stock', 0);
+  } catch (err: any) {
+    res.status(400).json({ error: err.message });
     return;
   }
 
@@ -43,7 +61,7 @@ const createContainerType = (req: Request, res: Response) => {
   db.prepare(`
     INSERT INTO container_types (id, name, capacity_liters, stock_quantity, created_at)
     VALUES (?, ?, ?, ?, ?)
-  `).run(id, name.trim(), capacity_liters ? Number(capacity_liters) : null, Number(stock_quantity) || 0, now);
+  `).run(id, name.trim(), validCapacity, validStock, now);
 
   const created = db.prepare('SELECT * FROM container_types WHERE id = ?').get(id);
   res.status(201).json(created);
@@ -63,6 +81,16 @@ const handleUpdateContainerType = (req: Request, res: Response) => {
     return;
   }
 
+  let validCapacity: number | undefined;
+  let validStock: number | undefined;
+  try {
+    validCapacity = requireOptionalFinitePositive(capacity_liters, 'capacité en litres');
+    validStock = requireOptionalFiniteNonNegative(stock_quantity, 'quantité en stock');
+  } catch (err: any) {
+    res.status(400).json({ error: err.message });
+    return;
+  }
+
   db.prepare(`
     UPDATE container_types
     SET name = COALESCE(?, name),
@@ -71,8 +99,8 @@ const handleUpdateContainerType = (req: Request, res: Response) => {
     WHERE id = ?
   `).run(
     name !== undefined ? name.trim() : null,
-    capacity_liters !== undefined ? Number(capacity_liters) : null,
-    stock_quantity !== undefined ? Number(stock_quantity) : null,
+    validCapacity !== undefined ? validCapacity : null,
+    validStock !== undefined ? validStock : null,
     req.params.id
   );
 
