@@ -773,7 +773,7 @@ export function processRefund(saleId: string, req: Request, res: Response) {
   }
 
   if (cashPayout < 0 || walletPayout < 0 || creditReduction < 0) {
-    res.status(400).json({ error: 'Payout amounts cannot be negative' });
+    res.status(400).json({ error: 'Les montants de remboursement ne peuvent pas être négatifs. (Payout amounts cannot be negative)' });
     return;
   }
 
@@ -781,7 +781,7 @@ export function processRefund(saleId: string, req: Request, res: Response) {
 
   if (toMillimes(totalPayout) !== toMillimes(totalRefunded)) {
     res.status(400).json({
-      error: `Payout total (${totalPayout.toFixed(3)} DT) does not equal refunded item total (${totalRefunded.toFixed(3)} DT). Cash: ${cashPayout}, Wallet: ${walletPayout}, Credit: ${creditReduction}`
+      error: `Le total ventilé (${totalPayout.toFixed(3)} DT) ne correspond pas au total des articles remboursés (${totalRefunded.toFixed(3)} DT). (Payout total does not equal refunded item total. Cash: ${cashPayout}, Wallet: ${walletPayout}, Credit: ${creditReduction})`
     });
     return;
   }
@@ -789,7 +789,7 @@ export function processRefund(saleId: string, req: Request, res: Response) {
   // Wallet refunds need a customer ledger: never silently drop the payout on
   // walk-in sales (total_refunded would still be recorded).
   if (walletPayout > 0 && !sale.customer_id) {
-    res.status(400).json({ error: 'Cannot refund to wallet: sale has no customer. Refund to cash instead.' });
+    res.status(400).json({ error: "Impossible de rembourser sur le portefeuille : la vente n'a pas de compte client associé. Remboursez en espèces. (Cannot refund to wallet: sale has no customer. Refund to cash instead.)" });
     return;
   }
 
