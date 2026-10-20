@@ -393,11 +393,277 @@ salesRouter.get('/:id/refunds', (req: Request, res: Response) => {
       LEFT JOIN products p ON si.product_id = p.id
       WHERE ri.refund_id = ?
     `).all(r.id);
-    return { ...r, items };
+
+    // Derive refund_method for backwards compatibility
+    let derivedMethod = 'CASH';
+    const hasCash = (Number(r.cash_refunded) || 0) > 0;
+    const hasWallet = (Number(r.wallet_refunded) || 0) > 0;
+    const hasCredit = (Number(r.credit_reduced) || 0) > 0;
+    const countMethods = (hasCash ? 1 : 0) + (hasWallet ? 1 : 0) + (hasCredit ? 1 : 0);
+    if (countMethods > 1) {
+      derivedMethod = 'MIXED';
+    } else if (hasCredit) {
+      derivedMethod = 'CREDIT_REDUCTION';
+    } else if (hasWallet) {
+      derivedMethod = 'WALLET';
+    } else if (hasCash) {
+      derivedMethod = 'CASH';
+    }
+
+    return {
+      ...r,
+      refund_amount: r.total_refunded,
+      refund_method: r.refund_method || derivedMethod,
+      items
+    };
   });
 
   res.json(enriched);
 });
+
+export interface RefundCapacities {
+  open_debt: number;
+  max_cash: number;
+  max_wallet: number;
+  prior_refunded: number;
+  prior_cash: number;
+  prior_wallet: number;
+  prior_credit: number;
+  debt_paid_on_ticket: number;
+  actual_paid: number;
+}
+
+export interface RefundAllocation {
+  credit_reduced: number;
+  cash_refunded: number;
+  wallet_refunded: number;
+}
+
+export function computeRefundCapacities(db: any, sale: any): RefundCapacities {
+  const priorRefundsRow: any = db.prepare(`
+    SELECT
+      COALESCE(SUM(total_refunded), 0) as prior_refunded,
+      COALESCE(SUM(cash_refunded), 0) as prior_cash,
+      COALESCE(SUM(wallet_refunded), 0) as prior_wallet,
+      COALESCE(SUM(credit_reduced), 0) as prior_credit
+    FROM refunds
+    WHERE sale_id = ?
+  `).get(sale.id);
+
+  const priorTotal = round3(Number(priorRefundsRow?.prior_refunded) || 0);
+  const priorCash = round3(Number(priorRefundsRow?.prior_cash) || 0);
+  const priorWallet = round3(Number(priorRefundsRow?.prior_wallet) || 0);
+  const priorCredit = round3(Number(priorRefundsRow?.prior_credit) || 0);
+
+  const targetTicket: any = db.prepare(`
+    SELECT * FROM customer_debt_tickets
+    WHERE sale_id = ?
+  `).get(sale.id);
+
+  let openDebt = 0;
+  let debtPaidOnTicket = 0;
+
+  if (targetTicket) {
+    if (['UNPAID', 'PARTIALLY_PAID'].includes(targetTicket.status)) {
+      openDebt = round3(Number(targetTicket.remaining_amount) || 0);
+    }
+    const allocRow: any = db.prepare(`
+      SELECT COALESCE(SUM(amount_allocated), 0) as debt_paid
+      FROM customer_payment_allocations
+      WHERE ticket_id = ?
+    `).get(targetTicket.id);
+    debtPaidOnTicket = round3(Number(allocRow?.debt_paid) || 0);
+  }
+
+  const actualPaid = round3((Number(sale.cash_paid) || 0) + (Number(sale.wallet_paid) || 0) + debtPaidOnTicket);
+  const priorCashAndWallet = round3(priorCash + priorWallet);
+  const maxRefundableMoney = Math.max(0, round3(actualPaid - priorCashAndWallet));
+
+  const maxCash = Math.max(0, round3((Number(sale.cash_paid) || 0) - priorCash));
+  const maxWallet = sale.customer_id ? maxRefundableMoney : 0;
+
+  return {
+    open_debt: openDebt,
+    max_cash: maxCash,
+    max_wallet: maxWallet,
+    prior_refunded: priorTotal,
+    prior_cash: priorCash,
+    prior_wallet: priorWallet,
+    prior_credit: priorCredit,
+    debt_paid_on_ticket: debtPaidOnTicket,
+    actual_paid: actualPaid
+  };
+}
+
+export function suggestRefundAllocation(
+  totalRefunded: number,
+  capacities: RefundCapacities
+): RefundAllocation {
+  const creditReduced = Math.min(totalRefunded, capacities.open_debt);
+  const remainder = round3(totalRefunded - creditReduced);
+  const cashRefunded = Math.min(remainder, capacities.max_cash);
+  const remainder2 = round3(remainder - cashRefunded);
+  const walletRefunded = Math.min(remainder2, capacities.max_wallet);
+
+  return {
+    credit_reduced: round3(creditReduced),
+    cash_refunded: round3(cashRefunded),
+    wallet_refunded: round3(walletRefunded)
+  };
+}
+
+export function computeNetLineTotals(allSaleItems: any[], globalDiscount: number): Map<string, number> {
+  const subtotal = round3(allSaleItems.reduce((sum, item) => sum + (Number(item.line_total) || 0), 0));
+  const netLineTotals = new Map<string, number>();
+
+  if (globalDiscount <= 0 || subtotal <= 0) {
+    for (const item of allSaleItems) {
+      netLineTotals.set(item.id, round3(Number(item.line_total) || 0));
+    }
+  } else {
+    let allocatedDiscountSum = 0;
+    for (let i = 0; i < allSaleItems.length; i++) {
+      const item = allSaleItems[i];
+      const lineTotal = round3(Number(item.line_total) || 0);
+      let lineDiscount: number;
+      if (i === allSaleItems.length - 1) {
+        lineDiscount = round3(globalDiscount - allocatedDiscountSum);
+      } else {
+        lineDiscount = round3(globalDiscount * (lineTotal / subtotal));
+        allocatedDiscountSum = addMoney(allocatedDiscountSum, lineDiscount);
+      }
+      const netLineTotal = Math.max(0, round3(lineTotal - lineDiscount));
+      netLineTotals.set(item.id, netLineTotal);
+    }
+  }
+
+  return netLineTotals;
+}
+
+export function calculateRefundItems(
+  db: any,
+  allSaleItems: any[],
+  netLineTotals: Map<string, number>,
+  requestedItems: Array<{ sale_item_id: string; quantity: number | string }>
+): { totalRefunded: number; processedItems: any[]; error?: string } {
+  let totalRefunded = 0;
+  const processedItems: any[] = [];
+  const seenSaleItemIds = new Set<string>();
+
+  for (const item of requestedItems) {
+    if (!item || typeof item !== 'object' || !item.sale_item_id) {
+      return { totalRefunded: 0, processedItems: [], error: 'Valid sale_item_id is required for every refund item' };
+    }
+    if (seenSaleItemIds.has(item.sale_item_id)) {
+      return { totalRefunded: 0, processedItems: [], error: `Duplicate sale_item_id in refund request: ${item.sale_item_id}` };
+    }
+    seenSaleItemIds.add(item.sale_item_id);
+
+    const saleItem = allSaleItems.find(si => si.id === item.sale_item_id);
+    if (!saleItem) {
+      return { totalRefunded: 0, processedItems: [], error: `Sale line item not found: ${item.sale_item_id}` };
+    }
+
+    const qtyToRefund = Number(item.quantity);
+    if (!Number.isFinite(qtyToRefund) || qtyToRefund <= 0) {
+      return { totalRefunded: 0, processedItems: [], error: `Invalid refund quantity for item ${saleItem.id}: ${item.quantity}` };
+    }
+
+    const availableToRefund = saleItem.quantity - (saleItem.quantity_refunded || 0);
+    if (qtyToRefund > availableToRefund) {
+      return { totalRefunded: 0, processedItems: [], error: `Invalid refund quantity for item ${saleItem.id}. Requested: ${qtyToRefund}, Max available: ${availableToRefund}` };
+    }
+
+    if (Number.isInteger(saleItem.quantity) && !Number.isInteger(qtyToRefund)) {
+      return { totalRefunded: 0, processedItems: [], error: `Fractional refund quantity (${qtyToRefund}) is not allowed for integer-quantity item ${saleItem.id}` };
+    }
+
+    const netLineTotal = netLineTotals.get(saleItem.id) ?? round3(Number(saleItem.line_total) || 0);
+
+    const alreadyRefundedRow: any = db.prepare(`
+      SELECT COALESCE(SUM(amount_refunded), 0) as already_refunded
+      FROM refund_items
+      WHERE sale_item_id = ?
+    `).get(saleItem.id);
+    const alreadyRefunded = round3(alreadyRefundedRow?.already_refunded || 0);
+
+    let amountRefunded: number;
+    if (qtyToRefund === availableToRefund) {
+      amountRefunded = Math.max(0, round3(netLineTotal - alreadyRefunded));
+    } else {
+      const effectiveUnitPrice = netLineTotal / saleItem.quantity;
+      amountRefunded = round3(effectiveUnitPrice * qtyToRefund);
+      const maxPossibleForLine = Math.max(0, round3(netLineTotal - alreadyRefunded));
+      if (amountRefunded > maxPossibleForLine) {
+        amountRefunded = maxPossibleForLine;
+      }
+    }
+
+    if (addMoney(alreadyRefunded, amountRefunded) > netLineTotal) {
+      amountRefunded = Math.max(0, round3(netLineTotal - alreadyRefunded));
+    }
+
+    totalRefunded = addMoney(totalRefunded, amountRefunded);
+    processedItems.push({
+      sale_item: saleItem,
+      sale_item_id: saleItem.id,
+      quantity_refunded: qtyToRefund,
+      amount_refunded: amountRefunded,
+      stock_to_restore: saleItem.product_id ? qtyToRefund * (saleItem.pack_multiplier || 1) : 0
+    });
+  }
+
+  return { totalRefunded, processedItems };
+}
+
+export function previewRefund(saleId: string, req: Request, res: Response) {
+  const db = getDb();
+  const sale: any = db.prepare('SELECT * FROM sales WHERE id = ? OR receipt_number = ?').get(saleId, saleId);
+  if (!sale) {
+    res.status(404).json({ error: 'Sale not found' });
+    return;
+  }
+
+  const allSaleItems: any[] = db.prepare(`
+    SELECT * FROM sale_items WHERE sale_id = ? ORDER BY id ASC
+  `).all(sale.id);
+
+  const capacities = computeRefundCapacities(db, sale);
+
+  let requestedItems = req.body?.items;
+  if (!Array.isArray(requestedItems) || requestedItems.length === 0) {
+    requestedItems = allSaleItems
+      .filter(si => (si.quantity - (si.quantity_refunded || 0)) > 0)
+      .map(si => ({
+        sale_item_id: si.id,
+        quantity: round3(si.quantity - (si.quantity_refunded || 0))
+      }));
+  }
+
+  const globalDiscount = round3(Number(sale.total_discount) || 0);
+  const netLineTotals = computeNetLineTotals(allSaleItems, globalDiscount);
+
+  const calc = calculateRefundItems(db, allSaleItems, netLineTotals, requestedItems);
+  if (calc.error) {
+    res.status(400).json({ error: calc.error });
+    return;
+  }
+
+  const suggestedAllocation = suggestRefundAllocation(calc.totalRefunded, capacities);
+
+  res.json({
+    sale_id: sale.id,
+    total_refunded: calc.totalRefunded,
+    items: calc.processedItems.map(i => ({
+      sale_item_id: i.sale_item_id,
+      quantity_refunded: i.quantity_refunded,
+      amount_refunded: i.amount_refunded,
+      stock_restored: i.stock_to_restore
+    })),
+    capacities,
+    suggested_allocation: suggestedAllocation
+  });
+}
 
 // Process line-item partial or full refund
 export function processRefund(saleId: string, req: Request, res: Response) {
@@ -463,160 +729,47 @@ export function processRefund(saleId: string, req: Request, res: Response) {
     SELECT * FROM sale_items WHERE sale_id = ? ORDER BY id ASC
   `).all(sale.id);
 
-  const subtotal = round3(allSaleItems.reduce((sum, item) => sum + (Number(item.line_total) || 0), 0));
   const globalDiscount = round3(Number(sale.total_discount) || 0);
+  const netLineTotals = computeNetLineTotals(allSaleItems, globalDiscount);
 
-  // Compute net line totals for all lines of the sale
-  const netLineTotals = new Map<string, number>();
-  if (globalDiscount <= 0 || subtotal <= 0) {
-    for (const item of allSaleItems) {
-      netLineTotals.set(item.id, round3(Number(item.line_total) || 0));
-    }
-  } else {
-    let allocatedDiscountSum = 0;
-    for (let i = 0; i < allSaleItems.length; i++) {
-      const item = allSaleItems[i];
-      const lineTotal = round3(Number(item.line_total) || 0);
-      let lineDiscount: number;
-      if (i === allSaleItems.length - 1) {
-        // Remainder on the last line
-        lineDiscount = round3(globalDiscount - allocatedDiscountSum);
-      } else {
-        lineDiscount = round3(globalDiscount * (lineTotal / subtotal));
-        allocatedDiscountSum = addMoney(allocatedDiscountSum, lineDiscount);
-      }
-      const netLineTotal = Math.max(0, round3(lineTotal - lineDiscount));
-      netLineTotals.set(item.id, netLineTotal);
-    }
+  const calc = calculateRefundItems(db, allSaleItems, netLineTotals, items);
+  if (calc.error) {
+    res.status(400).json({ error: calc.error });
+    return;
   }
 
-  let totalRefunded = 0;
-  const processedRefundItems: any[] = [];
+  const totalRefunded = calc.totalRefunded;
+  const processedRefundItems = calc.processedItems;
 
-  // Check for duplicate sale_item_ids in refund request
-  const seenSaleItemIds = new Set<string>();
-  for (const item of items) {
-    if (!item || typeof item !== 'object' || !item.sale_item_id) {
-      res.status(400).json({ error: 'Valid sale_item_id is required for every refund item' });
-      return;
-    }
-    if (seenSaleItemIds.has(item.sale_item_id)) {
-      res.status(400).json({ error: `Duplicate sale_item_id in refund request: ${item.sale_item_id}` });
-      return;
-    }
-    seenSaleItemIds.add(item.sale_item_id);
-  }
+  const capacities = computeRefundCapacities(db, sale);
 
-  for (const item of items) {
-    const saleItem: any = allSaleItems.find(si => si.id === item.sale_item_id);
-
-    if (!saleItem) {
-      res.status(400).json({ error: `Sale line item not found: ${item.sale_item_id}` });
-      return;
-    }
-
-    const qtyToRefund = Number(item.quantity);
-    if (!Number.isFinite(qtyToRefund) || qtyToRefund <= 0) {
-      res.status(400).json({
-        error: `Invalid refund quantity for item ${saleItem.id}: ${item.quantity}`
-      });
-      return;
-    }
-
-    const availableToRefund = saleItem.quantity - saleItem.quantity_refunded;
-
-    if (qtyToRefund > availableToRefund) {
-      res.status(400).json({
-        error: `Invalid refund quantity for item ${saleItem.id}. Requested: ${qtyToRefund}, Max available: ${availableToRefund}`
-      });
-      return;
-    }
-
-    if (Number.isInteger(saleItem.quantity) && !Number.isInteger(qtyToRefund)) {
-      res.status(400).json({
-        error: `Fractional refund quantity (${qtyToRefund}) is not allowed for integer-quantity item ${saleItem.id}`
-      });
-      return;
-    }
-
-    const netLineTotal = netLineTotals.get(saleItem.id) ?? round3(Number(saleItem.line_total) || 0);
-
-    const alreadyRefundedRow: any = db.prepare(`
-      SELECT COALESCE(SUM(amount_refunded), 0) as already_refunded
-      FROM refund_items
-      WHERE sale_item_id = ?
-    `).get(saleItem.id);
-    const alreadyRefunded = round3(alreadyRefundedRow?.already_refunded || 0);
-
-    // For the last remaining quantity of a line, amountRefunded = netLineTotal - already_refunded; otherwise effective net unit price
-    let amountRefunded: number;
-    if (qtyToRefund === availableToRefund) {
-      amountRefunded = Math.max(0, round3(netLineTotal - alreadyRefunded));
-    } else {
-      const effectiveUnitPrice = netLineTotal / saleItem.quantity;
-      amountRefunded = round3(effectiveUnitPrice * qtyToRefund);
-      const maxPossibleForLine = Math.max(0, round3(netLineTotal - alreadyRefunded));
-      if (amountRefunded > maxPossibleForLine) {
-        amountRefunded = maxPossibleForLine;
-      }
-    }
-
-    // Cap cumulative amount_refunded on each line at net line total
-    if (addMoney(alreadyRefunded, amountRefunded) > netLineTotal) {
-      amountRefunded = Math.max(0, round3(netLineTotal - alreadyRefunded));
-    }
-
-    totalRefunded = addMoney(totalRefunded, amountRefunded);
-    processedRefundItems.push({
-      sale_item: saleItem,
-      quantity_refunded: qtyToRefund,
-      amount_refunded: amountRefunded,
-      stock_to_restore: saleItem.product_id ? qtyToRefund * (saleItem.pack_multiplier || 1) : 0
-    });
-  }
-
-  // Over-refund cap: check cumulative refunds against sale.total_ttc
-  const priorRefundsRow: any = db.prepare(`
-    SELECT COALESCE(SUM(total_refunded), 0) as prior_refunded
-    FROM refunds
-    WHERE sale_id = ?
-  `).get(sale.id);
-  const priorRefunded = round3(priorRefundsRow?.prior_refunded || 0);
-
-  if (addMoney(priorRefunded, totalRefunded) > sale.total_ttc) {
+  if (addMoney(capacities.prior_refunded, totalRefunded) > sale.total_ttc) {
     res.status(400).json({
-      error: `Le montant total remboursé (${round3(priorRefunded + totalRefunded).toFixed(3)} DT) dépasserait le total payé de la vente (${sale.total_ttc.toFixed(3)} DT).`
+      error: `Le montant total remboursé (${round3(capacities.prior_refunded + totalRefunded).toFixed(3)} DT) dépasserait le total payé de la vente (${sale.total_ttc.toFixed(3)} DT).`
     });
     return;
   }
 
   // 2. Validate or auto-calculate payout methods equal total refunded
-  let cashPayout = cash_refunded !== undefined ? round3(Number(cash_refunded) || 0) : null;
-  let walletPayout = wallet_refunded !== undefined ? round3(Number(wallet_refunded) || 0) : null;
-  let creditReduction = credit_reduced !== undefined ? round3(Number(credit_reduced) || 0) : null;
+  const hasExplicitPayout = (
+    cash_refunded !== undefined ||
+    wallet_refunded !== undefined ||
+    credit_reduced !== undefined
+  );
 
-  if (cashPayout === null && walletPayout === null && creditReduction === null) {
-    if (reqRefundMethod === 'CREDIT_REDUCTION' || req.body.refund_to_credit_debt || (!reqRefundMethod && sale.credit_amount > 0 && sale.cash_paid === 0)) {
-      creditReduction = totalRefunded;
-      cashPayout = 0;
-      walletPayout = 0;
-    } else if (reqRefundMethod === 'WALLET' || (!reqRefundMethod && sale.wallet_paid > 0 && sale.cash_paid === 0)) {
-      walletPayout = totalRefunded;
-      cashPayout = 0;
-      creditReduction = 0;
-    } else if (reqRefundMethod === 'CASH' || (!reqRefundMethod && sale.cash_paid > 0)) {
-      cashPayout = totalRefunded;
-      walletPayout = 0;
-      creditReduction = 0;
-    } else {
-      cashPayout = totalRefunded;
-      walletPayout = 0;
-      creditReduction = 0;
-    }
+  let cashPayout: number;
+  let walletPayout: number;
+  let creditReduction: number;
+
+  if (!hasExplicitPayout) {
+    const suggested = suggestRefundAllocation(totalRefunded, capacities);
+    creditReduction = suggested.credit_reduced;
+    cashPayout = suggested.cash_refunded;
+    walletPayout = suggested.wallet_refunded;
   } else {
-    cashPayout = cashPayout || 0;
-    walletPayout = walletPayout || 0;
-    creditReduction = creditReduction || 0;
+    cashPayout = round3(Number(cash_refunded) || 0);
+    walletPayout = round3(Number(wallet_refunded) || 0);
+    creditReduction = round3(Number(credit_reduced) || 0);
   }
 
   if (cashPayout < 0 || walletPayout < 0 || creditReduction < 0) {
@@ -640,28 +793,6 @@ export function processRefund(saleId: string, req: Request, res: Response) {
     return;
   }
 
-  // Cash refunds require an active open register session
-  if (cashPayout > 0) {
-    if (openSessions.length === 0) {
-      res.status(400).json({
-        error: 'La caisse est fermée. Une session de caisse ouverte est obligatoire pour effectuer un remboursement en espèces. (An active open register session is required for cash refunds).'
-      });
-      return;
-    }
-    if (!session) {
-      res.status(400).json({
-        error: 'Plusieurs sessions de caisse sont ouvertes. Veuillez sélectionner la caisse effectuant le remboursement en espèces. (Multiple sessions are open; please specify session_id).'
-      });
-      return;
-    }
-    if (session.status !== 'OPEN') {
-      res.status(400).json({
-        error: `La session de caisse sélectionnée (${session.session_number}) est fermée.`
-      });
-      return;
-    }
-  }
-
   // 3. TARGETED CREDIT REDUCTION: Must reduce the specific ticket tied to THIS sale_id
   let targetTicket: any = null;
   if (creditReduction > 0) {
@@ -680,6 +811,72 @@ export function processRefund(saleId: string, req: Request, res: Response) {
     if (creditReduction > targetTicket.remaining_amount) {
       res.status(400).json({
         error: `Credit reduction (${creditReduction.toFixed(3)} DT) exceeds remaining ticket balance (${targetTicket.remaining_amount.toFixed(3)} DT).`
+      });
+      return;
+    }
+  }
+
+  // Check remaining goods value vs remaining debt
+  const willAllItemsBeRefunded = allSaleItems.every(si => {
+    const itemInThisRefund = processedRefundItems.find(p => p.sale_item.id === si.id);
+    const additionalQty = itemInThisRefund ? itemInThisRefund.quantity_refunded : 0;
+    return round3((si.quantity_refunded || 0) + additionalQty) >= si.quantity;
+  });
+  const isFullRefund = willAllItemsBeRefunded || addMoney(capacities.prior_refunded, totalRefunded) >= sale.total_ttc;
+  const remainingDebt = round3(capacities.open_debt - creditReduction);
+  const remainingGoodsValue = Math.max(0, round3(sale.total_ttc - capacities.prior_refunded - totalRefunded));
+
+  // FULLY_REFUNDED invariant: A fully refunded sale must never leave an open debt ticket
+  if (isFullRefund && remainingDebt > 0) {
+    res.status(400).json({
+      error: `Une vente intégralement remboursée (FULLY_REFUNDED) ne peut pas conserver un ticket de dette ouvert. La dette restante (${remainingDebt.toFixed(3)} DT) doit être réduite en priorité.`
+    });
+    return;
+  }
+
+  // Open debt on this sale cannot exceed the value of retained goods
+  if (remainingDebt > remainingGoodsValue) {
+    const minRequiredCreditReduction = round3(capacities.open_debt - remainingGoodsValue);
+    res.status(400).json({
+      error: `La dette restante (${remainingDebt.toFixed(3)} DT) ne peut pas dépasser la valeur des articles conservés (${remainingGoodsValue.toFixed(3)} DT). Le ticket de dette doit être réduit d'au moins ${minRequiredCreditReduction.toFixed(3)} DT en priorité.`
+    });
+    return;
+  }
+
+  // Cap cash refund by cash actually tendered at checkout minus prior cash refunds
+  if (cashPayout > capacities.max_cash) {
+    res.status(400).json({
+      error: `Le montant remboursé en espèces (${cashPayout.toFixed(3)} DT) dépasse la capacité d'espèces de la vente (${capacities.max_cash.toFixed(3)} DT). La dette réglée hors-caisse ne peut être remboursée depuis le tiroir-caisse.`
+    });
+    return;
+  }
+
+  // Total cash + wallet cannot exceed what was actually paid into the store
+  const maxPaidRefundable = Math.max(0, round3(capacities.actual_paid - (capacities.prior_cash + capacities.prior_wallet)));
+  if (round3(cashPayout + walletPayout) > maxPaidRefundable) {
+    res.status(400).json({
+      error: `Le montant total remboursé en espèces et portefeuille (${round3(cashPayout + walletPayout).toFixed(3)} DT) dépasse la capacité payée pour cette vente (${maxPaidRefundable.toFixed(3)} DT).`
+    });
+    return;
+  }
+
+  // Cash refunds require an active open register session
+  if (cashPayout > 0) {
+    if (openSessions.length === 0) {
+      res.status(400).json({
+        error: 'La caisse est fermée. Une session de caisse ouverte est obligatoire pour effectuer un remboursement en espèces. (An active open register session is required for cash refunds).'
+      });
+      return;
+    }
+    if (!session) {
+      res.status(400).json({
+        error: 'Plusieurs sessions de caisse sont ouvertes. Veuillez sélectionner la caisse effectuant le remboursement en espèces. (Multiple sessions are open; please specify session_id).'
+      });
+      return;
+    }
+    if (session.status !== 'OPEN') {
+      res.status(400).json({
+        error: `La session de caisse sélectionnée (${session.session_number}) est fermée.`
       });
       return;
     }
@@ -856,6 +1053,15 @@ salesRouter.post('/:id/refund', (req: Request, res: Response) => {
   processRefund(req.params.id, req, res);
 });
 
+// GET and POST /api/sales/:id/refund/preview - read-only refund calculation
+salesRouter.get('/:id/refund/preview', (req: Request, res: Response) => {
+  previewRefund(req.params.id, req, res);
+});
+
+salesRouter.post('/:id/refund/preview', (req: Request, res: Response) => {
+  previewRefund(req.params.id, req, res);
+});
+
 // Refunds router mounted at /api/refunds
 export const refundsRouter = Router();
 
@@ -866,6 +1072,15 @@ refundsRouter.post('/', (req: Request, res: Response) => {
     return;
   }
   processRefund(saleId, req, res);
+});
+
+refundsRouter.post('/preview', (req: Request, res: Response) => {
+  const saleId = req.body.sale_id;
+  if (!saleId) {
+    res.status(400).json({ error: 'sale_id is required' });
+    return;
+  }
+  previewRefund(saleId, req, res);
 });
 
 refundsRouter.get('/:id', (req: Request, res: Response) => {
