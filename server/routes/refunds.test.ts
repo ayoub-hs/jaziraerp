@@ -864,6 +864,223 @@ describe('Returns & Line-Item Partial Refunds Module — Real HTTP Integration T
       expect(res.body.error).toMatch(/payout amounts cannot be negative/i);
     });
   });
+
+  describe('Phase 2 (F2): Debt-first allocation, tender-capped capacities, and read-only preview', () => {
+    it('rejects cash refund on an unpaid credit sale with 400 and protects cash drawer', async () => {
+      // 1. Create 100% credit sale of 20 DT (10 bleach @ 2.000 DT)
+      const saleRes = await request(app)
+        .post('/api/sales')
+        .send({
+          customer_id: 'cust-refund-test',
+          items: [{ product_id: 'prod-bleach', quantity: 10, unit_price: 2.000 }],
+          credit_amount: 20.000,
+          cash_paid: 0
+        });
+      expect(saleRes.status).toBe(201);
+      const saleId = saleRes.body.id;
+      const db = getDb();
+      const item: any = db.prepare('SELECT id FROM sale_items WHERE sale_id = ?').get(saleId);
+
+      // Attempting to refund cash from drawer on an unpaid credit sale must fail with 400
+      const refundRes = await request(app)
+        .post(`/api/sales/${saleId}/refund`)
+        .send({
+          items: [{ sale_item_id: item.id, quantity: 5 }],
+          cash_refunded: 10.000
+        });
+      expect(refundRes.status).toBe(400);
+      expect(refundRes.body.error).toMatch(/dépasse|espèces|capacité|dette/i);
+    });
+
+    it('debt-first auto-allocation: automatically reduces open debt ticket before cash or wallet', async () => {
+      // Credit sale of 30 DT (15 bleach @ 2.000 DT)
+      const saleRes = await request(app)
+        .post('/api/sales')
+        .send({
+          customer_id: 'cust-refund-test',
+          items: [{ product_id: 'prod-bleach', quantity: 15, unit_price: 2.000 }],
+          credit_amount: 30.000,
+          cash_paid: 0
+        });
+      expect(saleRes.status).toBe(201);
+      const saleId = saleRes.body.id;
+      const db = getDb();
+      const item: any = db.prepare('SELECT id FROM sale_items WHERE sale_id = ?').get(saleId);
+
+      // Request refund of 5 units (10.000 DT) without specifying payout method
+      const refundRes = await request(app)
+        .post(`/api/sales/${saleId}/refund`)
+        .send({
+          items: [{ sale_item_id: item.id, quantity: 5 }]
+        });
+      expect(refundRes.status).toBe(201);
+      expect(refundRes.body.credit_reduced).toBe(10.000);
+      expect(refundRes.body.cash_refunded).toBe(0);
+      expect(refundRes.body.wallet_refunded).toBe(0);
+
+      // Ticket remaining becomes 20.000 DT
+      const ticket: any = db.prepare('SELECT remaining_amount, status FROM customer_debt_tickets WHERE sale_id = ?').get(saleId);
+      expect(ticket.remaining_amount).toBe(20.000);
+      expect(ticket.status).toBe('PARTIALLY_PAID');
+    });
+
+    it('cash refund capacity is strictly capped by cash actually tendered minus prior cash refunds', async () => {
+      // Split sale: 10.000 DT cash + 30.000 DT credit = 40.000 DT total (20 bleach @ 2.000 DT)
+      const saleRes = await request(app)
+        .post('/api/sales')
+        .send({
+          customer_id: 'cust-refund-test',
+          items: [{ product_id: 'prod-bleach', quantity: 20, unit_price: 2.000 }],
+          cash_paid: 10.000,
+          cash_tendered: 10.000,
+          credit_amount: 30.000
+        });
+      expect(saleRes.status).toBe(201);
+      const saleId = saleRes.body.id;
+      const db = getDb();
+      const item: any = db.prepare('SELECT id FROM sale_items WHERE sale_id = ?').get(saleId);
+
+      // Attempting to refund 25.000 DT in cash must fail because cash tendered was only 10.000 DT
+      const refundRes = await request(app)
+        .post(`/api/sales/${saleId}/refund`)
+        .send({
+          items: [{ sale_item_id: item.id, quantity: 15 }], // 30 DT refund
+          credit_reduced: 5.000,
+          cash_refunded: 25.000
+        });
+      expect(refundRes.status).toBe(400);
+      expect(refundRes.body.error).toMatch(/dépasse|espèces|capacité|dette/i);
+    });
+
+    it('debt paid off-store cannot be refunded as cash from the drawer; it is refunded to customer wallet', async () => {
+      // 1. Credit sale of 40 DT (20 bleach @ 2.000 DT)
+      const saleRes = await request(app)
+        .post('/api/sales')
+        .send({
+          customer_id: 'cust-refund-test',
+          items: [{ product_id: 'prod-bleach', quantity: 20, unit_price: 2.000 }],
+          credit_amount: 40.000,
+          cash_paid: 0
+        });
+      expect(saleRes.status).toBe(201);
+      const saleId = saleRes.body.id;
+      const db = getDb();
+      const item: any = db.prepare('SELECT id FROM sale_items WHERE sale_id = ?').get(saleId);
+
+      // 2. Customer later pays 25 DT towards their debt off-store
+      const payRes = await request(app)
+        .post('/api/customers/cust-refund-test/payments')
+        .send({
+          amount: 25.000,
+          payment_method: 'Cash',
+          notes: 'Backoffice debt settlement'
+        });
+      expect(payRes.status).toBe(200);
+
+      // Ticket now has 15 DT remaining
+      const ticket: any = db.prepare('SELECT remaining_amount FROM customer_debt_tickets WHERE sale_id = ?').get(saleId);
+      expect(ticket.remaining_amount).toBe(15.000);
+
+      // 3. Customer returns all 20 units (40 DT refund). Attempting to take 25 DT cash from drawer must fail!
+      const badCashRefund = await request(app)
+        .post(`/api/sales/${saleId}/refund`)
+        .send({
+          items: [{ sale_item_id: item.id, quantity: 20 }],
+          credit_reduced: 15.000,
+          cash_refunded: 25.000
+        });
+      expect(badCashRefund.status).toBe(400);
+      expect(badCashRefund.body.error).toMatch(/dépasse|espèces|tiroir|capacité/i);
+
+      // 4. Proper composition: credit_reduced: 15 (closes ticket), wallet_refunded: 25 (returns off-store debt pay to wallet)
+      const properRefund = await request(app)
+        .post(`/api/sales/${saleId}/refund`)
+        .send({
+          items: [{ sale_item_id: item.id, quantity: 20 }],
+          credit_reduced: 15.000,
+          wallet_refunded: 25.000
+        });
+      expect(properRefund.status).toBe(201);
+      expect(properRefund.body.credit_reduced).toBe(15.000);
+      expect(properRefund.body.wallet_refunded).toBe(25.000);
+      expect(properRefund.body.sale_status).toBe('FULLY_REFUNDED');
+
+      // Customer wallet has 25 DT
+      const cust: any = db.prepare('SELECT wallet_balance FROM customers WHERE id = ?').get('cust-refund-test');
+      expect(cust.wallet_balance).toBe(25.000);
+
+      // Ticket status is PAID (0 remaining)
+      const finalTicket: any = db.prepare('SELECT remaining_amount, status FROM customer_debt_tickets WHERE sale_id = ?').get(saleId);
+      expect(finalTicket.remaining_amount).toBe(0);
+      expect(finalTicket.status).toBe('PAID');
+    });
+
+    it('rejects any refund where FULLY_REFUNDED coexists with an open debt ticket', async () => {
+      // Credit sale of 50 DT (25 bleach @ 2.000 DT)
+      const saleRes = await request(app)
+        .post('/api/sales')
+        .send({
+          customer_id: 'cust-refund-test',
+          items: [{ product_id: 'prod-bleach', quantity: 25, unit_price: 2.000 }],
+          credit_amount: 50.000,
+          cash_paid: 0
+        });
+      expect(saleRes.status).toBe(201);
+      const saleId = saleRes.body.id;
+      const db = getDb();
+      const item: any = db.prepare('SELECT id FROM sale_items WHERE sale_id = ?').get(saleId);
+
+      // Customer tries full return of all 25 units (50 DT), but requests credit_reduced: 20 and wallet_refunded: 30,
+      // leaving 30 DT open on the debt ticket while the sale becomes FULLY_REFUNDED. Must be rejected!
+      const res = await request(app)
+        .post(`/api/sales/${saleId}/refund`)
+        .send({
+          items: [{ sale_item_id: item.id, quantity: 25 }],
+          credit_reduced: 20.000,
+          wallet_refunded: 30.000
+        });
+      expect(res.status).toBe(400);
+      expect(res.body.error).toMatch(/dette|ticket|ouvert|FULLY_REFUNDED|priorité|capacité/i);
+    });
+
+    it('provides a read-only preview endpoint calculating debt-first allocation and capacities', async () => {
+      // 1. Create split sale: 20 DT cash + 30 DT credit = 50 DT total
+      const saleRes = await request(app)
+        .post('/api/sales')
+        .send({
+          customer_id: 'cust-refund-test',
+          items: [{ product_id: 'prod-bleach', quantity: 25, unit_price: 2.000 }],
+          cash_paid: 20.000,
+          cash_tendered: 20.000,
+          credit_amount: 30.000
+        });
+      const saleId = saleRes.body.id;
+      const db = getDb();
+      const item: any = db.prepare('SELECT id FROM sale_items WHERE sale_id = ?').get(saleId);
+
+      // GET preview
+      const getPreview = await request(app).get(`/api/sales/${saleId}/refund/preview`);
+      expect(getPreview.status).toBe(200);
+      expect(getPreview.body.capacities.open_debt).toBe(30.000);
+      expect(getPreview.body.capacities.max_cash).toBe(20.000);
+
+      // POST preview for 15 units (30 DT)
+      const postPreview = await request(app)
+        .post(`/api/sales/${saleId}/refund/preview`)
+        .send({
+          items: [{ sale_item_id: item.id, quantity: 15 }]
+        });
+      expect(postPreview.status).toBe(200);
+      expect(postPreview.body.total_refunded).toBe(30.000);
+      expect(postPreview.body.suggested_allocation.credit_reduced).toBe(30.000);
+      expect(postPreview.body.suggested_allocation.cash_refunded).toBe(0);
+
+      // Verify no DB writes occurred
+      const countRefunds: any = db.prepare('SELECT COUNT(*) as count FROM refunds WHERE sale_id = ?').get(saleId);
+      expect(countRefunds.count).toBe(0);
+    });
+  });
 });
+
 
 
