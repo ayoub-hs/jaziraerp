@@ -23,8 +23,8 @@ CREATE TABLE IF NOT EXISTS raw_materials (
     unit TEXT NOT NULL,     -- kg, pcs, L, etc.
     stock_quantity REAL NOT NULL DEFAULT 0,
     latest_supplier_id TEXT REFERENCES suppliers(id),
-    latest_purchase_cost REAL NOT NULL DEFAULT 0, -- in TND (3 decimals)
-    low_stock_threshold REAL NOT NULL DEFAULT 0,
+    latest_purchase_cost REAL NOT NULL DEFAULT 0 CHECK (latest_purchase_cost >= 0), -- in TND (3 decimals)
+    low_stock_threshold REAL NOT NULL DEFAULT 0 CHECK (low_stock_threshold >= 0),
     active INTEGER NOT NULL DEFAULT 1,
     created_at TEXT NOT NULL,
     updated_at TEXT NOT NULL
@@ -91,10 +91,10 @@ CREATE TABLE IF NOT EXISTS products (
     size_label TEXT,    -- e.g. "1L", "5L", "Piece"
     barcode TEXT UNIQUE, -- Code-128
     stock_quantity REAL NOT NULL DEFAULT 0,
-    low_stock_threshold REAL NOT NULL DEFAULT 5,
-    cost_reference REAL NOT NULL DEFAULT 0, -- auto-suggested, read-only (in TND)
-    retail_price REAL NOT NULL DEFAULT 0,   -- in TND (3 decimals)
-    wholesale_price REAL NOT NULL DEFAULT 0, -- in TND (3 decimals)
+    low_stock_threshold REAL NOT NULL DEFAULT 5 CHECK (low_stock_threshold >= 0),
+    cost_reference REAL NOT NULL DEFAULT 0 CHECK (cost_reference >= 0), -- auto-suggested, read-only (in TND)
+    retail_price REAL NOT NULL DEFAULT 0 CHECK (retail_price >= 0),   -- in TND (3 decimals)
+    wholesale_price REAL NOT NULL DEFAULT 0 CHECK (wholesale_price >= 0), -- in TND (3 decimals)
     container_type_id TEXT REFERENCES container_types(id),
     active INTEGER NOT NULL DEFAULT 1,
     created_at TEXT NOT NULL,
@@ -118,9 +118,9 @@ CREATE TABLE IF NOT EXISTS production_batches (
     date TEXT NOT NULL,
     formulation_id TEXT NOT NULL REFERENCES formulations(id),
     target_product_id TEXT NOT NULL REFERENCES products(id),
-    units_produced REAL NOT NULL,
-    total_batch_cost REAL NOT NULL,
-    cost_per_unit REAL NOT NULL,
+    units_produced REAL NOT NULL CHECK (units_produced > 0),
+    total_batch_cost REAL NOT NULL CHECK (total_batch_cost >= 0),
+    cost_per_unit REAL NOT NULL CHECK (cost_per_unit >= 0),
     notes TEXT,
     created_at TEXT NOT NULL
 );
@@ -165,7 +165,7 @@ CREATE TABLE IF NOT EXISTS customer_payments (
     id TEXT PRIMARY KEY,
     customer_id TEXT NOT NULL REFERENCES customers(id),
     date TEXT NOT NULL,
-    amount REAL NOT NULL,
+    amount REAL NOT NULL CHECK (amount > 0),
     payment_method TEXT NOT NULL, -- Cash, Bank, etc.
     notes TEXT,
     created_at TEXT NOT NULL
@@ -205,7 +205,7 @@ CREATE TABLE IF NOT EXISTS purchases (
     purchase_number TEXT UNIQUE NOT NULL,
     supplier_id TEXT NOT NULL REFERENCES suppliers(id),
     date TEXT NOT NULL,
-    total_amount REAL NOT NULL,
+    total_amount REAL NOT NULL CHECK (total_amount >= 0),
     payment_status TEXT NOT NULL CHECK (payment_status IN ('PAID', 'CREDIT')),
     notes TEXT,
     created_at TEXT NOT NULL
@@ -217,9 +217,9 @@ CREATE TABLE IF NOT EXISTS purchase_items (
     item_type TEXT NOT NULL CHECK (item_type IN ('RAW_MATERIAL', 'RESALE_PRODUCT')),
     material_id TEXT REFERENCES raw_materials(id),
     product_id TEXT REFERENCES products(id),
-    quantity REAL NOT NULL,
-    unit_cost REAL NOT NULL,
-    total_cost REAL NOT NULL,
+    quantity REAL NOT NULL CHECK (quantity > 0),
+    unit_cost REAL NOT NULL CHECK (unit_cost >= 0),
+    total_cost REAL NOT NULL CHECK (total_cost >= 0),
     CHECK ((item_type = 'RAW_MATERIAL' AND material_id IS NOT NULL) OR (item_type = 'RESALE_PRODUCT' AND product_id IS NOT NULL))
 );
 
@@ -241,7 +241,7 @@ CREATE TABLE IF NOT EXISTS supplier_payments (
     id TEXT PRIMARY KEY,
     supplier_id TEXT NOT NULL REFERENCES suppliers(id),
     date TEXT NOT NULL,
-    amount REAL NOT NULL,
+    amount REAL NOT NULL CHECK (amount > 0),
     payment_method TEXT NOT NULL, -- Cash, Bank, etc.
     notes TEXT,
     created_at TEXT NOT NULL
@@ -301,7 +301,7 @@ CREATE TABLE IF NOT EXISTS register_sessions (
     session_number TEXT UNIQUE NOT NULL,
     counter_name TEXT NOT NULL, -- "Counter 1", "Mobile", etc.
     opened_at TEXT NOT NULL,
-    opening_cash REAL NOT NULL,
+    opening_cash REAL NOT NULL CHECK (opening_cash >= 0),
     closed_at TEXT,
     counted_cash REAL,
     expected_cash REAL,
@@ -316,7 +316,7 @@ CREATE TABLE IF NOT EXISTS register_cash_movements (
     expense_id TEXT REFERENCES general_expenses(id) ON DELETE SET NULL,
     date TEXT NOT NULL,
     type TEXT NOT NULL CHECK (type IN ('CASH_IN', 'CASH_OUT')),
-    amount REAL NOT NULL,
+    amount REAL NOT NULL CHECK (amount > 0),
     reason TEXT NOT NULL,
     created_at TEXT NOT NULL
 );

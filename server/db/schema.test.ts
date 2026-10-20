@@ -264,5 +264,168 @@ describe('SQLite Database Schema & Integrity', () => {
       const adj: any = db.prepare('SELECT * FROM inventory_adjustments WHERE id = ?').get('adj-good');
       expect(adj.material_id).toBe('mat-adj');
     });
+
+    it('enforces raw_materials latest_purchase_cost >= 0 and low_stock_threshold >= 0', () => {
+      expect(() => {
+        db.prepare(`
+          INSERT INTO raw_materials (id, name, category, unit, latest_purchase_cost, created_at, updated_at)
+          VALUES ('rm-neg-cost', 'Mat', 'cat', 'kg', -1, '2026-09-07', '2026-09-07')
+        `).run();
+      }).toThrow(/CHECK constraint failed/);
+
+      expect(() => {
+        db.prepare(`
+          INSERT INTO raw_materials (id, name, category, unit, low_stock_threshold, created_at, updated_at)
+          VALUES ('rm-neg-thresh', 'Mat', 'cat', 'kg', -1, '2026-09-07', '2026-09-07')
+        `).run();
+      }).toThrow(/CHECK constraint failed/);
+    });
+
+    it('enforces products non-negative prices, cost reference, and threshold', () => {
+      db.prepare(`
+        INSERT INTO product_families (id, name, category, type, created_at, updated_at)
+        VALUES ('fam-chk', 'Family', 'cat', 'MANUFACTURED', '2026-09-07', '2026-09-07')
+      `).run();
+
+      expect(() => {
+        db.prepare(`
+          INSERT INTO products (id, family_id, name, retail_price, created_at, updated_at)
+          VALUES ('pr-neg-ret', 'fam-chk', 'P1', -5, '2026-09-07', '2026-09-07')
+        `).run();
+      }).toThrow(/CHECK constraint failed/);
+
+      expect(() => {
+        db.prepare(`
+          INSERT INTO products (id, family_id, name, wholesale_price, created_at, updated_at)
+          VALUES ('pr-neg-who', 'fam-chk', 'P2', -5, '2026-09-07', '2026-09-07')
+        `).run();
+      }).toThrow(/CHECK constraint failed/);
+
+      expect(() => {
+        db.prepare(`
+          INSERT INTO products (id, family_id, name, cost_reference, created_at, updated_at)
+          VALUES ('pr-neg-cost', 'fam-chk', 'P3', -5, '2026-09-07', '2026-09-07')
+        `).run();
+      }).toThrow(/CHECK constraint failed/);
+
+      expect(() => {
+        db.prepare(`
+          INSERT INTO products (id, family_id, name, low_stock_threshold, created_at, updated_at)
+          VALUES ('pr-neg-thresh', 'fam-chk', 'P4', -1, '2026-09-07', '2026-09-07')
+        `).run();
+      }).toThrow(/CHECK constraint failed/);
+    });
+
+    it('enforces customer and supplier payments amount > 0', () => {
+      db.prepare(`
+        INSERT INTO customers (id, name, type, created_at, updated_at)
+        VALUES ('c-pay', 'Customer', 'RETAIL', '2026-09-07', '2026-09-07')
+      `).run();
+      db.prepare(`
+        INSERT INTO suppliers (id, name, created_at, updated_at)
+        VALUES ('s-pay', 'Supplier', '2026-09-07', '2026-09-07')
+      `).run();
+
+      expect(() => {
+        db.prepare(`
+          INSERT INTO customer_payments (id, customer_id, date, amount, payment_method, created_at)
+          VALUES ('cp-zero', 'c-pay', '2026-09-07', 0, 'Cash', '2026-09-07')
+        `).run();
+      }).toThrow(/CHECK constraint failed/);
+
+      expect(() => {
+        db.prepare(`
+          INSERT INTO supplier_payments (id, supplier_id, date, amount, payment_method, created_at)
+          VALUES ('sp-neg', 's-pay', '2026-09-07', -10, 'Cash', '2026-09-07')
+        `).run();
+      }).toThrow(/CHECK constraint failed/);
+    });
+
+    it('enforces register sessions opening_cash >= 0 and movements amount > 0', () => {
+      expect(() => {
+        db.prepare(`
+          INSERT INTO register_sessions (id, session_number, counter_name, opened_at, opening_cash, status)
+          VALUES ('rs-neg', 'SES-NEG', 'Counter', '2026-09-07', -50, 'OPEN')
+        `).run();
+      }).toThrow(/CHECK constraint failed/);
+
+      db.prepare(`
+        INSERT INTO register_sessions (id, session_number, counter_name, opened_at, opening_cash, status)
+        VALUES ('rs-ok', 'SES-OK', 'Counter', '2026-09-07', 0, 'OPEN')
+      `).run();
+
+      expect(() => {
+        db.prepare(`
+          INSERT INTO register_cash_movements (id, session_id, date, type, amount, reason, created_at)
+          VALUES ('rcm-zero', 'rs-ok', '2026-09-07', 'CASH_IN', 0, 'Zero move', '2026-09-07')
+        `).run();
+      }).toThrow(/CHECK constraint failed/);
+    });
+
+    it('enforces purchases total_amount >= 0 and items quantity > 0, unit_cost >= 0, total_cost >= 0', () => {
+      db.prepare(`
+        INSERT INTO suppliers (id, name, created_at, updated_at)
+        VALUES ('s-po-chk', 'Supplier PO', '2026-09-07', '2026-09-07')
+      `).run();
+      db.prepare(`
+        INSERT INTO raw_materials (id, name, category, unit, created_at, updated_at)
+        VALUES ('m-po-chk', 'Material', 'cat', 'kg', '2026-09-07', '2026-09-07')
+      `).run();
+
+      expect(() => {
+        db.prepare(`
+          INSERT INTO purchases (id, purchase_number, supplier_id, date, total_amount, payment_status, created_at)
+          VALUES ('po-neg', 'PO-NEG', 's-po-chk', '2026-09-07', -1, 'PAID', '2026-09-07')
+        `).run();
+      }).toThrow(/CHECK constraint failed/);
+
+      db.prepare(`
+        INSERT INTO purchases (id, purchase_number, supplier_id, date, total_amount, payment_status, created_at)
+        VALUES ('po-ok', 'PO-OK', 's-po-chk', '2026-09-07', 100, 'PAID', '2026-09-07')
+      `).run();
+
+      expect(() => {
+        db.prepare(`
+          INSERT INTO purchase_items (id, purchase_id, item_type, material_id, quantity, unit_cost, total_cost)
+          VALUES ('pi-neg-q', 'po-ok', 'RAW_MATERIAL', 'm-po-chk', 0, 10, 0)
+        `).run();
+      }).toThrow(/CHECK constraint failed/);
+
+      expect(() => {
+        db.prepare(`
+          INSERT INTO purchase_items (id, purchase_id, item_type, material_id, quantity, unit_cost, total_cost)
+          VALUES ('pi-neg-c', 'po-ok', 'RAW_MATERIAL', 'm-po-chk', 1, -1, -1)
+        `).run();
+      }).toThrow(/CHECK constraint failed/);
+    });
+
+    it('enforces production_batches units_produced > 0, total_batch_cost >= 0, cost_per_unit >= 0', () => {
+      db.prepare(`
+        INSERT INTO formulations (id, name, base_yield_quantity, base_yield_unit, created_at, updated_at)
+        VALUES ('form-pb', 'Recipe', 10, 'L', '2026-09-07', '2026-09-07')
+      `).run();
+      db.prepare(`
+        INSERT INTO product_families (id, name, category, type, created_at, updated_at)
+        VALUES ('fam-pb', 'Family', 'cat', 'MANUFACTURED', '2026-09-07', '2026-09-07')
+      `).run();
+      db.prepare(`
+        INSERT INTO products (id, family_id, name, created_at, updated_at)
+        VALUES ('pr-pb', 'fam-pb', 'Product', '2026-09-07', '2026-09-07')
+      `).run();
+
+      expect(() => {
+        db.prepare(`
+          INSERT INTO production_batches (id, batch_number, date, formulation_id, target_product_id, units_produced, total_batch_cost, cost_per_unit, created_at)
+          VALUES ('pb-zero', 'BAT-0', '2026-09-07', 'form-pb', 'pr-pb', 0, 100, 10, '2026-09-07')
+        `).run();
+      }).toThrow(/CHECK constraint failed/);
+
+      expect(() => {
+        db.prepare(`
+          INSERT INTO production_batches (id, batch_number, date, formulation_id, target_product_id, units_produced, total_batch_cost, cost_per_unit, created_at)
+          VALUES ('pb-neg-cost', 'BAT-NEG', '2026-09-07', 'form-pb', 'pr-pb', 10, -1, -0.1, '2026-09-07')
+        `).run();
+      }).toThrow(/CHECK constraint failed/);
+    });
   });
 });
