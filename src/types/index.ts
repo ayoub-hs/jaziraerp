@@ -22,6 +22,17 @@ export interface PackSize {
   barcode?: string | null;
 }
 
+export interface ProductPackagingItem {
+  id: string;
+  product_id: string;
+  material_id: string;
+  quantity_per_unit: number;
+  material_name?: string;
+  material_category?: string;
+  material_unit?: string;
+  latest_purchase_cost?: number;
+}
+
 export interface Product {
   id: string;
   family_id: string;
@@ -30,6 +41,7 @@ export interface Product {
   product_type?: 'MANUFACTURED' | 'RESALE';
   name: string;
   size_label?: string | null;
+  size_volume?: number | null;
   barcode?: string | null;
   stock_quantity: number;
   low_stock_threshold: number;
@@ -40,6 +52,7 @@ export interface Product {
   active: number;
   is_low_stock?: number;
   pack_sizes?: PackSize[];
+  packaging_items?: ProductPackagingItem[];
 }
 
 export interface ProductFamily {

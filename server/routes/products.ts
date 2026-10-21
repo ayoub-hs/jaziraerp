@@ -1,7 +1,7 @@
 import { Router, Request, Response } from 'express';
 import crypto from 'crypto';
 import { getDb } from '../db/index.js';
-import { round3 } from '../utils/money.js';
+import { round3, addMoney, multiplyMoney } from '../utils/money.js';
 import { generateBarcode } from '../utils/barcode.js';
 import { calculateFormulationCost, calculateProductUnitCost } from '../services/costingService.js';
 import {
@@ -337,6 +337,81 @@ productsRouter.get('/cost-preview', (req: Request, res: Response) => {
   res.json(preview);
 });
 
+// POST /api/products/preview-cost - live unit cost preview for manufactured products
+productsRouter.post('/preview-cost', (req: Request, res: Response) => {
+  const { family_id, size_volume, packaging_items = [] } = req.body;
+  if (!family_id) {
+    res.status(400).json({ error: 'La famille de produit est obligatoire.' });
+    return;
+  }
+  const db = getDb();
+  const family: any = db.prepare('SELECT * FROM product_families WHERE id = ?').get(family_id);
+  if (!family) {
+    res.status(404).json({ error: 'Famille de produit introuvable.' });
+    return;
+  }
+  if (family.type !== 'MANUFACTURED' || !family.formulation_id) {
+    res.json({
+      cost_per_finished_unit: 0,
+      bulk_portion: 0,
+      packaging_portion: 0,
+      base_cost_per_unit: 0
+    });
+    return;
+  }
+
+  const formulationCost = calculateFormulationCost(db, family.formulation_id);
+  const costPerBaseUnit = formulationCost.cost_per_unit;
+
+  const isPieceUnit = ['pcs', 'piece', 'pieces', 'unit', 'unite', 'unites'].includes(String(formulationCost.base_yield_unit).toLowerCase());
+  let sizeVol = 1.0;
+  if (size_volume !== undefined && size_volume !== null && size_volume !== '') {
+    try {
+      sizeVol = requireFinitePositive(size_volume, 'volume unitaire (size_volume)');
+    } catch (err: any) {
+      res.status(400).json({ error: err.message });
+      return;
+    }
+  } else if (!isPieceUnit) {
+    sizeVol = 1.0;
+  }
+
+  // Double-count guard
+  const recipeHasPackaging = formulationCost.items.some(i =>
+    ['bottle', 'cap', 'label', 'packaging'].includes(i.material_category)
+  );
+  if (recipeHasPackaging && Array.isArray(packaging_items) && packaging_items.length > 0) {
+    res.status(400).json({
+      error: "Incohérence : la formule contient déjà des articles d'emballage alors que le produit a des emballages spécifiques configurés (risque de double décompte)."
+    });
+    return;
+  }
+
+  let packagingPortion = 0;
+  if (Array.isArray(packaging_items)) {
+    for (const item of packaging_items) {
+      if (!item.material_id) continue;
+      const mat: any = db.prepare('SELECT latest_purchase_cost FROM raw_materials WHERE id = ?').get(item.material_id);
+      const uCost = mat ? (mat.latest_purchase_cost || 0) : 0;
+      const q = typeof item.quantity_per_unit === 'number' ? item.quantity_per_unit : parseFloat(item.quantity_per_unit) || 0;
+      if (q > 0) {
+        packagingPortion = addMoney(packagingPortion, round3(q * uCost));
+      }
+    }
+  }
+
+  const bulkPortion = round3(multiplyMoney(costPerBaseUnit, sizeVol));
+  const totalCost = round3(addMoney(bulkPortion, packagingPortion));
+
+  res.json({
+    cost_per_finished_unit: totalCost,
+    bulk_portion: bulkPortion,
+    packaging_portion: packagingPortion,
+    base_cost_per_unit: costPerBaseUnit,
+    base_yield_unit: formulationCost.base_yield_unit
+  });
+});
+
 // GET /api/products/:id - single product details
 productsRouter.get('/:id', (req: Request, res: Response) => {
   const db = getDb();
@@ -359,7 +434,15 @@ productsRouter.get('/:id', (req: Request, res: Response) => {
     SELECT * FROM product_pack_sizes WHERE product_id = ? ORDER BY multiplier ASC
   `).all(product.id);
 
-  res.json({ ...product, pack_sizes: packSizes });
+  const packagingItems = db.prepare(`
+    SELECT ppi.*, rm.name as material_name, rm.category as material_category, rm.unit as material_unit, rm.latest_purchase_cost
+    FROM product_packaging_items ppi
+    JOIN raw_materials rm ON ppi.material_id = rm.id
+    WHERE ppi.product_id = ?
+    ORDER BY rm.name ASC
+  `).all(product.id);
+
+  res.json({ ...product, pack_sizes: packSizes, packaging_items: packagingItems });
 });
 
 // POST /api/products - create SKU under family
@@ -471,6 +554,51 @@ productsRouter.post('/', (req: Request, res: Response) => {
     return;
   }
 
+  const rawPackagingItems = req.body.packaging_items;
+  const validatedPackaging: Array<{ material_id: string; quantity_per_unit: number }> = [];
+  if (Array.isArray(rawPackagingItems) && rawPackagingItems.length > 0) {
+    if (family.formulation_id) {
+      const formulationCost = calculateFormulationCost(db, family.formulation_id);
+      const recipeHasPackaging = formulationCost.items.some(i =>
+        ['bottle', 'cap', 'label', 'packaging'].includes(i.material_category)
+      );
+      if (recipeHasPackaging) {
+        res.status(400).json({
+          error: "Incohérence : la formule contient déjà des articles d'emballage alors que le produit a des emballages spécifiques configurés (risque de double décompte)."
+        });
+        return;
+      }
+    }
+
+    const seenMaterialIds = new Set<string>();
+    for (const item of rawPackagingItems) {
+      if (!item.material_id) {
+        res.status(400).json({ error: "L'article d'emballage est obligatoire." });
+        return;
+      }
+      if (seenMaterialIds.has(item.material_id)) {
+        res.status(409).json({ error: "Cet article d'emballage est déjà associé à ce produit." });
+        return;
+      }
+      seenMaterialIds.add(item.material_id);
+
+      const mat = db.prepare('SELECT id FROM raw_materials WHERE id = ?').get(item.material_id);
+      if (!mat) {
+        res.status(404).json({ error: 'Matière première introuvable.' });
+        return;
+      }
+
+      let q: number;
+      try {
+        q = requireFinitePositive(item.quantity_per_unit, 'quantité par unité (quantity_per_unit)');
+      } catch (err: any) {
+        res.status(400).json({ error: err.message });
+        return;
+      }
+      validatedPackaging.push({ material_id: item.material_id, quantity_per_unit: q });
+    }
+  }
+
   const insert = db.prepare(`
     INSERT INTO products (
       id, family_id, name, size_label, size_volume, barcode, stock_quantity,
@@ -496,6 +624,23 @@ productsRouter.post('/', (req: Request, res: Response) => {
       now,
       now
     );
+
+    if (validatedPackaging.length > 0) {
+      const insertPkg = db.prepare(`
+        INSERT INTO product_packaging_items (id, product_id, material_id, quantity_per_unit)
+        VALUES (?, ?, ?, ?)
+      `);
+      for (const item of validatedPackaging) {
+        insertPkg.run(crypto.randomUUID(), id, item.material_id, item.quantity_per_unit);
+      }
+
+      if (family.type === 'MANUFACTURED' && family.formulation_id && req.body.allow_cost_override !== true) {
+        try {
+          const fullCost = calculateProductUnitCost(db, id).cost_per_finished_unit;
+          db.prepare('UPDATE products SET cost_reference = ? WHERE id = ?').run(fullCost, id);
+        } catch {}
+      }
+    }
   } catch (err: any) {
     if (err.message && err.message.includes('UNIQUE constraint failed: products.barcode')) {
       res.status(400).json({ error: `Barcode ${finalBarcode} already in use.` });
@@ -685,6 +830,171 @@ productsRouter.delete('/pack-sizes/:packId', (req: Request, res: Response) => {
 
   db.prepare('DELETE FROM product_pack_sizes WHERE id = ?').run(req.params.packId);
   res.json({ success: true, id: req.params.packId });
+});
+
+// ==========================================
+// Product Packaging Items (Packaging BOM)
+// ==========================================
+
+// GET /api/products/:id/packaging - list packaging items for a product
+productsRouter.get('/:id/packaging', (req: Request, res: Response) => {
+  const db = getDb();
+  const product: any = db.prepare('SELECT id FROM products WHERE id = ?').get(req.params.id);
+  if (!product) {
+    res.status(404).json({ error: 'Produit introuvable.' });
+    return;
+  }
+
+  const items = db.prepare(`
+    SELECT ppi.*, rm.name as material_name, rm.category as material_category, rm.unit as material_unit, rm.latest_purchase_cost
+    FROM product_packaging_items ppi
+    JOIN raw_materials rm ON ppi.material_id = rm.id
+    WHERE ppi.product_id = ?
+    ORDER BY rm.name ASC
+  `).all(req.params.id);
+
+  res.json(items);
+});
+
+// POST /api/products/:id/packaging - add packaging item to a product
+productsRouter.post('/:id/packaging', (req: Request, res: Response) => {
+  const db = getDb();
+  const product: any = db.prepare('SELECT * FROM products WHERE id = ?').get(req.params.id);
+  if (!product) {
+    res.status(404).json({ error: 'Produit introuvable.' });
+    return;
+  }
+
+  const { material_id, quantity_per_unit } = req.body;
+  if (!material_id || String(material_id).trim().length === 0) {
+    res.status(400).json({ error: "L'article d'emballage est obligatoire." });
+    return;
+  }
+
+  const material: any = db.prepare('SELECT * FROM raw_materials WHERE id = ?').get(material_id);
+  if (!material) {
+    res.status(404).json({ error: 'Matière première introuvable.' });
+    return;
+  }
+
+  let qty: number;
+  try {
+    qty = requireFinitePositive(quantity_per_unit, 'quantité par unité (quantity_per_unit)');
+  } catch (err: any) {
+    res.status(400).json({ error: err.message });
+    return;
+  }
+
+  // Check uniqueness for this product
+  const existing = db.prepare('SELECT id FROM product_packaging_items WHERE product_id = ? AND material_id = ?').get(req.params.id, material_id);
+  if (existing) {
+    res.status(409).json({ error: "Cet article d'emballage est déjà associé à ce produit." });
+    return;
+  }
+
+  // Double-count guard against family recipe
+  const family: any = db.prepare('SELECT * FROM product_families WHERE id = ?').get(product.family_id);
+  if (family && family.formulation_id) {
+    const formulationCost = calculateFormulationCost(db, family.formulation_id);
+    const recipeHasPackaging = formulationCost.items.some(i =>
+      ['bottle', 'cap', 'label', 'packaging'].includes(i.material_category)
+    );
+    if (recipeHasPackaging) {
+      res.status(400).json({
+        error: "Incohérence : la formule contient déjà des articles d'emballage alors que le produit a des emballages spécifiques configurés (risque de double décompte)."
+      });
+      return;
+    }
+  }
+
+  const itemId = crypto.randomUUID();
+  db.prepare(`
+    INSERT INTO product_packaging_items (id, product_id, material_id, quantity_per_unit)
+    VALUES (?, ?, ?, ?)
+  `).run(itemId, req.params.id, material_id, qty);
+
+  // Recalculate cost_reference for manufactured products
+  if (family && family.type === 'MANUFACTURED' && family.formulation_id) {
+    try {
+      const newCost = calculateProductUnitCost(db, req.params.id).cost_per_finished_unit;
+      db.prepare('UPDATE products SET cost_reference = ?, updated_at = ? WHERE id = ?')
+        .run(newCost, new Date().toISOString(), req.params.id);
+    } catch {}
+  }
+
+  const created: any = db.prepare(`
+    SELECT ppi.*, rm.name as material_name, rm.category as material_category, rm.unit as material_unit, rm.latest_purchase_cost
+    FROM product_packaging_items ppi
+    JOIN raw_materials rm ON ppi.material_id = rm.id
+    WHERE ppi.id = ?
+  `).get(itemId);
+
+  res.status(201).json(created);
+});
+
+// PUT /api/products/:id/packaging/:itemId - update packaging item quantity
+productsRouter.put('/:id/packaging/:itemId', (req: Request, res: Response) => {
+  const db = getDb();
+  const existing: any = db.prepare('SELECT * FROM product_packaging_items WHERE id = ? AND product_id = ?')
+    .get(req.params.itemId, req.params.id);
+  if (!existing) {
+    res.status(404).json({ error: "Article d'emballage introuvable pour ce produit." });
+    return;
+  }
+
+  let qty: number;
+  try {
+    qty = requireFinitePositive(req.body.quantity_per_unit, 'quantité par unité (quantity_per_unit)');
+  } catch (err: any) {
+    res.status(400).json({ error: err.message });
+    return;
+  }
+
+  db.prepare('UPDATE product_packaging_items SET quantity_per_unit = ? WHERE id = ?').run(qty, req.params.itemId);
+
+  // Recalculate cost_reference
+  const family: any = db.prepare('SELECT pf.* FROM product_families pf JOIN products p ON p.family_id = pf.id WHERE p.id = ?').get(req.params.id);
+  if (family && family.type === 'MANUFACTURED' && family.formulation_id) {
+    try {
+      const newCost = calculateProductUnitCost(db, req.params.id).cost_per_finished_unit;
+      db.prepare('UPDATE products SET cost_reference = ?, updated_at = ? WHERE id = ?')
+        .run(newCost, new Date().toISOString(), req.params.id);
+    } catch {}
+  }
+
+  const updated: any = db.prepare(`
+    SELECT ppi.*, rm.name as material_name, rm.category as material_category, rm.unit as material_unit, rm.latest_purchase_cost
+    FROM product_packaging_items ppi
+    JOIN raw_materials rm ON ppi.material_id = rm.id
+    WHERE ppi.id = ?
+  `).get(req.params.itemId);
+
+  res.json(updated);
+});
+
+// DELETE /api/products/:id/packaging/:itemId - remove packaging item
+productsRouter.delete('/:id/packaging/:itemId', (req: Request, res: Response) => {
+  const db = getDb();
+  const existing: any = db.prepare('SELECT * FROM product_packaging_items WHERE id = ? AND product_id = ?')
+    .get(req.params.itemId, req.params.id);
+  if (!existing) {
+    res.status(404).json({ error: "Article d'emballage introuvable pour ce produit." });
+    return;
+  }
+
+  db.prepare('DELETE FROM product_packaging_items WHERE id = ?').run(req.params.itemId);
+
+  // Recalculate cost_reference
+  const family: any = db.prepare('SELECT pf.* FROM product_families pf JOIN products p ON p.family_id = pf.id WHERE p.id = ?').get(req.params.id);
+  if (family && family.type === 'MANUFACTURED' && family.formulation_id) {
+    try {
+      const newCost = calculateProductUnitCost(db, req.params.id).cost_per_finished_unit;
+      db.prepare('UPDATE products SET cost_reference = ?, updated_at = ? WHERE id = ?')
+        .run(newCost, new Date().toISOString(), req.params.id);
+    } catch {}
+  }
+
+  res.json({ success: true, id: req.params.itemId });
 });
 
 // DELETE /api/products/families/:id - delete or soft-delete product family

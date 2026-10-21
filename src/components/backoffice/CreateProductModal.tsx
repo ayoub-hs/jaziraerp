@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { X, Package, AlertCircle, Plus, Edit2, Trash2 } from 'lucide-react';
-import type { Product, ProductFamily, Formulation, ContainerType, PackSize } from '../../types/index.js';
+import type { Product, ProductFamily, Formulation, ContainerType, PackSize, ProductPackagingItem } from '../../types/index.js';
 import { formatMoney } from '../../utils/formatters.js';
 import { useBackButton } from '../../utils/backButton.js';
 import { useModalScanPause } from '../../hooks/useModalScanPause.js';
@@ -67,6 +67,19 @@ export const CreateProductModal: React.FC<CreateProductModalProps> = ({
   const [lowStockThreshold, setLowStockThreshold] = useState('5');
   const [containerTypeId, setContainerTypeId] = useState('');
 
+  // Packaging BOM lines & volume scaling
+  const [sizeVolume, setSizeVolume] = useState('1.0');
+  const [availableMaterials, setAvailableMaterials] = useState<any[]>([]);
+  const [packagingLines, setPackagingLines] = useState<Array<{
+    id?: string;
+    material_id: string;
+    material_name: string;
+    quantity_per_unit: number;
+    unit_cost: number;
+  }>>([]);
+  const [selectedPackagingMaterialId, setSelectedPackagingMaterialId] = useState('');
+  const [newPackagingQty, setNewPackagingQty] = useState('1');
+
   // Active toggles for edit mode
   const [familyActive, setFamilyActive] = useState(true);
   const [skuActive, setSkuActive] = useState(true);
@@ -89,6 +102,37 @@ export const CreateProductModal: React.FC<CreateProductModalProps> = ({
     onClose();
     return true;
   }, isOpen);
+
+  // Manufacturing status & active formulation
+  const isManufactured = productToEdit
+    ? (productToEdit.product_type === 'MANUFACTURED' || families.find(f => f.id === productToEdit.family_id)?.type === 'MANUFACTURED')
+    : (!familyToEdit && mode === 'EXISTING_FAMILY')
+    ? (families.find(f => f.id === selectedFamilyId)?.type === 'MANUFACTURED')
+    : (familyType === 'MANUFACTURED');
+
+  const activeFormulationId = productToEdit
+    ? (families.find(f => f.id === productToEdit.family_id)?.formulation_id || '')
+    : (!familyToEdit && mode === 'EXISTING_FAMILY')
+    ? (families.find(f => f.id === selectedFamilyId)?.formulation_id || '')
+    : (formulationId || (formulations.length > 0 ? formulations[0].id : ''));
+
+  const activeFormulation = formulations.find(f => f.id === activeFormulationId);
+
+  const bulkCostPerLitre = activeFormulation
+    ? ((activeFormulation as any).cost_per_liter ?? (activeFormulation as any).cost_per_unit ?? 0)
+    : 0;
+  const parsedVol = parseFloat(sizeVolume) || 1.0;
+  const bulkPart = Math.round((bulkCostPerLitre * parsedVol + Number.EPSILON) * 1000) / 1000;
+  const packagingPart = packagingLines.reduce((sum, line) => {
+    const lineTotal = Math.round((line.quantity_per_unit * (line.unit_cost || 0) + Number.EPSILON) * 1000) / 1000;
+    return Math.round((sum + lineTotal + Number.EPSILON) * 1000) / 1000;
+  }, 0);
+  const calculatedLiveUnitCost = isManufactured
+    ? Math.round((bulkPart + packagingPart + Number.EPSILON) * 1000) / 1000
+    : (parseFloat(costReference) || 0);
+
+  const effectiveCost = isManufactured ? calculatedLiveUnitCost : (parseFloat(costReference) || 0);
+  const isCostValid = !isNaN(effectiveCost) && effectiveCost > 0;
 
   // Price markup suggestions
   const [retailMarkup, setRetailMarkup] = useState('');
@@ -123,11 +167,16 @@ export const CreateProductModal: React.FC<CreateProductModalProps> = ({
           const combined = Array.from(new Set([...DEFAULT_CATEGORIES, ...famCats]));
           setAvailableCategories(combined);
         });
+
+      // Fetch materials for packaging selection
+      fetch('/api/materials')
+        .then(res => res.ok ? res.json() : [])
+        .then((mats: any[]) => {
+          setAvailableMaterials(mats);
+        })
+        .catch(() => {});
     }
   }, [isOpen, families]);
-
-  const costNum = parseFloat(costReference);
-  const isCostValid = !isNaN(costNum) && costNum > 0;
 
   const retailMarkupNum = parseFloat(retailMarkup);
   const isRetailMarkupValid = !isNaN(retailMarkupNum) && retailMarkup.trim() !== '';
@@ -136,7 +185,7 @@ export const CreateProductModal: React.FC<CreateProductModalProps> = ({
     ? "Renseignez le coût d'abord (> 0)"
     : !isRetailMarkupValid
     ? "Renseignez la marge détail (%)"
-    : `Suggérer: ${(Math.round(((costNum * (1 + retailMarkupNum / 100)) + Number.EPSILON) * 1000) / 1000).toFixed(3)} DT`;
+    : `Suggérer: ${(Math.round(((effectiveCost * (1 + retailMarkupNum / 100)) + Number.EPSILON) * 1000) / 1000).toFixed(3)} DT`;
 
   const wholesaleMarkupNum = parseFloat(wholesaleMarkup);
   const isWholesaleMarkupValid = !isNaN(wholesaleMarkupNum) && wholesaleMarkup.trim() !== '';
@@ -145,17 +194,17 @@ export const CreateProductModal: React.FC<CreateProductModalProps> = ({
     ? "Renseignez le coût d'abord (> 0)"
     : !isWholesaleMarkupValid
     ? "Renseignez la marge gros (%)"
-    : `Suggérer: ${(Math.round(((costNum * (1 + wholesaleMarkupNum / 100)) + Number.EPSILON) * 1000) / 1000).toFixed(3)} DT`;
+    : `Suggérer: ${(Math.round(((effectiveCost * (1 + wholesaleMarkupNum / 100)) + Number.EPSILON) * 1000) / 1000).toFixed(3)} DT`;
 
   const handleSuggestRetail = () => {
     if (!canSuggestRetail) return;
-    const rounded = Math.round(((costNum * (1 + retailMarkupNum / 100)) + Number.EPSILON) * 1000) / 1000;
+    const rounded = Math.round(((effectiveCost * (1 + retailMarkupNum / 100)) + Number.EPSILON) * 1000) / 1000;
     setRetailPrice(rounded.toFixed(3));
   };
 
   const handleSuggestWholesale = () => {
     if (!canSuggestWholesale) return;
-    const rounded = Math.round(((costNum * (1 + wholesaleMarkupNum / 100)) + Number.EPSILON) * 1000) / 1000;
+    const rounded = Math.round(((effectiveCost * (1 + wholesaleMarkupNum / 100)) + Number.EPSILON) * 1000) / 1000;
     setWholesalePrice(rounded.toFixed(3));
   };
 
@@ -196,6 +245,25 @@ export const CreateProductModal: React.FC<CreateProductModalProps> = ({
       setPendingPacks([]);
       setPackError(null);
 
+      if (productToEdit.size_volume !== null && productToEdit.size_volume !== undefined) {
+        setSizeVolume(String(productToEdit.size_volume));
+      } else {
+        setSizeVolume('1.0');
+      }
+
+      fetch(`/api/products/${productToEdit.id}/packaging`)
+        .then(res => res.ok ? res.json() : [])
+        .then((items: any[]) => {
+          setPackagingLines(items.map((it: any) => ({
+            id: it.id,
+            material_id: it.material_id,
+            material_name: it.material_name,
+            quantity_per_unit: it.quantity_per_unit,
+            unit_cost: it.latest_purchase_cost || 0
+          })));
+        })
+        .catch(() => setPackagingLines([]));
+
       // Fetch latest pack sizes from server
       fetch(`/api/products/${productToEdit.id}`)
         .then(res => res.ok ? res.json() : null)
@@ -213,6 +281,10 @@ export const CreateProductModal: React.FC<CreateProductModalProps> = ({
       setFormulationId('');
       setSkuName('');
       setSizeLabel('1L');
+      setSizeVolume('1.0');
+      setPackagingLines([]);
+      setSelectedPackagingMaterialId('');
+      setNewPackagingQty('1');
       setIsCustomSize(false);
       setCustomSizeInput('');
       setBarcode('');
@@ -333,6 +405,90 @@ export const CreateProductModal: React.FC<CreateProductModalProps> = ({
     }
   }, [familyName, selectedFamilyId, sizeLabel, mode, families, familyToEdit, productToEdit]);
 
+  const handleSizeSelectChange = (newSize: string) => {
+    if (newSize === '__CUSTOM__') {
+      setIsCustomSize(true);
+      setCustomSizeInput('');
+    } else {
+      setSizeLabel(newSize);
+      const matchL = newSize.match(/^(\d+(?:\.\d+)?)\s*l(?:itre)?s?$/i);
+      if (matchL) { setSizeVolume(matchL[1]); return; }
+      const matchMl = newSize.match(/^(\d+(?:\.\d+)?)\s*ml$/i);
+      if (matchMl) { setSizeVolume((parseFloat(matchMl[1]) / 1000).toString()); return; }
+      const matchKg = newSize.match(/^(\d+(?:\.\d+)?)\s*kg$/i);
+      if (matchKg) { setSizeVolume(matchKg[1]); return; }
+      const matchG = newSize.match(/^(\d+(?:\.\d+)?)\s*g$/i);
+      if (matchG) { setSizeVolume((parseFloat(matchG[1]) / 1000).toString()); return; }
+    }
+  };
+
+  const handleAddPackagingLine = async () => {
+    if (!selectedPackagingMaterialId) return;
+    const mat = availableMaterials.find(m => m.id === selectedPackagingMaterialId);
+    if (!mat) return;
+    const qty = parseFloat(newPackagingQty);
+    if (isNaN(qty) || qty <= 0) return;
+
+    if (packagingLines.some(l => l.material_id === selectedPackagingMaterialId)) {
+      setError("Cet article d'emballage est déjà associé.");
+      return;
+    }
+
+    if (productToEdit) {
+      try {
+        const res = await fetch(`/api/products/${productToEdit.id}/packaging`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ material_id: selectedPackagingMaterialId, quantity_per_unit: qty })
+        });
+        if (!res.ok) {
+          const data = await res.json().catch(() => ({}));
+          throw new Error(data.error || "Erreur lors de l'ajout de l'emballage");
+        }
+        const created = await res.json();
+        setPackagingLines(prev => [...prev, {
+          id: created.id,
+          material_id: created.material_id,
+          material_name: created.material_name || mat.name,
+          quantity_per_unit: created.quantity_per_unit,
+          unit_cost: created.latest_purchase_cost || mat.latest_purchase_cost || 0
+        }]);
+        setSelectedPackagingMaterialId('');
+        setNewPackagingQty('1');
+      } catch (err: any) {
+        setError(err.message);
+      }
+    } else {
+      setPackagingLines(prev => [...prev, {
+        material_id: mat.id,
+        material_name: mat.name,
+        quantity_per_unit: qty,
+        unit_cost: mat.latest_purchase_cost || 0
+      }]);
+      setSelectedPackagingMaterialId('');
+      setNewPackagingQty('1');
+    }
+  };
+
+  const handleDeletePackagingLine = async (line: any) => {
+    if (productToEdit && line.id) {
+      try {
+        const res = await fetch(`/api/products/${productToEdit.id}/packaging/${line.id}`, {
+          method: 'DELETE'
+        });
+        if (!res.ok) {
+          const data = await res.json().catch(() => ({}));
+          throw new Error(data.error || "Erreur lors de la suppression de l'emballage");
+        }
+        setPackagingLines(prev => prev.filter(l => l.id !== line.id));
+      } catch (err: any) {
+        setError(err.message);
+      }
+    } else {
+      setPackagingLines(prev => prev.filter(l => l.material_id !== line.material_id));
+    }
+  };
+
   if (!isOpen) return null;
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -373,8 +529,9 @@ export const CreateProductModal: React.FC<CreateProductModalProps> = ({
           body: JSON.stringify({
             name: finalSkuName,
             size_label: sizeLabel.trim() || null,
+            size_volume: isManufactured ? (parseFloat(sizeVolume) || null) : null,
             barcode: barcode.trim() || null,
-            cost_reference: parseFloat(costReference) || 0,
+            cost_reference: isManufactured ? calculatedLiveUnitCost : (parseFloat(costReference) || 0),
             retail_price: parseFloat(retailPrice) || 0,
             wholesale_price: parseFloat(wholesalePrice) || 0,
             stock_quantity: parseFloat(stockQuantity) || 0,
@@ -433,13 +590,18 @@ export const CreateProductModal: React.FC<CreateProductModalProps> = ({
           family_id: targetFamilyId,
           name: finalSkuName,
           size_label: sizeLabel.trim() || null,
+          size_volume: isManufactured ? (parseFloat(sizeVolume) || null) : null,
           barcode: barcode.trim() || null,
-          cost_reference: parseFloat(costReference) || 0,
+          cost_reference: isManufactured ? calculatedLiveUnitCost : (parseFloat(costReference) || 0),
           retail_price: parseFloat(retailPrice) || 0,
           wholesale_price: parseFloat(wholesalePrice) || 0,
           stock_quantity: parseFloat(stockQuantity) || 0,
           low_stock_threshold: parseFloat(lowStockThreshold) || 5,
-          container_type_id: containerTypeId || null
+          container_type_id: containerTypeId || null,
+          packaging_items: isManufactured && packagingLines.length > 0 ? packagingLines.map(l => ({
+            material_id: l.material_id,
+            quantity_per_unit: l.quantity_per_unit
+          })) : undefined
         })
       });
 
@@ -799,15 +961,8 @@ export const CreateProductModal: React.FC<CreateProductModalProps> = ({
                   {!isCustomSize ? (
                     <select
                       value={sizeLabel}
-                      onChange={e => {
-                        if (e.target.value === '__CUSTOM__') {
-                          setIsCustomSize(true);
-                          setCustomSizeInput('');
-                        } else {
-                          setSizeLabel(e.target.value);
-                        }
-                      }}
-                      className="w-full text-xs font-semibold px-3 py-2 border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none bg-white cursor-pointer"
+                      onChange={e => handleSizeSelectChange(e.target.value)}
+                      className="w-full text-xs font-semibold px-3 py-2 border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none bg-white cursor-pointer min-h-[44px]"
                     >
                       <optgroup label="Volumes (Liquides)">
                         <option value="1L">1L</option>
@@ -852,13 +1007,35 @@ export const CreateProductModal: React.FC<CreateProductModalProps> = ({
                       value={customSizeInput}
                       onChange={e => {
                         setCustomSizeInput(e.target.value);
-                        setSizeLabel(e.target.value);
+                        handleSizeSelectChange(e.target.value);
                       }}
-                      className="w-full text-xs font-semibold px-3 py-2 border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none bg-white"
+                      className="w-full text-xs font-semibold px-3 py-2 border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none bg-white min-h-[44px]"
                       autoFocus
                     />
                   )}
                 </div>
+
+                {isManufactured && (
+                  <div>
+                    <label htmlFor="size-volume-input" className="block text-xs font-bold text-slate-700 mb-1">
+                      Volume / Poids unitaire (L ou kg) *
+                    </label>
+                    <input
+                      id="size-volume-input"
+                      type="number"
+                      step="0.001"
+                      min="0.001"
+                      required
+                      placeholder="ex: 1.5 pour 1.5L, 2.0 pour 2L"
+                      value={sizeVolume}
+                      onChange={e => setSizeVolume(e.target.value)}
+                      className="w-full text-xs font-mono font-semibold px-3 py-2 border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none bg-white min-h-[44px]"
+                    />
+                    <span className="text-pos-badge text-slate-500">
+                      Multiplicateur chimique pour la formule vrac.
+                    </span>
+                  </div>
+                )}
 
                 <div className="col-span-2">
                   <label className="block text-xs font-bold text-slate-700 mb-1">
@@ -869,9 +1046,117 @@ export const CreateProductModal: React.FC<CreateProductModalProps> = ({
                     placeholder="Laisser vide pour génération automatique Code-128..."
                     value={barcode}
                     onChange={e => setBarcode(e.target.value)}
-                    className="w-full text-xs font-mono font-semibold px-3 py-2 border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none bg-white"
+                    className="w-full text-xs font-mono font-semibold px-3 py-2 border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none bg-white min-h-[44px]"
                   />
                 </div>
+
+                {/* Packaging Lines Editor (BOM) */}
+                {isManufactured && (
+                  <div className="col-span-2 p-3.5 bg-slate-50 rounded-xl border border-slate-200/80 space-y-3">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <h5 className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
+                          <Package className="w-3.5 h-3.5 text-blue-600" />
+                          Emballage spécifique de l'article (BOM)
+                        </h5>
+                        <p className="text-pos-badge text-slate-500">
+                          Articles d'emballage consommés par unité produite (bouteille, bouchon, étiquette...)
+                        </p>
+                      </div>
+                      <span className="text-pos-badge font-bold px-2 py-0.5 rounded bg-blue-100 text-blue-800">
+                        {packagingLines.length} article{packagingLines.length > 1 ? 's' : ''}
+                      </span>
+                    </div>
+
+                    {packagingLines.length > 0 ? (
+                      <div className="space-y-1.5 max-h-40 overflow-y-auto">
+                        {packagingLines.map((line, idx) => (
+                          <div key={line.id || `pkg-${idx}`} className="flex items-center justify-between p-2 bg-white rounded-lg border border-slate-200 text-xs min-h-[44px]">
+                            <div className="flex-1 min-w-0 pr-2">
+                              <span className="font-bold text-slate-800 truncate block">{line.material_name}</span>
+                              <span className="text-pos-badge text-slate-500 font-mono">
+                                {line.quantity_per_unit} × {(line.unit_cost || 0).toFixed(3)} DT = {(line.quantity_per_unit * (line.unit_cost || 0)).toFixed(3)} DT
+                              </span>
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() => handleDeletePackagingLine(line)}
+                              className="p-2 text-rose-500 hover:text-rose-700 hover:bg-rose-50 rounded-lg transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center cursor-pointer"
+                              title="Supprimer cet emballage"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="text-center py-2.5 text-pos-badge text-slate-500 italic bg-white rounded-lg border border-dashed border-slate-200">
+                        Aucun emballage spécifique (produit vendu en vrac ou emballage standard).
+                      </div>
+                    )}
+
+                    {/* Add packaging line form */}
+                    <div className="flex flex-col sm:flex-row items-center gap-2 pt-2 border-t border-slate-200">
+                      <select
+                        aria-label="Sélectionner un article d'emballage"
+                        value={selectedPackagingMaterialId}
+                        onChange={e => setSelectedPackagingMaterialId(e.target.value)}
+                        className="w-full sm:flex-1 text-xs font-semibold px-2.5 py-2 border border-slate-300 rounded-lg bg-white outline-none focus:ring-2 focus:ring-blue-500 min-h-[44px]"
+                      >
+                        <option value="">+ Choisir un article d'emballage...</option>
+                        {availableMaterials.map(m => (
+                          <option key={m.id} value={m.id}>
+                            {m.name} ({(m.latest_purchase_cost || 0).toFixed(3)} DT)
+                          </option>
+                        ))}
+                      </select>
+                      <div className="flex items-center gap-2 w-full sm:w-auto">
+                        <input
+                          type="number"
+                          step="0.001"
+                          min="0.001"
+                          aria-label="Quantité d'emballage"
+                          value={newPackagingQty}
+                          onChange={e => setNewPackagingQty(e.target.value)}
+                          placeholder="Qté"
+                          className="w-20 text-xs font-bold font-mono px-2 py-2 border border-slate-300 rounded-lg bg-white text-center outline-none focus:ring-2 focus:ring-blue-500 min-h-[44px]"
+                        />
+                        <button
+                          type="button"
+                          onClick={handleAddPackagingLine}
+                          disabled={!selectedPackagingMaterialId}
+                          aria-label="Ajouter cet emballage"
+                          className="px-3 py-2 bg-blue-600 text-white font-bold text-xs rounded-lg hover:bg-blue-700 disabled:bg-slate-200 disabled:text-slate-400 transition-colors flex items-center gap-1 shrink-0 min-h-[44px] cursor-pointer disabled:cursor-not-allowed"
+                        >
+                          <Plus className="w-3.5 h-3.5" />
+                          Ajouter
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Live Unit Cost Calculation Display (Read-Only) */}
+                {isManufactured && (
+                  <div className="col-span-2 p-3 bg-blue-50 border border-blue-200 rounded-xl space-y-2">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-black text-blue-950 uppercase tracking-wide">
+                        Coût de revient unitaire calculé (Direct)
+                      </span>
+                      <span className="text-sm font-black font-mono text-blue-700">
+                        {calculatedLiveUnitCost.toFixed(3)} DT
+                      </span>
+                    </div>
+                    <div className="text-pos-badge text-blue-900 grid grid-cols-2 gap-2 pt-1 border-t border-blue-200/60">
+                      <div>
+                        Formule vrac : <span className="font-mono font-bold">{parsedVol} L × {bulkCostPerLitre.toFixed(3)} = {bulkPart.toFixed(3)} DT</span>
+                      </div>
+                      <div>
+                        Emballages ({packagingLines.length}) : <span className="font-mono font-bold">{packagingPart.toFixed(3)} DT</span>
+                      </div>
+                    </div>
+                  </div>
+                )}
 
                 <div className="col-span-2 p-3 bg-white rounded-xl border border-blue-200 space-y-3">
                   <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
@@ -879,17 +1164,20 @@ export const CreateProductModal: React.FC<CreateProductModalProps> = ({
                       <label className="block text-xs font-bold text-slate-700">
                         Coût de référence (DT)
                       </label>
-                      <span className="text-pos-badge text-slate-600">Coût d'achat ou de revient unitaire (DT)</span>
+                      <span className="text-pos-badge text-slate-600">
+                        {isManufactured ? 'Calculé automatiquement selon formule et emballages' : "Coût d'achat ou de revient unitaire (DT)"}
+                      </span>
                     </div>
                     <div className="w-full sm:w-40">
                       <input
                         type="number"
                         step="0.001"
                         min="0"
-                        value={costReference}
+                        value={isManufactured ? calculatedLiveUnitCost.toFixed(3) : costReference}
                         onChange={e => setCostReference(e.target.value)}
+                        readOnly={isManufactured}
                         placeholder="0.000"
-                        className="w-full text-xs font-bold font-mono px-2.5 py-1.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none bg-white text-right"
+                        className={`w-full text-xs font-bold font-mono px-2.5 py-1.5 border border-slate-300 rounded-lg outline-none text-right min-h-[44px] ${isManufactured ? 'bg-slate-100 text-slate-600 cursor-not-allowed' : 'bg-white focus:ring-2 focus:ring-blue-500'}`}
                       />
                     </div>
                   </div>
