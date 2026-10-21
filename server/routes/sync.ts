@@ -629,9 +629,46 @@ syncRouter.post('/flush', (req: Request, res: Response) => {
           }
         }
 
-        const txId = crypto.randomUUID();
-        const { customer_id, container_type_id, action, quantity, notes, correction } = payload;
+        const failContainer = (reason: string) => {
+          failed.push({
+            temp_client_id,
+            action_type: 'CONTAINER_TRANSACTION',
+            reason
+          });
+        };
+
+        const { customer_id, container_type_id, action, quantity, notes, correction } = payload || {};
+
+        if (!customer_id || !container_type_id || !action || !quantity) {
+          failContainer('customer_id, container_type_id, action, and quantity are required.');
+          return;
+        }
+
+        if (action !== 'GIVE' && action !== 'RETURN') {
+          failContainer('action must be GIVE or RETURN');
+          return;
+        }
+
+        const numQty = Number(quantity);
         const qty = parseInt(quantity, 10);
+        if (isNaN(qty) || qty <= 0 || !Number.isInteger(numQty)) {
+          failContainer('quantity must be a positive integer');
+          return;
+        }
+
+        const customer: any = db.prepare('SELECT id FROM customers WHERE id = ?').get(customer_id);
+        if (!customer) {
+          failContainer('Customer not found');
+          return;
+        }
+
+        const containerType: any = db.prepare('SELECT id FROM container_types WHERE id = ?').get(container_type_id);
+        if (!containerType) {
+          failContainer('Container type not found');
+          return;
+        }
+
+        const txId = crypto.randomUUID();
 
         // RETURN above the customer's owed count is rejected unless correction=true.
         if (action === 'RETURN' && !correction) {
@@ -640,11 +677,7 @@ syncRouter.post('/flush', (req: Request, res: Response) => {
           ).get(customer_id, container_type_id);
           const owed = loanRow ? Number(loanRow.quantity_owed) || 0 : 0;
           if (qty > owed) {
-            failed.push({
-              temp_client_id,
-              action_type: 'CONTAINER_TRANSACTION',
-              reason: `Return quantity (${qty}) exceeds customer's owed count (${owed})`
-            });
+            failContainer(`Return quantity (${qty}) exceeds customer's owed count (${owed})`);
             return;
           }
         }
@@ -652,7 +685,7 @@ syncRouter.post('/flush', (req: Request, res: Response) => {
         db.prepare(`
           INSERT INTO container_transactions (id, date, customer_id, container_type_id, action, quantity, notes, created_at)
           VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-        `).run(txId, payload.date || now, customer_id, container_type_id, action, qty, notes || '', now);
+        `).run(txId, payload.date || op.created_at || now, customer_id, container_type_id, action, qty, notes || '', now);
 
         if (action === 'GIVE') {
           db.prepare('UPDATE container_types SET stock_quantity = stock_quantity - ? WHERE id = ?').run(qty, container_type_id);

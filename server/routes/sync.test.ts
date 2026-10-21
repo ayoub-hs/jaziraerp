@@ -882,7 +882,97 @@ describe('Offline Storage & Sync Engine Module (HTTP Routes)', () => {
     const legacySale: any = db.prepare('SELECT date, created_at FROM sales WHERE synced_from_client_id = ?').get('temp-date-legacy-queue');
     expect(legacySale.date).toBe(legacyQueueCreatedAt);
   });
+
+  it('F8: validates CONTAINER_TRANSACTION sync operations matching online route rules', async () => {
+    // Seed a valid customer and container type
+    const custRes = await request(app).post('/api/customers').send({
+      name: 'F8 Container Customer', type: 'WHOLESALE'
+    });
+    const ctRes = await request(app).post('/api/containers/types').send({
+      name: 'F8 5L Jerrycan', capacity_liters: 5, stock_quantity: 10
+    });
+
+    const validCustId = custRes.body.id;
+    const validCtId = ctRes.body.id;
+
+    const res = await request(app).post('/api/sync/flush').send({
+      operations: [
+        {
+          temp_client_id: 'f8-missing-fields',
+          action_type: 'CONTAINER_TRANSACTION',
+          payload: { customer_id: validCustId, container_type_id: validCtId } // missing action & quantity
+        },
+        {
+          temp_client_id: 'f8-invalid-action',
+          action_type: 'CONTAINER_TRANSACTION',
+          payload: { customer_id: validCustId, container_type_id: validCtId, action: 'BORROW', quantity: 2 }
+        },
+        {
+          temp_client_id: 'f8-zero-qty',
+          action_type: 'CONTAINER_TRANSACTION',
+          payload: { customer_id: validCustId, container_type_id: validCtId, action: 'GIVE', quantity: 0 }
+        },
+        {
+          temp_client_id: 'f8-negative-qty',
+          action_type: 'CONTAINER_TRANSACTION',
+          payload: { customer_id: validCustId, container_type_id: validCtId, action: 'GIVE', quantity: -3 }
+        },
+        {
+          temp_client_id: 'f8-decimal-qty',
+          action_type: 'CONTAINER_TRANSACTION',
+          payload: { customer_id: validCustId, container_type_id: validCtId, action: 'GIVE', quantity: 2.5 }
+        },
+        {
+          temp_client_id: 'f8-nan-qty',
+          action_type: 'CONTAINER_TRANSACTION',
+          payload: { customer_id: validCustId, container_type_id: validCtId, action: 'GIVE', quantity: 'abc' }
+        },
+        {
+          temp_client_id: 'f8-nonexistent-customer',
+          action_type: 'CONTAINER_TRANSACTION',
+          payload: { customer_id: 'ghost-cust-999', container_type_id: validCtId, action: 'GIVE', quantity: 1 }
+        },
+        {
+          temp_client_id: 'f8-nonexistent-containertype',
+          action_type: 'CONTAINER_TRANSACTION',
+          payload: { customer_id: validCustId, container_type_id: 'ghost-type-999', action: 'GIVE', quantity: 1 }
+        },
+        {
+          temp_client_id: 'f8-valid-give',
+          action_type: 'CONTAINER_TRANSACTION',
+          payload: { customer_id: validCustId, container_type_id: validCtId, action: 'GIVE', quantity: 4 }
+        }
+      ]
+    });
+
+    expect(res.status).toBe(200);
+
+    // Verify all 8 invalid operations failed with appropriate reasons
+    const failedMap = new Map(res.body.failed.map((f: any) => [f.temp_client_id, f.reason]));
+
+    expect(failedMap.get('f8-missing-fields')).toMatch(/required/i);
+    expect(failedMap.get('f8-invalid-action')).toMatch(/action must be GIVE or RETURN/i);
+    expect(failedMap.get('f8-zero-qty')).toMatch(/positive integer|required/i);
+    expect(failedMap.get('f8-negative-qty')).toMatch(/positive integer/i);
+    expect(failedMap.get('f8-decimal-qty')).toMatch(/positive integer/i);
+    expect(failedMap.get('f8-nan-qty')).toMatch(/positive integer/i);
+    expect(failedMap.get('f8-nonexistent-customer')).toMatch(/Customer not found/i);
+    expect(failedMap.get('f8-nonexistent-containertype')).toMatch(/Container type not found/i);
+
+    // Verify the 1 valid operation succeeded
+    expect(res.body.reconciled).toHaveLength(1);
+    expect(res.body.reconciled[0].temp_client_id).toBe('f8-valid-give');
+
+    // Verify database state: only the valid give (4 units) was processed
+    const db = getDb();
+    const typeRow: any = db.prepare('SELECT stock_quantity FROM container_types WHERE id = ?').get(validCtId);
+    expect(typeRow.stock_quantity).toBe(6); // 10 - 4 = 6
+
+    const loanRow: any = db.prepare('SELECT quantity_owed FROM customer_container_loans WHERE customer_id = ? AND container_type_id = ?').get(validCustId, validCtId);
+    expect(loanRow.quantity_owed).toBe(4);
+  });
 });
+
 
 
 

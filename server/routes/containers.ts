@@ -186,8 +186,9 @@ containersRouter.post('/transactions', (req: Request, res: Response) => {
     return;
   }
 
+  const numQty = Number(quantity);
   const qty = parseInt(quantity, 10);
-  if (isNaN(qty) || qty <= 0) {
+  if (isNaN(qty) || qty <= 0 || !Number.isInteger(numQty)) {
     res.status(400).json({ error: 'quantity must be a positive integer' });
     return;
   }
