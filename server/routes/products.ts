@@ -3,8 +3,9 @@ import crypto from 'crypto';
 import { getDb } from '../db/index.js';
 import { round3 } from '../utils/money.js';
 import { generateBarcode } from '../utils/barcode.js';
-import { calculateFormulationCost } from '../services/costingService.js';
+import { calculateFormulationCost, calculateProductUnitCost } from '../services/costingService.js';
 import {
+  requireFinitePositive,
   requireFiniteNonNegative,
   requireOptionalFiniteNonNegative,
   ValidationError,
@@ -286,6 +287,56 @@ productsRouter.get('/lookup/:barcode', (req: Request, res: Response) => {
   res.status(404).json({ error: `No product found matching barcode ${barcode}` });
 });
 
+// GET /api/products/cost-preview - backoffice preview of manufactured product unit costs
+productsRouter.get('/cost-preview', (req: Request, res: Response) => {
+  const db = getDb();
+  const products: any[] = db.prepare(`
+    SELECT p.*, pf.name as family_name, pf.formulation_id
+    FROM products p
+    JOIN product_families pf ON p.family_id = pf.id
+    WHERE pf.type = 'MANUFACTURED' AND p.active = 1
+    ORDER BY pf.name ASC, p.name ASC
+  `).all();
+
+  const preview = products.map((prod) => {
+    if (prod.size_volume === null || prod.size_volume === undefined) {
+      return {
+        product_id: prod.id,
+        product_name: prod.name,
+        size_label: prod.size_label,
+        size_volume: null,
+        current_cost: prod.cost_reference,
+        calculated_cost: null,
+        status: 'size manquante'
+      };
+    }
+    try {
+      const costInfo = calculateProductUnitCost(db, prod.id);
+      return {
+        product_id: prod.id,
+        product_name: prod.name,
+        size_label: prod.size_label,
+        size_volume: prod.size_volume,
+        current_cost: prod.cost_reference,
+        calculated_cost: costInfo.cost_per_finished_unit,
+        status: 'ok'
+      };
+    } catch {
+      return {
+        product_id: prod.id,
+        product_name: prod.name,
+        size_label: prod.size_label,
+        size_volume: prod.size_volume,
+        current_cost: prod.cost_reference,
+        calculated_cost: null,
+        status: 'erreur'
+      };
+    }
+  });
+
+  res.json(preview);
+});
+
 // GET /api/products/:id - single product details
 productsRouter.get('/:id', (req: Request, res: Response) => {
   const db = getDb();
@@ -317,6 +368,7 @@ productsRouter.post('/', (req: Request, res: Response) => {
     family_id,
     name,
     size_label = null,
+    size_volume = null,
     barcode = null,
     stock_quantity = 0,
     low_stock_threshold = 5,
@@ -337,43 +389,11 @@ productsRouter.post('/', (req: Request, res: Response) => {
     return;
   }
 
-  const finalName = name && name.trim().length > 0 
-    ? name.trim() 
-    : (size_label ? `${family.name} - ${size_label}` : family.name);
-
-  const id = crypto.randomUUID();
-  const now = new Date().toISOString();
-  const finalBarcode = barcode && barcode.trim().length > 0 ? barcode.trim() : generateBarcode();
-
-  // Auto-suggest cost reference if manufactured and formulation exists
-  let costReference = 0;
-  if (family.formulation_id) {
-    try {
-      const costInfo = calculateFormulationCost(db, family.formulation_id);
-      costReference = costInfo.cost_per_unit;
-    } catch {
-      costReference = 0;
-    }
-  }
-
-  const insert = db.prepare(`
-    INSERT INTO products (
-      id, family_id, name, size_label, barcode, stock_quantity,
-      low_stock_threshold, cost_reference, retail_price, wholesale_price,
-      container_type_id, active, created_at, updated_at
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, ?, ?)
-  `);
-
-  let explicitCost: number;
   let parsedRetail: number;
   let parsedWholesale: number;
   let parsedStock: number;
   let parsedThreshold: number;
   try {
-    const rawCost = req.body.cost_reference !== undefined 
-      ? req.body.cost_reference 
-      : (req.body.initial_cost !== undefined ? req.body.initial_cost : costReference);
-    explicitCost = requireFiniteNonNegative(rawCost, 'coût de référence (cost_reference)', costReference);
     parsedRetail = requireFiniteNonNegative(retail_price, 'prix de détail (retail_price)', 0);
     parsedWholesale = requireFiniteNonNegative(wholesale_price, 'prix de gros (wholesale_price)', 0);
     parsedStock = stock_quantity !== undefined && stock_quantity !== null && stock_quantity !== ''
@@ -390,12 +410,82 @@ productsRouter.post('/', (req: Request, res: Response) => {
     return;
   }
 
+  let parsedSizeVolume: number | null = null;
+  if (family.type === 'MANUFACTURED') {
+    if (family.formulation_id) {
+      const formulation: any = db.prepare('SELECT * FROM formulations WHERE id = ?').get(family.formulation_id);
+      if (formulation && ['L', 'kg', 'l'].includes(formulation.base_yield_unit)) {
+        if (size_volume === undefined || size_volume === null || size_volume === '') {
+          res.status(400).json({ error: "Le volume unitaire (size_volume) est obligatoire pour les produits fabriqués en litres/kilos." });
+          return;
+        }
+      }
+    }
+  }
+
+  if (size_volume !== undefined && size_volume !== null && size_volume !== '') {
+    try {
+      parsedSizeVolume = requireFinitePositive(size_volume, 'volume unitaire (size_volume)');
+    } catch (err: any) {
+      res.status(400).json({ error: err.message });
+      return;
+    }
+  }
+
+  const finalName = name && name.trim().length > 0 
+    ? name.trim() 
+    : (size_label ? `${family.name} - ${size_label}` : family.name);
+
+  const id = crypto.randomUUID();
+  const now = new Date().toISOString();
+  const finalBarcode = barcode && barcode.trim().length > 0 ? barcode.trim() : generateBarcode();
+
+  // Auto-calculate cost reference if manufactured and formulation exists
+  let costReference = 0;
+  if (family.type === 'MANUFACTURED' && family.formulation_id) {
+    try {
+      const costInfo = calculateProductUnitCost(db, {
+        id,
+        family_id,
+        size_volume: parsedSizeVolume
+      });
+      costReference = costInfo.cost_per_finished_unit;
+    } catch {
+      costReference = 0;
+    }
+  }
+
+  let explicitCost: number;
+  try {
+    if (family.type === 'MANUFACTURED' && family.formulation_id && req.body.allow_cost_override !== true) {
+      // Modal default (e.g. 0.000) or client-sent cost is ignored for manufactured products unless explicitly overridden
+      explicitCost = costReference;
+    } else {
+      const rawCost = req.body.cost_reference !== undefined 
+        ? req.body.cost_reference 
+        : (req.body.initial_cost !== undefined ? req.body.initial_cost : costReference);
+      explicitCost = requireFiniteNonNegative(rawCost, 'coût de référence (cost_reference)', costReference);
+    }
+  } catch (err: any) {
+    res.status(400).json({ error: err.message });
+    return;
+  }
+
+  const insert = db.prepare(`
+    INSERT INTO products (
+      id, family_id, name, size_label, size_volume, barcode, stock_quantity,
+      low_stock_threshold, cost_reference, retail_price, wholesale_price,
+      container_type_id, active, created_at, updated_at
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, ?, ?)
+  `);
+
   try {
     insert.run(
       id,
       family_id,
       finalName,
       size_label ? size_label.trim() : null,
+      parsedSizeVolume !== undefined ? parsedSizeVolume : null,
       finalBarcode,
       parsedStock,
       parsedThreshold,
@@ -424,6 +514,7 @@ productsRouter.put('/:id', (req: Request, res: Response) => {
   const {
     name,
     size_label,
+    size_volume,
     barcode,
     stock_quantity,
     low_stock_threshold,
@@ -441,15 +532,31 @@ productsRouter.put('/:id', (req: Request, res: Response) => {
     return;
   }
 
+  const family: any = db.prepare('SELECT * FROM product_families WHERE id = ?').get(existing.family_id);
+
   let validRetail: number | undefined;
   let validWholesale: number | undefined;
   let validCost: number | undefined;
   let validStock: number | undefined;
   let validThreshold: number | undefined;
+  let validSizeVolume: number | undefined;
+
   try {
     validRetail = requireOptionalFiniteNonNegative(retail_price, 'prix de détail (retail_price)');
     validWholesale = requireOptionalFiniteNonNegative(wholesale_price, 'prix de gros (wholesale_price)');
-    validCost = requireOptionalFiniteNonNegative(cost_reference, 'coût de référence (cost_reference)');
+
+    // Invariant: On MANUFACTURED products, do NOT silently overwrite cost_reference
+    // Modal sends 0 by default, so ignore unless allow_cost_override === true
+    if (family && family.type === 'MANUFACTURED') {
+      if (req.body.allow_cost_override === true && cost_reference !== undefined) {
+        validCost = requireFiniteNonNegative(cost_reference, 'coût de référence (cost_reference)');
+      } else {
+        validCost = undefined; // Retain existing cost_reference
+      }
+    } else {
+      validCost = requireOptionalFiniteNonNegative(cost_reference, 'coût de référence (cost_reference)');
+    }
+
     validThreshold = requireOptionalFiniteNonNegative(low_stock_threshold, 'seuil de stock bas');
     if (stock_quantity !== undefined && stock_quantity !== null && stock_quantity !== '') {
       const num = typeof stock_quantity === 'number' ? stock_quantity : Number(stock_quantity);
@@ -457,6 +564,9 @@ productsRouter.put('/:id', (req: Request, res: Response) => {
         throw new ValidationError('La quantité en stock doit être un nombre fini.');
       }
       validStock = num;
+    }
+    if (size_volume !== undefined && size_volume !== null && size_volume !== '') {
+      validSizeVolume = requireFinitePositive(size_volume, 'volume unitaire (size_volume)');
     }
   } catch (err: any) {
     res.status(400).json({ error: err.message });
@@ -470,6 +580,7 @@ productsRouter.put('/:id', (req: Request, res: Response) => {
       UPDATE products
       SET name = COALESCE(?, name),
           size_label = COALESCE(?, size_label),
+          size_volume = COALESCE(?, size_volume),
           barcode = COALESCE(?, barcode),
           stock_quantity = COALESCE(?, stock_quantity),
           low_stock_threshold = COALESCE(?, low_stock_threshold),
@@ -483,6 +594,7 @@ productsRouter.put('/:id', (req: Request, res: Response) => {
     `).run(
       name !== undefined ? name.trim() : null,
       size_label !== undefined ? size_label.trim() : null,
+      validSizeVolume !== undefined ? validSizeVolume : null,
       barcode !== undefined ? barcode.trim() : null,
       validStock !== undefined ? validStock : null,
       validThreshold !== undefined ? validThreshold : null,

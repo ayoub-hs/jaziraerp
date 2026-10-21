@@ -429,4 +429,73 @@ describe('Products & Sizing Model Module (HTTP Routes)', () => {
     expect(delFamRes.status).toBe(409);
     expect(delFamRes.body.error).toContain('Please deactivate the family or its SKUs instead');
   });
+
+  it('auto-computes manufactured cost_reference from bulk formulation and packaging BOM, ignoring modal 0 payload', async () => {
+    // 1. Setup materials
+    const matChem = await request(app).post('/api/materials').send({ name: 'Bulk Mat', category: 'chemical', unit: 'kg', stock_quantity: 100, latest_purchase_cost: 8.000 });
+    const matBot = await request(app).post('/api/materials').send({ name: 'Bot 1.5', category: 'bottle', unit: 'pcs', stock_quantity: 100, latest_purchase_cost: 0.350 });
+    const matCap = await request(app).post('/api/materials').send({ name: 'Cap', category: 'cap', unit: 'pcs', stock_quantity: 100, latest_purchase_cost: 0.050 });
+    const matLbl = await request(app).post('/api/materials').send({ name: 'Lbl', category: 'label', unit: 'pcs', stock_quantity: 100, latest_purchase_cost: 0.080 });
+
+    // 2. Setup bulk formula: 100 L yielding 10 kg @ 8.000 = 80.000 DT (0.800 DT/L)
+    const form = await request(app).post('/api/formulations').send({
+      name: 'Citron Bulk 100L', base_yield_quantity: 100, base_yield_unit: 'L',
+      items: [{ material_id: matChem.body.id, quantity_required: 10 }]
+    });
+
+    // 3. Setup manufactured family
+    const fam = await request(app).post('/api/products/families').send({
+      name: 'Citron Fam', category: 'Detergents', type: 'MANUFACTURED', formulation_id: form.body.id
+    });
+
+    // 4. Create SKU without size_volume -> 400
+    const errRes = await request(app).post('/api/products').send({
+      family_id: fam.body.id, name: 'Citron 1.5L Missing Size', size_label: '1.5L'
+    });
+    expect(errRes.status).toBe(400);
+    expect(errRes.body.error).toMatch(/size_volume.*obligatoire/i);
+
+    // 5. Create SKU with size_volume: 1.5 and modal default cost_reference: 0
+    // Expected bulk cost: 1.5 * 0.800 = 1.200 DT
+    const createRes = await request(app).post('/api/products').send({
+      family_id: fam.body.id,
+      name: 'Citron 1.5L',
+      size_label: '1.5L',
+      size_volume: 1.5,
+      cost_reference: 0 // Modal sends 0 by default
+    });
+    expect(createRes.status).toBe(201);
+    expect(createRes.body.cost_reference).toBe(1.200); // 0 was ignored!
+
+    // 6. Add packaging BOM to product_packaging_items: + 0.480 DT -> total cost should be 1.680 DT
+    const db = (await import('../db/index.js')).getDb();
+    db.prepare('INSERT INTO product_packaging_items (id, product_id, material_id, quantity_per_unit) VALUES (?, ?, ?, ?)').run('p-b', createRes.body.id, matBot.body.id, 1);
+    db.prepare('INSERT INTO product_packaging_items (id, product_id, material_id, quantity_per_unit) VALUES (?, ?, ?, ?)').run('p-c', createRes.body.id, matCap.body.id, 1);
+    db.prepare('INSERT INTO product_packaging_items (id, product_id, material_id, quantity_per_unit) VALUES (?, ?, ?, ?)').run('p-l', createRes.body.id, matLbl.body.id, 1);
+
+    // 7. Update product with modal payload (PUT /products/:id sends cost_reference: 0)
+    // Invariant: PUT must NOT overwrite manufactured cost_reference with 0 unless allow_cost_override === true
+    const updateRes = await request(app).put(`/api/products/${createRes.body.id}`).send({
+      name: 'Citron 1.5L Updated',
+      cost_reference: 0
+    });
+    expect(updateRes.status).toBe(200);
+    expect(updateRes.body.cost_reference).toBe(1.200); // Not overwritten by 0!
+
+    // 8. Explicit override works when allow_cost_override: true
+    const overrideRes = await request(app).put(`/api/products/${createRes.body.id}`).send({
+      cost_reference: 1.750,
+      allow_cost_override: true
+    });
+    expect(overrideRes.status).toBe(200);
+    expect(overrideRes.body.cost_reference).toBe(1.750);
+
+    // 9. Cost preview endpoint verifies unit cost with packaging: 1.200 (chem) + 0.480 (pkg) = 1.680
+    const previewRes = await request(app).get('/api/products/cost-preview');
+    expect(previewRes.status).toBe(200);
+    const itemPreview = previewRes.body.find((p: any) => p.product_id === createRes.body.id);
+    expect(itemPreview).toBeDefined();
+    expect(itemPreview.status).toBe('ok');
+    expect(itemPreview.calculated_cost).toBe(1.680);
+  });
 });

@@ -248,7 +248,7 @@ describe('Full Acceptance Test Plan — Al Jazira SHSP ERP', () => {
       const formId = form.body.id || form.body.formulation_id;
 
       const fam = await request(app).post('/api/products/families').send({ name: 'Fam Acide', category: 'Auto', type: 'MANUFACTURED', formulation_id: formId });
-      const prod = await request(app).post('/api/products').send({ family_id: fam.body.id, name: 'Prod Acide', stock_quantity: 0 });
+      const prod = await request(app).post('/api/products').send({ family_id: fam.body.id, name: 'Prod Acide', size_volume: 1, stock_quantity: 0 });
 
       // Run production requiring 5 * 10 = 50 kg when only 10 kg in stock -> warning & negative stock
       const batchRes = await request(app)

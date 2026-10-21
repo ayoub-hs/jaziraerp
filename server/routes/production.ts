@@ -64,6 +64,8 @@ productionRouter.post('/batches', (req: Request, res: Response) => {
     formulation_id,
     target_product_id,
     units_produced,
+    batch_volume,
+    batch_volume_liters,
     date = new Date().toISOString(),
     notes = '',
     batch_number
@@ -74,9 +76,24 @@ productionRouter.post('/batches', (req: Request, res: Response) => {
     return;
   }
 
-  let units: number;
+  const rawVolume = batch_volume ?? batch_volume_liters;
+  const hasUnits = units_produced !== undefined && units_produced !== null && units_produced !== '';
+  const hasVolume = rawVolume !== undefined && rawVolume !== null && rawVolume !== '';
+
+  if (!hasUnits && !hasVolume) {
+    res.status(400).json({ error: "Le volume du lot ou le nombre d'unités produites doit être spécifié." });
+    return;
+  }
+
+  let units: number | null = null;
+  let volume: number | null = null;
   try {
-    units = requireFinitePositive(units_produced, 'unités produites');
+    if (hasUnits) {
+      units = requireFinitePositive(units_produced, 'unités produites');
+    }
+    if (hasVolume) {
+      volume = requireFinitePositive(rawVolume, 'volume du lot');
+    }
   } catch (err: any) {
     res.status(400).json({ error: err.message });
     return;
@@ -106,7 +123,14 @@ productionRouter.post('/batches', (req: Request, res: Response) => {
     return;
   }
 
-  const batchRequirements = calculateBatchRequirements(db, formulation_id, units);
+  let batchRequirements: any;
+  try {
+    batchRequirements = calculateBatchRequirements(db, formulation_id, units, volume, target_product_id);
+  } catch (err: any) {
+    res.status(400).json({ error: err.message });
+    return;
+  }
+
   const autoNumber = !batch_number || String(batch_number).trim().length === 0;
   let finalBatchNumber = autoNumber ? generateBatchNumber(db) : String(batch_number).trim();
   const batchId = crypto.randomUUID();
@@ -132,15 +156,16 @@ productionRouter.post('/batches', (req: Request, res: Response) => {
     db.prepare(`
       INSERT INTO production_batches (
         id, batch_number, date, formulation_id, target_product_id,
-        units_produced, total_batch_cost, cost_per_unit, notes, created_at
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        batch_volume, units_produced, total_batch_cost, cost_per_unit, notes, created_at
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `).run(
       batchId,
       finalBatchNumber,
       date,
       formulation_id,
       target_product_id,
-      units,
+      batchRequirements.batchVolume,
+      batchRequirements.targetOutputUnits,
       batchRequirements.totalBatchCost,
       batchRequirements.costPerUnit,
       notes,
@@ -182,7 +207,7 @@ productionRouter.post('/batches', (req: Request, res: Response) => {
           updated_at = ?
       WHERE id = ?
     `).run(
-      units,
+      batchRequirements.targetOutputUnits,
       batchRequirements.costPerUnit,
       now,
       target_product_id

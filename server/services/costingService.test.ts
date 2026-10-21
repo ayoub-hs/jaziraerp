@@ -7,7 +7,8 @@ import {
   getMaterialUnitCosts,
   getMaterialUnitCost,
   calculateFormulationCost,
-  calculateBatchRequirements
+  calculateBatchRequirements,
+  calculateProductUnitCost
 } from './costingService.js';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -206,5 +207,134 @@ describe('costingService: Quantity-Weighted Average Costing', () => {
     const batchReq = calculateBatchRequirements(db, 'form-f', 20, 2026);
     expect(batchReq.totalBatchCost).toBe(61.340);
     expect(batchReq.costPerUnit).toBe(3.067);
+  });
+
+  describe('calculateProductUnitCost (ONE costing function)', () => {
+    it('computes exact unit costs: bulk 0.800/L, 1.5L SKU 1.680, 2L SKU 2.160, and vrac 0.800', () => {
+      // 1. Raw materials: chemicals & packaging
+      db.prepare(`
+        INSERT INTO raw_materials (id, name, category, unit, stock_quantity, latest_purchase_cost, created_at, updated_at)
+        VALUES
+          ('rm-chem-base', 'Chemical Base Active', 'chemical', 'kg', 1000, 8.000, '2026-01-01', '2026-01-01'),
+          ('rm-bot-15', 'Bottle 1.5L', 'bottle', 'pcs', 500, 0.350, '2026-01-01', '2026-01-01'),
+          ('rm-cap-std', 'Cap Standard', 'cap', 'pcs', 1000, 0.050, '2026-01-01', '2026-01-01'),
+          ('rm-lbl-15', 'Label 1.5L', 'label', 'pcs', 500, 0.080, '2026-01-01', '2026-01-01'),
+          ('rm-bot-20', 'Bottle 2L', 'bottle', 'pcs', 500, 0.420, '2026-01-01', '2026-01-01'),
+          ('rm-lbl-20', 'Label 2L', 'label', 'pcs', 500, 0.090, '2026-01-01', '2026-01-01')
+      `).run();
+
+      // Bulk formulation: 100 L yielding 10 kg of chemical @ 8.000 = 80.000 DT (0.800 DT/L)
+      db.prepare(`
+        INSERT INTO formulations (id, name, base_yield_quantity, base_yield_unit, created_at, updated_at)
+        VALUES ('form-citron-bulk', 'Formule Citron Vrac', 100, 'L', '2026-01-01', '2026-01-01')
+      `).run();
+      db.prepare(`
+        INSERT INTO formulation_items (id, formulation_id, material_id, quantity_required)
+        VALUES ('fi-chem-1', 'form-citron-bulk', 'rm-chem-base', 10)
+      `).run();
+
+      // Product family
+      db.prepare(`
+        INSERT INTO product_families (id, name, category, type, formulation_id, created_at, updated_at)
+        VALUES ('fam-citron', 'Famille Citron', 'Detergents', 'MANUFACTURED', 'form-citron-bulk', '2026-01-01', '2026-01-01')
+      `).run();
+
+      // 3 SKUs: Vrac, 1.5L, 2L
+      db.prepare(`
+        INSERT INTO products (id, family_id, name, size_label, size_volume, created_at, updated_at)
+        VALUES
+          ('prod-vrac', 'fam-citron', 'Citron Vrac', '1L', 1.0, '2026-01-01', '2026-01-01'),
+          ('prod-15l', 'fam-citron', 'Citron 1.5L', '1.5L', 1.5, '2026-01-01', '2026-01-01'),
+          ('prod-20l', 'fam-citron', 'Citron 2L', '2L', 2.0, '2026-01-01', '2026-01-01')
+      `).run();
+
+      // Packaging items for 1.5L: bottle (0.350) + cap (0.050) + label (0.080) = 0.480 DT
+      db.prepare(`
+        INSERT INTO product_packaging_items (id, product_id, material_id, quantity_per_unit)
+        VALUES
+          ('ppi-15-bot', 'prod-15l', 'rm-bot-15', 1),
+          ('ppi-15-cap', 'prod-15l', 'rm-cap-std', 1),
+          ('ppi-15-lbl', 'prod-15l', 'rm-lbl-15', 1)
+      `).run();
+
+      // Packaging items for 2L: bottle (0.420) + cap (0.050) + label (0.090) = 0.560 DT
+      db.prepare(`
+        INSERT INTO product_packaging_items (id, product_id, material_id, quantity_per_unit)
+        VALUES
+          ('ppi-20-bot', 'prod-20l', 'rm-bot-20', 1),
+          ('ppi-20-cap', 'prod-20l', 'rm-cap-std', 1),
+          ('ppi-20-lbl', 'prod-20l', 'rm-lbl-20', 1)
+      `).run();
+
+      // Vrac: 1.0 * 0.800 = 0.800 DT
+      const vracCost = (calculateProductUnitCost as any)(db, 'prod-vrac');
+      expect(vracCost.cost_per_finished_unit).toBe(0.800);
+
+      // 1.5L: 1.5 * 0.800 (1.200) + 0.480 = 1.680 DT
+      const cost15 = (calculateProductUnitCost as any)(db, 'prod-15l');
+      expect(cost15.cost_per_finished_unit).toBe(1.680);
+
+      // 2L: 2.0 * 0.800 (1.600) + 0.560 = 2.160 DT
+      const cost20 = (calculateProductUnitCost as any)(db, 'prod-20l');
+      expect(cost20.cost_per_finished_unit).toBe(2.160);
+    });
+
+    it('enforces double-count guard: throws error if formulation has packaging AND product has packaging items', () => {
+      db.prepare(`
+        INSERT INTO raw_materials (id, name, category, unit, stock_quantity, latest_purchase_cost, created_at, updated_at)
+        VALUES
+          ('rm-c-1', 'Chemical Base', 'chemical', 'kg', 100, 5.000, '2026-01-01', '2026-01-01'),
+          ('rm-b-1', 'Legacy Bottle in Recipe', 'bottle', 'pcs', 100, 0.400, '2026-01-01', '2026-01-01')
+      `).run();
+
+      db.prepare(`
+        INSERT INTO formulations (id, name, base_yield_quantity, base_yield_unit, created_at, updated_at)
+        VALUES ('form-conflict', 'Conflict Recipe', 100, 'L', '2026-01-01', '2026-01-01')
+      `).run();
+      db.prepare(`
+        INSERT INTO formulation_items (id, formulation_id, material_id, quantity_required)
+        VALUES
+          ('fi-c', 'form-conflict', 'rm-c-1', 10),
+          ('fi-b', 'form-conflict', 'rm-b-1', 100)
+      `).run();
+
+      db.prepare(`
+        INSERT INTO product_families (id, name, category, type, formulation_id, created_at, updated_at)
+        VALUES ('fam-conflict', 'Conflict Fam', 'Detergents', 'MANUFACTURED', 'form-conflict', '2026-01-01', '2026-01-01')
+      `).run();
+
+      db.prepare(`
+        INSERT INTO products (id, family_id, name, size_volume, created_at, updated_at)
+        VALUES ('prod-conflict', 'fam-conflict', 'Product With Both', 1.0, '2026-01-01', '2026-01-01')
+      `).run();
+
+      db.prepare(`
+        INSERT INTO product_packaging_items (id, product_id, material_id, quantity_per_unit)
+        VALUES ('ppi-conflict', 'prod-conflict', 'rm-b-1', 1)
+      `).run();
+
+      expect(() => {
+        (calculateProductUnitCost as any)(db, 'prod-conflict');
+      }).toThrow(/double décompte/i);
+    });
+
+    it('rejects NULL size_volume on MANUFACTURED product in litres/kg', () => {
+      db.prepare(`
+        INSERT INTO formulations (id, name, base_yield_quantity, base_yield_unit, created_at, updated_at)
+        VALUES ('form-null-size', 'Null Size Recipe', 100, 'L', '2026-01-01', '2026-01-01')
+      `).run();
+      db.prepare(`
+        INSERT INTO product_families (id, name, category, type, formulation_id, created_at, updated_at)
+        VALUES ('fam-null-size', 'Null Size Fam', 'Detergents', 'MANUFACTURED', 'form-null-size', '2026-01-01', '2026-01-01')
+      `).run();
+      db.prepare(`
+        INSERT INTO products (id, family_id, name, size_volume, created_at, updated_at)
+        VALUES ('prod-null-size', 'fam-null-size', 'Product No Size', NULL, '2026-01-01', '2026-01-01')
+      `).run();
+
+      expect(() => {
+        (calculateProductUnitCost as any)(db, 'prod-null-size');
+      }).toThrow(/size_volume.*obligatoire/i);
+    });
   });
 });

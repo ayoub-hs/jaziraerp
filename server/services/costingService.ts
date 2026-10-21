@@ -157,24 +157,259 @@ export interface ScaledBatchIngredient {
   remaining_stock_after_batch: number;
 }
 
+export interface ProductCostResult {
+  formulation_id: string;
+  base_yield_quantity: number;
+  base_yield_unit: string;
+  base_recipe_total_cost: number;
+  cost_per_base_unit: number; // e.g. Cost per Litre
+  size_volume: number;
+  packaging_cost_per_unit: number;
+  cost_per_finished_unit: number; // in TND (3 decimals)
+}
+
+/**
+ * ONE unified volume-based costing function per finished unit.
+ * Used identically by: product create, cost preview, and production batch.
+ */
+export function calculateProductUnitCost(
+  db: any,
+  productInput: string | { id?: string; family_id: string; size_volume?: number | null },
+  targetYear: number = new Date().getFullYear()
+): ProductCostResult {
+  let product: any;
+  if (typeof productInput === 'string') {
+    product = db.prepare('SELECT * FROM products WHERE id = ?').get(productInput);
+    if (!product) {
+      throw new Error(`Product not found: ${productInput}`);
+    }
+  } else {
+    product = productInput;
+  }
+
+  const family = db.prepare('SELECT * FROM product_families WHERE id = ?').get(product.family_id);
+  if (!family || family.type !== 'MANUFACTURED') {
+    throw new Error('Le produit doit appartenir à une famille de type MANUFACTURED.');
+  }
+
+  const formulationId = family.formulation_id;
+  if (!formulationId) {
+    throw new Error('Aucune formule associée à cette famille de produit.');
+  }
+
+  const formulationCost = calculateFormulationCost(db, formulationId, targetYear);
+  const baseYieldQty = formulationCost.base_yield_quantity > 0 ? formulationCost.base_yield_quantity : 1;
+  const costPerBaseUnit = formulationCost.cost_per_unit; // Total formulation cost / baseYieldQty
+
+  // Determine size_volume
+  let sizeVolume: number;
+  const isPieceUnit = ['pcs', 'piece', 'pieces', 'unit', 'unite', 'unites'].includes(String(formulationCost.base_yield_unit).toLowerCase());
+  if (product.size_volume !== undefined && product.size_volume !== null && product.size_volume !== '') {
+    sizeVolume = Number(product.size_volume);
+    if (!Number.isFinite(sizeVolume) || sizeVolume <= 0) {
+      throw new Error('Le volume unitaire (size_volume) doit être un nombre positif.');
+    }
+  } else if (isPieceUnit) {
+    sizeVolume = 1.0;
+  } else {
+    throw new Error("Le volume unitaire (size_volume) est obligatoire pour les produits fabriqués en litres/kilos.");
+  }
+
+  // Check packaging items
+  let packagingCostPerUnit = 0;
+  const packagingItems: any[] = product.id
+    ? db.prepare(`
+        SELECT ppi.*, rm.name as material_name, rm.category as material_category, rm.unit as material_unit
+        FROM product_packaging_items ppi
+        JOIN raw_materials rm ON ppi.material_id = rm.id
+        WHERE ppi.product_id = ?
+      `).all(product.id)
+    : [];
+
+  // Double-count guard:
+  // If recipe has packaging items (bottle, cap, label, packaging) AND product has product_packaging_items:
+  const recipeHasPackaging = formulationCost.items.some(i =>
+    ['bottle', 'cap', 'label', 'packaging'].includes(i.material_category)
+  );
+  if (recipeHasPackaging && packagingItems.length > 0) {
+    throw new Error("Incohérence : la formule contient déjà des articles d'emballage alors que le produit a des emballages spécifiques configurés (risque de double décompte).");
+  }
+
+  const unitCosts = getMaterialUnitCosts(db, targetYear);
+  for (const pkg of packagingItems) {
+    const uCost = unitCosts.get(pkg.material_id) ?? 0;
+    const lineCost = round3(pkg.quantity_per_unit * uCost);
+    packagingCostPerUnit = addMoney(packagingCostPerUnit, lineCost);
+  }
+
+  const bulkPortion = round3(multiplyMoney(costPerBaseUnit, sizeVolume));
+  const costPerFinishedUnit = round3(addMoney(bulkPortion, packagingCostPerUnit));
+
+  return {
+    formulation_id: formulationId,
+    base_yield_quantity: baseYieldQty,
+    base_yield_unit: formulationCost.base_yield_unit,
+    base_recipe_total_cost: formulationCost.total_cost,
+    cost_per_base_unit: costPerBaseUnit,
+    size_volume: sizeVolume,
+    packaging_cost_per_unit: packagingCostPerUnit,
+    cost_per_finished_unit: costPerFinishedUnit
+  };
+}
+
 /**
  * Scales a formulation to calculate required materials and expected cost for a specific target production output.
  */
 export function calculateBatchRequirements(
   db: any,
   formulationId: string,
-  targetOutputUnits: number,
+  targetOutputUnits?: number | null,
+  batchVolumeOrYear?: number | null,
+  targetProductId?: string | null,
   targetYear?: number
 ): {
   targetOutputUnits: number;
+  batchVolume: number;
   scalingFactor: number;
   totalBatchCost: number;
   costPerUnit: number;
   ingredients: ScaledBatchIngredient[];
 } {
-  const formulationCost = calculateFormulationCost(db, formulationId, targetYear);
-  const baseYield = formulationCost.base_yield_quantity;
-  const scalingFactor = targetOutputUnits / baseYield;
+  let declaredBatchVolume: number | null = null;
+  let year = targetYear;
+  if (targetProductId) {
+    declaredBatchVolume = batchVolumeOrYear !== undefined ? batchVolumeOrYear : null;
+  } else if (typeof batchVolumeOrYear === 'number') {
+    year = batchVolumeOrYear;
+  }
+
+  const formulationCost = calculateFormulationCost(db, formulationId, year);
+  const baseYield = formulationCost.base_yield_quantity > 0 ? formulationCost.base_yield_quantity : 1;
+
+  if (targetProductId) {
+    const product: any = db.prepare('SELECT * FROM products WHERE id = ?').get(targetProductId);
+    if (!product) {
+      throw new Error(`Target product SKU not found: ${targetProductId}`);
+    }
+
+    let sizeVolume: number;
+    const isPieceUnit = ['pcs', 'piece', 'pieces', 'unit', 'unite', 'unites'].includes(String(formulationCost.base_yield_unit).toLowerCase());
+    if (product.size_volume !== null && product.size_volume !== undefined && product.size_volume !== '') {
+      sizeVolume = Number(product.size_volume);
+      if (!Number.isFinite(sizeVolume) || sizeVolume <= 0) {
+        throw new Error('Le volume unitaire (size_volume) doit être un nombre positif.');
+      }
+    } else if (isPieceUnit) {
+      sizeVolume = 1.0;
+    } else {
+      throw new Error("Le volume unitaire (size_volume) est obligatoire pour les produits fabriqués en litres/kilos.");
+    }
+
+    const hasUnits = targetOutputUnits !== undefined && targetOutputUnits !== null && !isNaN(Number(targetOutputUnits)) && Number(targetOutputUnits) > 0;
+    const hasVol = declaredBatchVolume !== undefined && declaredBatchVolume !== null && !isNaN(Number(declaredBatchVolume)) && Number(declaredBatchVolume) > 0;
+
+    let finalUnits: number;
+    let finalVol: number;
+
+    if (hasUnits && hasVol) {
+      const units = Number(targetOutputUnits);
+      const vol = Number(declaredBatchVolume);
+      const expectedVol = round3(units * sizeVolume);
+      if (Math.abs(vol - expectedVol) > 0.001) {
+        throw new Error(`Incohérence : le volume déclaré (${vol}) ne correspond pas aux unités produites (${units} × ${sizeVolume} = ${expectedVol}).`);
+      }
+      finalUnits = units;
+      finalVol = vol;
+    } else if (hasUnits) {
+      finalUnits = Number(targetOutputUnits);
+      finalVol = round3(finalUnits * sizeVolume);
+    } else if (hasVol) {
+      finalVol = Number(declaredBatchVolume);
+      finalUnits = round3(finalVol / sizeVolume);
+    } else {
+      throw new Error("Le volume du lot ou le nombre d'unités produites doit être spécifié.");
+    }
+
+    const packagingItems: any[] = db.prepare(`
+      SELECT ppi.*, rm.name as material_name, rm.category as material_category, rm.unit as material_unit
+      FROM product_packaging_items ppi
+      JOIN raw_materials rm ON ppi.material_id = rm.id
+      WHERE ppi.product_id = ?
+    `).all(targetProductId);
+
+    const recipeHasPackaging = formulationCost.items.some(i =>
+      ['bottle', 'cap', 'label', 'packaging'].includes(i.material_category)
+    );
+    if (recipeHasPackaging && packagingItems.length > 0) {
+      throw new Error("Incohérence : la formule contient déjà des articles d'emballage alors que le produit a des emballages spécifiques configurés (risque de double décompte).");
+    }
+
+    const scalingFactor = finalVol / baseYield;
+    let totalBatchCost = 0;
+    const ingredients: ScaledBatchIngredient[] = [];
+
+    // Recipe chemistry items
+    const chemistryItems = packagingItems.length > 0
+      ? formulationCost.items.filter(i => !['bottle', 'cap', 'label', 'packaging'].includes(i.material_category))
+      : formulationCost.items;
+
+    for (const item of chemistryItems) {
+      const rawMaterial: any = db.prepare('SELECT stock_quantity FROM raw_materials WHERE id = ?').get(item.material_id);
+      const currentStock = rawMaterial ? rawMaterial.stock_quantity : 0;
+      const scaledQty = round3(item.quantity_required * scalingFactor);
+      const scaledItemTotal = round3(scaledQty * item.unit_cost);
+      totalBatchCost = addMoney(totalBatchCost, scaledItemTotal);
+
+      ingredients.push({
+        material_id: item.material_id,
+        material_name: item.material_name,
+        material_unit: item.material_unit,
+        quantity_consumed: scaledQty,
+        unit_cost: item.unit_cost,
+        total_cost: scaledItemTotal,
+        current_stock: currentStock,
+        remaining_stock_after_batch: currentStock - scaledQty
+      });
+    }
+
+    // Product packaging items
+    const unitCosts = getMaterialUnitCosts(db, targetYear);
+    for (const pkg of packagingItems) {
+      const rawMaterial: any = db.prepare('SELECT stock_quantity FROM raw_materials WHERE id = ?').get(pkg.material_id);
+      const currentStock = rawMaterial ? rawMaterial.stock_quantity : 0;
+      const pkgQty = round3(finalUnits * pkg.quantity_per_unit);
+      const uCost = unitCosts.get(pkg.material_id) ?? 0;
+      const pkgTotal = round3(pkgQty * uCost);
+      totalBatchCost = addMoney(totalBatchCost, pkgTotal);
+
+      ingredients.push({
+        material_id: pkg.material_id,
+        material_name: pkg.material_name,
+        material_unit: pkg.material_unit,
+        quantity_consumed: pkgQty,
+        unit_cost: uCost,
+        total_cost: pkgTotal,
+        current_stock: currentStock,
+        remaining_stock_after_batch: currentStock - pkgQty
+      });
+    }
+
+    const costPerUnit = finalUnits > 0 ? divideMoney(totalBatchCost, finalUnits) : 0;
+
+    return {
+      targetOutputUnits: finalUnits,
+      batchVolume: finalVol,
+      scalingFactor,
+      totalBatchCost,
+      costPerUnit,
+      ingredients
+    };
+  }
+
+  // Fallback for callers that don't pass targetProductId (pure formulation tests)
+  const finalUnits = Number(targetOutputUnits) || 1;
+  const finalVol = declaredBatchVolume ? Number(declaredBatchVolume) : finalUnits;
+  const scalingFactor = declaredBatchVolume ? (finalVol / baseYield) : (finalUnits / baseYield);
 
   let totalBatchCost = 0;
   const ingredients: ScaledBatchIngredient[] = formulationCost.items.map((item) => {
@@ -197,10 +432,11 @@ export function calculateBatchRequirements(
     };
   });
 
-  const costPerUnit = targetOutputUnits > 0 ? divideMoney(totalBatchCost, targetOutputUnits) : 0;
+  const costPerUnit = finalUnits > 0 ? divideMoney(totalBatchCost, finalUnits) : 0;
 
   return {
-    targetOutputUnits,
+    targetOutputUnits: finalUnits,
+    batchVolume: finalVol,
     scalingFactor,
     totalBatchCost,
     costPerUnit,

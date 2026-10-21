@@ -32,6 +32,7 @@ describe('Numeric validation and error handling (F9)', () => {
     const prod = await request(app).post('/api/products').send({
       family_id: fam.body.id,
       name: 'Validation Dish Soap 1L',
+      size_volume: 1,
       retail_price: 10,
       wholesale_price: 8,
       stock_quantity: 50

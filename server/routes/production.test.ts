@@ -238,4 +238,158 @@ describe('Production Batches Module', () => {
     expect(detail.body.materials_consumed[0].total_cost).toBe(12.000);
     resetTestDb();
   });
+
+  it('runs 20 x 2L production: scales chemical to 4kg and packaging to 20 units via HTTP', async () => {
+    resetTestDb();
+    const matChem = await request(app).post('/api/materials').send({ name: 'Chem LABSA', category: 'chemical', unit: 'kg', stock_quantity: 100, latest_purchase_cost: 2.000 });
+    const matBot = await request(app).post('/api/materials').send({ name: 'Bottle 2L', category: 'bottle', unit: 'pcs', stock_quantity: 100, latest_purchase_cost: 0.420 });
+    const matCap = await request(app).post('/api/materials').send({ name: 'Cap 28mm', category: 'cap', unit: 'pcs', stock_quantity: 100, latest_purchase_cost: 0.050 });
+    const matLbl = await request(app).post('/api/materials').send({ name: 'Label 2L', category: 'label', unit: 'pcs', stock_quantity: 100, latest_purchase_cost: 0.090 });
+
+    const form = await request(app).post('/api/formulations').send({
+      name: 'Formule 100L Vrac', base_yield_quantity: 100, base_yield_unit: 'L',
+      items: [{ material_id: matChem.body.id, quantity_required: 10 }]
+    });
+
+    const fam = await request(app).post('/api/products/families').send({
+      name: 'Famille Citron', category: 'Detergents', type: 'MANUFACTURED', formulation_id: form.body.id
+    });
+
+    const prod = await request(app).post('/api/products').send({
+      family_id: fam.body.id, name: 'Citron 2L', size_label: '2L', size_volume: 2.0, stock_quantity: 0
+    });
+
+    // Add packaging items to product_packaging_items
+    const db = (await import('../db/index.js')).getDb();
+    db.prepare('INSERT INTO product_packaging_items (id, product_id, material_id, quantity_per_unit) VALUES (?, ?, ?, ?)').run('ppi-b', prod.body.id, matBot.body.id, 1);
+    db.prepare('INSERT INTO product_packaging_items (id, product_id, material_id, quantity_per_unit) VALUES (?, ?, ?, ?)').run('ppi-c', prod.body.id, matCap.body.id, 1);
+    db.prepare('INSERT INTO product_packaging_items (id, product_id, material_id, quantity_per_unit) VALUES (?, ?, ?, ?)').run('ppi-l', prod.body.id, matLbl.body.id, 1);
+
+    // Produce 20 units of 2L with declared volume 40L
+    const res = await request(app).post('/api/production/batches').send({
+      formulation_id: form.body.id,
+      target_product_id: prod.body.id,
+      units_produced: 20,
+      batch_volume: 40
+    });
+
+    expect(res.status).toBe(201);
+    expect(res.body.batch_volume).toBe(40);
+    expect(res.body.units_produced).toBe(20);
+    expect(res.body.total_batch_cost).toBe(19.200); // 8.000 (chem) + 11.200 (pkg)
+    expect(res.body.cost_per_unit).toBe(0.960);
+
+    // Verify materials consumed
+    const consumed = res.body.materials_consumed;
+    expect(consumed).toHaveLength(4);
+
+    const chemConsumed = consumed.find((c: any) => c.material_id === matChem.body.id);
+    expect(chemConsumed.quantity_consumed).toBe(4.000);
+    expect(chemConsumed.total_cost).toBe(8.000);
+
+    const botConsumed = consumed.find((c: any) => c.material_id === matBot.body.id);
+    expect(botConsumed.quantity_consumed).toBe(20);
+    expect(botConsumed.total_cost).toBe(8.400);
+
+    // Verify product stock & cost_reference updated
+    const updatedProd: any = db.prepare('SELECT stock_quantity, cost_reference FROM products WHERE id = ?').get(prod.body.id);
+    expect(updatedProd.stock_quantity).toBe(20);
+    expect(updatedProd.cost_reference).toBe(0.960);
+    resetTestDb();
+  });
+
+  it('verifies the 4 batch reconciliation cases and error paths', async () => {
+    resetTestDb();
+    const mat = await request(app).post('/api/materials').send({ name: 'M', category: 'chemical', unit: 'kg', stock_quantity: 100, latest_purchase_cost: 1 });
+    const form = await request(app).post('/api/formulations').send({
+      name: 'Form 100L', base_yield_quantity: 100, base_yield_unit: 'L',
+      items: [{ material_id: mat.body.id, quantity_required: 10 }]
+    });
+    const fam = await request(app).post('/api/products/families').send({
+      name: 'Fam', category: 'C', type: 'MANUFACTURED', formulation_id: form.body.id
+    });
+    const prod2L = await request(app).post('/api/products').send({
+      family_id: fam.body.id, name: 'P 2L', size_label: '2L', size_volume: 2.0, stock_quantity: 0
+    });
+    const db = (await import('../db/index.js')).getDb();
+    db.prepare(`
+      INSERT INTO products (
+        id, family_id, name, size_label, size_volume, barcode, stock_quantity,
+        low_stock_threshold, cost_reference, retail_price, wholesale_price,
+        active, created_at, updated_at
+      ) VALUES (?, ?, ?, ?, NULL, ?, 0, 5, 0, 0, 0, 1, datetime('now'), datetime('now'))
+    `).run('prod-legacy-no-size', fam.body.id, 'P Legacy No Size', 'Custom', 'BAR-LEGACY-01');
+
+    // Case 1a: Both provided and matching (40L and 20 units) -> 201
+    const matchRes = await request(app).post('/api/production/batches').send({
+      formulation_id: form.body.id, target_product_id: prod2L.body.id, units_produced: 20, batch_volume: 40
+    });
+    expect(matchRes.status).toBe(201);
+    expect(matchRes.body.batch_volume).toBe(40);
+    expect(matchRes.body.units_produced).toBe(20);
+
+    // Case 1b: Both provided but mismatch > 0.001 (50L and 20 units of 2L -> expected 40L) -> 400
+    const mismatchRes = await request(app).post('/api/production/batches').send({
+      formulation_id: form.body.id, target_product_id: prod2L.body.id, units_produced: 20, batch_volume: 50
+    });
+    expect(mismatchRes.status).toBe(400);
+    expect(mismatchRes.body.error).toMatch(/Incohérence.*volume.*unités/i);
+
+    // Case 2: Units only (20 units) -> auto-computes 40L
+    const unitsOnlyRes = await request(app).post('/api/production/batches').send({
+      formulation_id: form.body.id, target_product_id: prod2L.body.id, units_produced: 20
+    });
+    expect(unitsOnlyRes.status).toBe(201);
+    expect(unitsOnlyRes.body.batch_volume).toBe(40);
+    expect(unitsOnlyRes.body.units_produced).toBe(20);
+
+    // Case 3: Volume only (40L) -> auto-computes 20 units
+    const volOnlyRes = await request(app).post('/api/production/batches').send({
+      formulation_id: form.body.id, target_product_id: prod2L.body.id, batch_volume: 40
+    });
+    expect(volOnlyRes.status).toBe(201);
+    expect(volOnlyRes.body.batch_volume).toBe(40);
+    expect(volOnlyRes.body.units_produced).toBe(20);
+
+    // Case 4: Neither provided -> 400
+    const neitherRes = await request(app).post('/api/production/batches').send({
+      formulation_id: form.body.id, target_product_id: prod2L.body.id
+    });
+    expect(neitherRes.status).toBe(400);
+    expect(neitherRes.body.error).toMatch(/volume du lot ou.*unités produites/i);
+
+    // Case 5: NULL size_volume on manufactured product with Litres -> 400
+    const nullSizeRes = await request(app).post('/api/production/batches').send({
+      formulation_id: form.body.id, target_product_id: 'prod-legacy-no-size', units_produced: 10
+    });
+    expect(nullSizeRes.status).toBe(400);
+    expect(nullSizeRes.body.error).toMatch(/size_volume.*obligatoire/i);
+
+    resetTestDb();
+  });
+
+  it('rejects with 400 on double-count guard if recipe contains packaging AND product has packaging items', async () => {
+    resetTestDb();
+    const matBot = await request(app).post('/api/materials').send({ name: 'Bottle', category: 'bottle', unit: 'pcs', stock_quantity: 100, latest_purchase_cost: 0.5 });
+    const form = await request(app).post('/api/formulations').send({
+      name: 'Form with Bottle', base_yield_quantity: 100, base_yield_unit: 'L',
+      items: [{ material_id: matBot.body.id, quantity_required: 100 }]
+    });
+    const fam = await request(app).post('/api/products/families').send({
+      name: 'Fam B', category: 'C', type: 'MANUFACTURED', formulation_id: form.body.id
+    });
+    const prod = await request(app).post('/api/products').send({
+      family_id: fam.body.id, name: 'Prod B', size_label: '1L', size_volume: 1.0, stock_quantity: 0
+    });
+
+    const db = (await import('../db/index.js')).getDb();
+    db.prepare('INSERT INTO product_packaging_items (id, product_id, material_id, quantity_per_unit) VALUES (?, ?, ?, ?)').run('ppi-conf', prod.body.id, matBot.body.id, 1);
+
+    const res = await request(app).post('/api/production/batches').send({
+      formulation_id: form.body.id, target_product_id: prod.body.id, units_produced: 10
+    });
+    expect(res.status).toBe(400);
+    expect(res.body.error).toMatch(/double décompte/i);
+    resetTestDb();
+  });
 });
