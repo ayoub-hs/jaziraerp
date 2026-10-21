@@ -22,7 +22,7 @@ function generateBatchNumber(db: any): string {
 productionRouter.get('/batches', (req: Request, res: Response) => {
   const db = getDb();
   const batches = db.prepare(`
-    SELECT pb.*, f.name as formulation_name, p.name as target_product_name, p.size_label
+    SELECT pb.*, f.name as formulation_name, f.base_yield_unit as formulation_base_unit, p.name as target_product_name, p.size_label
     FROM production_batches pb
     JOIN formulations f ON pb.formulation_id = f.id
     JOIN products p ON pb.target_product_id = p.id
@@ -36,7 +36,7 @@ productionRouter.get('/batches', (req: Request, res: Response) => {
 productionRouter.get('/batches/:id', (req: Request, res: Response) => {
   const db = getDb();
   const batch: any = db.prepare(`
-    SELECT pb.*, f.name as formulation_name, p.name as target_product_name, p.size_label
+    SELECT pb.*, f.name as formulation_name, f.base_yield_unit as formulation_base_unit, p.name as target_product_name, p.size_label
     FROM production_batches pb
     JOIN formulations f ON pb.formulation_id = f.id
     JOIN products p ON pb.target_product_id = p.id
@@ -242,7 +242,7 @@ productionRouter.post('/batches', (req: Request, res: Response) => {
   }
 
   const createdBatch: any = db.prepare(`
-    SELECT pb.*, f.name as formulation_name, p.name as target_product_name, p.size_label, p.stock_quantity as new_stock_quantity
+    SELECT pb.*, f.name as formulation_name, f.base_yield_unit as formulation_base_unit, p.name as target_product_name, p.size_label, p.stock_quantity as new_stock_quantity
     FROM production_batches pb
     JOIN formulations f ON pb.formulation_id = f.id
     JOIN products p ON pb.target_product_id = p.id

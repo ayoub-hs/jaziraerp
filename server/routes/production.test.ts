@@ -429,5 +429,114 @@ describe('Production Batches Module', () => {
       resetTestDb();
     }
   });
+
+  it('includes packaging materials in negative_stock_warnings when a batch drives a packaging item negative', async () => {
+    resetTestDb();
+    const matChem = await request(app).post('/api/materials').send({
+      name: 'Base Liquid', category: 'chemical', unit: 'L', stock_quantity: 100, latest_purchase_cost: 1.000
+    });
+    const matBot = await request(app).post('/api/materials').send({
+      name: 'Flacon 1L', category: 'bottle', unit: 'pcs', stock_quantity: 5, latest_purchase_cost: 0.300
+    });
+
+    const form = await request(app).post('/api/formulations').send({
+      name: 'Formule Simple', base_yield_quantity: 10, base_yield_unit: 'L',
+      items: [{ material_id: matChem.body.id, quantity_required: 10 }]
+    });
+
+    const fam = await request(app).post('/api/products/families').send({
+      name: 'Fam Simple', category: 'Detergents', type: 'MANUFACTURED', formulation_id: form.body.id
+    });
+
+    const prod = await request(app).post('/api/products').send({
+      family_id: fam.body.id, name: 'Produit 1L', size_label: '1L', size_volume: 1.0, stock_quantity: 0
+    });
+
+    const db = (await import('../db/index.js')).getDb();
+    db.prepare('INSERT INTO product_packaging_items (id, product_id, material_id, quantity_per_unit) VALUES (?, ?, ?, ?)').run(
+      'ppi-bot-neg', prod.body.id, matBot.body.id, 1
+    );
+
+    // Produce 10 units: requires 10 flacons, but only 5 are in stock -> stock becomes -5
+    const res = await request(app).post('/api/production/batches').send({
+      formulation_id: form.body.id,
+      target_product_id: prod.body.id,
+      units_produced: 10,
+      batch_volume: 10
+    });
+
+    expect(res.status).toBe(201);
+    expect(res.body.negative_stock_warnings).toBeDefined();
+    expect(res.body.negative_stock_warnings).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          material_id: matBot.body.id,
+          material_name: 'Flacon 1L',
+          current_stock: 5,
+          quantity_required: 10,
+          deficit: 5,
+          unit: 'pcs'
+        })
+      ])
+    );
+
+    // Check DB stock of bottle is indeed negative (-5)
+    const bottleRow: any = db.prepare('SELECT stock_quantity FROM raw_materials WHERE id = ?').get(matBot.body.id);
+    expect(bottleRow.stock_quantity).toBe(-5);
+
+    resetTestDb();
+  });
+
+  it('batch history returns batch_volume with formulation_base_unit and NULL for old batches', async () => {
+    resetTestDb();
+    const mat = await request(app).post('/api/materials').send({
+      name: 'Savon Base', category: 'chemical', unit: 'L', stock_quantity: 200, latest_purchase_cost: 0.8
+    });
+    const form = await request(app).post('/api/formulations').send({
+      name: 'Formule Savon', base_yield_quantity: 50, base_yield_unit: 'L',
+      items: [{ material_id: mat.body.id, quantity_required: 50 }]
+    });
+    const fam = await request(app).post('/api/products/families').send({
+      name: 'Fam Savon', category: 'Savon', type: 'MANUFACTURED', formulation_id: form.body.id
+    });
+    const prod = await request(app).post('/api/products').send({
+      family_id: fam.body.id, name: 'Savon 1L', size_label: '1L', size_volume: 1.0, stock_quantity: 0
+    });
+
+    // Create a new batch via API (has batch_volume)
+    const newBatch = await request(app).post('/api/production/batches').send({
+      formulation_id: form.body.id, target_product_id: prod.body.id, units_produced: 25, batch_volume: 25
+    });
+    expect(newBatch.status).toBe(201);
+
+    // Insert an old legacy batch with NULL batch_volume directly in DB
+    const db = (await import('../db/index.js')).getDb();
+    db.prepare(`
+      INSERT INTO production_batches (
+        id, batch_number, date, formulation_id, target_product_id,
+        batch_volume, units_produced, total_batch_cost, cost_per_unit, notes, created_at
+      ) VALUES (?, ?, ?, ?, ?, NULL, ?, ?, ?, ?, ?)
+    `).run(
+      'batch-legacy-old', 'BAT-LEGACY-001', '2026-01-01T00:00:00.000Z',
+      form.body.id, prod.body.id, 10, 8.0, 0.8, 'legacy batch', '2026-01-01T00:00:00.000Z'
+    );
+
+    const historyRes = await request(app).get('/api/production/batches');
+    expect(historyRes.status).toBe(200);
+    const batches = historyRes.body;
+    expect(batches.length).toBeGreaterThanOrEqual(2);
+
+    const apiBatch = batches.find((b: any) => b.id === newBatch.body.id);
+    expect(apiBatch).toBeDefined();
+    expect(apiBatch.batch_volume).toBe(25);
+    expect(apiBatch.formulation_base_unit).toBe('L');
+
+    const legacyBatch = batches.find((b: any) => b.id === 'batch-legacy-old');
+    expect(legacyBatch).toBeDefined();
+    expect(legacyBatch.batch_volume).toBeNull();
+    expect(legacyBatch.formulation_base_unit).toBe('L');
+
+    resetTestDb();
+  });
 });
 

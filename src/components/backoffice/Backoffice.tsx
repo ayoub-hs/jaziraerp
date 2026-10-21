@@ -302,8 +302,12 @@ export const Backoffice: React.FC<BackofficeProps> = ({
         if (adjRes.ok) setInventoryAdjustments(await adjRes.json());
       }
       if (activeTab === 'PRODUCTION') {
-        const batchRes = await fetch('/api/production/batches');
+        const [batchRes, formRes] = await Promise.all([
+          fetch('/api/production/batches'),
+          fetch('/api/formulations')
+        ]);
         if (batchRes.ok) setProductionBatches(await batchRes.json());
+        if (formRes.ok) setFormulations(await formRes.json());
       }
       if (activeTab === 'SUPPLIERS') {
         const [supRes, purRes, matRes] = await Promise.all([
@@ -555,6 +559,7 @@ export const Backoffice: React.FC<BackofficeProps> = ({
         body: JSON.stringify({
           formulation_id: selectedFormulationId,
           target_product_id: targetProductId,
+          batch_volume: parseFloat(batchVolume),
           batch_volume_liters: parseFloat(batchVolume),
           units_produced: parseFloat(unitsProduced)
         })
@@ -1481,11 +1486,13 @@ export const Backoffice: React.FC<BackofficeProps> = ({
               {/* Production Form */}
               <div className="bg-white p-5 rounded-2xl shadow-sm border border-slate-200">
                 <form onSubmit={handleRunBatchWizard} className="space-y-4">
+                  {/* 1. Recipe Selection */}
                   <div>
-                    <label className="block text-xs font-bold text-slate-700 mb-1">
+                    <label htmlFor="wizard-recipe-select" className="block text-xs font-bold text-slate-700 mb-1">
                       1. Sélectionner la Recette *
                     </label>
                     <select
+                      id="wizard-recipe-select"
                       value={selectedFormulationId}
                       onChange={e => {
                         setSelectedFormulationId(e.target.value);
@@ -1503,52 +1510,26 @@ export const Backoffice: React.FC<BackofficeProps> = ({
                     </select>
                   </div>
 
-                  {(() => {
-                    const selectedFormulation = formulations.find(f => f.id === selectedFormulationId);
-                    const yieldUnit = (selectedFormulation as any)?.base_yield_unit || 'L';
-                    const volumeUnitLabel = yieldUnit === 'kg' ? 'Kilogrammes' : yieldUnit === 'pcs' ? 'Pièces' : 'Litres';
-
-                    return (
-                      <div className="grid grid-cols-2 gap-3">
-                        <div>
-                          <label className="block text-xs font-bold text-slate-700 mb-1">
-                            Volume du Lot ({volumeUnitLabel}) *
-                          </label>
-                          <input
-                            type="number"
-                            step="any"
-                            min="0.001"
-                            required
-                            value={batchVolume}
-                            onChange={e => setBatchVolume(e.target.value)}
-                            className="w-full text-xs font-bold font-mono px-3 py-2 border border-slate-300 rounded-xl"
-                          />
-                        </div>
-                        <div>
-                          <label className="block text-xs font-bold text-slate-700 mb-1">
-                            Unités Produites *
-                          </label>
-                          <input
-                            type="number"
-                            step="any"
-                            min="0.001"
-                            required
-                            value={unitsProduced}
-                            onChange={e => setUnitsProduced(e.target.value)}
-                            className="w-full text-xs font-bold font-mono px-3 py-2 border border-slate-300 rounded-xl"
-                          />
-                        </div>
-                      </div>
-                    );
-                  })()}
-
+                  {/* 2. Target Product Selection */}
                   <div>
-                    <label className="block text-xs font-bold text-slate-700 mb-1">
+                    <label htmlFor="wizard-product-select" className="block text-xs font-bold text-slate-700 mb-1">
                       2. Article Produit à Réapprovisionner *
                     </label>
                     <select
+                      id="wizard-product-select"
                       value={targetProductId}
-                      onChange={e => setTargetProductId(e.target.value)}
+                      onChange={e => {
+                        const newId = e.target.value;
+                        setTargetProductId(newId);
+                        const prod = products.find(p => p.id === newId);
+                        if (prod?.size_volume && prod.size_volume > 0) {
+                          const v = parseFloat(batchVolume);
+                          if (!isNaN(v) && v > 0) {
+                            const u = Math.round((v / prod.size_volume) * 1000) / 1000;
+                            setUnitsProduced(String(u));
+                          }
+                        }
+                      }}
                       required
                       className="w-full text-xs font-semibold px-3 py-2 border border-slate-300 rounded-xl"
                     >
@@ -1590,26 +1571,126 @@ export const Backoffice: React.FC<BackofficeProps> = ({
                         );
                       })()}
                     </select>
-                    {selectedFormulationId && (() => {
-                      const familyById = new Map((families || []).map(f => [f.id, f]));
-                      const hasLinked = products.some(p => {
-                        const fam = familyById.get(p.family_id);
-                        return fam && fam.type === 'MANUFACTURED' && fam.formulation_id === selectedFormulationId;
-                      });
-                      if (!hasLinked) {
-                        return (
-                          <p className="text-pos-badge text-amber-800 font-semibold mt-1">
-                            ℹ️ Cette formule n'est pas encore liée à une famille spécifique. Vous pouvez choisir n'importe quel produit fabriqué ci-dessus.
-                          </p>
-                        );
+
+                    {/* Missing size warning or size volume used */}
+                    {(() => {
+                      const selectedTargetProduct = products.find(p => p.id === targetProductId);
+                      const selectedFormulation = formulations.find(f => f.id === selectedFormulationId);
+                      const yieldUnit = (selectedFormulation as any)?.base_yield_unit || 'L';
+
+                      if (selectedTargetProduct) {
+                        if (selectedTargetProduct.size_volume !== null && selectedTargetProduct.size_volume !== undefined && selectedTargetProduct.size_volume > 0) {
+                          return (
+                            <div className="text-pos-badge text-emerald-800 font-bold bg-emerald-50 px-2.5 py-1 rounded-lg border border-emerald-200 inline-flex items-center gap-1.5 mt-1.5">
+                              Format unitaire utilisé : {selectedTargetProduct.size_volume} {yieldUnit}
+                            </div>
+                          );
+                        } else {
+                          return (
+                            <div className="p-3 bg-amber-50 border border-amber-200 text-amber-950 rounded-xl text-xs flex items-center justify-between mt-2">
+                              <span className="flex items-center gap-1.5 font-semibold">
+                                <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0" />
+                                Format manquant : cet article n'a aucun volume unitaire configuré.
+                              </span>
+                              <button
+                                type="button"
+                                onClick={() => setIsBatchCostModalOpen(true)}
+                                className="font-bold underline text-blue-700 hover:text-blue-900 ml-2 shrink-0 text-pos-badge"
+                              >
+                                Tailles & Coûts
+                              </button>
+                            </div>
+                          );
+                        }
+                      }
+
+                      if (selectedFormulationId) {
+                        const familyById = new Map((families || []).map(f => [f.id, f]));
+                        const hasLinked = products.some(p => {
+                          const fam = familyById.get(p.family_id);
+                          return fam && fam.type === 'MANUFACTURED' && fam.formulation_id === selectedFormulationId;
+                        });
+                        if (!hasLinked) {
+                          return (
+                            <p className="text-pos-badge text-amber-800 font-semibold mt-1">
+                              ℹ️ Cette formule n'est pas encore liée à une famille spécifique. Vous pouvez choisir n'importe quel produit fabriqué ci-dessus.
+                            </p>
+                          );
+                        }
                       }
                       return null;
                     })()}
                   </div>
 
+                  {/* 3. Batch Volume & Units Produced with Bi-Directional Derivation */}
+                  {(() => {
+                    const selectedFormulation = formulations.find(f => f.id === selectedFormulationId);
+                    const selectedTargetProduct = products.find(p => p.id === targetProductId);
+                    const yieldUnit = (selectedFormulation as any)?.base_yield_unit || 'L';
+                    const volumeUnitLabel = yieldUnit === 'kg' ? 'Kilogrammes' : yieldUnit === 'pcs' ? 'Pièces' : 'Litres';
+
+                    return (
+                      <div className="grid grid-cols-2 gap-3">
+                        <div>
+                          <label htmlFor="wizard-batch-volume" className="block text-xs font-bold text-slate-700 mb-1">
+                            Volume du Lot ({volumeUnitLabel}) *
+                          </label>
+                          <input
+                            id="wizard-batch-volume"
+                            type="number"
+                            step="any"
+                            min="0.001"
+                            required
+                            value={batchVolume}
+                            onChange={e => {
+                              const newVol = e.target.value;
+                              setBatchVolume(newVol);
+                              if (selectedTargetProduct?.size_volume && selectedTargetProduct.size_volume > 0) {
+                                const v = parseFloat(newVol);
+                                if (!isNaN(v) && v > 0) {
+                                  const u = Math.round((v / selectedTargetProduct.size_volume) * 1000) / 1000;
+                                  setUnitsProduced(String(u));
+                                }
+                              }
+                            }}
+                            className="w-full text-xs font-bold font-mono px-3 py-2 border border-slate-300 rounded-xl"
+                          />
+                        </div>
+                        <div>
+                          <label htmlFor="wizard-units-produced" className="block text-xs font-bold text-slate-700 mb-1">
+                            Unités Produites *
+                          </label>
+                          <input
+                            id="wizard-units-produced"
+                            type="number"
+                            step="any"
+                            min="0.001"
+                            required
+                            value={unitsProduced}
+                            onChange={e => {
+                              const newUnits = e.target.value;
+                              setUnitsProduced(newUnits);
+                              if (selectedTargetProduct?.size_volume && selectedTargetProduct.size_volume > 0) {
+                                const u = parseFloat(newUnits);
+                                if (!isNaN(u) && u > 0) {
+                                  const v = Math.round((u * selectedTargetProduct.size_volume) * 1000) / 1000;
+                                  setBatchVolume(String(v));
+                                }
+                              }
+                            }}
+                            className="w-full text-xs font-bold font-mono px-3 py-2 border border-slate-300 rounded-xl"
+                          />
+                        </div>
+                      </div>
+                    );
+                  })()}
+
                   <button
                     type="submit"
-                    disabled={isExecutingBatch}
+                    disabled={isExecutingBatch || (() => {
+                      const p = products.find(x => x.id === targetProductId);
+                      return Boolean(p && (p.size_volume === null || p.size_volume === undefined));
+                    })()}
                     className="w-full py-3 bg-emerald-700 hover:bg-emerald-800 disabled:opacity-50 text-white font-bold rounded-xl shadow text-xs transition-colors flex items-center justify-center gap-1.5"
                   >
                     <FlaskConical className="w-4 h-4" />
@@ -1623,7 +1704,7 @@ export const Backoffice: React.FC<BackofficeProps> = ({
                 {batchResult ? (
                   batchResult.error ? (
                     <div className="p-3 bg-rose-50 border border-rose-200 text-rose-800 rounded-xl text-xs flex items-center gap-2">
-                      <AlertTriangle className="w-4 h-4 shrink-0" />
+                      <AlertTriangle className="w-4 h-4 shrink-0 text-rose-600" />
                       <span>{batchResult.error}</span>
                     </div>
                   ) : (
@@ -1637,15 +1718,24 @@ export const Backoffice: React.FC<BackofficeProps> = ({
                       <div>Coût Total : <span className="font-bold tabular-nums">{formatMoney(batchResult.total_batch_cost)}</span></div>
                       <div>Coût / Unité : <span className="font-bold text-emerald-800 tabular-nums">{formatMoney(batchResult.cost_per_unit)}</span></div>
                     </div>
-                    {batchResult.warnings && batchResult.warnings.length > 0 && (
-                      <div className="bg-amber-50 border border-amber-200 p-3 rounded-xl text-xs text-amber-900 space-y-1">
-                        <span className="font-bold block flex items-center gap-1">
-                          <AlertTriangle className="w-3.5 h-3.5" />
+                    {((batchResult.negative_stock_warnings && batchResult.negative_stock_warnings.length > 0) ||
+                      (batchResult.warnings && batchResult.warnings.length > 0)) && (
+                      <div className="bg-amber-50 border border-amber-200 p-3.5 rounded-xl text-xs text-amber-950 space-y-2">
+                        <span className="font-bold block flex items-center gap-1.5 text-amber-900">
+                          <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0" />
                           Avertissements de déficit de stock (passé en négatif) :
                         </span>
-                        {batchResult.warnings.map((w: string, i: number) => (
-                          <div key={i}>• {w}</div>
-                        ))}
+                        <div className="space-y-1 pl-1">
+                          {(batchResult.negative_stock_warnings || []).map((w: any, i: number) => (
+                            <div key={i} className="text-pos-badge font-mono text-slate-800">
+                              • <span className="font-sans font-bold text-slate-900">{w.material_name}</span> : Requis {w.quantity_required} {w.unit}, Disponible {w.current_stock} {w.unit} (Déficit : <span className="text-rose-700 font-bold">{w.deficit} {w.unit}</span>)
+                            </div>
+                          ))}
+                          {(!batchResult.negative_stock_warnings && batchResult.warnings) &&
+                            batchResult.warnings.map((w: string, i: number) => (
+                              <div key={i} className="text-pos-badge">• {w}</div>
+                            ))}
+                        </div>
                       </div>
                     )}
                   </div>
@@ -1730,7 +1820,11 @@ export const Backoffice: React.FC<BackofficeProps> = ({
                         <td className="py-2 px-3 text-slate-700 font-mono text-pos-badge">{formatDateTime(b.date || b.created_at)}</td>
                         <td className="py-2 px-3 font-semibold text-slate-800">{b.formulation_name}</td>
                         <td className="py-2 px-3 font-bold text-slate-900">{b.target_product_name} {b.size_label ? `(${b.size_label})` : ''}</td>
-                        <td className="py-2 px-3 text-center font-mono font-bold text-slate-800 tabular-nums">{b.batch_volume_liters}L</td>
+                        <td className="py-2 px-3 text-center font-mono font-bold text-slate-800 tabular-nums">
+                          {b.batch_volume !== null && b.batch_volume !== undefined
+                            ? `${b.batch_volume} ${b.formulation_base_unit || (b as any).base_yield_unit || 'L'}`
+                            : '—'}
+                        </td>
                         <td className="py-2 px-3 text-center font-mono font-bold text-slate-800 tabular-nums">{b.units_produced}</td>
                         <td className="py-2 px-3 text-right font-mono font-bold text-emerald-800 tabular-nums">{formatMoney(b.cost_per_unit)}</td>
                         <td className="py-2 px-3 text-right font-mono font-bold text-slate-900 tabular-nums">{formatMoney(b.total_batch_cost)}</td>
