@@ -1068,36 +1068,51 @@ productsRouter.put('/:id', (req: Request, res: Response) => {
   const now = new Date().toISOString();
 
   try {
-    db.prepare(`
-      UPDATE products
-      SET name = COALESCE(?, name),
-          size_label = COALESCE(?, size_label),
-          size_volume = COALESCE(?, size_volume),
-          barcode = COALESCE(?, barcode),
-          stock_quantity = COALESCE(?, stock_quantity),
-          low_stock_threshold = COALESCE(?, low_stock_threshold),
-          retail_price = COALESCE(?, retail_price),
-          wholesale_price = COALESCE(?, wholesale_price),
-          cost_reference = COALESCE(?, cost_reference),
-          container_type_id = COALESCE(?, container_type_id),
-          active = COALESCE(?, active),
-          updated_at = ?
-      WHERE id = ?
-    `).run(
-      name !== undefined ? name.trim() : null,
-      size_label !== undefined ? size_label.trim() : null,
-      validSizeVolume !== undefined ? validSizeVolume : null,
-      barcode !== undefined ? barcode.trim() : null,
-      validStock !== undefined ? validStock : null,
-      validThreshold !== undefined ? validThreshold : null,
-      validRetail !== undefined ? round3(validRetail) : null,
-      validWholesale !== undefined ? round3(validWholesale) : null,
-      validCost !== undefined ? round3(validCost) : null,
-      container_type_id !== undefined ? container_type_id : null,
-      active !== undefined ? Number(active) : null,
-      now,
-      req.params.id
-    );
+    const updateTx = db.transaction(() => {
+      db.prepare(`
+        UPDATE products
+        SET name = COALESCE(?, name),
+            size_label = COALESCE(?, size_label),
+            size_volume = COALESCE(?, size_volume),
+            barcode = COALESCE(?, barcode),
+            stock_quantity = COALESCE(?, stock_quantity),
+            low_stock_threshold = COALESCE(?, low_stock_threshold),
+            retail_price = COALESCE(?, retail_price),
+            wholesale_price = COALESCE(?, wholesale_price),
+            cost_reference = COALESCE(?, cost_reference),
+            container_type_id = COALESCE(?, container_type_id),
+            active = COALESCE(?, active),
+            updated_at = ?
+        WHERE id = ?
+      `).run(
+        name !== undefined ? name.trim() : null,
+        size_label !== undefined ? size_label.trim() : null,
+        validSizeVolume !== undefined ? validSizeVolume : null,
+        barcode !== undefined ? barcode.trim() : null,
+        validStock !== undefined ? validStock : null,
+        validThreshold !== undefined ? validThreshold : null,
+        validRetail !== undefined ? round3(validRetail) : null,
+        validWholesale !== undefined ? round3(validWholesale) : null,
+        validCost !== undefined ? round3(validCost) : null,
+        container_type_id !== undefined ? container_type_id : null,
+        active !== undefined ? Number(active) : null,
+        now,
+        req.params.id
+      );
+
+      if (validStock !== undefined) {
+        const oldQty = Number(existing.stock_quantity) || 0;
+        const delta = round3(validStock - oldQty);
+        if (delta !== 0) {
+          db.prepare(`
+            INSERT INTO inventory_adjustments (id, date, item_type, material_id, product_id, quantity_delta, reason, created_at)
+            VALUES (?, ?, 'PRODUCT', NULL, ?, ?, 'PRODUCT_EDIT', ?)
+          `).run(crypto.randomUUID(), now, req.params.id, delta, now);
+        }
+      }
+    });
+
+    updateTx();
   } catch (err: any) {
     if (err.message && err.message.includes('UNIQUE constraint failed: products.barcode')) {
       res.status(400).json({ error: `Barcode already in use.` });

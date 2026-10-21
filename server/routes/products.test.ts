@@ -498,4 +498,70 @@ describe('Products & Sizing Model Module (HTTP Routes)', () => {
     expect(itemPreview.status).toBe('ok');
     expect(itemPreview.calculated_cost).toBe(1.680);
   });
+
+  it('F12: writes an inventory_adjustments row on stock change through product PUT, none when unchanged', async () => {
+    const fam = await request(app).post('/api/products/families').send({
+      name: 'F12 Family', category: 'General', type: 'RESALE'
+    });
+
+    const createRes = await request(app).post('/api/products').send({
+      family_id: fam.body.id,
+      name: 'F12 Stock Item',
+      stock_quantity: 50,
+      retail_price: 5.000,
+      wholesale_price: 4.000
+    });
+    expect(createRes.status).toBe(201);
+    const prodId = createRes.body.id;
+
+    const db = (await import('../db/index.js')).getDb();
+
+    // Baseline: No adjustments yet
+    const initialAdjs = db.prepare('SELECT * FROM inventory_adjustments WHERE product_id = ?').all(prodId);
+    expect(initialAdjs).toHaveLength(0);
+
+    // 1. Stock increases from 50 to 65 (+15)
+    const incRes = await request(app).put(`/api/products/${prodId}`).send({
+      stock_quantity: 65
+    });
+    expect(incRes.status).toBe(200);
+    expect(incRes.body.stock_quantity).toBe(65);
+
+    const afterInc = db.prepare('SELECT * FROM inventory_adjustments WHERE product_id = ? ORDER BY created_at ASC').all(prodId) as any[];
+    expect(afterInc).toHaveLength(1);
+    expect(afterInc[0].item_type).toBe('PRODUCT');
+    expect(afterInc[0].product_id).toBe(prodId);
+    expect(afterInc[0].quantity_delta).toBe(15);
+    expect(afterInc[0].reason).toBe('PRODUCT_EDIT');
+
+    // 2. Stock decreases from 65 to 40 (-25)
+    const decRes = await request(app).put(`/api/products/${prodId}`).send({
+      stock_quantity: 40
+    });
+    expect(decRes.status).toBe(200);
+    expect(decRes.body.stock_quantity).toBe(40);
+
+    const afterDec = db.prepare('SELECT * FROM inventory_adjustments WHERE product_id = ? ORDER BY created_at ASC').all(prodId) as any[];
+    expect(afterDec).toHaveLength(2);
+    expect(afterDec[1].quantity_delta).toBe(-25);
+    expect(afterDec[1].reason).toBe('PRODUCT_EDIT');
+
+    // 3. Unchanged stock_quantity (sent identical value 40) -> writes NO row
+    const sameRes = await request(app).put(`/api/products/${prodId}`).send({
+      stock_quantity: 40
+    });
+    expect(sameRes.status).toBe(200);
+
+    const afterSame = db.prepare('SELECT * FROM inventory_adjustments WHERE product_id = ?').all(prodId);
+    expect(afterSame).toHaveLength(2);
+
+    // 4. PUT without stock_quantity (e.g. changing retail_price only) -> writes NO row
+    const priceRes = await request(app).put(`/api/products/${prodId}`).send({
+      retail_price: 6.500
+    });
+    expect(priceRes.status).toBe(200);
+
+    const afterPriceOnly = db.prepare('SELECT * FROM inventory_adjustments WHERE product_id = ?').all(prodId);
+    expect(afterPriceOnly).toHaveLength(2);
+  });
 });
