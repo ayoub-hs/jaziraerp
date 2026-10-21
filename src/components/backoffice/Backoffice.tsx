@@ -1522,10 +1522,16 @@ export const Backoffice: React.FC<BackofficeProps> = ({
                         const newId = e.target.value;
                         setTargetProductId(newId);
                         const prod = products.find(p => p.id === newId);
-                        if (prod?.size_volume && prod.size_volume > 0) {
+                        const selForm = formulations.find(f => f.id === selectedFormulationId);
+                        const yUnit = (selForm as any)?.base_yield_unit || 'L';
+                        const isPiece = ['pcs', 'piece', 'pieces', 'unit', 'unite', 'unites'].includes(String(yUnit).toLowerCase());
+                        const effectiveSize = (prod?.size_volume && prod.size_volume > 0)
+                          ? prod.size_volume
+                          : (isPiece ? 1 : null);
+                        if (effectiveSize) {
                           const v = parseFloat(batchVolume);
                           if (!isNaN(v) && v > 0) {
-                            const u = Math.round((v / prod.size_volume) * 1000) / 1000;
+                            const u = Math.round((v / effectiveSize) * 1000) / 1000;
                             setUnitsProduced(String(u));
                           }
                         }
@@ -1577,12 +1583,19 @@ export const Backoffice: React.FC<BackofficeProps> = ({
                       const selectedTargetProduct = products.find(p => p.id === targetProductId);
                       const selectedFormulation = formulations.find(f => f.id === selectedFormulationId);
                       const yieldUnit = (selectedFormulation as any)?.base_yield_unit || 'L';
+                      const isPieceUnit = ['pcs', 'piece', 'pieces', 'unit', 'unite', 'unites'].includes(String(yieldUnit).toLowerCase());
 
                       if (selectedTargetProduct) {
                         if (selectedTargetProduct.size_volume !== null && selectedTargetProduct.size_volume !== undefined && selectedTargetProduct.size_volume > 0) {
                           return (
                             <div className="text-pos-badge text-emerald-800 font-bold bg-emerald-50 px-2.5 py-1 rounded-lg border border-emerald-200 inline-flex items-center gap-1.5 mt-1.5">
                               Format unitaire utilisé : {selectedTargetProduct.size_volume} {yieldUnit}
+                            </div>
+                          );
+                        } else if (isPieceUnit) {
+                          return (
+                            <div className="text-pos-badge text-emerald-800 font-bold bg-emerald-50 px-2.5 py-1 rounded-lg border border-emerald-200 inline-flex items-center gap-1.5 mt-1.5">
+                              Format unitaire utilisé : 1
                             </div>
                           );
                         } else {
@@ -1627,7 +1640,11 @@ export const Backoffice: React.FC<BackofficeProps> = ({
                     const selectedFormulation = formulations.find(f => f.id === selectedFormulationId);
                     const selectedTargetProduct = products.find(p => p.id === targetProductId);
                     const yieldUnit = (selectedFormulation as any)?.base_yield_unit || 'L';
-                    const volumeUnitLabel = yieldUnit === 'kg' ? 'Kilogrammes' : yieldUnit === 'pcs' ? 'Pièces' : 'Litres';
+                    const isPieceUnit = ['pcs', 'piece', 'pieces', 'unit', 'unite', 'unites'].includes(String(yieldUnit).toLowerCase());
+                    const effectiveSize = (selectedTargetProduct?.size_volume && selectedTargetProduct.size_volume > 0)
+                      ? selectedTargetProduct.size_volume
+                      : (isPieceUnit ? 1 : null);
+                    const volumeUnitLabel = isPieceUnit ? 'Pièces' : yieldUnit === 'kg' ? 'Kilogrammes' : 'Litres';
 
                     return (
                       <div className="grid grid-cols-2 gap-3">
@@ -1645,10 +1662,10 @@ export const Backoffice: React.FC<BackofficeProps> = ({
                             onChange={e => {
                               const newVol = e.target.value;
                               setBatchVolume(newVol);
-                              if (selectedTargetProduct?.size_volume && selectedTargetProduct.size_volume > 0) {
+                              if (effectiveSize && effectiveSize > 0) {
                                 const v = parseFloat(newVol);
                                 if (!isNaN(v) && v > 0) {
-                                  const u = Math.round((v / selectedTargetProduct.size_volume) * 1000) / 1000;
+                                  const u = Math.round((v / effectiveSize) * 1000) / 1000;
                                   setUnitsProduced(String(u));
                                 }
                               }
@@ -1670,10 +1687,10 @@ export const Backoffice: React.FC<BackofficeProps> = ({
                             onChange={e => {
                               const newUnits = e.target.value;
                               setUnitsProduced(newUnits);
-                              if (selectedTargetProduct?.size_volume && selectedTargetProduct.size_volume > 0) {
+                              if (effectiveSize && effectiveSize > 0) {
                                 const u = parseFloat(newUnits);
                                 if (!isNaN(u) && u > 0) {
-                                  const v = Math.round((u * selectedTargetProduct.size_volume) * 1000) / 1000;
+                                  const v = Math.round((u * effectiveSize) * 1000) / 1000;
                                   setBatchVolume(String(v));
                                 }
                               }
@@ -1689,7 +1706,11 @@ export const Backoffice: React.FC<BackofficeProps> = ({
                     type="submit"
                     disabled={isExecutingBatch || (() => {
                       const p = products.find(x => x.id === targetProductId);
-                      return Boolean(p && (p.size_volume === null || p.size_volume === undefined));
+                      const f = formulations.find(x => x.id === selectedFormulationId);
+                      const unit = (f as any)?.base_yield_unit || 'L';
+                      const isPiece = ['pcs', 'piece', 'pieces', 'unit', 'unite', 'unites'].includes(String(unit).toLowerCase());
+                      if (isPiece) return false;
+                      return Boolean(p && (p.size_volume === null || p.size_volume === undefined || p.size_volume <= 0));
                     })()}
                     className="w-full py-3 bg-emerald-700 hover:bg-emerald-800 disabled:opacity-50 text-white font-bold rounded-xl shadow text-xs transition-colors flex items-center justify-center gap-1.5"
                   >

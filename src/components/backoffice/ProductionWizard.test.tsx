@@ -60,6 +60,14 @@ describe('Production Wizard & Batch History UI (GATE 1)', () => {
       base_yield_unit: 'L',
       cost_per_liter: 0.800,
       cost_per_unit: 0.800
+    },
+    {
+      id: 'form-piece',
+      name: 'Formule Savon Solide Pièces',
+      base_yield_quantity: 100,
+      base_yield_unit: 'pcs',
+      cost_per_liter: 0.500,
+      cost_per_unit: 0.500
     }
   ];
 
@@ -184,16 +192,76 @@ describe('Production Wizard & Batch History UI (GATE 1)', () => {
     const volInput = screen.getByLabelText(/Volume du Lot/i);
     const unitsInput = screen.getByLabelText(/Unités Produites/i);
 
-    // Change volume to 30 -> units should derive to 20 (30 / 1.5)
-    fireEvent.change(volInput, { target: { value: '30' } });
-    expect((unitsInput as HTMLInputElement).value).toBe('20');
+    // 1. Derivation units -> volume: units 200 * size 1.5 = volume 300
+    fireEvent.change(unitsInput, { target: { value: '200' } });
+    expect((volInput as HTMLInputElement).value).toBe('300');
 
-    // Change units to 10 -> volume should derive to 15 (10 * 1.5)
-    fireEvent.change(unitsInput, { target: { value: '10' } });
-    expect((volInput as HTMLInputElement).value).toBe('15');
+    // 2. Derivation volume -> units: volume 150 / size 1.5 = units 100
+    fireEvent.change(volInput, { target: { value: '150' } });
+    expect((unitsInput as HTMLInputElement).value).toBe('100');
+
+    // 3. Derivation volume -> units: volume 300 / size 1.5 = units 200
+    fireEvent.change(volInput, { target: { value: '300' } });
+    expect((unitsInput as HTMLInputElement).value).toBe('200');
   });
 
-  it('shows missing size warning with link to Tailles & Coûts when product has no size_volume', async () => {
+  it('allows piece-based formulation with NULL size_volume, displaying "Format unitaire utilisé : 1" and keeping submit enabled', async () => {
+    global.fetch = vi.fn().mockImplementation((url: string) => {
+      if (url.includes('/api/formulations')) {
+        return Promise.resolve({ ok: true, json: () => Promise.resolve(mockFormulations) });
+      }
+      if (url.includes('/api/production/batches')) {
+        return Promise.resolve({ ok: true, json: () => Promise.resolve([]) });
+      }
+      return Promise.resolve({ ok: true, json: () => Promise.resolve([]) });
+    });
+
+    render(
+      <Backoffice
+        products={mockProducts}
+        families={mockFamilies}
+        customers={[]}
+        containerTypes={[]}
+        onRefreshData={vi.fn()}
+      />
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: /^Production$/i }));
+
+    await waitFor(() => {
+      expect(screen.getByRole('option', { name: /Formule Savon Solide Pièces/i })).toBeTruthy();
+    });
+
+    // Select piece formulation (base_yield_unit: 'pcs')
+    const formSelect = screen.getByRole('combobox', { name: /1\. Sélectionner la Recette/i });
+    fireEvent.change(formSelect, { target: { value: 'form-piece' } });
+
+    // Select product with size_volume: null
+    const prodSelect = screen.getByRole('combobox', { name: /Article Produit à Réapprovisionner/i });
+    fireEvent.change(prodSelect, { target: { value: 'prod-legacy-null-size' } });
+
+    // Must show "Format unitaire utilisé : 1"
+    expect(screen.getByText(/Format unitaire utilisé : 1/i)).toBeTruthy();
+
+    // Must NOT show missing size warning
+    expect(screen.queryByText(/Format manquant : cet article n'a aucun volume unitaire configuré/i)).toBeNull();
+
+    // Submit button must remain enabled
+    const submitBtn = screen.getByRole('button', { name: /Lancer la Production du Lot/i });
+    expect((submitBtn as HTMLButtonElement).disabled).toBe(false);
+
+    // Derivation with piece recipe: volume 50 -> units 50, units 100 -> volume 100
+    const volInput = screen.getByLabelText(/Volume du Lot/i);
+    const unitsInput = screen.getByLabelText(/Unités Produites/i);
+
+    fireEvent.change(volInput, { target: { value: '50' } });
+    expect((unitsInput as HTMLInputElement).value).toBe('50');
+
+    fireEvent.change(unitsInput, { target: { value: '100' } });
+    expect((volInput as HTMLInputElement).value).toBe('100');
+  });
+
+  it('shows missing size warning with link to Tailles & Coûts when product has no size_volume on non-piece formulation', async () => {
     global.fetch = vi.fn().mockImplementation((url: string) => {
       if (url.includes('/api/formulations')) {
         return Promise.resolve({ ok: true, json: () => Promise.resolve(mockFormulations) });
@@ -229,6 +297,10 @@ describe('Production Wizard & Batch History UI (GATE 1)', () => {
     // Should display missing size warning and link/button to Tailles & Coûts
     expect(screen.getByText(/Format manquant.*aucun volume unitaire configuré/i)).toBeTruthy();
     expect(screen.getByRole('button', { name: /Tailles & Coûts/i })).toBeTruthy();
+
+    // Submit button must be disabled for non-piece formulation with NULL size_volume
+    const submitBtn = screen.getByRole('button', { name: /Lancer la Production du Lot/i });
+    expect((submitBtn as HTMLButtonElement).disabled).toBe(true);
   });
 
   it('displays API French 400 error message on volume/units mismatch', async () => {
