@@ -36,6 +36,7 @@ describe('SQLite Database Schema & Integrity', () => {
       'product_families',
       'products',
       'product_pack_sizes',
+      'product_packaging_items',
       'production_batches',
       'production_batch_materials_consumed',
       'customers',
@@ -427,5 +428,67 @@ describe('SQLite Database Schema & Integrity', () => {
         `).run();
       }).toThrow(/CHECK constraint failed/);
     });
+
+    it('supports size_volume on products, batch_volume on production_batches, and product_packaging_items table', () => {
+      // 1. Table product_packaging_items exists in core tables
+      const tables = db
+        .prepare("SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%'")
+        .all()
+        .map((row: any) => row.name);
+      expect(tables).toContain('product_packaging_items');
+
+      // 2. products has size_volume
+      const prodCols: any[] = db.prepare('PRAGMA table_info(products)').all();
+      expect(prodCols.some(c => c.name === 'size_volume')).toBe(true);
+
+      // 3. production_batches has batch_volume
+      const batchCols: any[] = db.prepare('PRAGMA table_info(production_batches)').all();
+      expect(batchCols.some(c => c.name === 'batch_volume')).toBe(true);
+
+      // 4. product_packaging_items enforces foreign keys, UNIQUE(product_id, material_id), and quantity_per_unit > 0
+      db.prepare(`
+        INSERT INTO product_families (id, name, category, type, created_at, updated_at)
+        VALUES ('fam-pkg-test', 'Pkg Family', 'cat', 'MANUFACTURED', '2026-09-07', '2026-09-07')
+      `).run();
+      db.prepare(`
+        INSERT INTO products (id, family_id, name, size_label, size_volume, created_at, updated_at)
+        VALUES ('prod-pkg-test', 'fam-pkg-test', 'Product 1.5L', '1.5L', 1.5, '2026-09-07', '2026-09-07')
+      `).run();
+      db.prepare(`
+        INSERT INTO raw_materials (id, name, category, unit, created_at, updated_at)
+        VALUES ('mat-bot-15', '1.5L Bottle', 'bottle', 'pcs', '2026-09-07', '2026-09-07')
+      `).run();
+
+      db.prepare(`
+        INSERT INTO product_packaging_items (id, product_id, material_id, quantity_per_unit)
+        VALUES ('ppi-1', 'prod-pkg-test', 'mat-bot-15', 1.0)
+      `).run();
+
+      const ppi: any = db.prepare('SELECT * FROM product_packaging_items WHERE id = ?').get('ppi-1');
+      expect(ppi.product_id).toBe('prod-pkg-test');
+      expect(ppi.material_id).toBe('mat-bot-15');
+      expect(ppi.quantity_per_unit).toBe(1.0);
+
+      // Duplicate (product_id, material_id) fails UNIQUE constraint
+      expect(() => {
+        db.prepare(`
+          INSERT INTO product_packaging_items (id, product_id, material_id, quantity_per_unit)
+          VALUES ('ppi-dup', 'prod-pkg-test', 'mat-bot-15', 2.0)
+        `).run();
+      }).toThrow(/UNIQUE constraint failed/);
+
+      // quantity_per_unit <= 0 fails CHECK constraint
+      db.prepare(`
+        INSERT INTO raw_materials (id, name, category, unit, created_at, updated_at)
+        VALUES ('mat-cap-test', 'Cap Test', 'cap', 'pcs', '2026-09-07', '2026-09-07')
+      `).run();
+      expect(() => {
+        db.prepare(`
+          INSERT INTO product_packaging_items (id, product_id, material_id, quantity_per_unit)
+          VALUES ('ppi-zero', 'prod-pkg-test', 'mat-cap-test', 0)
+        `).run();
+      }).toThrow(/CHECK constraint failed/);
+    });
   });
 });
+

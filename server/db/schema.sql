@@ -89,6 +89,7 @@ CREATE TABLE IF NOT EXISTS products (
     family_id TEXT NOT NULL REFERENCES product_families(id) ON DELETE CASCADE,
     name TEXT NOT NULL, -- e.g. "Dish Soap Lemon 1L"
     size_label TEXT,    -- e.g. "1L", "5L", "Piece"
+    size_volume REAL,   -- numeric volume in formulation base unit (e.g. 1.5, 2.0, 1.0)
     barcode TEXT UNIQUE, -- Code-128
     stock_quantity REAL NOT NULL DEFAULT 0,
     low_stock_threshold REAL NOT NULL DEFAULT 5 CHECK (low_stock_threshold >= 0),
@@ -111,6 +112,16 @@ CREATE TABLE IF NOT EXISTS product_pack_sizes (
     barcode TEXT UNIQUE          -- Code-128
 );
 
+-- Product Packaging Items (Packaging BOM per SKU)
+CREATE TABLE IF NOT EXISTS product_packaging_items (
+    id TEXT PRIMARY KEY,
+    product_id TEXT NOT NULL REFERENCES products(id) ON DELETE CASCADE,
+    material_id TEXT NOT NULL REFERENCES raw_materials(id) ON DELETE RESTRICT,
+    quantity_per_unit REAL NOT NULL CHECK (quantity_per_unit > 0),
+    UNIQUE (product_id, material_id)
+);
+CREATE INDEX IF NOT EXISTS idx_product_packaging_items_prod ON product_packaging_items(product_id);
+
 -- 5. Production Batches
 CREATE TABLE IF NOT EXISTS production_batches (
     id TEXT PRIMARY KEY,
@@ -118,6 +129,7 @@ CREATE TABLE IF NOT EXISTS production_batches (
     date TEXT NOT NULL,
     formulation_id TEXT NOT NULL REFERENCES formulations(id),
     target_product_id TEXT NOT NULL REFERENCES products(id),
+    batch_volume REAL,                              -- Volume in formulation base unit
     units_produced REAL NOT NULL CHECK (units_produced > 0),
     total_batch_cost REAL NOT NULL CHECK (total_batch_cost >= 0),
     cost_per_unit REAL NOT NULL CHECK (cost_per_unit >= 0),

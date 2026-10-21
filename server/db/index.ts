@@ -64,6 +64,8 @@ export function getDb(customPath?: string): DatabaseType {
   ensureColumn('container_types', 'active', 'INTEGER NOT NULL DEFAULT 1');
   ensureColumn('sale_items', 'catalog_unit_price', 'REAL');
   ensureColumn('register_cash_movements', 'expense_id', 'TEXT REFERENCES general_expenses(id) ON DELETE SET NULL');
+  ensureColumn('products', 'size_volume', 'REAL');
+  ensureColumn('production_batches', 'batch_volume', 'REAL');
   try {
     db.exec('CREATE INDEX IF NOT EXISTS idx_register_movements_expense ON register_cash_movements(expense_id)');
     db.exec('CREATE INDEX IF NOT EXISTS idx_general_expenses_date ON general_expenses(date)');
@@ -83,6 +85,14 @@ export function getDb(customPath?: string): DatabaseType {
         created_at TEXT NOT NULL
       );
       CREATE INDEX IF NOT EXISTS idx_delivery_notes_sale_id ON delivery_notes(sale_id);
+      CREATE TABLE IF NOT EXISTS product_packaging_items (
+        id TEXT PRIMARY KEY,
+        product_id TEXT NOT NULL REFERENCES products(id) ON DELETE CASCADE,
+        material_id TEXT NOT NULL REFERENCES raw_materials(id) ON DELETE RESTRICT,
+        quantity_per_unit REAL NOT NULL CHECK (quantity_per_unit > 0),
+        UNIQUE (product_id, material_id)
+      );
+      CREATE INDEX IF NOT EXISTS idx_product_packaging_items_prod ON product_packaging_items(product_id);
     `);
     // One open session per counter, enforced at the DB level so concurrent
     // POST /api/register/open calls cannot both succeed (check-then-insert race).
