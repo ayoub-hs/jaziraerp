@@ -337,6 +337,331 @@ productsRouter.get('/cost-preview', (req: Request, res: Response) => {
   res.json(preview);
 });
 
+function parseSuggestedVolume(label?: string | null, name?: string | null): number | null {
+  const text = `${label || ''} ${name || ''}`.trim();
+  if (!text) return null;
+
+  if (/\bvrac\b/i.test(text)) {
+    return 1.0;
+  }
+
+  const litreMatch = text.match(/(\d+(?:[.,]\d+)?)\s*(?:l|litre|litres|lt|lts)\b/i);
+  if (litreMatch) {
+    const val = parseFloat(litreMatch[1].replace(',', '.'));
+    if (Number.isFinite(val) && val > 0) return round3(val);
+  }
+
+  const kgMatch = text.match(/(\d+(?:[.,]\d+)?)\s*(?:kg|kilo|kilos)\b/i);
+  if (kgMatch) {
+    const val = parseFloat(kgMatch[1].replace(',', '.'));
+    if (Number.isFinite(val) && val > 0) return round3(val);
+  }
+
+  const mlMatch = text.match(/(\d+(?:[.,]\d+)?)\s*(?:ml)\b/i);
+  if (mlMatch) {
+    const val = parseFloat(mlMatch[1].replace(',', '.'));
+    if (Number.isFinite(val) && val > 0) return round3(val / 1000);
+  }
+
+  const clMatch = text.match(/(\d+(?:[.,]\d+)?)\s*(?:cl)\b/i);
+  if (clMatch) {
+    const val = parseFloat(clMatch[1].replace(',', '.'));
+    if (Number.isFinite(val) && val > 0) return round3(val / 100);
+  }
+
+  return null;
+}
+
+// POST /api/products/backfill-size-preview - scan manufactured products with NULL size_volume & suggest candidate volumes
+productsRouter.post('/backfill-size-preview', (req: Request, res: Response) => {
+  const db = getDb();
+  const rows: any[] = db.prepare(`
+    SELECT p.id, p.name, p.size_label, p.size_volume, p.stock_quantity, p.cost_reference,
+           pf.id as family_id, pf.name as family_name, pf.type as family_type
+    FROM products p
+    JOIN product_families pf ON p.family_id = pf.id
+    WHERE pf.type = 'MANUFACTURED' AND p.size_volume IS NULL
+    ORDER BY p.name ASC
+  `).all();
+
+  const candidates = rows.map(r => {
+    const suggested = parseSuggestedVolume(r.size_label, r.name);
+    const stock = Number(r.stock_quantity) || 0;
+    const cost = Number(r.cost_reference) || 0;
+    const currentValuation = round3(stock * cost);
+    return {
+      id: r.id,
+      name: r.name,
+      family_id: r.family_id,
+      family_name: r.family_name,
+      size_label: r.size_label,
+      size_volume: r.size_volume,
+      suggested_size_volume: suggested,
+      stock_quantity: stock,
+      current_cost: round3(cost),
+      current_valuation: currentValuation
+    };
+  });
+
+  res.json({
+    candidates,
+    total_candidates: candidates.length
+  });
+});
+
+// POST /api/products/backfill-size-confirm - update size_volume in one transaction, reporting valuation
+productsRouter.post('/backfill-size-confirm', (req: Request, res: Response) => {
+  const db = getDb();
+  const { items } = req.body;
+
+  if (!Array.isArray(items) || items.length === 0) {
+    res.status(400).json({ error: "La liste des articles à mettre à jour est requise." });
+    return;
+  }
+
+  const validated: Array<{ id: string; size_volume: number }> = [];
+  for (const it of items) {
+    if (!it || typeof it.id !== 'string') {
+      res.status(400).json({ error: "Identifiant d'article invalide." });
+      return;
+    }
+    let vol: number;
+    try {
+      vol = requireFinitePositive(it.size_volume, "volume unitaire (size_volume)");
+    } catch (err: any) {
+      res.status(400).json({ error: err.message });
+      return;
+    }
+    const product: any = db.prepare(`
+      SELECT p.*, pf.type as family_type
+      FROM products p
+      JOIN product_families pf ON p.family_id = pf.id
+      WHERE p.id = ?
+    `).get(it.id);
+
+    if (!product) {
+      res.status(404).json({ error: `Article introuvable : ${it.id}` });
+      return;
+    }
+    if (product.family_type !== 'MANUFACTURED') {
+      res.status(400).json({ error: `L'article "${product.name}" n'est pas de type FABRIQUÉ (MANUFACTURED).` });
+      return;
+    }
+    validated.push({ id: it.id, size_volume: round3(vol) });
+  }
+
+  const now = new Date().toISOString();
+  let oldValuation = 0;
+  let newValuation = 0;
+
+  const updateTx = db.transaction(() => {
+    const updateStmt = db.prepare(`
+      UPDATE products
+      SET size_volume = ?, updated_at = ?
+      WHERE id = ?
+    `);
+
+    for (const v of validated) {
+      const prod: any = db.prepare('SELECT stock_quantity, cost_reference FROM products WHERE id = ?').get(v.id);
+      const stock = Number(prod.stock_quantity) || 0;
+      const cost = Number(prod.cost_reference) || 0;
+      const lineVal = round3(stock * cost);
+      oldValuation = round3(oldValuation + lineVal);
+      newValuation = round3(newValuation + lineVal);
+
+      updateStmt.run(v.size_volume, now, v.id);
+    }
+  });
+
+  try {
+    updateTx();
+    res.json({
+      success: true,
+      updated_count: validated.length,
+      old_valuation: oldValuation,
+      new_valuation: newValuation,
+      delta_valuation: round3(newValuation - oldValuation)
+    });
+  } catch (err: any) {
+    res.status(500).json({ error: sanitizeErrorMessage(err) });
+  }
+});
+
+// POST /api/products/batch-cost-preview - preview updated formulation+packaging unit cost & inventory valuation delta
+productsRouter.post('/batch-cost-preview', (req: Request, res: Response) => {
+  const db = getDb();
+  const { product_ids } = req.body || {};
+
+  let query = `
+    SELECT p.id, p.name, p.size_label, p.size_volume, p.stock_quantity, p.cost_reference,
+           pf.id as family_id, pf.name as family_name, pf.type as family_type, pf.formulation_id
+    FROM products p
+    JOIN product_families pf ON p.family_id = pf.id
+    WHERE pf.type = 'MANUFACTURED'
+  `;
+  const params: any[] = [];
+
+  if (Array.isArray(product_ids) && product_ids.length > 0) {
+    query += ` AND p.id IN (${product_ids.map(() => '?').join(',')})`;
+    params.push(...product_ids);
+  }
+
+  query += ` ORDER BY p.name ASC`;
+
+  const rows: any[] = db.prepare(query).all(...params);
+
+  let totalCurrentValuation = 0;
+  let totalProjectedValuation = 0;
+
+  const items = rows.map(p => {
+    const stock = Number(p.stock_quantity) || 0;
+    const currentCost = Number(p.cost_reference) || 0;
+    const currentValuation = round3(stock * currentCost);
+
+    let status: 'ok' | 'size_manquante' | 'error' = 'ok';
+    let calculatedCost: number | null = null;
+    let bulkPart: number | null = null;
+    let packagingPart: number | null = null;
+    let warning: string | null = null;
+
+    if (p.size_volume === null || p.size_volume === undefined) {
+      status = 'size_manquante';
+      warning = "Volume unitaire manquant (size_volume NULL)";
+    } else {
+      try {
+        const costResult = calculateProductUnitCost(db, p.id);
+        calculatedCost = costResult.cost_per_finished_unit;
+        bulkPart = round3(costResult.cost_per_base_unit * costResult.size_volume);
+        packagingPart = costResult.packaging_cost_per_unit;
+      } catch (err: any) {
+        status = 'error';
+        warning = err.message || "Erreur de calcul du coût unitaire";
+      }
+    }
+
+    const newValuation = calculatedCost !== null ? round3(stock * calculatedCost) : currentValuation;
+    const deltaValuation = round3(newValuation - currentValuation);
+
+    totalCurrentValuation = round3(totalCurrentValuation + currentValuation);
+    totalProjectedValuation = round3(totalProjectedValuation + newValuation);
+
+    return {
+      id: p.id,
+      name: p.name,
+      family_id: p.family_id,
+      family_name: p.family_name,
+      size_label: p.size_label,
+      size_volume: p.size_volume,
+      stock_quantity: stock,
+      current_cost: round3(currentCost),
+      current_valuation: currentValuation,
+      status,
+      calculated_cost: calculatedCost,
+      bulk_part: bulkPart,
+      packaging_part: packagingPart,
+      new_valuation: newValuation,
+      delta_valuation: deltaValuation,
+      warning
+    };
+  });
+
+  res.json({
+    items,
+    total_products: items.length,
+    total_current_valuation: totalCurrentValuation,
+    total_projected_valuation: totalProjectedValuation,
+    total_delta_valuation: round3(totalProjectedValuation - totalCurrentValuation)
+  });
+});
+
+// POST /api/products/batch-cost-confirm - apply updated cost_reference in one transaction and report valuation delta
+productsRouter.post('/batch-cost-confirm', (req: Request, res: Response) => {
+  const db = getDb();
+  const { items } = req.body;
+
+  if (!Array.isArray(items) || items.length === 0) {
+    res.status(400).json({ error: "La liste des articles à mettre à jour est requise." });
+    return;
+  }
+
+  const validated: Array<{ id: string; new_cost: number }> = [];
+  for (const it of items) {
+    if (!it || typeof it.id !== 'string') {
+      res.status(400).json({ error: "Identifiant d'article invalide." });
+      return;
+    }
+    let cost: number;
+    try {
+      cost = requireFiniteNonNegative(it.new_cost, "nouveau coût (new_cost)");
+    } catch (err: any) {
+      res.status(400).json({ error: err.message });
+      return;
+    }
+
+    const product: any = db.prepare(`
+      SELECT p.*, pf.type as family_type
+      FROM products p
+      JOIN product_families pf ON p.family_id = pf.id
+      WHERE p.id = ?
+    `).get(it.id);
+
+    if (!product) {
+      res.status(404).json({ error: `Article introuvable : ${it.id}` });
+      return;
+    }
+    if (product.family_type !== 'MANUFACTURED') {
+      res.status(400).json({ error: `L'article "${product.name}" n'est pas de type FABRIQUÉ (MANUFACTURED).` });
+      return;
+    }
+    if (product.size_volume === null || product.size_volume === undefined) {
+      res.status(400).json({
+        error: `Impossible de mettre à jour le coût de l'article "${product.name}" : volume unitaire manquant (size manquante). Veuillez d'abord renseigner la taille.`
+      });
+      return;
+    }
+
+    validated.push({ id: it.id, new_cost: round3(cost) });
+  }
+
+  const now = new Date().toISOString();
+  let oldValuation = 0;
+  let newValuation = 0;
+
+  const updateTx = db.transaction(() => {
+    const updateStmt = db.prepare(`
+      UPDATE products
+      SET cost_reference = ?, updated_at = ?
+      WHERE id = ?
+    `);
+
+    for (const v of validated) {
+      const prod: any = db.prepare('SELECT stock_quantity, cost_reference FROM products WHERE id = ?').get(v.id);
+      const stock = Number(prod.stock_quantity) || 0;
+      const oldCost = Number(prod.cost_reference) || 0;
+      const oldLineVal = round3(stock * oldCost);
+      const newLineVal = round3(stock * v.new_cost);
+
+      oldValuation = round3(oldValuation + oldLineVal);
+      newValuation = round3(newValuation + newLineVal);
+
+      updateStmt.run(v.new_cost, now, v.id);
+    }
+  });
+
+  try {
+    updateTx();
+    res.json({
+      success: true,
+      updated_count: validated.length,
+      old_valuation: oldValuation,
+      new_valuation: newValuation,
+      delta_valuation: round3(newValuation - oldValuation)
+    });
+  } catch (err: any) {
+    res.status(500).json({ error: sanitizeErrorMessage(err) });
+  }
+});
+
 // POST /api/products/preview-cost - live unit cost preview for manufactured products
 productsRouter.post('/preview-cost', (req: Request, res: Response) => {
   const { family_id, size_volume, packaging_items = [] } = req.body;

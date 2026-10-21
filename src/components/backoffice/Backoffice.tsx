@@ -29,6 +29,7 @@ import {
   Trash2,
   Settings,
   BarChart3,
+  Calculator,
   X
 } from 'lucide-react';
 import type { 
@@ -49,6 +50,7 @@ import { formatMoney, formatDate, formatDateTime } from '../../utils/formatters.
 import { BarcodeLabelPrinter } from './BarcodeLabelPrinter.js';
 import { BackupManager } from './BackupManager.js';
 import { CreateProductModal } from './CreateProductModal.js';
+import { BatchCostBackfillModal } from './BatchCostBackfillModal.js';
 import { CreateMaterialModal } from './CreateMaterialModal.js';
 import { MaterialPriceHistoryModal } from './MaterialPriceHistoryModal.js';
 import { CreateFormulationModal } from './CreateFormulationModal.js';
@@ -139,6 +141,7 @@ export const Backoffice: React.FC<BackofficeProps> = ({
 
   // Modals & Wizards
   const [isBarcodeLabelModalOpen, setIsBarcodeLabelModalOpen] = useState(false);
+  const [isBatchCostModalOpen, setIsBatchCostModalOpen] = useState(false);
   const [selectedFormulationId, setSelectedFormulationId] = useState('');
   const [batchVolume, setBatchVolume] = useState('100');
   const [targetProductId, setTargetProductId] = useState('');
@@ -1003,6 +1006,14 @@ export const Backoffice: React.FC<BackofficeProps> = ({
                 >
                   <Layers className="w-4 h-4 text-purple-600" />
                   Gérer Catégories
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setIsBatchCostModalOpen(true)}
+                  className="flex items-center gap-1.5 bg-blue-50 hover:bg-blue-100 text-blue-700 text-xs font-bold px-3 py-2 rounded-xl transition-colors border border-blue-200"
+                >
+                  <Calculator className="w-4 h-4 text-blue-600" />
+                  Tailles & Coûts
                 </button>
                 <button
                   onClick={() => {
@@ -3258,6 +3269,16 @@ export const Backoffice: React.FC<BackofficeProps> = ({
         isOpen={isCustomerStatementOpen}
         onClose={() => setIsCustomerStatementOpen(false)}
         customer={selectedCustomer}
+      />
+
+      {/* Batch Cost & Size Volume Backfill Modal */}
+      <BatchCostBackfillModal
+        isOpen={isBatchCostModalOpen}
+        onClose={() => setIsBatchCostModalOpen(false)}
+        onSuccess={() => {
+          onRefreshData();
+          loadBackofficeData();
+        }}
       />
     </div>
   );
