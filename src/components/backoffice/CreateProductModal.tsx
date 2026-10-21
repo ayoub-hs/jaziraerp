@@ -68,7 +68,7 @@ export const CreateProductModal: React.FC<CreateProductModalProps> = ({
   const [containerTypeId, setContainerTypeId] = useState('');
 
   // Packaging BOM lines & volume scaling
-  const [sizeVolume, setSizeVolume] = useState('1.0');
+  const [sizeVolume, setSizeVolume] = useState('');
   const [availableMaterials, setAvailableMaterials] = useState<any[]>([]);
   const [packagingLines, setPackagingLines] = useState<Array<{
     id?: string;
@@ -121,17 +121,22 @@ export const CreateProductModal: React.FC<CreateProductModalProps> = ({
   const bulkCostPerLitre = activeFormulation
     ? ((activeFormulation as any).cost_per_liter ?? (activeFormulation as any).cost_per_unit ?? 0)
     : 0;
-  const parsedVol = parseFloat(sizeVolume) || 1.0;
-  const bulkPart = Math.round((bulkCostPerLitre * parsedVol + Number.EPSILON) * 1000) / 1000;
+  const parsedVol = parseFloat(sizeVolume);
+  const hasValidVolume = !isNaN(parsedVol) && parsedVol > 0;
+  const bulkPart = hasValidVolume
+    ? Math.round((bulkCostPerLitre * parsedVol + Number.EPSILON) * 1000) / 1000
+    : null;
   const packagingPart = packagingLines.reduce((sum, line) => {
     const lineTotal = Math.round((line.quantity_per_unit * (line.unit_cost || 0) + Number.EPSILON) * 1000) / 1000;
     return Math.round((sum + lineTotal + Number.EPSILON) * 1000) / 1000;
   }, 0);
   const calculatedLiveUnitCost = isManufactured
-    ? Math.round((bulkPart + packagingPart + Number.EPSILON) * 1000) / 1000
+    ? (hasValidVolume ? Math.round(((bulkPart || 0) + packagingPart + Number.EPSILON) * 1000) / 1000 : null)
     : (parseFloat(costReference) || 0);
 
-  const effectiveCost = isManufactured ? calculatedLiveUnitCost : (parseFloat(costReference) || 0);
+  const effectiveCost = isManufactured
+    ? (calculatedLiveUnitCost ?? (parseFloat(costReference) || 0))
+    : (parseFloat(costReference) || 0);
   const isCostValid = !isNaN(effectiveCost) && effectiveCost > 0;
 
   // Price markup suggestions
@@ -248,7 +253,7 @@ export const CreateProductModal: React.FC<CreateProductModalProps> = ({
       if (productToEdit.size_volume !== null && productToEdit.size_volume !== undefined) {
         setSizeVolume(String(productToEdit.size_volume));
       } else {
-        setSizeVolume('1.0');
+        setSizeVolume('');
       }
 
       fetch(`/api/products/${productToEdit.id}/packaging`)
@@ -281,7 +286,7 @@ export const CreateProductModal: React.FC<CreateProductModalProps> = ({
       setFormulationId('');
       setSkuName('');
       setSizeLabel('1L');
-      setSizeVolume('1.0');
+      setSizeVolume('');
       setPackagingLines([]);
       setSelectedPackagingMaterialId('');
       setNewPackagingQty('1');
@@ -521,6 +526,10 @@ export const CreateProductModal: React.FC<CreateProductModalProps> = ({
       }
 
       if (productToEdit) {
+        if (isManufactured && !hasValidVolume) {
+          setError('Veuillez renseigner un volume / taille unitaire strictement positif (size manquante).');
+          return;
+        }
         const finalSkuName = skuName.trim();
         if (!finalSkuName) throw new Error("Le nom de l'article (SKU) est requis");
         const res = await fetch(`/api/products/${productToEdit.id}`, {
@@ -529,9 +538,9 @@ export const CreateProductModal: React.FC<CreateProductModalProps> = ({
           body: JSON.stringify({
             name: finalSkuName,
             size_label: sizeLabel.trim() || null,
-            size_volume: isManufactured ? (parseFloat(sizeVolume) || null) : null,
+            size_volume: isManufactured ? parsedVol : null,
             barcode: barcode.trim() || null,
-            cost_reference: isManufactured ? calculatedLiveUnitCost : (parseFloat(costReference) || 0),
+            cost_reference: productToEdit.cost_reference,
             retail_price: parseFloat(retailPrice) || 0,
             wholesale_price: parseFloat(wholesalePrice) || 0,
             stock_quantity: parseFloat(stockQuantity) || 0,
@@ -582,6 +591,11 @@ export const CreateProductModal: React.FC<CreateProductModalProps> = ({
       }
 
       // 2. Create SKU under target family
+      if (isManufactured && !hasValidVolume) {
+        setError('Veuillez renseigner un volume / taille unitaire strictement positif pour cet article fabriqué.');
+        return;
+      }
+
       const finalSkuName = skuName.trim() || (mode === 'NEW_FAMILY' ? familyName.trim() : 'Nouvel article');
       const prodRes = await fetch('/api/products', {
         method: 'POST',
@@ -590,9 +604,9 @@ export const CreateProductModal: React.FC<CreateProductModalProps> = ({
           family_id: targetFamilyId,
           name: finalSkuName,
           size_label: sizeLabel.trim() || null,
-          size_volume: isManufactured ? (parseFloat(sizeVolume) || null) : null,
+          size_volume: isManufactured ? parsedVol : null,
           barcode: barcode.trim() || null,
-          cost_reference: isManufactured ? calculatedLiveUnitCost : (parseFloat(costReference) || 0),
+          cost_reference: isManufactured ? (calculatedLiveUnitCost ?? 0) : (parseFloat(costReference) || 0),
           retail_price: parseFloat(retailPrice) || 0,
           wholesale_price: parseFloat(wholesalePrice) || 0,
           stock_quantity: parseFloat(stockQuantity) || 0,
@@ -1017,9 +1031,16 @@ export const CreateProductModal: React.FC<CreateProductModalProps> = ({
 
                 {isManufactured && (
                   <div>
-                    <label htmlFor="size-volume-input" className="block text-xs font-bold text-slate-700 mb-1">
-                      Volume / Poids unitaire (L ou kg) *
-                    </label>
+                    <div className="flex items-center justify-between mb-1">
+                      <label htmlFor="size-volume-input" className="block text-xs font-bold text-slate-700">
+                        Volume / Poids unitaire (L ou kg) *
+                      </label>
+                      {productToEdit && (productToEdit.size_volume === null || productToEdit.size_volume === undefined) && !hasValidVolume && (
+                        <span className="text-pos-badge font-bold px-1.5 py-0.5 rounded bg-amber-100 text-amber-900 border border-amber-300">
+                          ⚠️ Size manquante
+                        </span>
+                      )}
+                    </div>
                     <input
                       id="size-volume-input"
                       type="number"
@@ -1029,7 +1050,7 @@ export const CreateProductModal: React.FC<CreateProductModalProps> = ({
                       placeholder="ex: 1.5 pour 1.5L, 2.0 pour 2L"
                       value={sizeVolume}
                       onChange={e => setSizeVolume(e.target.value)}
-                      className="w-full text-xs font-mono font-semibold px-3 py-2 border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none bg-white min-h-[44px]"
+                      className={`w-full text-xs font-mono font-semibold px-3 py-2 border rounded-xl focus:ring-2 focus:ring-blue-500 outline-none bg-white min-h-[44px] ${!hasValidVolume ? 'border-amber-400 bg-amber-50/20' : 'border-slate-300'}`}
                     />
                     <span className="text-pos-badge text-slate-500">
                       Multiplicateur chimique pour la formule vrac.
@@ -1143,13 +1164,19 @@ export const CreateProductModal: React.FC<CreateProductModalProps> = ({
                       <span className="text-xs font-black text-blue-950 uppercase tracking-wide">
                         Coût de revient unitaire calculé (Direct)
                       </span>
-                      <span className="text-sm font-black font-mono text-blue-700">
-                        {calculatedLiveUnitCost.toFixed(3)} DT
+                      <span className="text-sm font-black font-mono text-blue-700" data-testid="live-unit-cost-display">
+                        {hasValidVolume && calculatedLiveUnitCost !== null
+                          ? `${calculatedLiveUnitCost.toFixed(3)} DT`
+                          : '—'}
                       </span>
                     </div>
                     <div className="text-pos-badge text-blue-900 grid grid-cols-2 gap-2 pt-1 border-t border-blue-200/60">
                       <div>
-                        Formule vrac : <span className="font-mono font-bold">{parsedVol} L × {bulkCostPerLitre.toFixed(3)} = {bulkPart.toFixed(3)} DT</span>
+                        Formule vrac : {hasValidVolume && bulkPart !== null ? (
+                          <span className="font-mono font-bold">{parsedVol} L × {bulkCostPerLitre.toFixed(3)} = {bulkPart.toFixed(3)} DT</span>
+                        ) : (
+                          <span className="font-semibold text-amber-800">Taille manquante</span>
+                        )}
                       </div>
                       <div>
                         Emballages ({packagingLines.length}) : <span className="font-mono font-bold">{packagingPart.toFixed(3)} DT</span>
@@ -1173,10 +1200,10 @@ export const CreateProductModal: React.FC<CreateProductModalProps> = ({
                         type="number"
                         step="0.001"
                         min="0"
-                        value={isManufactured ? calculatedLiveUnitCost.toFixed(3) : costReference}
+                        value={isManufactured ? (calculatedLiveUnitCost !== null ? calculatedLiveUnitCost.toFixed(3) : '') : costReference}
                         onChange={e => setCostReference(e.target.value)}
                         readOnly={isManufactured}
-                        placeholder="0.000"
+                        placeholder={isManufactured ? "—" : "0.000"}
                         className={`w-full text-xs font-bold font-mono px-2.5 py-1.5 border border-slate-300 rounded-lg outline-none text-right min-h-[44px] ${isManufactured ? 'bg-slate-100 text-slate-600 cursor-not-allowed' : 'bg-white focus:ring-2 focus:ring-blue-500'}`}
                       />
                     </div>
@@ -1458,7 +1485,7 @@ export const CreateProductModal: React.FC<CreateProductModalProps> = ({
             </button>
             <button
               type="submit"
-              disabled={isSubmitting}
+              disabled={isSubmitting || (isManufactured && !hasValidVolume)}
               className="flex-1 py-2.5 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white font-bold rounded-xl text-xs shadow-sm transition-colors flex items-center justify-center gap-1.5"
             >
               {familyToEdit || productToEdit ? <Edit2 className="w-4 h-4" /> : <Plus className="w-4 h-4" />}

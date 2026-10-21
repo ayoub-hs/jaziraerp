@@ -115,15 +115,42 @@ describe('Product Packaging Items API & Cost Preview', () => {
     expect(resDup.status).toBe(409);
     expect(resDup.body.error).toMatch(/déjà associé/i);
 
-    // 7. Adding cap (0.050) updates product's cost_reference
+    // 7. Adding packaging must NOT change products.cost_reference
+    const initialCost = prod.cost_reference;
     const resAddCap = await request(app).post(`/api/products/${prod.id}/packaging`).send({
       material_id: matCap.id, quantity_per_unit: 1
     });
     expect(resAddCap.status).toBe(201);
 
-    // Bulk: 1.5L * 0.800 = 1.200. Packaging: bottle 0.350 + cap 0.050 = 0.400. Total = 1.600
-    const prodUpdated = await request(app).get(`/api/products/${prod.id}`);
-    expect(prodUpdated.body.cost_reference).toBe(1.6);
+    const prodAfterAdd = await request(app).get(`/api/products/${prod.id}`);
+    expect(prodAfterAdd.body.cost_reference).toBe(initialCost);
+  });
+
+  it('rejects POST /api/products/:id/packaging if product is not MANUFACTURED or material is not packaging category', async () => {
+    const { matBottle, matChem } = await setupMfgProduct();
+
+    // Create a RESALE product
+    const famResale = await request(app).post('/api/products/families').send({
+      name: 'Fam Resale', category: 'Other', type: 'RESALE'
+    });
+    const prodResale = await request(app).post('/api/products').send({
+      family_id: famResale.body.id, name: 'Eponge', size_label: '1pc', stock_quantity: 10
+    });
+
+    // 1. Rejects packaging for RESALE product (400)
+    const resResale = await request(app).post(`/api/products/${prodResale.body.id}/packaging`).send({
+      material_id: matBottle.id, quantity_per_unit: 1
+    });
+    expect(resResale.status).toBe(400);
+    expect(resResale.body.error).toMatch(/fabriqué/i);
+
+    // 2. Rejects material that is not in (bottle, cap, label, packaging), e.g. chemical
+    const { prod } = await setupMfgProduct();
+    const resChem = await request(app).post(`/api/products/${prod.id}/packaging`).send({
+      material_id: matChem.id, quantity_per_unit: 1
+    });
+    expect(resChem.status).toBe(400);
+    expect(resChem.body.error).toMatch(/emballage valide/i);
   });
 
   it('rejects double-counting on POST /api/products/:id/packaging if recipe contains packaging category', async () => {
@@ -148,7 +175,7 @@ describe('Product Packaging Items API & Cost Preview', () => {
     expect(res.body.error).toMatch(/double décompte/i);
   });
 
-  it('updates a packaging item via PUT /api/products/:id/packaging/:itemId and deletes via DELETE', async () => {
+  it('updates a packaging item via PUT /api/products/:id/packaging/:itemId and deletes via DELETE without modifying cost_reference', async () => {
     const { prod, matBottle } = await setupMfgProduct();
 
     const addRes = await request(app).post(`/api/products/${prod.id}/packaging`).send({
@@ -156,6 +183,8 @@ describe('Product Packaging Items API & Cost Preview', () => {
     });
     expect(addRes.status).toBe(201);
     const itemId = addRes.body.id;
+
+    const initialCost = prod.cost_reference;
 
     // 1. Rejects unknown item on PUT (404)
     const putUnknown = await request(app).put(`/api/products/${prod.id}/packaging/unknown-item`).send({
@@ -169,29 +198,27 @@ describe('Product Packaging Items API & Cost Preview', () => {
     });
     expect(putZero.status).toBe(400);
 
-    // 3. Successful update -> 200
+    // 3. Successful update -> 200, cost_reference unchanged
     const putOk = await request(app).put(`/api/products/${prod.id}/packaging/${itemId}`).send({
       quantity_per_unit: 2
     });
     expect(putOk.status).toBe(200);
     expect(putOk.body.quantity_per_unit).toBe(2);
 
-    // 2 bottles * 0.350 = 0.700 + bulk 1.200 = 1.900
     const prodAfterPut = await request(app).get(`/api/products/${prod.id}`);
-    expect(prodAfterPut.body.cost_reference).toBe(1.9);
+    expect(prodAfterPut.body.cost_reference).toBe(initialCost);
 
     // 4. Rejects unknown item on DELETE (404)
     const delUnknown = await request(app).delete(`/api/products/${prod.id}/packaging/unknown-item`);
     expect(delUnknown.status).toBe(404);
 
-    // 5. Successful DELETE -> 200
+    // 5. Successful DELETE -> 200, cost_reference unchanged
     const delOk = await request(app).delete(`/api/products/${prod.id}/packaging/${itemId}`);
     expect(delOk.status).toBe(200);
     expect(delOk.body.success).toBe(true);
 
-    // Cost reference reverts to pure bulk: 1.200
     const prodAfterDel = await request(app).get(`/api/products/${prod.id}`);
-    expect(prodAfterDel.body.cost_reference).toBe(1.2);
+    expect(prodAfterDel.body.cost_reference).toBe(initialCost);
   });
 
   it('supports previewing cost for arbitrary inputs via POST /api/products/preview-cost', async () => {

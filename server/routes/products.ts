@@ -871,9 +871,22 @@ productsRouter.post('/:id/packaging', (req: Request, res: Response) => {
     return;
   }
 
+  const family: any = db.prepare('SELECT * FROM product_families WHERE id = ?').get(product.family_id);
+  if (!family || family.type !== 'MANUFACTURED') {
+    res.status(400).json({ error: "Les articles d'emballage ne s'appliquent qu'aux produits de type FABRIQUÉ (MANUFACTURED)." });
+    return;
+  }
+
   const material: any = db.prepare('SELECT * FROM raw_materials WHERE id = ?').get(material_id);
   if (!material) {
     res.status(404).json({ error: 'Matière première introuvable.' });
+    return;
+  }
+
+  if (!['bottle', 'cap', 'label', 'packaging'].includes(material.category)) {
+    res.status(400).json({
+      error: "La matière sélectionnée n'est pas un emballage valide (catégories autorisées : bottle, cap, label, packaging)."
+    });
     return;
   }
 
@@ -893,7 +906,6 @@ productsRouter.post('/:id/packaging', (req: Request, res: Response) => {
   }
 
   // Double-count guard against family recipe
-  const family: any = db.prepare('SELECT * FROM product_families WHERE id = ?').get(product.family_id);
   if (family && family.formulation_id) {
     const formulationCost = calculateFormulationCost(db, family.formulation_id);
     const recipeHasPackaging = formulationCost.items.some(i =>
@@ -912,15 +924,6 @@ productsRouter.post('/:id/packaging', (req: Request, res: Response) => {
     INSERT INTO product_packaging_items (id, product_id, material_id, quantity_per_unit)
     VALUES (?, ?, ?, ?)
   `).run(itemId, req.params.id, material_id, qty);
-
-  // Recalculate cost_reference for manufactured products
-  if (family && family.type === 'MANUFACTURED' && family.formulation_id) {
-    try {
-      const newCost = calculateProductUnitCost(db, req.params.id).cost_per_finished_unit;
-      db.prepare('UPDATE products SET cost_reference = ?, updated_at = ? WHERE id = ?')
-        .run(newCost, new Date().toISOString(), req.params.id);
-    } catch {}
-  }
 
   const created: any = db.prepare(`
     SELECT ppi.*, rm.name as material_name, rm.category as material_category, rm.unit as material_unit, rm.latest_purchase_cost
@@ -952,16 +955,6 @@ productsRouter.put('/:id/packaging/:itemId', (req: Request, res: Response) => {
 
   db.prepare('UPDATE product_packaging_items SET quantity_per_unit = ? WHERE id = ?').run(qty, req.params.itemId);
 
-  // Recalculate cost_reference
-  const family: any = db.prepare('SELECT pf.* FROM product_families pf JOIN products p ON p.family_id = pf.id WHERE p.id = ?').get(req.params.id);
-  if (family && family.type === 'MANUFACTURED' && family.formulation_id) {
-    try {
-      const newCost = calculateProductUnitCost(db, req.params.id).cost_per_finished_unit;
-      db.prepare('UPDATE products SET cost_reference = ?, updated_at = ? WHERE id = ?')
-        .run(newCost, new Date().toISOString(), req.params.id);
-    } catch {}
-  }
-
   const updated: any = db.prepare(`
     SELECT ppi.*, rm.name as material_name, rm.category as material_category, rm.unit as material_unit, rm.latest_purchase_cost
     FROM product_packaging_items ppi
@@ -983,16 +976,6 @@ productsRouter.delete('/:id/packaging/:itemId', (req: Request, res: Response) =>
   }
 
   db.prepare('DELETE FROM product_packaging_items WHERE id = ?').run(req.params.itemId);
-
-  // Recalculate cost_reference
-  const family: any = db.prepare('SELECT pf.* FROM product_families pf JOIN products p ON p.family_id = pf.id WHERE p.id = ?').get(req.params.id);
-  if (family && family.type === 'MANUFACTURED' && family.formulation_id) {
-    try {
-      const newCost = calculateProductUnitCost(db, req.params.id).cost_per_finished_unit;
-      db.prepare('UPDATE products SET cost_reference = ?, updated_at = ? WHERE id = ?')
-        .run(newCost, new Date().toISOString(), req.params.id);
-    } catch {}
-  }
 
   res.json({ success: true, id: req.params.itemId });
 });
