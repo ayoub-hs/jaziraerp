@@ -447,12 +447,17 @@ productsRouter.post('/backfill-size-confirm', (req: Request, res: Response) => {
       res.status(400).json({ error: `L'article "${product.name}" n'est pas de type FABRIQUÉ (MANUFACTURED).` });
       return;
     }
+    if (product.size_volume !== null && product.size_volume !== undefined) {
+      res.status(400).json({
+        error: `L'article "${product.name}" a déjà un volume unitaire configuré (${product.size_volume} L). Le rattrapage ne s'applique qu'aux articles sans taille (size_volume NULL).`
+      });
+      return;
+    }
     validated.push({ id: it.id, size_volume: round3(vol) });
   }
 
   const now = new Date().toISOString();
-  let oldValuation = 0;
-  let newValuation = 0;
+  let totalValuation = 0;
 
   const updateTx = db.transaction(() => {
     const updateStmt = db.prepare(`
@@ -466,8 +471,7 @@ productsRouter.post('/backfill-size-confirm', (req: Request, res: Response) => {
       const stock = Number(prod.stock_quantity) || 0;
       const cost = Number(prod.cost_reference) || 0;
       const lineVal = round3(stock * cost);
-      oldValuation = round3(oldValuation + lineVal);
-      newValuation = round3(newValuation + lineVal);
+      totalValuation = round3(totalValuation + lineVal);
 
       updateStmt.run(v.size_volume, now, v.id);
     }
@@ -478,9 +482,8 @@ productsRouter.post('/backfill-size-confirm', (req: Request, res: Response) => {
     res.json({
       success: true,
       updated_count: validated.length,
-      old_valuation: oldValuation,
-      new_valuation: newValuation,
-      delta_valuation: round3(newValuation - oldValuation)
+      total_valuation: totalValuation,
+      valuation_unchanged: true
     });
   } catch (err: any) {
     res.status(500).json({ error: sanitizeErrorMessage(err) });
@@ -584,80 +587,99 @@ productsRouter.post('/batch-cost-confirm', (req: Request, res: Response) => {
     return;
   }
 
-  const validated: Array<{ id: string; new_cost: number }> = [];
+  // Pre-validate basic input structure
   for (const it of items) {
     if (!it || typeof it.id !== 'string') {
       res.status(400).json({ error: "Identifiant d'article invalide." });
       return;
     }
-    let cost: number;
     try {
-      cost = requireFiniteNonNegative(it.new_cost, "nouveau coût (new_cost)");
+      requireFiniteNonNegative(it.new_cost, "nouveau coût (new_cost)");
     } catch (err: any) {
       res.status(400).json({ error: err.message });
       return;
     }
-
-    const product: any = db.prepare(`
-      SELECT p.*, pf.type as family_type
-      FROM products p
-      JOIN product_families pf ON p.family_id = pf.id
-      WHERE p.id = ?
-    `).get(it.id);
-
-    if (!product) {
-      res.status(404).json({ error: `Article introuvable : ${it.id}` });
-      return;
-    }
-    if (product.family_type !== 'MANUFACTURED') {
-      res.status(400).json({ error: `L'article "${product.name}" n'est pas de type FABRIQUÉ (MANUFACTURED).` });
-      return;
-    }
-    if (product.size_volume === null || product.size_volume === undefined) {
-      res.status(400).json({
-        error: `Impossible de mettre à jour le coût de l'article "${product.name}" : volume unitaire manquant (size manquante). Veuillez d'abord renseigner la taille.`
-      });
-      return;
-    }
-
-    validated.push({ id: it.id, new_cost: round3(cost) });
   }
 
   const now = new Date().toISOString();
   let oldValuation = 0;
   let newValuation = 0;
-
-  const updateTx = db.transaction(() => {
-    const updateStmt = db.prepare(`
-      UPDATE products
-      SET cost_reference = ?, updated_at = ?
-      WHERE id = ?
-    `);
-
-    for (const v of validated) {
-      const prod: any = db.prepare('SELECT stock_quantity, cost_reference FROM products WHERE id = ?').get(v.id);
-      const stock = Number(prod.stock_quantity) || 0;
-      const oldCost = Number(prod.cost_reference) || 0;
-      const oldLineVal = round3(stock * oldCost);
-      const newLineVal = round3(stock * v.new_cost);
-
-      oldValuation = round3(oldValuation + oldLineVal);
-      newValuation = round3(newValuation + newLineVal);
-
-      updateStmt.run(v.new_cost, now, v.id);
-    }
-  });
+  let updatedCount = 0;
 
   try {
+    const updateTx = db.transaction(() => {
+      const updateStmt = db.prepare(`
+        UPDATE products
+        SET cost_reference = ?, updated_at = ?
+        WHERE id = ?
+      `);
+
+      for (const it of items) {
+        const clientCost = round3(Number(it.new_cost));
+        const product: any = db.prepare(`
+          SELECT p.*, pf.type as family_type
+          FROM products p
+          JOIN product_families pf ON p.family_id = pf.id
+          WHERE p.id = ?
+        `).get(it.id);
+
+        if (!product) {
+          throw new ValidationError(`Article introuvable : ${it.id}`);
+        }
+        if (product.family_type !== 'MANUFACTURED') {
+          throw new ValidationError(`L'article "${product.name}" n'est pas de type FABRIQUÉ (MANUFACTURED).`);
+        }
+        if (product.size_volume === null || product.size_volume === undefined) {
+          throw new ValidationError(
+            `Impossible de mettre à jour le coût de l'article "${product.name}" : volume unitaire manquant (size manquante). Veuillez d'abord renseigner la taille.`
+          );
+        }
+
+        // Recompute fresh unit cost on the server inside the transaction!
+        const freshCostInfo = calculateProductUnitCost(db, product.id);
+        const serverCost = round3(freshCostInfo.cost_per_finished_unit);
+
+        // If client-sent new_cost differs from the fresh server value by > 0.001 -> reject with 409
+        if (Math.abs(clientCost - serverCost) > 0.001) {
+          const err: any = new Error(
+            `Le coût de l'article "${product.name}" a changé ou ne correspond pas au calcul serveur (${clientCost.toFixed(3)} DT envoyé vs ${serverCost.toFixed(3)} DT calculé). Veuillez réactualiser l'aperçu avant de confirmer.`
+          );
+          err.code = 'COST_MISMATCH';
+          err.statusCode = 409;
+          throw err;
+        }
+
+        const stock = Number(product.stock_quantity) || 0;
+        const oldCost = Number(product.cost_reference) || 0;
+        const oldLineVal = round3(stock * oldCost);
+        const newLineVal = round3(stock * serverCost); // Apply only server-computed values!
+
+        oldValuation = round3(oldValuation + oldLineVal);
+        newValuation = round3(newValuation + newLineVal);
+
+        updateStmt.run(serverCost, now, product.id);
+        updatedCount++;
+      }
+    });
+
     updateTx();
+
     res.json({
       success: true,
-      updated_count: validated.length,
+      updated_count: updatedCount,
       old_valuation: oldValuation,
       new_valuation: newValuation,
       delta_valuation: round3(newValuation - oldValuation)
     });
   } catch (err: any) {
+    if (err.statusCode === 409 || err.code === 'COST_MISMATCH') {
+      res.status(409).json({ error: err.message });
+      return;
+    }
+    if (err instanceof ValidationError || err.name === 'ValidationError') {
+      res.status(400).json({ error: err.message });
+      return;
+    }
     res.status(500).json({ error: sanitizeErrorMessage(err) });
   }
 });

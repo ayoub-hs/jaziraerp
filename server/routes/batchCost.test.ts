@@ -102,7 +102,7 @@ describe('Size Volume Backfill & Batch Cost Endpoints (Commit 4)', () => {
   });
 
   describe('POST /api/products/backfill-size-confirm', () => {
-    it('validates input and rejects empty or invalid items', async () => {
+    it('validates input and rejects empty, invalid items, or already-set products', async () => {
       setupTestData();
 
       const resEmpty = await request(app).post('/api/products/backfill-size-confirm').send({ items: [] });
@@ -118,9 +118,16 @@ describe('Size Volume Backfill & Batch Cost Endpoints (Commit 4)', () => {
       });
       expect(resResale.status).toBe(400);
       expect(resResale.body.error).toMatch(/fabriqué/i);
+
+      // prod-ready already has size_volume: 1.5 -> must be rejected
+      const resAlreadySet = await request(app).post('/api/products/backfill-size-confirm').send({
+        items: [{ id: 'prod-ready', size_volume: 2.0 }]
+      });
+      expect(resAlreadySet.status).toBe(400);
+      expect(resAlreadySet.body.error).toMatch(/déjà/i);
     });
 
-    it('updates size_volume in one transaction without changing cost_reference and returns valuation', async () => {
+    it('updates size_volume in one transaction without changing cost_reference and returns total_valuation with dropped delta', async () => {
       setupTestData();
       const db = getDb();
 
@@ -135,9 +142,9 @@ describe('Size Volume Backfill & Batch Cost Endpoints (Commit 4)', () => {
       expect(res.body.success).toBe(true);
       expect(res.body.updated_count).toBe(2);
       // prod-15: 20 * 1.000 = 20.000; prod-2: 10 * 1.200 = 12.000 => total 32.000
-      expect(res.body.old_valuation).toBe(32.000);
-      expect(res.body.new_valuation).toBe(32.000);
-      expect(res.body.delta_valuation).toBe(0.000);
+      expect(res.body.total_valuation).toBe(32.000);
+      expect(res.body.valuation_unchanged).toBe(true);
+      expect(res.body.delta_valuation).toBeUndefined();
 
       const p15: any = db.prepare('SELECT size_volume, cost_reference FROM products WHERE id = ?').get('prod-15');
       expect(p15.size_volume).toBe(1.5);
@@ -217,7 +224,43 @@ describe('Size Volume Backfill & Batch Cost Endpoints (Commit 4)', () => {
       expect(resNullSize.body.error).toMatch(/taille|size/i);
     });
 
-    it('updates cost_reference in one transaction and reports accurate valuation delta', async () => {
+    it('rejects tampered new_cost with 409 and leaves cost_reference unchanged', async () => {
+      setupTestData();
+      const db = getDb();
+      db.prepare('UPDATE products SET size_volume = 1.5 WHERE id = ?').run('prod-15');
+
+      // Client attempts to inject 999.000
+      const res = await request(app).post('/api/products/batch-cost-confirm').send({
+        items: [{ id: 'prod-15', new_cost: 999.000 }]
+      });
+      expect(res.status).toBe(409);
+      expect(res.body.error).toMatch(/a changé ou ne correspond pas au calcul serveur/i);
+
+      // Check DB: cost_reference must be completely unchanged
+      const p15: any = db.prepare('SELECT cost_reference FROM products WHERE id = ?').get('prod-15');
+      expect(p15.cost_reference).toBe(1.000);
+    });
+
+    it('rejects with 409 if material cost changed between preview and confirm', async () => {
+      setupTestData();
+      const db = getDb();
+      db.prepare('UPDATE products SET size_volume = 1.5 WHERE id = ?').run('prod-15');
+
+      // Raw material purchase cost updates on acid: from 4.000 to 5.000
+      db.prepare('UPDATE raw_materials SET latest_purchase_cost = 5.000 WHERE id = ?').run('mat-acid');
+
+      // Client sends previously previewed 1.680:
+      const res = await request(app).post('/api/products/batch-cost-confirm').send({
+        items: [{ id: 'prod-15', new_cost: 1.680 }]
+      });
+      expect(res.status).toBe(409);
+      expect(res.body.error).toMatch(/a changé ou ne correspond pas au calcul serveur/i);
+
+      const p15: any = db.prepare('SELECT cost_reference FROM products WHERE id = ?').get('prod-15');
+      expect(p15.cost_reference).toBe(1.000);
+    });
+
+    it('updates cost_reference with server-computed values in one transaction and reports accurate valuation delta', async () => {
       setupTestData();
       const db = getDb();
 
@@ -225,12 +268,12 @@ describe('Size Volume Backfill & Batch Cost Endpoints (Commit 4)', () => {
       db.prepare('UPDATE products SET size_volume = 1.5 WHERE id = ?').run('prod-15');
 
       // prod-15: stock 20, old_cost 1.000 (val 20.000), new_cost 1.680 (val 33.600) -> delta +13.600
-      // prod-ready: stock 15, old_cost 1.680 (val 25.200), new_cost 1.700 (val 25.500) -> delta +0.300
-      // Total old: 45.200, Total new: 59.100, Total delta: 13.900
+      // prod-ready: stock 15, old_cost 1.680 (val 25.200), new_cost 1.680 (val 25.200) -> delta 0.000
+      // Total old: 45.200, Total new: 58.800, Total delta: 13.600
       const res = await request(app).post('/api/products/batch-cost-confirm').send({
         items: [
           { id: 'prod-15', new_cost: 1.680 },
-          { id: 'prod-ready', new_cost: 1.700 }
+          { id: 'prod-ready', new_cost: 1.680 }
         ]
       });
 
@@ -238,14 +281,14 @@ describe('Size Volume Backfill & Batch Cost Endpoints (Commit 4)', () => {
       expect(res.body.success).toBe(true);
       expect(res.body.updated_count).toBe(2);
       expect(res.body.old_valuation).toBe(45.200);
-      expect(res.body.new_valuation).toBe(59.100);
-      expect(res.body.delta_valuation).toBe(13.900);
+      expect(res.body.new_valuation).toBe(58.800);
+      expect(res.body.delta_valuation).toBe(13.600);
 
       const p15: any = db.prepare('SELECT cost_reference FROM products WHERE id = ?').get('prod-15');
       expect(p15.cost_reference).toBe(1.680);
 
       const pRdy: any = db.prepare('SELECT cost_reference FROM products WHERE id = ?').get('prod-ready');
-      expect(pRdy.cost_reference).toBe(1.700);
+      expect(pRdy.cost_reference).toBe(1.680);
     });
   });
 });

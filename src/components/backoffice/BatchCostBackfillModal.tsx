@@ -58,9 +58,11 @@ export const BatchCostBackfillModal: React.FC<BatchCostBackfillModalProps> = ({
   const [successReport, setSuccessReport] = useState<{
     message: string;
     updated_count: number;
-    old_valuation: number;
-    new_valuation: number;
-    delta_valuation: number;
+    total_valuation?: number;
+    valuation_unchanged?: boolean;
+    old_valuation?: number;
+    new_valuation?: number;
+    delta_valuation?: number;
   } | null>(null);
 
   // Backfill state
@@ -185,9 +187,8 @@ export const BatchCostBackfillModal: React.FC<BatchCostBackfillModalProps> = ({
       setSuccessReport({
         message: `${data.updated_count} article(s) mis à jour avec succès.`,
         updated_count: data.updated_count,
-        old_valuation: data.old_valuation,
-        new_valuation: data.new_valuation,
-        delta_valuation: data.delta_valuation
+        total_valuation: data.total_valuation,
+        valuation_unchanged: data.valuation_unchanged
       });
       onSuccess();
       loadBackfillPreview();
@@ -338,22 +339,32 @@ export const BatchCostBackfillModal: React.FC<BatchCostBackfillModalProps> = ({
                 <CheckCircle2 className="w-5 h-5 text-emerald-600 shrink-0" />
                 <span>{successReport.message}</span>
               </div>
-              <div className="grid grid-cols-3 gap-3 pt-2 border-t border-emerald-200/80 font-mono text-xs">
-                <div>
-                  <span className="text-slate-600 block text-pos-badge">Ancienne valorisation :</span>
-                  <span className="font-bold text-slate-800">{formatMoney(successReport.old_valuation)}</span>
-                </div>
-                <div>
-                  <span className="text-slate-600 block text-pos-badge">Nouvelle valorisation :</span>
-                  <span className="font-bold text-slate-800">{formatMoney(successReport.new_valuation)}</span>
-                </div>
-                <div>
-                  <span className="text-slate-600 block text-pos-badge">Variation totale :</span>
-                  <span className={`font-bold ${successReport.delta_valuation >= 0 ? 'text-emerald-700' : 'text-amber-700'}`}>
-                    {successReport.delta_valuation >= 0 ? '+' : ''}{formatMoney(successReport.delta_valuation)}
+              {successReport.valuation_unchanged ? (
+                <div className="pt-2 border-t border-emerald-200/80 font-mono text-xs flex items-center justify-between">
+                  <span className="text-slate-600">Valorisation du stock :</span>
+                  <span className="font-bold text-slate-800">
+                    {formatMoney(successReport.total_valuation ?? 0)}
+                    <span className="text-slate-500 font-sans ml-1.5 font-normal">(inchangée — aucun coût modifié)</span>
                   </span>
                 </div>
-              </div>
+              ) : (
+                <div className="grid grid-cols-3 gap-3 pt-2 border-t border-emerald-200/80 font-mono text-xs">
+                  <div>
+                    <span className="text-slate-600 block text-pos-badge">Ancienne valorisation :</span>
+                    <span className="font-bold text-slate-800">{formatMoney(successReport.old_valuation ?? 0)}</span>
+                  </div>
+                  <div>
+                    <span className="text-slate-600 block text-pos-badge">Nouvelle valorisation :</span>
+                    <span className="font-bold text-slate-800">{formatMoney(successReport.new_valuation ?? 0)}</span>
+                  </div>
+                  <div>
+                    <span className="text-slate-600 block text-pos-badge">Variation totale :</span>
+                    <span className={`font-bold ${(successReport.delta_valuation ?? 0) >= 0 ? 'text-emerald-700' : 'text-amber-700'}`}>
+                      {(successReport.delta_valuation ?? 0) >= 0 ? '+' : ''}{formatMoney(successReport.delta_valuation ?? 0)}
+                    </span>
+                  </div>
+                </div>
+              )}
             </div>
           )}
 

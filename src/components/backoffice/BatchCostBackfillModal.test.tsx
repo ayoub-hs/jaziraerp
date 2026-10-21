@@ -88,9 +88,8 @@ describe('BatchCostBackfillModal (Commit 4)', () => {
           json: () => Promise.resolve({
             success: true,
             updated_count: 2,
-            old_valuation: 32.000,
-            new_valuation: 32.000,
-            delta_valuation: 0.000
+            total_valuation: 32.000,
+            valuation_unchanged: true
           })
         });
       }
