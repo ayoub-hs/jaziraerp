@@ -3,8 +3,8 @@ import crypto from 'crypto';
 import { getDb, isUniqueViolation } from '../db/index.js';
 import { round3 } from '../utils/money.js';
 import { businessDateKey } from '../utils/businessDate.js';
-import { calculateBatchRequirements } from '../services/costingService.js';
-import { requireFinitePositive } from '../utils/validation.js';
+import { calculateBatchRequirements, ProductionValidationError } from '../services/costingService.js';
+import { requireFinitePositive, ValidationError } from '../utils/validation.js';
 
 export const productionRouter = Router();
 
@@ -125,9 +125,17 @@ productionRouter.post('/batches', (req: Request, res: Response) => {
 
   let batchRequirements: any;
   try {
-    batchRequirements = calculateBatchRequirements(db, formulation_id, units, volume, target_product_id);
+    batchRequirements = calculateBatchRequirements(db, formulation_id, units, {
+      batchVolume: volume,
+      targetProductId: target_product_id
+    });
   } catch (err: any) {
-    res.status(400).json({ error: err.message });
+    if (err instanceof ProductionValidationError || err instanceof ValidationError) {
+      res.status(400).json({ error: err.message });
+      return;
+    }
+    console.error('[Production Error in Batch Requirements]', err);
+    res.status(500).json({ error: 'Une erreur interne est survenue. Veuillez réessayer.' });
     return;
   }
 
@@ -227,7 +235,9 @@ productionRouter.post('/batches', (req: Request, res: Response) => {
         res.status(409).json({ error: `Batch number already exists: ${finalBatchNumber}` });
         return;
       }
-      throw err;
+      console.error('[Production Batch DB Error]', err);
+      res.status(500).json({ error: 'Une erreur interne est survenue. Veuillez réessayer.' });
+      return;
     }
   }
 

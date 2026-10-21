@@ -204,7 +204,7 @@ describe('costingService: Quantity-Weighted Average Costing', () => {
     expect(formCost.cost_per_unit).toBe(3.067);
 
     // Batch of 20 units -> 20 kg @ 3.067 = 61.340 DT
-    const batchReq = calculateBatchRequirements(db, 'form-f', 20, 2026);
+    const batchReq = calculateBatchRequirements(db, 'form-f', 20, { year: 2026 });
     expect(batchReq.totalBatchCost).toBe(61.340);
     expect(batchReq.costPerUnit).toBe(3.067);
   });

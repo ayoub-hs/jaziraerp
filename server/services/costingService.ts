@@ -146,6 +146,13 @@ export function calculateFormulationCost(
   };
 }
 
+export class ProductionValidationError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = 'ProductionValidationError';
+  }
+}
+
 export interface ScaledBatchIngredient {
   material_id: string;
   material_name: string;
@@ -181,7 +188,7 @@ export function calculateProductUnitCost(
   if (typeof productInput === 'string') {
     product = db.prepare('SELECT * FROM products WHERE id = ?').get(productInput);
     if (!product) {
-      throw new Error(`Product not found: ${productInput}`);
+      throw new ProductionValidationError(`Product not found: ${productInput}`);
     }
   } else {
     product = productInput;
@@ -189,12 +196,12 @@ export function calculateProductUnitCost(
 
   const family = db.prepare('SELECT * FROM product_families WHERE id = ?').get(product.family_id);
   if (!family || family.type !== 'MANUFACTURED') {
-    throw new Error('Le produit doit appartenir à une famille de type MANUFACTURED.');
+    throw new ProductionValidationError('Le produit doit appartenir à une famille de type MANUFACTURED.');
   }
 
   const formulationId = family.formulation_id;
   if (!formulationId) {
-    throw new Error('Aucune formule associée à cette famille de produit.');
+    throw new ProductionValidationError('Aucune formule associée à cette famille de produit.');
   }
 
   const formulationCost = calculateFormulationCost(db, formulationId, targetYear);
@@ -207,12 +214,12 @@ export function calculateProductUnitCost(
   if (product.size_volume !== undefined && product.size_volume !== null && product.size_volume !== '') {
     sizeVolume = Number(product.size_volume);
     if (!Number.isFinite(sizeVolume) || sizeVolume <= 0) {
-      throw new Error('Le volume unitaire (size_volume) doit être un nombre positif.');
+      throw new ProductionValidationError('Le volume unitaire (size_volume) doit être un nombre positif.');
     }
   } else if (isPieceUnit) {
     sizeVolume = 1.0;
   } else {
-    throw new Error("Le volume unitaire (size_volume) est obligatoire pour les produits fabriqués en litres/kilos.");
+    throw new ProductionValidationError("Le volume unitaire (size_volume) est obligatoire pour les produits fabriqués en litres/kilos.");
   }
 
   // Check packaging items
@@ -232,7 +239,7 @@ export function calculateProductUnitCost(
     ['bottle', 'cap', 'label', 'packaging'].includes(i.material_category)
   );
   if (recipeHasPackaging && packagingItems.length > 0) {
-    throw new Error("Incohérence : la formule contient déjà des articles d'emballage alors que le produit a des emballages spécifiques configurés (risque de double décompte).");
+    throw new ProductionValidationError("Incohérence : la formule contient déjà des articles d'emballage alors que le produit a des emballages spécifiques configurés (risque de double décompte).");
   }
 
   const unitCosts = getMaterialUnitCosts(db, targetYear);
@@ -257,6 +264,12 @@ export function calculateProductUnitCost(
   };
 }
 
+export interface BatchRequirementsOptions {
+  batchVolume?: number | null;
+  targetProductId?: string | null;
+  year?: number;
+}
+
 /**
  * Scales a formulation to calculate required materials and expected cost for a specific target production output.
  */
@@ -264,9 +277,7 @@ export function calculateBatchRequirements(
   db: any,
   formulationId: string,
   targetOutputUnits?: number | null,
-  batchVolumeOrYear?: number | null,
-  targetProductId?: string | null,
-  targetYear?: number
+  options?: BatchRequirementsOptions
 ): {
   targetOutputUnits: number;
   batchVolume: number;
@@ -275,13 +286,9 @@ export function calculateBatchRequirements(
   costPerUnit: number;
   ingredients: ScaledBatchIngredient[];
 } {
-  let declaredBatchVolume: number | null = null;
-  let year = targetYear;
-  if (targetProductId) {
-    declaredBatchVolume = batchVolumeOrYear !== undefined ? batchVolumeOrYear : null;
-  } else if (typeof batchVolumeOrYear === 'number') {
-    year = batchVolumeOrYear;
-  }
+  const declaredBatchVolume = options?.batchVolume !== undefined ? options.batchVolume : null;
+  const targetProductId = options?.targetProductId !== undefined ? options.targetProductId : null;
+  const year = options?.year;
 
   const formulationCost = calculateFormulationCost(db, formulationId, year);
   const baseYield = formulationCost.base_yield_quantity > 0 ? formulationCost.base_yield_quantity : 1;
@@ -289,7 +296,7 @@ export function calculateBatchRequirements(
   if (targetProductId) {
     const product: any = db.prepare('SELECT * FROM products WHERE id = ?').get(targetProductId);
     if (!product) {
-      throw new Error(`Target product SKU not found: ${targetProductId}`);
+      throw new ProductionValidationError(`Target product SKU not found: ${targetProductId}`);
     }
 
     let sizeVolume: number;
@@ -297,12 +304,12 @@ export function calculateBatchRequirements(
     if (product.size_volume !== null && product.size_volume !== undefined && product.size_volume !== '') {
       sizeVolume = Number(product.size_volume);
       if (!Number.isFinite(sizeVolume) || sizeVolume <= 0) {
-        throw new Error('Le volume unitaire (size_volume) doit être un nombre positif.');
+        throw new ProductionValidationError('Le volume unitaire (size_volume) doit être un nombre positif.');
       }
     } else if (isPieceUnit) {
       sizeVolume = 1.0;
     } else {
-      throw new Error("Le volume unitaire (size_volume) est obligatoire pour les produits fabriqués en litres/kilos.");
+      throw new ProductionValidationError("Le volume unitaire (size_volume) est obligatoire pour les produits fabriqués en litres/kilos.");
     }
 
     const hasUnits = targetOutputUnits !== undefined && targetOutputUnits !== null && !isNaN(Number(targetOutputUnits)) && Number(targetOutputUnits) > 0;
@@ -316,7 +323,7 @@ export function calculateBatchRequirements(
       const vol = Number(declaredBatchVolume);
       const expectedVol = round3(units * sizeVolume);
       if (Math.abs(vol - expectedVol) > 0.001) {
-        throw new Error(`Incohérence : le volume déclaré (${vol}) ne correspond pas aux unités produites (${units} × ${sizeVolume} = ${expectedVol}).`);
+        throw new ProductionValidationError(`Incohérence : le volume déclaré (${vol}) ne correspond pas aux unités produites (${units} × ${sizeVolume} = ${expectedVol}).`);
       }
       finalUnits = units;
       finalVol = vol;
@@ -327,7 +334,7 @@ export function calculateBatchRequirements(
       finalVol = Number(declaredBatchVolume);
       finalUnits = round3(finalVol / sizeVolume);
     } else {
-      throw new Error("Le volume du lot ou le nombre d'unités produites doit être spécifié.");
+      throw new ProductionValidationError("Le volume du lot ou le nombre d'unités produites doit être spécifié.");
     }
 
     const packagingItems: any[] = db.prepare(`
@@ -341,7 +348,7 @@ export function calculateBatchRequirements(
       ['bottle', 'cap', 'label', 'packaging'].includes(i.material_category)
     );
     if (recipeHasPackaging && packagingItems.length > 0) {
-      throw new Error("Incohérence : la formule contient déjà des articles d'emballage alors que le produit a des emballages spécifiques configurés (risque de double décompte).");
+      throw new ProductionValidationError("Incohérence : la formule contient déjà des articles d'emballage alors que le produit a des emballages spécifiques configurés (risque de double décompte).");
     }
 
     const scalingFactor = finalVol / baseYield;
@@ -373,7 +380,7 @@ export function calculateBatchRequirements(
     }
 
     // Product packaging items
-    const unitCosts = getMaterialUnitCosts(db, targetYear);
+    const unitCosts = getMaterialUnitCosts(db, year);
     for (const pkg of packagingItems) {
       const rawMaterial: any = db.prepare('SELECT stock_quantity FROM raw_materials WHERE id = ?').get(pkg.material_id);
       const currentStock = rawMaterial ? rawMaterial.stock_quantity : 0;

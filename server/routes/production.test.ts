@@ -392,4 +392,42 @@ describe('Production Batches Module', () => {
     expect(res.body.error).toMatch(/double décompte/i);
     resetTestDb();
   });
+
+  it('returns 500 with generic message and no SQL text when an unexpected DB error occurs', async () => {
+    resetTestDb();
+    const mat = await request(app).post('/api/materials').send({ name: 'Chem', category: 'chemical', unit: 'kg', stock_quantity: 100, latest_purchase_cost: 2 });
+    const form = await request(app).post('/api/formulations').send({
+      name: 'Form Err', base_yield_quantity: 10, base_yield_unit: 'L',
+      items: [{ material_id: mat.body.id, quantity_required: 1 }]
+    });
+    const fam = await request(app).post('/api/products/families').send({
+      name: 'Fam Err', category: 'C', type: 'MANUFACTURED', formulation_id: form.body.id
+    });
+    const prod = await request(app).post('/api/products').send({
+      family_id: fam.body.id, name: 'Prod Err', size_volume: 1, stock_quantity: 0
+    });
+
+    const db = (await import('../db/index.js')).getDb();
+    const origPrepare = db.prepare;
+    (db as any).prepare = (sql: string) => {
+      if (sql.includes('product_packaging_items') || sql.includes('production_batches')) {
+        throw new Error('SQLITE_ERROR: syntax error near unexpected symbol in internal query');
+      }
+      return origPrepare.call(db, sql);
+    };
+
+    try {
+      const res = await request(app).post('/api/production/batches').send({
+        formulation_id: form.body.id, target_product_id: prod.body.id, units_produced: 10
+      });
+      expect(res.status).toBe(500);
+      expect(res.body.error).toBe('Une erreur interne est survenue. Veuillez réessayer.');
+      expect(JSON.stringify(res.body)).not.toMatch(/SQLITE/i);
+      expect(JSON.stringify(res.body)).not.toMatch(/syntax error/i);
+    } finally {
+      (db as any).prepare = origPrepare;
+      resetTestDb();
+    }
+  });
 });
+
