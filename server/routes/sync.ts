@@ -184,7 +184,7 @@ syncRouter.post('/flush', (req: Request, res: Response) => {
 
         const saleId = crypto.randomUUID();
         const receiptNumber = generateReceiptNumber(db);
-        const date = payload.date || now;
+        const date = payload?.date || op.created_at || now;
 
         // Unknown customer must fail loudly (never silently convert to walk-in:
         // that would change wallet/credit semantics). Mirrors online 404.

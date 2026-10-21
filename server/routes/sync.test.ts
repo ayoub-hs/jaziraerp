@@ -825,6 +825,63 @@ describe('Offline Storage & Sync Engine Module (HTTP Routes)', () => {
     expect(sale.total_discount).toBe(5.001);
     expect(sale.total_ttc).toBe(4.999);
   });
+
+  it('F7: sync uses offline sale date, falls back to op.created_at for legacy queue rows', async () => {
+    const famRes = await request(app).post('/api/products/families').send({
+      name: 'Sync Date Family', category: 'Detergents', type: 'RESALE'
+    });
+    const prodRes = await request(app).post('/api/products').send({
+      family_id: famRes.body.id,
+      name: 'Sync Date Product',
+      stock_quantity: 10,
+      retail_price: 10
+    });
+    const custRes = await request(app).post('/api/customers').send({
+      name: 'Sync Date Customer', type: 'RETAIL'
+    });
+
+    const offlineCapturedDate = '2026-08-15T14:30:00.000Z';
+    const legacyQueueCreatedAt = '2026-08-10T11:22:33.000Z';
+
+    const flushRes = await request(app).post('/api/sync/flush').send({
+      operations: [
+        {
+          temp_client_id: 'temp-date-explicit',
+          action_type: 'SALE',
+          created_at: '2026-08-15T14:35:00.000Z',
+          payload: {
+            customer_id: custRes.body.id,
+            items: [{ product_id: prodRes.body.id, quantity: 1, unit_price: 10, pack_multiplier: 1 }],
+            cash_paid: 10,
+            cash_tendered: 10,
+            date: offlineCapturedDate
+          }
+        },
+        {
+          temp_client_id: 'temp-date-legacy-queue',
+          action_type: 'SALE',
+          created_at: legacyQueueCreatedAt,
+          payload: {
+            customer_id: custRes.body.id,
+            items: [{ product_id: prodRes.body.id, quantity: 1, unit_price: 10, pack_multiplier: 1 }],
+            cash_paid: 10,
+            cash_tendered: 10
+            // no date in payload, simulates old queue row
+          }
+        }
+      ]
+    });
+
+    expect(flushRes.status).toBe(200);
+    expect(flushRes.body.failed).toEqual([]);
+
+    const db = getDb();
+    const explicitSale: any = db.prepare('SELECT date, created_at FROM sales WHERE synced_from_client_id = ?').get('temp-date-explicit');
+    expect(explicitSale.date).toBe(offlineCapturedDate);
+
+    const legacySale: any = db.prepare('SELECT date, created_at FROM sales WHERE synced_from_client_id = ?').get('temp-date-legacy-queue');
+    expect(legacySale.date).toBe(legacyQueueCreatedAt);
+  });
 });
 
 

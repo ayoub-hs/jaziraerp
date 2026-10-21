@@ -192,6 +192,25 @@ describe('SyncManager & Offline Fallback', () => {
     expect(queued.payload.client_request_id).toBe('req-online-1234');
   });
 
+  it('F7: queueOfflineSale stamps accepted date onto payload and queue created_at', async () => {
+    const addSpy = vi.spyOn(clientDb.pending_sync_queue, 'add').mockResolvedValue(1 as any);
+    vi.spyOn(syncMgr, 'getPendingCount').mockResolvedValue(1);
+    vi.spyOn(syncMgr, 'getReviewCount').mockResolvedValue(0);
+
+    const before = new Date().toISOString();
+    await syncMgr.queueOfflineSale(
+      { items: [{ product_id: 'prod-1', quantity: 1 }] },
+      'req-offline-date-test'
+    );
+    const after = new Date().toISOString();
+
+    const queued: any = addSpy.mock.calls[0][0];
+    expect(queued.payload.date).toBeDefined();
+    expect(queued.payload.date >= before).toBe(true);
+    expect(queued.payload.date <= after).toBe(true);
+    expect(queued.created_at).toBe(queued.payload.date);
+  });
+
   it('flushSyncQueue does NOT send queue items with needs_review: true and preserves OFFLINE_PENDING state', async () => {
     const mockItems = [
       { queue_id: 1, temp_client_id: 't-normal', action_type: 'SALE', payload: {}, created_at: 'now' },

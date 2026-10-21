@@ -189,15 +189,17 @@ export class SyncManager {
     }
 
     // Add to outbox queue
+    const acceptedDate = payload.date || new Date().toISOString();
     await clientDb.pending_sync_queue.add({
       temp_client_id: tempClientId,
       action_type: 'SALE',
       payload: {
         ...payload,
+        date: acceptedDate,
         temp_client_id: tempClientId,
         client_request_id: idempotencyKey
       },
-      created_at: new Date().toISOString()
+      created_at: acceptedDate
     });
 
     this.state = 'OFFLINE_PENDING';
