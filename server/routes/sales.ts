@@ -5,6 +5,7 @@ import { round3, addMoney, subtractMoney, toMillimes } from '../utils/money.js';
 import { businessDateKey, tunisDayRangeUTC, isFilterDay } from '../utils/businessDate.js';
 import { beginIdempotentRequest } from '../utils/idempotency.js';
 import { completeRequest } from '../services/idempotencyService.js';
+import { DELIVERY_FEE_LINE_NAME } from '../constants.js';
 import {
   SaleError,
   createSale,
@@ -564,6 +565,10 @@ export function calculateRefundItems(
       return { totalRefunded: 0, processedItems: [], error: `Sale line item not found: ${item.sale_item_id}` };
     }
 
+    if (saleItem.quick_add_name === DELIVERY_FEE_LINE_NAME) {
+      return { totalRefunded: 0, processedItems: [], error: 'Les frais de livraison ne sont pas remboursables.' };
+    }
+
     const qtyToRefund = Number(item.quantity);
     if (!Number.isFinite(qtyToRefund) || qtyToRefund <= 0) {
       return { totalRefunded: 0, processedItems: [], error: `Invalid refund quantity for item ${saleItem.id}: ${item.quantity}` };
@@ -633,7 +638,7 @@ export function previewRefund(saleId: string, req: Request, res: Response) {
   let requestedItems = req.body?.items;
   if (!Array.isArray(requestedItems) || requestedItems.length === 0) {
     requestedItems = allSaleItems
-      .filter(si => (si.quantity - (si.quantity_refunded || 0)) > 0)
+      .filter(si => si.quick_add_name !== DELIVERY_FEE_LINE_NAME && (si.quantity - (si.quantity_refunded || 0)) > 0)
       .map(si => ({
         sale_item_id: si.id,
         quantity: round3(si.quantity - (si.quantity_refunded || 0))
@@ -728,6 +733,14 @@ export function processRefund(saleId: string, req: Request, res: Response) {
   const allSaleItems: any[] = db.prepare(`
     SELECT * FROM sale_items WHERE sale_id = ? ORDER BY id ASC
   `).all(sale.id);
+
+  for (const item of items) {
+    const saleItem = allSaleItems.find(si => si.id === item?.sale_item_id);
+    if (saleItem && saleItem.quick_add_name === DELIVERY_FEE_LINE_NAME) {
+      res.status(400).json({ error: 'Les frais de livraison ne sont pas remboursables.' });
+      return;
+    }
+  }
 
   const globalDiscount = round3(Number(sale.total_discount) || 0);
   const netLineTotals = computeNetLineTotals(allSaleItems, globalDiscount);
