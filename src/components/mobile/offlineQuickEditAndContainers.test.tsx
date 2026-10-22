@@ -15,7 +15,7 @@ describe('F13: Quick-Edit and Container transactions offline queue fallback', ()
     vi.restoreAllMocks();
   });
 
-  it('MobileRegister quick-edit falls back to pending_sync_queue when offline', async () => {
+  it('MobileRegister quick-edit queues stock_delta when stock changed, and omits stock keys on price-only edit', async () => {
     const queueAddSpy = vi.spyOn(clientDb.pending_sync_queue, 'add').mockResolvedValue(1 as any);
     const prodUpdateSpy = vi.spyOn(clientDb.products, 'update').mockResolvedValue(1 as any);
 
@@ -35,7 +35,7 @@ describe('F13: Quick-Edit and Container transactions offline queue fallback', ()
     // Simulate offline
     vi.stubGlobal('navigator', { onLine: false });
 
-    render(
+    const { unmount } = render(
       <MobileRegister
         products={[mockProduct as any]}
         families={[]}
@@ -62,29 +62,45 @@ describe('F13: Quick-Edit and Container transactions offline queue fallback', ()
       expect(screen.getByText('Nettoyant Sol 1L')).toBeDefined();
     });
 
-    // Modify retail price and stock
+    // 1. Modify retail price ONLY (stock left untouched at 15)
     const retailInput = screen.getByDisplayValue('3.500');
     fireEvent.change(retailInput, { target: { value: '4.200' } });
-
-    const stockInput = screen.getByDisplayValue('15');
-    fireEvent.change(stockInput, { target: { value: '25' } });
 
     // Click Save
     const saveButton = screen.getByRole('button', { name: /Save & Update/i });
     fireEvent.click(saveButton);
 
-    // Assert that queueOfflineAction / clientDb.pending_sync_queue.add was called
     await waitFor(() => {
       expect(queueAddSpy).toHaveBeenCalledTimes(1);
     });
 
-    const queued = queueAddSpy.mock.calls[0][0];
-    expect(queued.action_type).toBe('PRICE_STOCK_EDIT');
-    expect(queued.payload.product_id).toBe('prod-quick-1');
-    expect(queued.payload.retail_price).toBe(4.200);
-    expect(queued.payload.stock_quantity).toBe(25);
+    const queuedPriceOnly = queueAddSpy.mock.calls[0][0];
+    expect(queuedPriceOnly.action_type).toBe('PRICE_STOCK_EDIT');
+    expect(queuedPriceOnly.payload.product_id).toBe('prod-quick-1');
+    expect(queuedPriceOnly.payload.retail_price).toBe(4.200);
+    // Price-only edit MUST NOT carry any stock key!
+    expect('stock_quantity' in queuedPriceOnly.payload).toBe(false);
+    expect('stock_delta' in queuedPriceOnly.payload).toBe(false);
+    expect(queuedPriceOnly.payload.stock_quantity).toBeUndefined();
+    expect(queuedPriceOnly.payload.stock_delta).toBeUndefined();
 
-    // Also assert optimistic Dexie update
+    // 2. Now also modify stock from 15 to 25 (delta = +10)
+    queueAddSpy.mockClear();
+    const stockInput = screen.getByDisplayValue('15');
+    fireEvent.change(stockInput, { target: { value: '25' } });
+    fireEvent.click(saveButton);
+
+    await waitFor(() => {
+      expect(queueAddSpy).toHaveBeenCalledTimes(1);
+    });
+
+    const queuedStockEdit = queueAddSpy.mock.calls[0][0];
+    expect(queuedStockEdit.action_type).toBe('PRICE_STOCK_EDIT');
+    expect(queuedStockEdit.payload.product_id).toBe('prod-quick-1');
+    expect(queuedStockEdit.payload.retail_price).toBe(4.200);
+    expect(queuedStockEdit.payload.stock_delta).toBe(10); // new (25) minus orig (15)
+
+    // Optimistic Dexie update carries new absolute stock
     expect(prodUpdateSpy).toHaveBeenCalledWith('prod-quick-1', expect.objectContaining({
       retail_price: 4.200,
       stock_quantity: 25
@@ -92,6 +108,57 @@ describe('F13: Quick-Edit and Container transactions offline queue fallback', ()
 
     // Expect French offline queued message
     expect(screen.getByText(/Modifié hors ligne/i)).toBeDefined();
+    unmount();
+  });
+
+  it('MobileRegister quick-edit shows error and does NOT queue on TypeError from code bug', async () => {
+    const queueAddSpy = vi.spyOn(clientDb.pending_sync_queue, 'add').mockResolvedValue(1 as any);
+
+    const mockProduct = {
+      id: 'prod-quick-err',
+      name: 'Produit Bug Test',
+      barcode: '999888777',
+      retail_price: 10.000,
+      wholesale_price: 8.000,
+      stock_quantity: 5,
+      cost_price: 5.000,
+      category: 'Test',
+      family_id: 'fam-1',
+      low_stock_threshold: 2
+    };
+
+    // Online, but fetch rejects with a programming bug TypeError (NOT a network error)
+    vi.stubGlobal('navigator', { onLine: true });
+    vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new TypeError("Cannot read properties of undefined (reading 'foo')")));
+
+    render(
+      <MobileRegister
+        products={[mockProduct as any]}
+        families={[]}
+        customers={[]}
+        containerTypes={[]}
+        activeSession={null}
+        onRefreshData={vi.fn()}
+        onProcessSale={vi.fn()}
+        onPrintReceipt={vi.fn()}
+        onPrintInvoice={vi.fn()}
+      />
+    );
+
+    fireEvent.click(screen.getByText('Quick-Edit'));
+    fireEvent.change(screen.getByPlaceholderText(/Scan barcode to edit.../i), { target: { value: '999888777' } });
+
+    await waitFor(() => {
+      expect(screen.getByText('Produit Bug Test')).toBeDefined();
+    });
+
+    fireEvent.click(screen.getByRole('button', { name: /Save & Update/i }));
+
+    // Must show error message, and MUST NOT queue offline
+    await waitFor(() => {
+      expect(screen.getByText(/Cannot read properties of undefined/i)).toBeDefined();
+    });
+    expect(queueAddSpy).not.toHaveBeenCalled();
   });
 
   it('MobileRegister container transaction falls back to pending_sync_queue when offline', async () => {

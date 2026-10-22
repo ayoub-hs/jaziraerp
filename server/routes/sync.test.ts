@@ -1079,6 +1079,119 @@ describe('Offline Storage & Sync Engine Module (HTTP Routes)', () => {
     const legacySale: any = db.prepare('SELECT date FROM sales WHERE synced_from_client_id = ?').get('f7-legacy-no-date');
     expect(legacySale.date).toBe('2026-07-01T10:00:00.000Z');
   });
+
+  it('F13 (FIX B): a stock edit after an offline sale of the same product syncs to the correct final stock (both orders)', async () => {
+    const db = getDb();
+
+    // 1. Setup products with initial stock 20
+    const fam = await request(app).post('/api/products/families').send({
+      name: 'Order Commutative Family', category: 'General', type: 'RESALE'
+    });
+    const p1 = await request(app).post('/api/products').send({
+      family_id: fam.body.id, name: 'Prod Order A', barcode: 'PROD-ORD-A',
+      retail_price: 10, wholesale_price: 8, stock_quantity: 20
+    });
+    const p2 = await request(app).post('/api/products').send({
+      family_id: fam.body.id, name: 'Prod Order B', barcode: 'PROD-ORD-B',
+      retail_price: 10, wholesale_price: 8, stock_quantity: 20
+    });
+
+    const p1Id = p1.body.id;
+    const p2Id = p2.body.id;
+
+    // Open a test register session
+    const openRes = await request(app).post('/api/register/open').send({ opening_cash: 100 });
+    const sessionId = openRes.body.session?.id || 'ses-test-comm';
+
+    // Order 1: [SALE (-4), PRICE_STOCK_EDIT (stock_delta: +5)]
+    const batchOrder1 = {
+      operations: [
+        {
+          temp_client_id: 'sale-ord1',
+          action_type: 'SALE',
+          payload: {
+            session_id: sessionId,
+            items: [{ product_id: p1Id, quantity: 4, unit_price: 10, tva_rate: 0 }],
+            cash_paid: 40,
+            date: new Date().toISOString()
+          }
+        },
+        {
+          temp_client_id: 'edit-ord1',
+          action_type: 'PRICE_STOCK_EDIT',
+          payload: {
+            product_id: p1Id,
+            retail_price: 12,
+            stock_delta: 5,
+            date: new Date().toISOString()
+          }
+        }
+      ]
+    };
+
+    const res1 = await request(app).post('/api/sync/flush').send(batchOrder1);
+    expect(res1.status).toBe(200);
+    expect(res1.body.reconciled).toHaveLength(2);
+
+    const updatedP1: any = db.prepare('SELECT stock_quantity, retail_price FROM products WHERE id = ?').get(p1Id);
+    // Initial 20 - 4 (sale) + 5 (delta) = 21
+    expect(updatedP1.stock_quantity).toBe(21);
+    expect(updatedP1.retail_price).toBe(12);
+
+    // Order 2: [PRICE_STOCK_EDIT (stock_delta: +5), SALE (-4)]
+    const batchOrder2 = {
+      operations: [
+        {
+          temp_client_id: 'edit-ord2',
+          action_type: 'PRICE_STOCK_EDIT',
+          payload: {
+            product_id: p2Id,
+            retail_price: 12,
+            stock_delta: 5,
+            date: new Date().toISOString()
+          }
+        },
+        {
+          temp_client_id: 'sale-ord2',
+          action_type: 'SALE',
+          payload: {
+            session_id: sessionId,
+            items: [{ product_id: p2Id, quantity: 4, unit_price: 10, tva_rate: 0 }],
+            cash_paid: 40,
+            date: new Date().toISOString()
+          }
+        }
+      ]
+    };
+
+    const res2 = await request(app).post('/api/sync/flush').send(batchOrder2);
+    expect(res2.status).toBe(200);
+    expect(res2.body.reconciled).toHaveLength(2);
+
+    const updatedP2: any = db.prepare('SELECT stock_quantity, retail_price FROM products WHERE id = ?').get(p2Id);
+    // Initial 20 + 5 (delta) - 4 (sale) = 21
+    expect(updatedP2.stock_quantity).toBe(21);
+    expect(updatedP2.retail_price).toBe(12);
+
+    // 3. Test legacy absolute stock_quantity payload is still accepted
+    const legacyBatch = {
+      operations: [
+        {
+          temp_client_id: 'edit-legacy-abs',
+          action_type: 'PRICE_STOCK_EDIT',
+          payload: {
+            product_id: p1Id,
+            stock_quantity: 35
+          }
+        }
+      ]
+    };
+    const res3 = await request(app).post('/api/sync/flush').send(legacyBatch);
+    expect(res3.status).toBe(200);
+    expect(res3.body.reconciled).toHaveLength(1);
+    const updatedLegacy: any = db.prepare('SELECT stock_quantity FROM products WHERE id = ?').get(p1Id);
+    expect(updatedLegacy.stock_quantity).toBe(35);
+  });
 });
 
 

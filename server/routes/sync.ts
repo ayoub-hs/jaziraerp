@@ -742,7 +742,7 @@ syncRouter.post('/flush', (req: Request, res: Response) => {
           }
         }
 
-        const { product_id, retail_price, wholesale_price, stock_quantity } = payload || {};
+        const { product_id, retail_price, wholesale_price, stock_quantity, stock_delta } = payload || {};
         if (!product_id) {
           failed.push({ temp_client_id, action_type, reason: 'product_id is required' });
           return;
@@ -774,41 +774,81 @@ syncRouter.post('/flush', (req: Request, res: Response) => {
           parsedWholesale = round3(num);
         }
 
-        let parsedStock: number | null = null;
-        if (stock_quantity !== undefined) {
-          const num = Number(stock_quantity);
+        if (stock_delta !== undefined) {
+          const num = Number(stock_delta);
           if (!Number.isFinite(num)) {
-            failed.push({ temp_client_id, action_type, reason: 'stock_quantity must be a finite number' });
+            failed.push({ temp_client_id, action_type, reason: 'stock_delta must be a finite number' });
             return;
           }
-          parsedStock = num;
-        }
+          const delta = round3(num);
 
-        const oldQty = Number(currentProd.stock_quantity) || 0;
+          db.prepare(`
+            UPDATE products
+            SET retail_price = COALESCE(?, retail_price),
+                wholesale_price = COALESCE(?, wholesale_price),
+                stock_quantity = stock_quantity + ?,
+                updated_at = ?
+            WHERE id = ?
+          `).run(
+            parsedRetail,
+            parsedWholesale,
+            delta,
+            now,
+            product_id
+          );
 
-        db.prepare(`
-          UPDATE products
-          SET retail_price = COALESCE(?, retail_price),
-              wholesale_price = COALESCE(?, wholesale_price),
-              stock_quantity = COALESCE(?, stock_quantity),
-              updated_at = ?
-          WHERE id = ?
-        `).run(
-          parsedRetail,
-          parsedWholesale,
-          parsedStock,
-          now,
-          product_id
-        );
-
-        if (parsedStock !== null) {
-          const delta = round3(parsedStock - oldQty);
           if (delta !== 0) {
             db.prepare(`
               INSERT INTO inventory_adjustments (id, date, item_type, material_id, product_id, quantity_delta, reason, created_at)
               VALUES (?, ?, 'PRODUCT', NULL, ?, ?, 'SYNC_PRICE_STOCK_EDIT', ?)
             `).run(crypto.randomUUID(), payload.date || now, product_id, delta, now);
           }
+        } else if (stock_quantity !== undefined) {
+          // Legacy absolute payload for items already queued
+          const num = Number(stock_quantity);
+          if (!Number.isFinite(num)) {
+            failed.push({ temp_client_id, action_type, reason: 'stock_quantity must be a finite number' });
+            return;
+          }
+          const parsedStock = num;
+          const oldQty = Number(currentProd.stock_quantity) || 0;
+          const delta = round3(parsedStock - oldQty);
+
+          db.prepare(`
+            UPDATE products
+            SET retail_price = COALESCE(?, retail_price),
+                wholesale_price = COALESCE(?, wholesale_price),
+                stock_quantity = ?,
+                updated_at = ?
+            WHERE id = ?
+          `).run(
+            parsedRetail,
+            parsedWholesale,
+            parsedStock,
+            now,
+            product_id
+          );
+
+          if (delta !== 0) {
+            db.prepare(`
+              INSERT INTO inventory_adjustments (id, date, item_type, material_id, product_id, quantity_delta, reason, created_at)
+              VALUES (?, ?, 'PRODUCT', NULL, ?, ?, 'SYNC_PRICE_STOCK_EDIT', ?)
+            `).run(crypto.randomUUID(), payload.date || now, product_id, delta, now);
+          }
+        } else {
+          // Price-only edit: no stock change and no inventory adjustments row
+          db.prepare(`
+            UPDATE products
+            SET retail_price = COALESCE(?, retail_price),
+                wholesale_price = COALESCE(?, wholesale_price),
+                updated_at = ?
+            WHERE id = ?
+          `).run(
+            parsedRetail,
+            parsedWholesale,
+            now,
+            product_id
+          );
         }
 
         if (clientId) {

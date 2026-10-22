@@ -4,6 +4,7 @@ import type { Customer, ContainerType } from '../../types/index.js';
 import { useBackButton } from '../../utils/backButton.js';
 import { useModalScanPause } from '../../hooks/useModalScanPause.js';
 import { syncManager } from '../../services/syncManager.js';
+import { isFetchNetworkError } from '../../utils/networkError.js';
 
 interface ContainerTransactionModalProps {
   isOpen: boolean;
@@ -103,13 +104,7 @@ export const ContainerTransactionModal: React.FC<ContainerTransactionModalProps>
       onSuccess();
       onClose();
     } catch (err: any) {
-      const isOfflineOrNetwork =
-        err?.message === 'OFFLINE_FALLBACK' ||
-        (typeof navigator !== 'undefined' && !navigator.onLine) ||
-        err?.name === 'TypeError' ||
-        (err?.message && /failed to fetch|network|offline|failed to parse/i.test(err.message));
-
-      if (isOfflineOrNetwork) {
+      if (isFetchNetworkError(err)) {
         try {
           await syncManager.queueOfflineAction('CONTAINER_TRANSACTION', {
             customer_id: customerId,

@@ -51,6 +51,7 @@ import { syncManager } from '../../services/syncManager.js';
 import { clientDb } from '../../db/clientDb.js';
 import { BufferedNumberInput } from '../shared/BufferedNumberInput.js';
 import { useBackButton } from '../../utils/backButton.js';
+import { isFetchNetworkError } from '../../utils/networkError.js';
 
 interface MobileRegisterProps {
   products: Product[];
@@ -566,29 +567,39 @@ export const MobileRegister: React.FC<MobileRegisterProps> = ({
 
     const parsedRetail = parseFloat(editRetailPrice) || 0;
     const parsedWholesale = parseFloat(editWholesalePrice) || 0;
-    const parsedStock = parseFloat(editStock) || 0;
+    const origStock = Number(editProduct.stock_quantity ?? 0);
+    const parsedStock = parseFloat(editStock);
+    const hasStock = !isNaN(parsedStock);
+    const stockChanged = hasStock && parsedStock !== origStock;
+    const stockDelta = stockChanged ? (parsedStock - origStock) : null;
 
     try {
       if (typeof navigator !== 'undefined' && !navigator.onLine) {
         throw new Error('OFFLINE_FALLBACK');
       }
+      const putBody: any = {
+        retail_price: parsedRetail,
+        wholesale_price: parsedWholesale
+      };
+      if (hasStock) {
+        putBody.stock_quantity = parsedStock;
+      }
       const res = await fetch(`/api/products/${editProduct.id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          retail_price: parsedRetail,
-          wholesale_price: parsedWholesale,
-          stock_quantity: parsedStock
-        })
+        body: JSON.stringify(putBody)
       });
       if (res.ok) {
         setEditSuccessMsg('Prix et stock mis à jour avec succès !');
         setEditErrorMsg(null);
-        await clientDb.products.update(editProduct.id, {
+        const updateFields: any = {
           retail_price: parsedRetail,
-          wholesale_price: parsedWholesale,
-          stock_quantity: parsedStock
-        }).catch(() => {});
+          wholesale_price: parsedWholesale
+        };
+        if (hasStock) {
+          updateFields.stock_quantity = parsedStock;
+        }
+        await clientDb.products.update(editProduct.id, updateFields).catch(() => {});
         onRefreshData();
       } else {
         const data = await res.json().catch(() => ({}));
@@ -596,26 +607,27 @@ export const MobileRegister: React.FC<MobileRegisterProps> = ({
         setEditSuccessMsg(null);
       }
     } catch (err: any) {
-      const isOfflineOrNetwork =
-        err?.message === 'OFFLINE_FALLBACK' ||
-        (typeof navigator !== 'undefined' && !navigator.onLine) ||
-        err?.name === 'TypeError' ||
-        (err?.message && /failed to fetch|network|offline|failed to parse/i.test(err.message));
-
-      if (isOfflineOrNetwork) {
+      if (isFetchNetworkError(err)) {
         try {
-          await syncManager.queueOfflineAction('PRICE_STOCK_EDIT', {
+          const payload: any = {
             product_id: editProduct.id,
             retail_price: parsedRetail,
             wholesale_price: parsedWholesale,
-            stock_quantity: parsedStock,
             date: new Date().toISOString()
-          });
-          await clientDb.products.update(editProduct.id, {
+          };
+          if (stockChanged && stockDelta !== null) {
+            payload.stock_delta = stockDelta;
+          }
+          await syncManager.queueOfflineAction('PRICE_STOCK_EDIT', payload);
+
+          const updateFields: any = {
             retail_price: parsedRetail,
-            wholesale_price: parsedWholesale,
-            stock_quantity: parsedStock
-          }).catch(() => {});
+            wholesale_price: parsedWholesale
+          };
+          if (hasStock) {
+            updateFields.stock_quantity = parsedStock;
+          }
+          await clientDb.products.update(editProduct.id, updateFields).catch(() => {});
           setEditSuccessMsg('Modifié hors ligne (en attente de synchronisation)');
           setEditErrorMsg(null);
           onRefreshData();
@@ -706,13 +718,7 @@ export const MobileRegister: React.FC<MobileRegisterProps> = ({
         setContainerError(data.error || `Erreur contenant (${res.status})`);
       }
     } catch (err: any) {
-      const isOfflineOrNetwork =
-        err?.message === 'OFFLINE_FALLBACK' ||
-        (typeof navigator !== 'undefined' && !navigator.onLine) ||
-        err?.name === 'TypeError' ||
-        (err?.message && /failed to fetch|network|offline|failed to parse/i.test(err.message));
-
-      if (isOfflineOrNetwork) {
+      if (isFetchNetworkError(err)) {
         try {
           await syncManager.queueOfflineAction('CONTAINER_TRANSACTION', {
             customer_id: selectedCustDetails.id,
