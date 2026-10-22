@@ -1,3 +1,8 @@
+import { isUniqueViolation } from '../db/index.js';
+import { DELIVERY_FEE_LINE_NAME } from '../constants.js';
+import { generateDeliveryNoteNumber } from './sales.js';
+import { recordContainerTransaction, NotFoundError } from '../services/containerService.js';
+import { createSale, SaleError } from '../services/saleService.js';
 import { Router, Request, Response } from 'express';
 import crypto from 'crypto';
 import { getDb } from '../db/index.js';
@@ -672,5 +677,312 @@ clientOrdersRouter.put('/:id', (req: Request, res: Response) => {
     }
     console.error('[clientOrders:update error]', err);
     res.status(500).json({ error: 'Une erreur interne est survenue lors de la modification de la commande.' });
+  }
+});
+
+// POST /api/orders/:id/convert - convert client order into sale and delivery note
+clientOrdersRouter.post('/:id/convert', (req: Request, res: Response) => {
+  const db = getDb();
+
+  // 1. Idempotency gate with scope = order id
+  const rawRequestId = req.body?.client_request_id || req.body?.idempotency_key;
+  if (!rawRequestId) {
+    res.status(400).json({ error: "La clé d'idempotence (client_request_id) est obligatoire." });
+    return;
+  }
+  req.body.client_request_id = rawRequestId;
+
+  const idem = beginIdempotentRequest(db, req, res, 'CONVERT_ORDER', req.params.id);
+  if (idem.kind === 'REPLAYED') return;
+  const requestId = idem.kind === 'CLAIMED' ? idem.requestId : null;
+
+  try {
+    // 2. Lookup order
+    const order: any = db.prepare('SELECT * FROM client_orders WHERE id = ?').get(req.params.id);
+    if (!order) {
+      res.status(404).json({ error: 'Commande introuvable.' });
+      return;
+    }
+
+    // 3. Status checks:
+    // Order already converted
+    if (order.sale_id !== null) {
+      res.status(409).json({ error: 'Cette commande a déjà été convertie en vente.' });
+      return;
+    }
+
+    // Only CONFIRMED, PREPARING, OUT_FOR_DELIVERY are convertible
+    const CONVERTIBLE_STATUSES = ['CONFIRMED', 'PREPARING', 'OUT_FOR_DELIVERY'];
+    if (!CONVERTIBLE_STATUSES.includes(order.status)) {
+      res.status(409).json({
+        error: `Impossible de convertir une commande au statut ${order.status}. Seules les commandes aux statuts CONFIRMED, PREPARING ou OUT_FOR_DELIVERY peuvent être converties.`
+      });
+      return;
+    }
+
+    // 4. Register session check: counter 'Livraison' must have an OPEN session
+    let resolvedSessionId: string;
+    if (req.body?.register_session_id) {
+      const session: any = db.prepare('SELECT * FROM register_sessions WHERE id = ?').get(req.body.register_session_id);
+      if (!session || session.status !== 'OPEN' || session.counter_name !== 'Livraison') {
+        res.status(409).json({ error: 'Aucune session de caisse ouverte pour le comptoir Livraison.' });
+        return;
+      }
+      resolvedSessionId = session.id;
+    } else {
+      const session: any = db.prepare(`
+        SELECT * FROM register_sessions
+        WHERE counter_name = 'Livraison' AND status = 'OPEN'
+        ORDER BY opened_at DESC LIMIT 1
+      `).get();
+      if (!session) {
+        res.status(409).json({ error: 'Aucune session de caisse ouverte pour le comptoir Livraison.' });
+        return;
+      }
+      resolvedSessionId = session.id;
+    }
+
+    // 5. Customer & Guest validation
+    let customer: any = null;
+    if (order.customer_id) {
+      customer = db.prepare('SELECT * FROM customers WHERE id = ?').get(order.customer_id);
+    } else {
+      // Guest order
+      if ((Number(req.body?.wallet_paid) || 0) > 0 || (Number(req.body?.credit_amount) || 0) > 0) {
+        res.status(400).json({ error: 'Les clients sans compte ne peuvent pas payer par crédit ou portefeuille.' });
+        return;
+      }
+      if (
+        (Array.isArray(req.body?.containers_returned) && req.body.containers_returned.length > 0) ||
+        (Array.isArray(req.body?.containers_borrowed) && req.body.containers_borrowed.length > 0) ||
+        (Array.isArray(req.body?.containers_loaned) && req.body.containers_loaned.length > 0)
+      ) {
+        res.status(400).json({ error: 'Le suivi des consignes nécessite un compte client.' });
+        return;
+      }
+    }
+
+    // 6. Item Quantities & Delivery Reconciliation
+    const orderItems: any[] = db.prepare('SELECT * FROM client_order_items WHERE order_id = ? ORDER BY rowid ASC').all(order.id);
+    const deliveredMap = new Map<string, number>();
+
+    if (Array.isArray(req.body?.delivered_items)) {
+      for (const di of req.body.delivered_items) {
+        const itemId = di.order_item_id || di.id;
+        if (itemId) {
+          const dQty = Number(di.delivered_quantity);
+          if (!Number.isFinite(dQty) || dQty < 0) {
+            res.status(400).json({ error: 'La quantité livrée doit être un nombre positif ou nul.' });
+            return;
+          }
+          deliveredMap.set(itemId, round3(dQty));
+        }
+      }
+    }
+
+    const saleItems: any[] = [];
+    const itemUpdates: Array<{ id: string; delivered_quantity: number }> = [];
+
+    for (const orderItem of orderItems) {
+      const deliveredQty = deliveredMap.has(orderItem.id)
+        ? deliveredMap.get(orderItem.id)!
+        : Number(orderItem.ordered_quantity);
+
+      itemUpdates.push({ id: orderItem.id, delivered_quantity: deliveredQty });
+
+      if (deliveredQty > 0) {
+        saleItems.push({
+          product_id: orderItem.product_id,
+          pack_size_id: orderItem.pack_size_id,
+          quantity: deliveredQty,
+          unit_price: round3(Number(orderItem.unit_price_ttc)),
+          discount_amount: 0
+        });
+      }
+    }
+
+    // Append delivery fee if > 0
+    const deliveryFee = round3(Number(order.delivery_fee) || 0);
+    if (deliveryFee > 0) {
+      saleItems.push({
+        is_quick_add: true,
+        quick_add_name: DELIVERY_FEE_LINE_NAME,
+        quantity: 1,
+        unit_price: deliveryFee,
+        discount_amount: 0
+      });
+    }
+
+    if (saleItems.length === 0) {
+      res.status(400).json({ error: 'Aucun article livré et aucun frais de livraison: la commande ne peut pas être convertie.' });
+      return;
+    }
+
+    // Expected total TTC = sum of line items + delivery fee
+    let expectedTotalTtc = 0;
+    for (const item of saleItems) {
+      expectedTotalTtc = addMoney(expectedTotalTtc, round3(Number(item.unit_price) * Number(item.quantity)));
+    }
+    expectedTotalTtc = round3(expectedTotalTtc);
+
+    // 7. Payment breakdown
+    const hasExplicitPayment =
+      req.body?.cash_paid !== undefined ||
+      req.body?.wallet_paid !== undefined ||
+      req.body?.credit_amount !== undefined;
+
+    let cashPaid = 0;
+    let walletPaid = 0;
+    let creditAmount = 0;
+    let cashTendered = 0;
+
+    if (hasExplicitPayment) {
+      cashPaid = round3(Number(req.body.cash_paid) || 0);
+      walletPaid = round3(Number(req.body.wallet_paid) || 0);
+      creditAmount = round3(Number(req.body.credit_amount) || 0);
+      cashTendered = req.body.cash_tendered !== undefined ? round3(Number(req.body.cash_tendered) || 0) : cashPaid;
+    } else {
+      if (order.payment_preference === 'CREDIT_ACCOUNT' && customer) {
+        creditAmount = expectedTotalTtc;
+      } else {
+        cashPaid = expectedTotalTtc;
+        cashTendered = expectedTotalTtc;
+      }
+    }
+
+    const now = new Date().toISOString();
+    let responsePayload: any = null;
+
+    // 8. Outer transaction wrapping ALL steps
+    const convertTx = db.transaction(() => {
+      // A. Update delivered_quantity in client_order_items
+      const updateItemStmt = db.prepare('UPDATE client_order_items SET delivered_quantity = ? WHERE id = ?');
+      for (const update of itemUpdates) {
+        updateItemStmt.run(update.delivered_quantity, update.id);
+      }
+
+      // B. Create Sale
+      const saleResult = createSale(db, {
+        session_id: resolvedSessionId,
+        customer_id: order.customer_id,
+        date: now,
+        items: saleItems,
+        cash_paid: cashPaid,
+        cash_tendered: cashTendered,
+        wallet_paid: walletPaid,
+        credit_amount: creditAmount
+      });
+
+      // C. Generate Delivery Note (BL-YYYYMMDD-XXXX) with collision retry
+      let noteNumber = generateDeliveryNoteNumber(db);
+      let noteCreated = false;
+      let noteRow: any = null;
+      for (let attempt = 0; attempt < 3 && !noteCreated; attempt++) {
+        try {
+          const noteId = `bl-${crypto.randomUUID()}`;
+          db.prepare(`
+            INSERT INTO delivery_notes (id, sale_id, number, created_at)
+            VALUES (?, ?, ?, ?)
+          `).run(noteId, saleResult.id, noteNumber, now);
+          noteRow = { id: noteId, sale_id: saleResult.id, number: noteNumber, created_at: now };
+          noteCreated = true;
+        } catch (err: any) {
+          if (isUniqueViolation(err) && attempt < 2) {
+            noteNumber = generateDeliveryNoteNumber(db);
+            continue;
+          }
+          throw err;
+        }
+      }
+
+      // D. Process Container Returns & Loans via containerService.recordContainerTransaction
+      if (Array.isArray(req.body?.containers_returned)) {
+        for (const ret of req.body.containers_returned) {
+          recordContainerTransaction(db, {
+            customer_id: order.customer_id!,
+            container_type_id: ret.container_type_id,
+            action: 'RETURN',
+            quantity: ret.quantity,
+            notes: `Retour consigne commande ${order.order_number}`
+          });
+        }
+      }
+
+      const borrowedList = req.body?.containers_borrowed || req.body?.containers_loaned;
+      if (Array.isArray(borrowedList)) {
+        for (const loan of borrowedList) {
+          recordContainerTransaction(db, {
+            customer_id: order.customer_id!,
+            container_type_id: loan.container_type_id,
+            action: 'GIVE',
+            quantity: loan.quantity,
+            notes: `Prêt consigne commande ${order.order_number}`
+          });
+        }
+      }
+
+      // E. Update client_orders: status = 'DELIVERED', sale_id = saleResult.id
+      db.prepare(`
+        UPDATE client_orders
+        SET status = 'DELIVERED',
+            sale_id = ?,
+            delivered_by = COALESCE(?, delivered_by),
+            updated_at = ?
+        WHERE id = ?
+      `).run(saleResult.id, req.body?.delivered_by || null, now, order.id);
+
+      // F. Re-query updated order and items
+      const updatedOrder: any = db.prepare('SELECT * FROM client_orders WHERE id = ?').get(order.id);
+      const updatedItems = db.prepare('SELECT * FROM client_order_items WHERE order_id = ?').all(order.id);
+
+      // G. Non-blocking credit warning check
+      const warnings: string[] = [];
+      if (customer && customer.credit_limit !== null && creditAmount > 0) {
+        const openDebt: any = db.prepare(`
+          SELECT COALESCE(SUM(remaining_amount), 0) as debt
+          FROM customer_debt_tickets
+          WHERE customer_id = ? AND status IN ('UNPAID', 'PARTIALLY_PAID')
+        `).get(customer.id);
+        const debtTotal = Number(openDebt?.debt) || 0;
+        if (debtTotal > customer.credit_limit) {
+          warnings.push(
+            `Plafond de crédit dépassé pour le client ${customer.name} (encours: ${debtTotal.toFixed(3)} DT, plafond: ${customer.credit_limit.toFixed(3)} DT).`
+          );
+        }
+      }
+
+      responsePayload = {
+        order: {
+          ...updatedOrder,
+          items: updatedItems
+        },
+        sale: saleResult.sale,
+        delivery_note_number: noteRow.number,
+        warnings
+      };
+
+      // H. Idempotency completion inside same transaction
+      if (requestId) {
+        completeRequest(db, requestId, {
+          statusCode: 200,
+          body: responsePayload,
+          resourceId: order.id
+        });
+      }
+    });
+
+    convertTx();
+    res.status(200).json(responsePayload);
+  } catch (err: any) {
+    if (err instanceof SaleError) {
+      res.status(err.status).json(err.body);
+      return;
+    }
+    if (err instanceof OrderError || err instanceof ValidationError || err instanceof NotFoundError) {
+      res.status(err.status).json({ error: err.message });
+      return;
+    }
+    console.error('[clientOrders:convert error]', err);
+    res.status(500).json({ error: 'Une erreur interne est survenue lors de la conversion de la commande.' });
   }
 });
