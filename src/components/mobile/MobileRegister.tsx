@@ -47,6 +47,8 @@ import { CreateCustomerModal } from '../backoffice/CreateCustomerModal.js';
 import { HeldCartsModal } from '../shared/HeldCartsModal.js';
 import { heldCartsService, type HeldCart, type PriceDiscrepancy } from '../../services/heldCartsService.js';
 import { scannerService } from '../../services/hardware/scanner.js';
+import { syncManager } from '../../services/syncManager.js';
+import { clientDb } from '../../db/clientDb.js';
 import { BufferedNumberInput } from '../shared/BufferedNumberInput.js';
 import { useBackButton } from '../../utils/backButton.js';
 
@@ -561,19 +563,32 @@ export const MobileRegister: React.FC<MobileRegisterProps> = ({
     setIsSubmittingQuickEdit(true);
     setEditSuccessMsg(null);
     setEditErrorMsg(null);
+
+    const parsedRetail = parseFloat(editRetailPrice) || 0;
+    const parsedWholesale = parseFloat(editWholesalePrice) || 0;
+    const parsedStock = parseFloat(editStock) || 0;
+
     try {
+      if (typeof navigator !== 'undefined' && !navigator.onLine) {
+        throw new Error('OFFLINE_FALLBACK');
+      }
       const res = await fetch(`/api/products/${editProduct.id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          retail_price: parseFloat(editRetailPrice) || 0,
-          wholesale_price: parseFloat(editWholesalePrice) || 0,
-          stock_quantity: parseFloat(editStock) || 0
+          retail_price: parsedRetail,
+          wholesale_price: parsedWholesale,
+          stock_quantity: parsedStock
         })
       });
       if (res.ok) {
         setEditSuccessMsg('Prix et stock mis à jour avec succès !');
         setEditErrorMsg(null);
+        await clientDb.products.update(editProduct.id, {
+          retail_price: parsedRetail,
+          wholesale_price: parsedWholesale,
+          stock_quantity: parsedStock
+        }).catch(() => {});
         onRefreshData();
       } else {
         const data = await res.json().catch(() => ({}));
@@ -581,8 +596,37 @@ export const MobileRegister: React.FC<MobileRegisterProps> = ({
         setEditSuccessMsg(null);
       }
     } catch (err: any) {
-      setEditErrorMsg(err.message || 'Échec de la modification rapide');
-      setEditSuccessMsg(null);
+      const isOfflineOrNetwork =
+        err?.message === 'OFFLINE_FALLBACK' ||
+        (typeof navigator !== 'undefined' && !navigator.onLine) ||
+        err?.name === 'TypeError' ||
+        (err?.message && /failed to fetch|network|offline|failed to parse/i.test(err.message));
+
+      if (isOfflineOrNetwork) {
+        try {
+          await syncManager.queueOfflineAction('PRICE_STOCK_EDIT', {
+            product_id: editProduct.id,
+            retail_price: parsedRetail,
+            wholesale_price: parsedWholesale,
+            stock_quantity: parsedStock,
+            date: new Date().toISOString()
+          });
+          await clientDb.products.update(editProduct.id, {
+            retail_price: parsedRetail,
+            wholesale_price: parsedWholesale,
+            stock_quantity: parsedStock
+          }).catch(() => {});
+          setEditSuccessMsg('Modifié hors ligne (en attente de synchronisation)');
+          setEditErrorMsg(null);
+          onRefreshData();
+        } catch (queueErr: any) {
+          setEditErrorMsg(queueErr?.message || 'Erreur enregistrement hors ligne');
+          setEditSuccessMsg(null);
+        }
+      } else {
+        setEditErrorMsg(err.message || 'Échec de la modification rapide');
+        setEditSuccessMsg(null);
+      }
     } finally {
       isSubmittingQuickEditRef.current = false;
       setIsSubmittingQuickEdit(false);
@@ -640,6 +684,9 @@ export const MobileRegister: React.FC<MobileRegisterProps> = ({
     setIsSubmittingContainer(true);
     setContainerError(null);
     try {
+      if (typeof navigator !== 'undefined' && !navigator.onLine) {
+        throw new Error('OFFLINE_FALLBACK');
+      }
       const res = await fetch('/api/containers/transactions', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -659,7 +706,30 @@ export const MobileRegister: React.FC<MobileRegisterProps> = ({
         setContainerError(data.error || `Erreur contenant (${res.status})`);
       }
     } catch (err: any) {
-      setContainerError(err.message || 'Container error');
+      const isOfflineOrNetwork =
+        err?.message === 'OFFLINE_FALLBACK' ||
+        (typeof navigator !== 'undefined' && !navigator.onLine) ||
+        err?.name === 'TypeError' ||
+        (err?.message && /failed to fetch|network|offline|failed to parse/i.test(err.message));
+
+      if (isOfflineOrNetwork) {
+        try {
+          await syncManager.queueOfflineAction('CONTAINER_TRANSACTION', {
+            customer_id: selectedCustDetails.id,
+            container_type_id: selectedContainerTypeId,
+            action: containerAction,
+            quantity: qty,
+            date: new Date().toISOString()
+          });
+          setIsContainerModalOpen(false);
+          setContainerQty('1');
+          onRefreshData();
+        } catch (queueErr: any) {
+          setContainerError(queueErr?.message || 'Erreur enregistrement contenant hors ligne');
+        }
+      } else {
+        setContainerError(err.message || 'Container error');
+      }
     } finally {
       isSubmittingContainerRef.current = false;
       setIsSubmittingContainer(false);

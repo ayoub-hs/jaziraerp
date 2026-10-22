@@ -3,6 +3,7 @@ import { X, ArrowUpRight, ArrowDownLeft, AlertCircle, Package } from 'lucide-rea
 import type { Customer, ContainerType } from '../../types/index.js';
 import { useBackButton } from '../../utils/backButton.js';
 import { useModalScanPause } from '../../hooks/useModalScanPause.js';
+import { syncManager } from '../../services/syncManager.js';
 
 interface ContainerTransactionModalProps {
   isOpen: boolean;
@@ -75,7 +76,12 @@ export const ContainerTransactionModal: React.FC<ContainerTransactionModalProps>
     setIsSubmitting(true);
     setError(null);
 
+    const intQty = Math.floor(quantity);
+
     try {
+      if (typeof navigator !== 'undefined' && !navigator.onLine) {
+        throw new Error('OFFLINE_FALLBACK');
+      }
       const res = await fetch('/api/containers/transactions', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -83,7 +89,7 @@ export const ContainerTransactionModal: React.FC<ContainerTransactionModalProps>
           customer_id: customerId,
           container_type_id: containerTypeId,
           action,
-          quantity: Math.floor(quantity),
+          quantity: intQty,
           correction: action === 'RETURN' ? correction : undefined,
           notes: notes.trim() || undefined
         })
@@ -97,7 +103,31 @@ export const ContainerTransactionModal: React.FC<ContainerTransactionModalProps>
       onSuccess();
       onClose();
     } catch (err: any) {
-      setError(err.message || 'Une erreur est survenue.');
+      const isOfflineOrNetwork =
+        err?.message === 'OFFLINE_FALLBACK' ||
+        (typeof navigator !== 'undefined' && !navigator.onLine) ||
+        err?.name === 'TypeError' ||
+        (err?.message && /failed to fetch|network|offline|failed to parse/i.test(err.message));
+
+      if (isOfflineOrNetwork) {
+        try {
+          await syncManager.queueOfflineAction('CONTAINER_TRANSACTION', {
+            customer_id: customerId,
+            container_type_id: containerTypeId,
+            action,
+            quantity: intQty,
+            correction: action === 'RETURN' ? correction : undefined,
+            notes: notes.trim() || undefined,
+            date: new Date().toISOString()
+          });
+          onSuccess();
+          onClose();
+        } catch (queueErr: any) {
+          setError(queueErr?.message || 'Erreur enregistrement contenant hors ligne');
+        }
+      } else {
+        setError(err.message || 'Une erreur est survenue.');
+      }
     } finally {
       setIsSubmitting(false);
     }
