@@ -1,11 +1,13 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { X, FileText, Printer, AlertCircle } from 'lucide-react';
+import { X, FileText, Printer, AlertCircle, AlertTriangle, RefreshCw } from 'lucide-react';
 import type { SaleSummary } from '../../types/index.js';
 import { formatMoney, formatDate } from '../../utils/formatters.js';
 import { calculateTaxBreakdown } from '../../utils/tax.js';
+import { calculateCartTotals } from '../../utils/cart.js';
 import { getShopInfo } from '../../services/shopInfo.js';
 import { useBackButton } from '../../utils/backButton.js';
 import { useModalScanPause } from '../../hooks/useModalScanPause.js';
+import { clientDb } from '../../db/clientDb.js';
 
 interface InvoicePrintModalProps {
   isOpen: boolean;
@@ -22,6 +24,8 @@ export const InvoicePrintModal: React.FC<InvoicePrintModalProps> = ({
 
   const [sale, setSale] = useState<SaleSummary | null>(null);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [isOfflineDraft, setIsOfflineDraft] = useState(false);
   const shop = getShopInfo();
 
   useBackButton(() => {
@@ -34,19 +38,104 @@ export const InvoicePrintModal: React.FC<InvoicePrintModalProps> = ({
       fetchSale(saleId);
     } else {
       setSale(null);
+      setError(null);
+      setIsOfflineDraft(false);
     }
   }, [isOpen, saleId]);
 
   const fetchSale = async (id: string) => {
     try {
       setLoading(true);
-      const res = await fetch(`/api/sales/${id}`);
-      if (res.ok) {
-        const data = await res.json();
-        setSale(data);
+      setError(null);
+      setIsOfflineDraft(false);
+
+      if (id.startsWith('temp_')) {
+        let pending = null;
+        try {
+          pending = await clientDb.pending_sync_queue.where('temp_client_id').equals(id).first();
+        } catch {
+          pending = null;
+        }
+
+        if (pending && pending.payload) {
+          const p = pending.payload;
+          let subtotalHT = Number(p.subtotal_ht) || 0;
+          let tvaAmount = Number(p.tva_amount) || 0;
+          let totalTTC = Number(p.total_ttc) || 0;
+
+          if ((!totalTTC || !subtotalHT) && Array.isArray(p.items) && p.items.length > 0) {
+            try {
+              const recomputed = calculateCartTotals(
+                p.items.map((it: any) => ({
+                  quantity: Number(it.quantity) || 0,
+                  unit_price: Number(it.unit_price) || 0,
+                  pack_multiplier: Number(it.pack_multiplier) || 1,
+                  discount_amount: Number(it.discount_amount) || 0
+                })) as any,
+                Number(p.total_discount) || 0
+              );
+              subtotalHT = recomputed.subtotalHT;
+              tvaAmount = recomputed.tvaAmount;
+              totalTTC = recomputed.totalTTC;
+            } catch {
+              // keep fallback values
+            }
+          }
+
+          setSale({
+            id: p.temp_client_id || id,
+            receipt_number: 'REC-OFFLINE-' + id.slice(5, 13).toUpperCase(),
+            invoice_number: 'FAC-OFFLINE-' + id.slice(5, 13).toUpperCase(),
+            date: p.date || pending.created_at || new Date().toISOString(),
+            customer_name: p.customer_name || 'Passager',
+            subtotal_ht: subtotalHT,
+            tva_rate: 0.19,
+            tva_amount: tvaAmount,
+            total_ttc: totalTTC,
+            total_discount: p.total_discount || 0,
+            cash_paid: p.cash_paid || 0,
+            wallet_paid: p.wallet_paid || 0,
+            credit_amount: p.credit_amount || 0,
+            change_given: p.change_given || 0,
+            status: 'COMPLETED',
+            items: (p.items || []).map((it: any, idx: number) => ({
+              id: `item_${idx}`,
+              description: it.description || it.quick_add_name || it.name || 'Article',
+              name: it.description || it.quick_add_name || it.name || 'Article',
+              quantity: it.quantity,
+              unit_price: it.unit_price,
+              pack_multiplier: it.pack_multiplier || 1,
+              total_line: it.line_total ?? ((it.quantity * it.unit_price) - (it.discount_amount || 0)),
+              line_total: it.line_total ?? ((it.quantity * it.unit_price) - (it.discount_amount || 0)),
+              discount_amount: it.discount_amount || 0
+            }))
+          });
+          setIsOfflineDraft(true);
+          return;
+        } else {
+          setSale(null);
+          setError("Vente hors-ligne non synchronisée. La facture officielle sera disponible après synchronisation avec le serveur.");
+          return;
+        }
       }
-    } catch (err) {
+
+      const res = await fetch(`/api/sales/${id}`);
+      if (!res.ok) {
+        setSale(null);
+        if (res.status === 404) {
+          setError('Facture introuvable.');
+        } else {
+          setError(`Erreur serveur lors du chargement de la facture (code ${res.status}).`);
+        }
+        return;
+      }
+
+      const data = await res.json();
+      setSale(data);
+    } catch (err: any) {
       console.warn('Failed to load invoice sale:', err);
+      setSale(null);
+      setError('Serveur inaccessible ou appareil hors-ligne. Impossible de charger la facture.');
     } finally {
       setLoading(false);
     }
@@ -77,14 +166,45 @@ export const InvoicePrintModal: React.FC<InvoicePrintModalProps> = ({
 
         {/* Invoice Page (A4 Aspect) */}
         <div className="flex-1 min-h-0 p-4 sm:p-8 overflow-y-auto bg-slate-100 flex flex-col items-center print:p-0 print:bg-white print:overflow-visible">
-          {!shop.tax_id && !loading && (
+          {!shop.tax_id && !loading && !error && (
             <div className="w-full max-w-2xl print:hidden mb-4 p-3 rounded-xl bg-amber-50 border border-amber-200 text-amber-800 text-xs font-semibold flex items-center gap-2 shadow-sm">
               <AlertCircle className="w-4 h-4 shrink-0 text-amber-600" />
               <span>Matricule fiscal non renseigné — voir Paramètres</span>
             </div>
           )}
-          {loading || !sale ? (
+
+          {error && (
+            <div className="w-full max-w-2xl mb-4 bg-amber-50 border border-amber-200 text-amber-800 px-4 py-3 rounded-xl flex items-center justify-between gap-3 text-xs print:hidden shadow-sm">
+              <div className="flex items-center gap-2">
+                <AlertTriangle className="w-4 h-4 text-amber-600 flex-shrink-0" />
+                <span>{error}</span>
+              </div>
+              {!saleId?.startsWith('temp_') && (
+                <button
+                  type="button"
+                  onClick={() => saleId && fetchSale(saleId)}
+                  className="px-3 py-1 bg-amber-200 hover:bg-amber-300 text-amber-900 font-bold rounded-lg transition-colors flex items-center gap-1 shrink-0"
+                >
+                  <RefreshCw className="w-3 h-3" />
+                  Réessayer
+                </button>
+              )}
+            </div>
+          )}
+
+          {isOfflineDraft && (
+            <div className="w-full max-w-2xl mb-4 bg-blue-50 border border-blue-200 text-blue-900 px-4 py-3 rounded-xl flex items-center gap-2 text-xs print:hidden shadow-sm">
+              <AlertCircle className="w-4 h-4 text-blue-600 flex-shrink-0" />
+              <span>Vente hors-ligne en attente de synchronisation. Facture provisoire : le numéro officiel sera attribué après synchronisation.</span>
+            </div>
+          )}
+
+          {loading ? (
             <div className="py-16 text-center text-sm text-slate-500">Chargement de la facture...</div>
+          ) : !sale ? (
+            <div className="py-16 text-center text-sm text-slate-600 italic">
+              Aucun détail de facture disponible.
+            </div>
           ) : (
             <div className="bg-white p-4 sm:p-8 shadow-md border border-slate-300 w-full max-w-2xl text-slate-800 text-xs flex flex-col justify-between min-h-[700px] print:w-full print:max-w-none print:shadow-none print:border-none print:p-0">
               <div>
@@ -225,7 +345,8 @@ export const InvoicePrintModal: React.FC<InvoicePrintModalProps> = ({
           <button
             type="button"
             onClick={handlePrint}
-            className="min-h-[44px] py-2.5 px-5 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl text-xs sm:text-sm shadow transition-colors flex items-center gap-2"
+            disabled={!sale || loading || Boolean(error)}
+            className="min-h-[44px] py-2.5 px-5 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-blue-600 text-white font-bold rounded-xl text-xs sm:text-sm shadow transition-colors flex items-center gap-2"
           >
             <Printer className="w-4 h-4" />
             Imprimer Facture A4
