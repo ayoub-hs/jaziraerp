@@ -955,39 +955,50 @@ productsRouter.post('/', (req: Request, res: Response) => {
   `);
 
   try {
-    insert.run(
-      id,
-      family_id,
-      finalName,
-      size_label ? size_label.trim() : null,
-      parsedSizeVolume !== undefined ? parsedSizeVolume : null,
-      finalBarcode,
-      parsedStock,
-      parsedThreshold,
-      round3(explicitCost),
-      round3(parsedRetail),
-      round3(parsedWholesale),
-      container_type_id || null,
-      now,
-      now
-    );
+    const createTx = db.transaction(() => {
+      insert.run(
+        id,
+        family_id,
+        finalName,
+        size_label ? size_label.trim() : null,
+        parsedSizeVolume !== undefined ? parsedSizeVolume : null,
+        finalBarcode,
+        parsedStock,
+        parsedThreshold,
+        round3(explicitCost),
+        round3(parsedRetail),
+        round3(parsedWholesale),
+        container_type_id || null,
+        now,
+        now
+      );
 
-    if (validatedPackaging.length > 0) {
-      const insertPkg = db.prepare(`
-        INSERT INTO product_packaging_items (id, product_id, material_id, quantity_per_unit)
-        VALUES (?, ?, ?, ?)
-      `);
-      for (const item of validatedPackaging) {
-        insertPkg.run(crypto.randomUUID(), id, item.material_id, item.quantity_per_unit);
+      if (parsedStock > 0) {
+        db.prepare(`
+          INSERT INTO inventory_adjustments (id, date, item_type, material_id, product_id, quantity_delta, reason, created_at)
+          VALUES (?, ?, 'PRODUCT', NULL, ?, ?, 'OPENING_STOCK', ?)
+        `).run(crypto.randomUUID(), now, id, parsedStock, now);
       }
 
-      if (family.type === 'MANUFACTURED' && family.formulation_id && req.body.allow_cost_override !== true) {
-        try {
-          const fullCost = calculateProductUnitCost(db, id).cost_per_finished_unit;
-          db.prepare('UPDATE products SET cost_reference = ? WHERE id = ?').run(fullCost, id);
-        } catch {}
+      if (validatedPackaging.length > 0) {
+        const insertPkg = db.prepare(`
+          INSERT INTO product_packaging_items (id, product_id, material_id, quantity_per_unit)
+          VALUES (?, ?, ?, ?)
+        `);
+        for (const item of validatedPackaging) {
+          insertPkg.run(crypto.randomUUID(), id, item.material_id, item.quantity_per_unit);
+        }
+
+        if (family.type === 'MANUFACTURED' && family.formulation_id && req.body.allow_cost_override !== true) {
+          try {
+            const fullCost = calculateProductUnitCost(db, id).cost_per_finished_unit;
+            db.prepare('UPDATE products SET cost_reference = ? WHERE id = ?').run(fullCost, id);
+          } catch {}
+        }
       }
-    }
+    });
+
+    createTx();
   } catch (err: any) {
     if (err.message && err.message.includes('UNIQUE constraint failed: products.barcode')) {
       res.status(400).json({ error: `Barcode ${finalBarcode} already in use.` });

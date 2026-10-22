@@ -516,9 +516,10 @@ describe('Products & Sizing Model Module (HTTP Routes)', () => {
 
     const db = (await import('../db/index.js')).getDb();
 
-    // Baseline: No adjustments yet
-    const initialAdjs = db.prepare('SELECT * FROM inventory_adjustments WHERE product_id = ?').all(prodId);
-    expect(initialAdjs).toHaveLength(0);
+    // Baseline: Exactly 1 row for OPENING_STOCK
+    const initialAdjs = db.prepare('SELECT * FROM inventory_adjustments WHERE product_id = ?').all(prodId) as any[];
+    expect(initialAdjs).toHaveLength(1);
+    expect(initialAdjs[0].reason).toBe('OPENING_STOCK');
 
     // 1. Stock increases from 50 to 65 (+15)
     const incRes = await request(app).put(`/api/products/${prodId}`).send({
@@ -527,12 +528,12 @@ describe('Products & Sizing Model Module (HTTP Routes)', () => {
     expect(incRes.status).toBe(200);
     expect(incRes.body.stock_quantity).toBe(65);
 
-    const afterInc = db.prepare('SELECT * FROM inventory_adjustments WHERE product_id = ? ORDER BY created_at ASC').all(prodId) as any[];
-    expect(afterInc).toHaveLength(1);
-    expect(afterInc[0].item_type).toBe('PRODUCT');
-    expect(afterInc[0].product_id).toBe(prodId);
-    expect(afterInc[0].quantity_delta).toBe(15);
-    expect(afterInc[0].reason).toBe('PRODUCT_EDIT');
+    const editAdjs1 = db.prepare("SELECT * FROM inventory_adjustments WHERE product_id = ? AND reason = 'PRODUCT_EDIT' ORDER BY created_at ASC").all(prodId) as any[];
+    expect(editAdjs1).toHaveLength(1);
+    expect(editAdjs1[0].item_type).toBe('PRODUCT');
+    expect(editAdjs1[0].product_id).toBe(prodId);
+    expect(editAdjs1[0].quantity_delta).toBe(15);
+    expect(editAdjs1[0].reason).toBe('PRODUCT_EDIT');
 
     // 2. Stock decreases from 65 to 40 (-25)
     const decRes = await request(app).put(`/api/products/${prodId}`).send({
@@ -541,10 +542,10 @@ describe('Products & Sizing Model Module (HTTP Routes)', () => {
     expect(decRes.status).toBe(200);
     expect(decRes.body.stock_quantity).toBe(40);
 
-    const afterDec = db.prepare('SELECT * FROM inventory_adjustments WHERE product_id = ? ORDER BY created_at ASC').all(prodId) as any[];
-    expect(afterDec).toHaveLength(2);
-    expect(afterDec[1].quantity_delta).toBe(-25);
-    expect(afterDec[1].reason).toBe('PRODUCT_EDIT');
+    const editAdjs2 = db.prepare("SELECT * FROM inventory_adjustments WHERE product_id = ? AND reason = 'PRODUCT_EDIT' ORDER BY created_at ASC").all(prodId) as any[];
+    expect(editAdjs2).toHaveLength(2);
+    expect(editAdjs2[1].quantity_delta).toBe(-25);
+    expect(editAdjs2[1].reason).toBe('PRODUCT_EDIT');
 
     // 3. Unchanged stock_quantity (sent identical value 40) -> writes NO row
     const sameRes = await request(app).put(`/api/products/${prodId}`).send({
@@ -552,7 +553,7 @@ describe('Products & Sizing Model Module (HTTP Routes)', () => {
     });
     expect(sameRes.status).toBe(200);
 
-    const afterSame = db.prepare('SELECT * FROM inventory_adjustments WHERE product_id = ?').all(prodId);
+    const afterSame = db.prepare("SELECT * FROM inventory_adjustments WHERE product_id = ? AND reason = 'PRODUCT_EDIT'").all(prodId);
     expect(afterSame).toHaveLength(2);
 
     // 4. PUT without stock_quantity (e.g. changing retail_price only) -> writes NO row
@@ -561,7 +562,61 @@ describe('Products & Sizing Model Module (HTTP Routes)', () => {
     });
     expect(priceRes.status).toBe(200);
 
-    const afterPriceOnly = db.prepare('SELECT * FROM inventory_adjustments WHERE product_id = ?').all(prodId);
+    const afterPriceOnly = db.prepare("SELECT * FROM inventory_adjustments WHERE product_id = ? AND reason = 'PRODUCT_EDIT'").all(prodId);
     expect(afterPriceOnly).toHaveLength(2);
+  });
+
+  it('F12 follow-up: POST /api/products with stock_quantity > 0 writes one inventory_adjustments row (OPENING_STOCK); 0 or omitted writes none', async () => {
+    const db = (await import('../db/index.js')).getDb();
+
+    const fam = await request(app).post('/api/products/families').send({
+      name: 'Opening Stock Family', category: 'General', type: 'RESALE'
+    });
+    const familyId = fam.body.id;
+
+    // 1. Product created with stock_quantity: 35 (> 0)
+    const pWithStock = await request(app).post('/api/products').send({
+      family_id: familyId,
+      name: 'Item With Stock',
+      stock_quantity: 35,
+      retail_price: 10,
+      wholesale_price: 8
+    });
+    expect(pWithStock.status).toBe(201);
+    const prodIdWithStock = pWithStock.body.id;
+
+    const adjsWithStock = db.prepare('SELECT * FROM inventory_adjustments WHERE product_id = ?').all(prodIdWithStock) as any[];
+    expect(adjsWithStock).toHaveLength(1);
+    expect(adjsWithStock[0].item_type).toBe('PRODUCT');
+    expect(adjsWithStock[0].product_id).toBe(prodIdWithStock);
+    expect(adjsWithStock[0].quantity_delta).toBe(35);
+    expect(adjsWithStock[0].reason).toBe('OPENING_STOCK');
+
+    // 2. Product created with stock_quantity: 0
+    const pZeroStock = await request(app).post('/api/products').send({
+      family_id: familyId,
+      name: 'Item Zero Stock',
+      stock_quantity: 0,
+      retail_price: 10,
+      wholesale_price: 8
+    });
+    expect(pZeroStock.status).toBe(201);
+    const prodIdZero = pZeroStock.body.id;
+
+    const adjsZero = db.prepare('SELECT * FROM inventory_adjustments WHERE product_id = ?').all(prodIdZero);
+    expect(adjsZero).toHaveLength(0);
+
+    // 3. Product created with stock_quantity omitted
+    const pNoStock = await request(app).post('/api/products').send({
+      family_id: familyId,
+      name: 'Item No Stock',
+      retail_price: 10,
+      wholesale_price: 8
+    });
+    expect(pNoStock.status).toBe(201);
+    const prodIdNone = pNoStock.body.id;
+
+    const adjsNone = db.prepare('SELECT * FROM inventory_adjustments WHERE product_id = ?').all(prodIdNone);
+    expect(adjsNone).toHaveLength(0);
   });
 });
