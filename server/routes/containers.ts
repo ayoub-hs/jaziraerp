@@ -7,6 +7,7 @@ import {
   requireOptionalFinitePositive,
   requireOptionalFiniteNonNegative
 } from '../utils/validation.js';
+import { recordContainerTransaction } from '../services/containerService.js';
 
 export const containersRouter = Router();
 
@@ -166,125 +167,14 @@ containersRouter.get('/loans', (req: Request, res: Response) => {
 
 // POST /api/containers/transactions - GIVE or RETURN containers (separate from sales checkout)
 containersRouter.post('/transactions', (req: Request, res: Response) => {
-  const {
-    customer_id,
-    container_type_id,
-    action, // 'GIVE' or 'RETURN'
-    quantity,
-    correction = false,
-    notes = '',
-    date = new Date().toISOString()
-  } = req.body;
-
-  if (!customer_id || !container_type_id || !action || !quantity) {
-    res.status(400).json({ error: 'customer_id, container_type_id, action, and quantity are required.' });
-    return;
-  }
-
-  if (action !== 'GIVE' && action !== 'RETURN') {
-    res.status(400).json({ error: 'action must be GIVE or RETURN' });
-    return;
-  }
-
-  const numQty = Number(quantity);
-  const qty = parseInt(quantity, 10);
-  if (isNaN(qty) || qty <= 0 || !Number.isInteger(numQty)) {
-    res.status(400).json({ error: 'quantity must be a positive integer' });
-    return;
-  }
-
   const db = getDb();
-  const customer: any = db.prepare('SELECT * FROM customers WHERE id = ?').get(customer_id);
-  if (!customer) {
-    res.status(404).json({ error: 'Customer not found' });
-    return;
+  try {
+    const result = recordContainerTransaction(db, req.body);
+    res.status(201).json(result);
+  } catch (err: any) {
+    const status = err.status || (err.message?.includes('not found') ? 404 : 400);
+    res.status(status).json({ error: err.message });
   }
-
-  const containerType: any = db.prepare('SELECT * FROM container_types WHERE id = ?').get(container_type_id);
-  if (!containerType) {
-    res.status(404).json({ error: 'Container type not found' });
-    return;
-  }
-
-  const txId = crypto.randomUUID();
-  const loanId = crypto.randomUUID();
-  const now = new Date().toISOString();
-
-  // RETURN above the customer's owed count is rejected unless sent as a correction.
-  // (GIVE at zero shop stock stays allowed per spec.)
-  if (action === 'RETURN' && !correction) {
-    const loan: any = db.prepare(
-      'SELECT quantity_owed FROM customer_container_loans WHERE customer_id = ? AND container_type_id = ?'
-    ).get(customer_id, container_type_id);
-    const owed = loan ? Number(loan.quantity_owed) || 0 : 0;
-    if (qty > owed) {
-      res.status(400).json({
-        error: `Return quantity (${qty}) exceeds customer's owed count (${owed}). Resubmit with correction=true to override.`
-      });
-      return;
-    }
-  }
-
-  const containerTx = db.transaction(() => {
-    // 1. Log transaction record
-    db.prepare(`
-      INSERT INTO container_transactions (id, date, customer_id, container_type_id, action, quantity, notes, created_at)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-    `).run(txId, date, customer_id, container_type_id, action, qty, notes, now);
-
-    if (action === 'GIVE') {
-      // Decrement shop container stock (DOES NOT BLOCK IF 0)
-      db.prepare(`
-        UPDATE container_types
-        SET stock_quantity = stock_quantity - ?
-        WHERE id = ?
-      `).run(qty, container_type_id);
-
-      // Upsert customer owed count
-      db.prepare(`
-        INSERT INTO customer_container_loans (id, customer_id, container_type_id, quantity_owed)
-        VALUES (?, ?, ?, ?)
-        ON CONFLICT(customer_id, container_type_id)
-        DO UPDATE SET quantity_owed = quantity_owed + excluded.quantity_owed
-      `).run(loanId, customer_id, container_type_id, qty);
-    } else if (action === 'RETURN') {
-      // Increment shop container stock
-      db.prepare(`
-        UPDATE container_types
-        SET stock_quantity = stock_quantity + ?
-        WHERE id = ?
-      `).run(qty, container_type_id);
-
-      // Decrement customer owed count
-      db.prepare(`
-        INSERT INTO customer_container_loans (id, customer_id, container_type_id, quantity_owed)
-        VALUES (?, ?, ?, 0)
-        ON CONFLICT(customer_id, container_type_id)
-        DO UPDATE SET quantity_owed = MAX(0, quantity_owed - ?)
-      `).run(loanId, customer_id, container_type_id, qty);
-    }
-  });
-
-  containerTx();
-
-  const updatedLoan: any = db.prepare(`
-    SELECT * FROM customer_container_loans WHERE customer_id = ? AND container_type_id = ?
-  `).get(customer_id, container_type_id);
-
-  const updatedType: any = db.prepare(`
-    SELECT * FROM container_types WHERE id = ?
-  `).get(container_type_id);
-
-  res.status(201).json({
-    success: true,
-    transaction_id: txId,
-    customer_id,
-    container_type_id,
-    action,
-    quantity: qty,
-    customer_quantity_owed: updatedLoan ? updatedLoan.quantity_owed : 0,
-    shop_stock_remaining: updatedType.stock_quantity
-  });
 });
 
 // GET /api/containers/transactions - transaction history

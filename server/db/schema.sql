@@ -155,6 +155,7 @@ CREATE TABLE IF NOT EXISTS customers (
     type TEXT NOT NULL CHECK (type IN ('RETAIL', 'WHOLESALE', 'RESELLER')),
     reseller_discount_percent REAL NOT NULL DEFAULT 0,
     wallet_balance REAL NOT NULL DEFAULT 0 CHECK (wallet_balance >= 0), -- in TND (3 decimals)
+    credit_limit REAL DEFAULT NULL CHECK (credit_limit IS NULL OR credit_limit >= 0),
     active INTEGER NOT NULL DEFAULT 1,
     created_at TEXT NOT NULL,
     updated_at TEXT NOT NULL
@@ -306,7 +307,8 @@ CREATE TABLE IF NOT EXISTS counters (
 INSERT OR IGNORE INTO counters (id, name, is_active, created_at)
 VALUES 
     ('counter-countertop', 'Countertop', 1, '2026-01-01T00:00:00.000Z'),
-    ('counter-mobile', 'Mobile Register', 1, '2026-01-01T00:00:00.000Z');
+    ('counter-mobile', 'Mobile Register', 1, '2026-01-01T00:00:00.000Z'),
+    ('counter-delivery', 'Livraison', 1, '2026-01-01T00:00:00.000Z');
 
 CREATE TABLE IF NOT EXISTS register_sessions (
     id TEXT PRIMARY KEY,
@@ -473,3 +475,58 @@ CREATE TABLE IF NOT EXISTS processed_requests (
 
 CREATE INDEX IF NOT EXISTS idx_processed_requests_created ON processed_requests(created_at);
 CREATE INDEX IF NOT EXISTS idx_processed_requests_status ON processed_requests(status, created_at);
+
+-- 15. Delivery Zones & Client Orders (Phase 1a)
+CREATE TABLE IF NOT EXISTS delivery_zones (
+    id TEXT PRIMARY KEY,
+    name TEXT NOT NULL,
+    min_order_amount REAL NOT NULL DEFAULT 0.000 CHECK (min_order_amount >= 0),
+    delivery_fee REAL NOT NULL DEFAULT 0.000 CHECK (delivery_fee >= 0),
+    delivery_days TEXT,
+    active INTEGER NOT NULL DEFAULT 1 CHECK (active IN (0, 1)),
+    created_at TEXT NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS client_orders (
+    id TEXT PRIMARY KEY,
+    order_number TEXT UNIQUE NOT NULL,
+    source TEXT NOT NULL CHECK (source IN ('RESELLER_PORTAL', 'PUBLIC_WEB', 'MANUAL_ENTRY')),
+    customer_id TEXT REFERENCES customers(id) ON DELETE RESTRICT,
+    customer_name TEXT NOT NULL,
+    customer_phone TEXT NOT NULL,
+    delivery_address TEXT NOT NULL,
+    delivery_zone_id TEXT NOT NULL REFERENCES delivery_zones(id),
+    subtotal_ttc REAL NOT NULL CHECK (subtotal_ttc >= 0),
+    delivery_fee REAL NOT NULL DEFAULT 0.000 CHECK (delivery_fee >= 0),
+    total_ttc REAL NOT NULL CHECK (total_ttc >= 0),
+    payment_preference TEXT NOT NULL CHECK (payment_preference IN ('CASH_ON_DELIVERY', 'CREDIT_ACCOUNT')),
+    loan_containers_requested INTEGER NOT NULL DEFAULT 0 CHECK (loan_containers_requested >= 0),
+    notes TEXT,
+    status TEXT NOT NULL CHECK (status IN ('NEW', 'CONFIRMED', 'PREPARING', 'OUT_FOR_DELIVERY', 'DELIVERED', 'CANCELLED')),
+    cancellation_reason TEXT,
+    sale_id TEXT UNIQUE REFERENCES sales(id) ON DELETE SET NULL,
+    idempotency_key TEXT UNIQUE NOT NULL,
+    access_token TEXT UNIQUE NOT NULL,
+    delivered_by TEXT,
+    created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS client_order_items (
+    id TEXT PRIMARY KEY,
+    order_id TEXT NOT NULL REFERENCES client_orders(id) ON DELETE CASCADE,
+    product_id TEXT NOT NULL REFERENCES products(id),
+    pack_size_id TEXT REFERENCES product_pack_sizes(id),
+    container_type_id TEXT REFERENCES container_types(id),
+    ordered_quantity REAL NOT NULL CHECK (ordered_quantity > 0),
+    delivered_quantity REAL CHECK (delivered_quantity IS NULL OR delivered_quantity >= 0),
+    pack_multiplier INTEGER NOT NULL DEFAULT 1 CHECK (pack_multiplier >= 1),
+    unit_price_ttc REAL NOT NULL CHECK (unit_price_ttc >= 0),
+    catalog_unit_price_snapshot REAL,
+    line_total_ttc REAL NOT NULL CHECK (line_total_ttc >= 0),
+    notes TEXT
+);
+
+CREATE INDEX IF NOT EXISTS idx_client_orders_status ON client_orders(status);
+CREATE INDEX IF NOT EXISTS idx_client_orders_customer ON client_orders(customer_id);
+CREATE INDEX IF NOT EXISTS idx_client_order_items_order ON client_order_items(order_id);

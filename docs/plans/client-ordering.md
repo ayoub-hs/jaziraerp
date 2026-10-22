@@ -630,14 +630,14 @@ When the owner completes a delivery and executes conversion in the ERP:
    The entire conversion workflow executes inside **one single outer database transaction**. Any uncaught exception at any step aborts the entire transaction, rolling back stock, sale record, delivery note, order status, and container transactions:
    ```typescript
    const convertTx = db.transaction(() => {
-     // 1. Idempotency check: verify client_orders.sale_id IS NULL and status IN ('OUT_FOR_DELIVERY', 'CONFIRMED')
+     // 1. Idempotency check: verify client_orders.sale_id IS NULL and status IN ('CONFIRMED', 'PREPARING', 'OUT_FOR_DELIVERY')
      // 2. Update delivered_quantity on client_order_items; omit delivered_quantity = 0 from sale items
      // 3. Append delivery fee if > 0 (DELIVERY_FEE_LINE_NAME)
      // 4. Execute createSale(db, saleInput)
      // 5. If containers_returned: execute recordContainerTransaction(db, returnInput)
      // 6. Generate delivery note BL-YYYYMMDD-XXXX (with retry)
      // 7. Update client_orders SET status = 'DELIVERED', sale_id = sale.id
-     // 8. Record convert-${orderId} in sync_processed
+     // 8. Idempotency completed via processed_requests (completeRequest) inside the same transaction
    });
    ```
 

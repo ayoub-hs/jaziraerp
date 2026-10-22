@@ -117,3 +117,5 @@ export function sanitizeErrorMessage(err: any, fallbackMessage: string = 'Une er
   }
   return msg || fallbackMessage;
 }
+
+export { normalizePhone } from './phone.js';

@@ -240,3 +240,5 @@ export interface DeliveryNote {
   number: string;
   created_at: string;
 }
+
+export const DELIVERY_FEE_LINE_NAME = 'Frais de livraison';
