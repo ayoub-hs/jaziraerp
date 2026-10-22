@@ -7,6 +7,7 @@ describe('Delivery Zones & Client Orders API — Real HTTP Integration Tests (Ph
   let inactiveZoneId: string;
   let prodBleachId: string;
   let prodSoapId: string;
+  let prodPieceId: string;
 
   beforeEach(() => {
     const db = resetTestDb();
@@ -26,12 +27,14 @@ describe('Delivery Zones & Client Orders API — Real HTTP Integration Tests (Ph
 
     prodBleachId = 'prod-ord-bleach';
     prodSoapId = 'prod-ord-soap';
+    prodPieceId = 'prod-ord-piece';
     db.prepare(`
       INSERT INTO products (id, family_id, name, size_label, barcode, stock_quantity, retail_price, wholesale_price, created_at, updated_at)
       VALUES
         (?, 'fam-ord', 'Eau de Javel 5L', '5L', '619000555001', 100, 4.000, 3.200, '2026-10-22', '2026-10-22'),
-        (?, 'fam-ord', 'Savon Mains 5L', '5L', '619000555002', 80, 12.000, 10.000, '2026-10-22', '2026-10-22')
-    `).run(prodBleachId, prodSoapId);
+        (?, 'fam-ord', 'Savon Mains 5L', '5L', '619000555002', 80, 12.000, 10.000, '2026-10-22', '2026-10-22'),
+        (?, 'fam-ord', 'Balai Industriel', 'Piece', '619000555003', 50, 15.000, 12.000, '2026-10-22', '2026-10-22')
+    `).run(prodBleachId, prodSoapId, prodPieceId);
 
     // Seed delivery zones
     zoneId = 'zone-djerba';
@@ -42,6 +45,12 @@ describe('Delivery Zones & Client Orders API — Real HTTP Integration Tests (Ph
         (?, 'Djerba Midoun', 30.000, 5.000, 'ALL', 1, '2026-10-22'),
         (?, 'Zone Fermée', 50.000, 10.000, NULL, 0, '2026-10-22')
     `).run(zoneId, inactiveZoneId);
+
+    // Seed container type
+    db.prepare(`
+      INSERT INTO container_types (id, name, capacity_liters, stock_quantity, active, created_at)
+      VALUES ('ctype-ord-bidon', 'Bidon 5L', 5, 50, 1, '2026-10-22')
+    `).run();
   });
 
   describe('Delivery Zones CRUD', () => {
@@ -280,6 +289,189 @@ describe('Delivery Zones & Client Orders API — Real HTTP Integration Tests (Ph
       const res2 = await request(app).post('/api/orders').send(payload2);
       expect(res2.status).toBe(409);
     });
+
+    // Requirement 4: Quantities validation
+    it('rejects NaN, zero, negative, huge, and fractional piece quantities', async () => {
+      // 1. NaN / non-numeric
+      const resNaN = await request(app).post('/api/orders').send({
+        client_request_id: 'req-qty-nan',
+        customer_id: customerId,
+        customer_name: 'Mounir',
+        customer_phone: '98123456',
+        delivery_address: 'Midoun',
+        delivery_zone_id: zoneId,
+        items: [{ product_id: prodSoapId, quantity: 'abc' }]
+      });
+      expect(resNaN.status).toBe(400);
+      expect(resNaN.body.error).toMatch(/quantité|décimal valide/i);
+
+      // 2. Zero
+      const resZero = await request(app).post('/api/orders').send({
+        client_request_id: 'req-qty-zero',
+        customer_id: customerId,
+        customer_name: 'Mounir',
+        customer_phone: '98123456',
+        delivery_address: 'Midoun',
+        delivery_zone_id: zoneId,
+        items: [{ product_id: prodSoapId, quantity: 0 }]
+      });
+      expect(resZero.status).toBe(400);
+      expect(resZero.body.error).toMatch(/quantité.*positif/i);
+
+      // 3. Negative
+      const resNeg = await request(app).post('/api/orders').send({
+        client_request_id: 'req-qty-neg',
+        customer_id: customerId,
+        customer_name: 'Mounir',
+        customer_phone: '98123456',
+        delivery_address: 'Midoun',
+        delivery_zone_id: zoneId,
+        items: [{ product_id: prodSoapId, quantity: -5 }]
+      });
+      expect(resNeg.status).toBe(400);
+      expect(resNeg.body.error).toMatch(/quantité.*positif/i);
+
+      // 4. Huge (> 100 000)
+      const resHuge = await request(app).post('/api/orders').send({
+        client_request_id: 'req-qty-huge',
+        customer_id: customerId,
+        customer_name: 'Mounir',
+        customer_phone: '98123456',
+        delivery_address: 'Midoun',
+        delivery_zone_id: zoneId,
+        items: [{ product_id: prodSoapId, quantity: 99999999 }]
+      });
+      expect(resHuge.status).toBe(400);
+      expect(resHuge.body.error).toMatch(/dépasser/i);
+
+      // 5. Fractional piece (2.5 pieces on a Piece product)
+      const resPiece = await request(app).post('/api/orders').send({
+        client_request_id: 'req-qty-piece',
+        customer_id: customerId,
+        customer_name: 'Mounir',
+        customer_phone: '98123456',
+        delivery_address: 'Midoun',
+        delivery_zone_id: zoneId,
+        items: [{ product_id: prodPieceId, quantity: 2.5 }]
+      });
+      expect(resPiece.status).toBe(400);
+      expect(resPiece.body.error).toMatch(/fractionnaire/i);
+    });
+
+    // Requirement 5: Idempotency claim released on 400 validation failure
+    it('releases idempotency claim on 400 validation failure so corrected retry with same key succeeds', async () => {
+      const retryKey = 'req-idem-release-test';
+
+      // 1. First attempt fails validation with 400 (invalid quantity 0)
+      const failRes = await request(app).post('/api/orders').send({
+        client_request_id: retryKey,
+        customer_id: customerId,
+        customer_name: 'Mounir Ben Salah',
+        customer_phone: '98123456',
+        delivery_address: 'Midoun',
+        delivery_zone_id: zoneId,
+        payment_preference: 'CASH_ON_DELIVERY',
+        items: [{ product_id: prodSoapId, quantity: 0 }]
+      });
+      expect(failRes.status).toBe(400);
+
+      // Verify no row is left in PROCESSING state in processed_requests
+      const db = getDb();
+      const row: any = db.prepare('SELECT * FROM processed_requests WHERE request_id = ?').get(retryKey);
+      expect(row).toBeUndefined();
+
+      // 2. Corrected attempt with the SAME client_request_id succeeds with 201
+      const okRes = await request(app).post('/api/orders').send({
+        client_request_id: retryKey,
+        customer_id: customerId,
+        customer_name: 'Mounir Ben Salah',
+        customer_phone: '98123456',
+        delivery_address: 'Midoun',
+        delivery_zone_id: zoneId,
+        payment_preference: 'CASH_ON_DELIVERY',
+        items: [{ product_id: prodSoapId, quantity: 4 }]
+      });
+      expect(okRes.status).toBe(201);
+      expect(okRes.body.status).toBe('NEW');
+
+      // Verify row is now COMPLETED in processed_requests
+      const completedRow: any = db.prepare('SELECT * FROM processed_requests WHERE request_id = ?').get(retryKey);
+      expect(completedRow).toBeDefined();
+      expect(completedRow.status).toBe('COMPLETED');
+    });
+
+    // Requirement 3: Container type validation on create and edit
+    it('validates container_type_id on create and edit (exists, else French 400)', async () => {
+      // 1. Rejects unknown container_type_id on create
+      const badCreate = await request(app).post('/api/orders').send({
+        client_request_id: 'req-bad-ctype-create',
+        customer_id: customerId,
+        customer_name: 'Mounir Ben Salah',
+        customer_phone: '98123456',
+        delivery_address: 'Midoun',
+        delivery_zone_id: zoneId,
+        items: [{ product_id: prodSoapId, quantity: 4, container_type_id: 'ctype-non-existent' }]
+      });
+      expect(badCreate.status).toBe(400);
+      expect(badCreate.body.error).toMatch(/contenant.*introuvable/i);
+
+      // 2. Accepts valid container_type_id on create
+      const goodCreate = await request(app).post('/api/orders').send({
+        client_request_id: 'req-good-ctype-create',
+        customer_id: customerId,
+        customer_name: 'Mounir Ben Salah',
+        customer_phone: '98123456',
+        delivery_address: 'Midoun',
+        delivery_zone_id: zoneId,
+        items: [{ product_id: prodSoapId, quantity: 4, container_type_id: 'ctype-ord-bidon' }]
+      });
+      expect(goodCreate.status).toBe(201);
+      expect(goodCreate.body.items[0].container_type_id).toBe('ctype-ord-bidon');
+      const orderId = goodCreate.body.id;
+
+      // 3. Rejects unknown container_type_id on edit
+      const badEdit = await request(app).put(`/api/orders/${orderId}`).send({
+        items: [{ product_id: prodSoapId, quantity: 4, container_type_id: 'ctype-ghost' }]
+      });
+      expect(badEdit.status).toBe(400);
+      expect(badEdit.body.error).toMatch(/contenant.*introuvable/i);
+    });
+
+    // Requirement 2: Generic French error on injected DB error with no SQL text
+    it('returns French generic text and no raw SQL in responses on DB error', async () => {
+      const db = getDb();
+      const origPrepare = db.prepare;
+      // Injected error during order creation
+      (db as any).prepare = (sql: string) => {
+        if (sql.includes('INSERT INTO client_orders')) {
+          throw new Error('SQLITE_ERROR: syntax error in INSERT INTO client_orders (injected)');
+        }
+        return origPrepare.call(db, sql);
+      };
+
+      try {
+        const res = await request(app)
+          .post('/api/orders')
+          .send({
+            client_request_id: 'req-injected-err',
+            customer_id: customerId,
+            customer_name: 'Mounir Ben Salah',
+            customer_phone: '98123456',
+            delivery_address: 'Midoun',
+            delivery_zone_id: zoneId,
+            payment_preference: 'CASH_ON_DELIVERY',
+            items: [{ product_id: prodSoapId, quantity: 4 }]
+          });
+
+        expect(res.status).toBe(500);
+        expect(res.body.error).toBeDefined();
+        // Crucial: NO SQL text, no table names, no SQLITE error codes exposed
+        expect(res.body.error).not.toMatch(/SQLITE|syntax error|INSERT INTO|client_orders|table/i);
+        expect(res.body.error).toMatch(/erreur interne/i);
+      } finally {
+        db.prepare = origPrepare;
+      }
+    });
   });
 
   describe('Order State Machine & Editing', () => {
@@ -341,24 +533,47 @@ describe('Delivery Zones & Client Orders API — Real HTTP Integration Tests (Ph
       expect(res.status).toBe(409);
     });
 
-    it('cancels an order with reason from CONFIRMED', async () => {
-      await request(app).patch(`/api/orders/${orderId}/status`).send({ status: 'CONFIRMED' });
+    // Requirement 6: Shared cancellation logic between POST /:id/cancel and PATCH /:id/status -> CANCELLED
+    it('shares cancellation logic between POST /:id/cancel and PATCH /:id/status -> CANCELLED', async () => {
+      // Create second order
+      const o2Res = await request(app).post('/api/orders').send({
+        client_request_id: `req-cancel-2-${Date.now()}`,
+        customer_id: customerId,
+        customer_name: 'Mounir',
+        customer_phone: '98123456',
+        delivery_address: 'Midoun',
+        delivery_zone_id: zoneId,
+        items: [{ product_id: prodSoapId, quantity: 4 }]
+      });
+      const o2Id = o2Res.body.id;
 
-      const res = await request(app)
-        .post(`/api/orders/${orderId}/cancel`)
-        .send({ reason: 'Client unreachable by phone' });
+      // Both reject cancellation without reason with 400
+      const r1NoReason = await request(app).post(`/api/orders/${orderId}/cancel`).send({});
+      expect(r1NoReason.status).toBe(400);
+      expect(r1NoReason.body.error).toMatch(/motif d'annulation/i);
 
-      expect(res.status).toBe(200);
-      expect(res.body.status).toBe('CANCELLED');
-      expect(res.body.cancellation_reason).toBe('Client unreachable by phone');
-    });
+      const r2NoReason = await request(app).patch(`/api/orders/${o2Id}/status`).send({ status: 'CANCELLED' });
+      expect(r2NoReason.status).toBe(400);
+      expect(r2NoReason.body.error).toMatch(/motif d'annulation/i);
 
-    it('rejects cancellation without reason with 400', async () => {
-      const res = await request(app)
-        .post(`/api/orders/${orderId}/cancel`)
-        .send({});
+      // Cancel orderId via POST /:id/cancel
+      const r1Cancel = await request(app).post(`/api/orders/${orderId}/cancel`).send({ reason: 'Client inaccessible' });
+      expect(r1Cancel.status).toBe(200);
+      expect(r1Cancel.body.status).toBe('CANCELLED');
+      expect(r1Cancel.body.cancellation_reason).toBe('Client inaccessible');
 
-      expect(res.status).toBe(400);
+      // Cancel o2Id via PATCH /:id/status -> CANCELLED
+      const r2Cancel = await request(app).patch(`/api/orders/${o2Id}/status`).send({ status: 'CANCELLED', cancellation_reason: 'Client inaccessible' });
+      expect(r2Cancel.status).toBe(200);
+      expect(r2Cancel.body.status).toBe('CANCELLED');
+      expect(r2Cancel.body.cancellation_reason).toBe('Client inaccessible');
+
+      // Both reject re-cancelling with 409
+      const r1ReCancel = await request(app).post(`/api/orders/${orderId}/cancel`).send({ reason: 'Re-cancel' });
+      expect(r1ReCancel.status).toBe(409);
+
+      const r2ReCancel = await request(app).patch(`/api/orders/${o2Id}/status`).send({ status: 'CANCELLED', cancellation_reason: 'Re-cancel' });
+      expect(r2ReCancel.status).toBe(409);
     });
 
     it('allows editing items and zone while order is NEW or CONFIRMED', async () => {
@@ -374,6 +589,26 @@ describe('Delivery Zones & Client Orders API — Real HTTP Integration Tests (Ph
       expect(res.body.total_ttc).toBe(55.000);
       expect(res.body.items).toHaveLength(1);
       expect(res.body.items[0].ordered_quantity).toBe(5);
+    });
+
+    // Requirement 1: Delivery fee & total_ttc consistency on PUT
+    it('keeps order stored delivery_fee and maintains total consistency when zone is unchanged on PUT', async () => {
+      // Change the zone's delivery fee in delivery_zones to 8.000 DT
+      const db = getDb();
+      db.prepare('UPDATE delivery_zones SET delivery_fee = 8.000 WHERE id = ?').run(zoneId);
+
+      // Edit only notes on the order (zone unchanged)
+      const editRes = await request(app)
+        .put(`/api/orders/${orderId}`)
+        .send({ notes: 'Livrer après 14h' });
+
+      expect(editRes.status).toBe(200);
+      // Fee must NOT have jumped to 8.000 DT! It must remain the stored 5.000 DT
+      expect(editRes.body.delivery_fee).toBe(5.000);
+      expect(editRes.body.subtotal_ttc).toBe(40.000);
+      expect(editRes.body.total_ttc).toBe(45.000);
+      expect(editRes.body.total_ttc).toBe(editRes.body.subtotal_ttc + editRes.body.delivery_fee);
+      expect(editRes.body.notes).toBe('Livrer après 14h');
     });
 
     it('blocks editing when order is in PREPARING or OUT_FOR_DELIVERY with 409', async () => {

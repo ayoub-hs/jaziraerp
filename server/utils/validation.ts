@@ -117,5 +117,35 @@ export function sanitizeErrorMessage(err: any, fallbackMessage: string = 'Une er
   }
   return msg || fallbackMessage;
 }
+/**
+ * Validates order item quantity: finite, positive, upper bound, max 3 decimals, no fractions for piece products.
+ */
+export function validateOrderQuantity(
+  value: unknown,
+  product: { size_label?: string | null; name?: string },
+  fieldName: string = 'quantité'
+): number {
+  const qty = requireFinitePositive(value, fieldName);
+
+  if (qty > 100000) {
+    throw new ValidationError(`Le champ ${fieldName} ne peut pas dépasser 100 000.`);
+  }
+
+  // Max 3 decimal places
+  const decimalStr = String(value).trim();
+  const dotIndex = decimalStr.indexOf('.');
+  if (dotIndex !== -1 && decimalStr.length - dotIndex - 1 > 3) {
+    throw new ValidationError(`Le champ ${fieldName} ne peut pas avoir plus de 3 décimales.`);
+  }
+
+  // No fractions for piece products
+  const label = (product.size_label || '').trim().toLowerCase();
+  const isPiece = ['piece', 'pièce', 'pcs', 'unite', 'unité', 'unit'].includes(label);
+  if (isPiece && !Number.isInteger(qty)) {
+    throw new ValidationError(`Les produits vendus à la pièce ne peuvent pas avoir de quantité fractionnaire.`);
+  }
+
+  return qty;
+}
 
 export { normalizePhone } from './phone.js';
