@@ -8,38 +8,27 @@ export async function computeSha256(text: string): Promise<string> {
   const subtle = (typeof window !== 'undefined' ? window.crypto?.subtle : undefined) ||
                  (typeof globalThis !== 'undefined' ? (globalThis as any).crypto?.subtle : undefined);
 
-  if (subtle) {
-    const encoder = new TextEncoder();
-    const data = encoder.encode(clean);
-    const hashBuffer = await subtle.digest('SHA-256', data);
-    const hashArray = Array.from(new Uint8Array(hashBuffer));
-    return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+  if (!subtle) {
+    throw new Error("Déverrouillage hors ligne indisponible : contexte non sécurisé");
   }
 
-  // Fallback for environments where subtle is not accessible
-  let hash = 0;
-  for (let i = 0; i < clean.length; i++) {
-    hash = (hash << 5) - hash + clean.charCodeAt(i);
-    hash |= 0;
-  }
-  return Math.abs(hash).toString(16).padStart(64, '0');
+  const encoder = new TextEncoder();
+  const data = encoder.encode(clean);
+  const hashBuffer = await subtle.digest('SHA-256', data);
+  const hashArray = Array.from(new Uint8Array(hashBuffer));
+  return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
 }
 
 export function generateSalt(): string {
   const cryptoObj = (typeof window !== 'undefined' ? window.crypto : undefined) ||
                     (typeof globalThis !== 'undefined' ? (globalThis as any).crypto : undefined);
-  if (cryptoObj?.getRandomValues) {
-    const bytes = new Uint8Array(16);
-    cryptoObj.getRandomValues(bytes);
-    return Array.from(bytes).map(b => b.toString(16).padStart(2, '0')).join('');
+  if (!cryptoObj?.getRandomValues) {
+    throw new Error("Déverrouillage hors ligne indisponible : contexte non sécurisé");
   }
 
-  // Fallback
-  let salt = '';
-  for (let i = 0; i < 32; i++) {
-    salt += Math.floor(Math.random() * 16).toString(16);
-  }
-  return salt;
+  const bytes = new Uint8Array(16);
+  cryptoObj.getRandomValues(bytes);
+  return Array.from(bytes).map(b => b.toString(16).padStart(2, '0')).join('');
 }
 
 export async function computePbkdf2(
@@ -51,45 +40,36 @@ export async function computePbkdf2(
   const subtle = (typeof window !== 'undefined' ? window.crypto?.subtle : undefined) ||
                  (typeof globalThis !== 'undefined' ? (globalThis as any).crypto?.subtle : undefined);
 
-  if (subtle) {
-    const encoder = new TextEncoder();
-    const keyMaterial = await subtle.importKey(
-      'raw',
-      encoder.encode(clean),
-      { name: 'PBKDF2' },
-      false,
-      ['deriveBits']
-    );
-
-    const saltBytes = new Uint8Array(
-      saltHex.match(/.{1,2}/g)?.map(b => parseInt(b, 16)) || []
-    );
-
-    const derivedBits = await subtle.deriveBits(
-      {
-        name: 'PBKDF2',
-        salt: saltBytes,
-        iterations,
-        hash: 'SHA-256'
-      },
-      keyMaterial,
-      256
-    );
-
-    const hashArray = Array.from(new Uint8Array(derivedBits));
-    return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+  if (!subtle) {
+    throw new Error("Déverrouillage hors ligne indisponible : contexte non sécurisé");
   }
 
-  // Fallback for non-secure contexts (e.g. plain HTTP tailnet IP without crypto.subtle)
-  let hash = 0;
-  const combined = `${clean}:${saltHex}`;
-  for (let round = 0; round < 1000; round++) {
-    for (let i = 0; i < combined.length; i++) {
-      hash = (hash << 5) - hash + combined.charCodeAt(i) + round;
-      hash |= 0;
-    }
-  }
-  return Math.abs(hash).toString(16).padStart(64, '0');
+  const encoder = new TextEncoder();
+  const keyMaterial = await subtle.importKey(
+    'raw',
+    encoder.encode(clean),
+    { name: 'PBKDF2' },
+    false,
+    ['deriveBits']
+  );
+
+  const saltBytes = new Uint8Array(
+    saltHex.match(/.{1,2}/g)?.map(b => parseInt(b, 16)) || []
+  );
+
+  const derivedBits = await subtle.deriveBits(
+    {
+      name: 'PBKDF2',
+      salt: saltBytes,
+      iterations,
+      hash: 'SHA-256'
+    },
+    keyMaterial,
+    256
+  );
+
+  const hashArray = Array.from(new Uint8Array(derivedBits));
+  return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
 }
 
 const STORAGE_KEYS = {
@@ -139,6 +119,8 @@ export class AuthService {
     }
   }
 
+  // NOTE: The failed attempt counter and lockout timestamp are client-side only,
+  // stored in localStorage, and serve as a deterrent only against casual local tampering.
   public getLockoutRemainingSeconds(): number {
     if (typeof localStorage === 'undefined') return 0;
     const untilStr = localStorage.getItem(STORAGE_KEYS.LOCKOUT_UNTIL);
@@ -205,21 +187,41 @@ export class AuthService {
 
   /**
    * Caches credential hashes locally in browser storage for offline access using salted PBKDF2.
+   * Refuses if secure context (crypto.subtle, crypto.getRandomValues) is unavailable.
    */
   public async cacheCredentials(pin: string, masterPassword?: string): Promise<void> {
     if (typeof localStorage === 'undefined') return;
 
-    localStorage.setItem(STORAGE_KEYS.IS_CONFIGURED, 'true');
+    const subtle = (typeof window !== 'undefined' ? window.crypto?.subtle : undefined) ||
+                   (typeof globalThis !== 'undefined' ? (globalThis as any).crypto?.subtle : undefined);
+    const cryptoObj = (typeof window !== 'undefined' ? window.crypto : undefined) ||
+                      (typeof globalThis !== 'undefined' ? (globalThis as any).crypto : undefined);
+
+    if (!subtle || !cryptoObj?.getRandomValues) {
+      throw new Error("Déverrouillage hors ligne indisponible : contexte non sécurisé");
+    }
+
+    let pinSalt: string | undefined;
+    let pinHash: string | undefined;
     if (pin) {
-      const pinSalt = localStorage.getItem(STORAGE_KEYS.PIN_SALT) || generateSalt();
+      pinSalt = localStorage.getItem(STORAGE_KEYS.PIN_SALT) || generateSalt();
+      pinHash = await computePbkdf2(pin, pinSalt);
+    }
+
+    let masterSalt: string | undefined;
+    let masterHash: string | undefined;
+    if (masterPassword) {
+      masterSalt = localStorage.getItem(STORAGE_KEYS.MASTER_SALT) || generateSalt();
+      masterHash = await computePbkdf2(masterPassword, masterSalt);
+    }
+
+    localStorage.setItem(STORAGE_KEYS.IS_CONFIGURED, 'true');
+    if (pin && pinSalt && pinHash) {
       localStorage.setItem(STORAGE_KEYS.PIN_SALT, pinSalt);
-      const pinHash = await computePbkdf2(pin, pinSalt);
       localStorage.setItem(STORAGE_KEYS.PIN_HASH, pinHash);
     }
-    if (masterPassword) {
-      const masterSalt = localStorage.getItem(STORAGE_KEYS.MASTER_SALT) || generateSalt();
+    if (masterPassword && masterSalt && masterHash) {
       localStorage.setItem(STORAGE_KEYS.MASTER_SALT, masterSalt);
-      const masterHash = await computePbkdf2(masterPassword, masterSalt);
       localStorage.setItem(STORAGE_KEYS.MASTER_HASH, masterHash);
     }
   }
@@ -285,19 +287,29 @@ export class AuthService {
           const data = await res.json();
           // Cache salted PBKDF2 locally so offline unlock works
           if (typeof localStorage !== 'undefined') {
-            if (isMasterPassword) {
-              const masterSalt = localStorage.getItem(STORAGE_KEYS.MASTER_SALT) || generateSalt();
-              localStorage.setItem(STORAGE_KEYS.MASTER_SALT, masterSalt);
-              const masterHash = await computePbkdf2(clean, masterSalt);
-              localStorage.setItem(STORAGE_KEYS.MASTER_HASH, masterHash);
-            } else {
-              const pinSalt = localStorage.getItem(STORAGE_KEYS.PIN_SALT) || generateSalt();
-              localStorage.setItem(STORAGE_KEYS.PIN_SALT, pinSalt);
-              const pinHash = await computePbkdf2(clean, pinSalt);
-              localStorage.setItem(STORAGE_KEYS.PIN_HASH, pinHash);
-            }
             if (data.shop_name) {
               localStorage.setItem(STORAGE_KEYS.SHOP_NAME, data.shop_name);
+            }
+
+            const subtle = (typeof window !== 'undefined' ? window.crypto?.subtle : undefined) ||
+                           (typeof globalThis !== 'undefined' ? (globalThis as any).crypto?.subtle : undefined);
+            const cryptoObj = (typeof window !== 'undefined' ? window.crypto : undefined) ||
+                              (typeof globalThis !== 'undefined' ? (globalThis as any).crypto : undefined);
+
+            if (!subtle || !cryptoObj?.getRandomValues) {
+              console.warn('[AuthService] Déverrouillage hors ligne indisponible : contexte non sécurisé. Identifiants hors ligne inchangés.');
+            } else {
+              if (isMasterPassword) {
+                const masterSalt = localStorage.getItem(STORAGE_KEYS.MASTER_SALT) || generateSalt();
+                const masterHash = await computePbkdf2(clean, masterSalt);
+                localStorage.setItem(STORAGE_KEYS.MASTER_SALT, masterSalt);
+                localStorage.setItem(STORAGE_KEYS.MASTER_HASH, masterHash);
+              } else {
+                const pinSalt = localStorage.getItem(STORAGE_KEYS.PIN_SALT) || generateSalt();
+                const pinHash = await computePbkdf2(clean, pinSalt);
+                localStorage.setItem(STORAGE_KEYS.PIN_SALT, pinSalt);
+                localStorage.setItem(STORAGE_KEYS.PIN_HASH, pinHash);
+              }
             }
           }
           this.recordSuccessfulAttempt();
@@ -321,6 +333,12 @@ export class AuthService {
     }
 
     // 2. Offline fallback using cached salted PBKDF2 hash (or legacy unsalted SHA-256 fallback)
+    const subtle = (typeof window !== 'undefined' ? window.crypto?.subtle : undefined) ||
+                   (typeof globalThis !== 'undefined' ? (globalThis as any).crypto?.subtle : undefined);
+    if (!subtle) {
+      throw new Error("Déverrouillage hors ligne indisponible : contexte non sécurisé");
+    }
+
     const saltKey = isMasterPassword ? STORAGE_KEYS.MASTER_SALT : STORAGE_KEYS.PIN_SALT;
     const hashKey = isMasterPassword ? STORAGE_KEYS.MASTER_HASH : STORAGE_KEYS.PIN_HASH;
 
@@ -342,7 +360,7 @@ export class AuthService {
       const inputHash = await computePbkdf2(clean, cachedSalt);
       isValid = (inputHash === cachedHash);
     } else {
-      // Legacy unsalted SHA-256 fallback
+      // Legacy unsalted SHA-256 fallback (runs via subtle.digest, never weak hash)
       const inputHash = await computeSha256(clean);
       isValid = (inputHash === cachedHash);
       if (isValid && typeof localStorage !== 'undefined') {

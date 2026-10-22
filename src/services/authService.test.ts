@@ -228,8 +228,7 @@ describe('Step 15: Client Offline Auth & PIN Unlock Service', () => {
       vi.restoreAllMocks();
     });
 
-    it('preserves iterative salted fallback when window.crypto.subtle is undefined', async () => {
-      // Mock subtle as undefined
+    it('refuses cacheCredentials and unlock with clear French error when crypto.subtle is undefined without storing any hash', async () => {
       const originalSubtle = globalThis.crypto?.subtle;
       try {
         Object.defineProperty(globalThis.crypto, 'subtle', {
@@ -238,20 +237,119 @@ describe('Step 15: Client Offline Auth & PIN Unlock Service', () => {
         });
 
         const auth = new AuthService();
-        await auth.cacheCredentials('7890');
+
+        // 1. cacheCredentials must refuse and NOT store any hash
+        await expect(auth.cacheCredentials('7890')).rejects.toThrow(
+          'Déverrouillage hors ligne indisponible : contexte non sécurisé'
+        );
+        expect(mockStorage['aljazira_pin_hash']).toBeUndefined();
+        expect(mockStorage['aljazira_pin_salt']).toBeUndefined();
+
+        // 2. unlock offline must refuse and NOT unlock
+        mockStorage['aljazira_pin_hash'] = 'somehash';
         await auth.lock();
-
-        const ok = await auth.unlock('7890');
-        expect(ok).toBe(true);
-        expect(auth.isLocked()).toBe(false);
-
-        const fail = await auth.unlock('9999');
-        expect(fail).toBe(false);
+        await expect(auth.unlock('7890')).rejects.toThrow(
+          'Déverrouillage hors ligne indisponible : contexte non sécurisé'
+        );
+        expect(auth.isLocked()).toBe(true);
       } finally {
         Object.defineProperty(globalThis.crypto, 'subtle', {
           value: originalSubtle,
           configurable: true
         });
+      }
+    });
+
+    it('refuses salt generation and PIN caching when crypto.getRandomValues is undefined', async () => {
+      const originalGetRandomValues = globalThis.crypto?.getRandomValues;
+      try {
+        Object.defineProperty(globalThis.crypto, 'getRandomValues', {
+          value: undefined,
+          configurable: true
+        });
+
+        const auth = new AuthService();
+        await expect(auth.cacheCredentials('1234')).rejects.toThrow(
+          'Déverrouillage hors ligne indisponible : contexte non sécurisé'
+        );
+        expect(mockStorage['aljazira_pin_hash']).toBeUndefined();
+        expect(mockStorage['aljazira_pin_salt']).toBeUndefined();
+      } finally {
+        Object.defineProperty(globalThis.crypto, 'getRandomValues', {
+          value: originalGetRandomValues,
+          configurable: true
+        });
+      }
+    });
+
+    it('upgrades legacy unsalted SHA-256 entries to PBKDF2 on first successful unlock', async () => {
+      const auth = new AuthService();
+      const pin = '3344';
+      // Compute legacy unsalted SHA-256
+      const legacyHash = await computeSha256(pin);
+      mockStorage['aljazira_pin_hash'] = legacyHash;
+      mockStorage['aljazira_pin_salt'] = undefined as any;
+      delete mockStorage['aljazira_pin_salt'];
+      await auth.lock();
+
+      const success = await auth.unlock(pin);
+      expect(success).toBe(true);
+      expect(auth.isLocked()).toBe(false);
+
+      // Verify upgraded to PBKDF2: salt exists and hash changed from legacy SHA-256
+      const newSalt = mockStorage['aljazira_pin_salt'];
+      expect(newSalt).toBeDefined();
+      expect(newSalt).toHaveLength(32);
+      const newHash = mockStorage['aljazira_pin_hash'];
+      expect(newHash).toBeDefined();
+      expect(newHash).not.toBe(legacyHash);
+      expect(newHash).toBe(await computePbkdf2(pin, newSalt));
+
+      // Subsequent unlock with PBKDF2 works
+      await auth.lock();
+      const secondUnlock = await auth.unlock(pin);
+      expect(secondUnlock).toBe(true);
+    });
+
+    it('keeps legacy entry unchanged when online unlock succeeds but crypto.subtle is unavailable', async () => {
+      const originalSubtle = globalThis.crypto?.subtle;
+      const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+
+      try {
+        const auth = new AuthService();
+        const pin = '5566';
+        mockStorage['aljazira_pin_hash'] = 'legacy-sha256-unupgraded';
+        delete mockStorage['aljazira_pin_salt'];
+
+        vi.stubGlobal('navigator', { onLine: true });
+        vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
+          ok: true,
+          status: 200,
+          json: async () => ({ success: true, unlocked: true, shop_name: 'Test Shop' })
+        }));
+
+        Object.defineProperty(globalThis.crypto, 'subtle', {
+          value: undefined,
+          configurable: true
+        });
+
+        const ok = await auth.unlock(pin);
+        expect(ok).toBe(true);
+        expect(auth.isLocked()).toBe(false);
+
+        // Salt was NOT created, old entry remains unchanged
+        expect(mockStorage['aljazira_pin_salt']).toBeUndefined();
+        expect(mockStorage['aljazira_pin_hash']).toBe('legacy-sha256-unupgraded');
+        expect(warnSpy).toHaveBeenCalledWith(
+          expect.stringContaining('Déverrouillage hors ligne indisponible')
+        );
+      } finally {
+        Object.defineProperty(globalThis.crypto, 'subtle', {
+          value: originalSubtle,
+          configurable: true
+        });
+        warnSpy.mockRestore();
+        vi.stubGlobal('navigator', { onLine: false });
       }
     });
   });
