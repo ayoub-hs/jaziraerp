@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { AuthService, computeSha256 } from './authService.js';
+import { AuthService, computeSha256, computePbkdf2 } from './authService.js';
 
 describe('Step 15: Client Offline Auth & PIN Unlock Service', () => {
   let mockStorage: Record<string, string>;
@@ -82,7 +82,6 @@ describe('Step 15: Client Offline Auth & PIN Unlock Service', () => {
   it('online unlock caches client SHA-256 so subsequent offline unlock succeeds', async () => {
     const auth = new AuthService();
     const pin = '2468';
-    const clientExpectedHash = await computeSha256(pin);
 
     // 1. Simulate ONLINE unlock with mock fetch
     vi.stubGlobal('navigator', { onLine: true });
@@ -100,7 +99,10 @@ describe('Step 15: Client Offline Auth & PIN Unlock Service', () => {
     const onlineUnlocked = await auth.unlock(pin);
     expect(onlineUnlocked).toBe(true);
 
-    // Verify localStorage now contains client-computed SHA-256
+    // Verify localStorage now contains client-computed PBKDF2 with salt
+    const pinSalt = mockStorage['aljazira_pin_salt'];
+    expect(pinSalt).toBeDefined();
+    const clientExpectedHash = await computePbkdf2(pin, pinSalt);
     expect(mockStorage['aljazira_pin_hash']).toBe(clientExpectedHash);
 
     // 2. Lock again and switch to OFFLINE mode
@@ -120,5 +122,137 @@ describe('Step 15: Client Offline Auth & PIN Unlock Service', () => {
 
     await auth.cacheCredentials('1234', 'masterSecret');
     expect(auth.isConfigured()).toBe(true);
+  });
+
+  describe('F14: Salted PBKDF2 & Attempt Delay (Lockout)', () => {
+    it('caches PIN and master password with unique salt and PBKDF2', async () => {
+      const auth = new AuthService();
+      const pin = '4321';
+      const master = 'MasterSecret99';
+
+      await auth.cacheCredentials(pin, master);
+
+      // Unique salt must be created and stored
+      const pinSalt = mockStorage['aljazira_pin_salt'];
+      const masterSalt = mockStorage['aljazira_master_salt'];
+      expect(pinSalt).toBeDefined();
+      expect(pinSalt).toHaveLength(32); // 16 bytes hex
+      expect(masterSalt).toBeDefined();
+      expect(masterSalt).toHaveLength(32);
+
+      // Stored hash must be PBKDF2, NOT plain SHA-256
+      const plainPinHash = await computeSha256(pin);
+      const storedPinHash = mockStorage['aljazira_pin_hash'];
+      expect(storedPinHash).toBeDefined();
+      expect(storedPinHash).not.toBe(plainPinHash);
+
+      // Unlock offline with PBKDF2 succeeds
+      await auth.lock();
+      expect(auth.isLocked()).toBe(true);
+      const ok = await auth.unlock(pin);
+      expect(ok).toBe(true);
+      expect(auth.isLocked()).toBe(false);
+
+      // Unlock with master password succeeds
+      await auth.lock();
+      const masterOk = await auth.unlock(master, true);
+      expect(masterOk).toBe(true);
+      expect(auth.isLocked()).toBe(false);
+    });
+
+    it('enforces attempt delay (lockout) after 3 and 5 failed offline attempts', async () => {
+      const auth = new AuthService();
+      await auth.cacheCredentials('1234');
+      await auth.lock();
+
+      expect(auth.getLockoutRemainingSeconds()).toBe(0);
+
+      // Attempt 1: wrong PIN
+      const res1 = await auth.unlock('0001');
+      expect(res1).toBe(false);
+      expect(auth.getLockoutRemainingSeconds()).toBe(0);
+
+      // Attempt 2: wrong PIN
+      const res2 = await auth.unlock('0002');
+      expect(res2).toBe(false);
+      expect(auth.getLockoutRemainingSeconds()).toBe(0);
+
+      // Attempt 3: wrong PIN -> triggers 5s lockout
+      const res3 = await auth.unlock('0003');
+      expect(res3).toBe(false);
+      const remaining3 = auth.getLockoutRemainingSeconds();
+      expect(remaining3).toBeGreaterThan(0);
+      expect(remaining3).toBeLessThanOrEqual(5);
+
+      // While locked out, even the correct PIN is rejected
+      const lockedAttempt = await auth.unlock('1234');
+      expect(lockedAttempt).toBe(false);
+
+      // Advance time past 5s lockout
+      const lockoutUntil3 = parseInt(mockStorage['aljazira_lockout_until'], 10);
+      vi.spyOn(Date, 'now').mockReturnValue(lockoutUntil3 + 1000);
+      expect(auth.getLockoutRemainingSeconds()).toBe(0);
+
+      // Attempt 4: wrong PIN -> also 5s lockout (attempts >= 3)
+      const res4 = await auth.unlock('0004');
+      expect(res4).toBe(false);
+      const remaining4 = auth.getLockoutRemainingSeconds();
+      expect(remaining4).toBeGreaterThan(0);
+      expect(remaining4).toBeLessThanOrEqual(5);
+
+      // Advance time past 2nd 5s lockout
+      const lockoutUntil4 = parseInt(mockStorage['aljazira_lockout_until'], 10);
+      vi.spyOn(Date, 'now').mockReturnValue(lockoutUntil4 + 1000);
+      expect(auth.getLockoutRemainingSeconds()).toBe(0);
+
+      // Attempt 5: wrong PIN -> triggers 30s lockout (attempts >= 5)
+      const res5 = await auth.unlock('0005');
+      expect(res5).toBe(false);
+      const remaining5 = auth.getLockoutRemainingSeconds();
+      expect(remaining5).toBeGreaterThan(5);
+      expect(remaining5).toBeLessThanOrEqual(30);
+
+      // Advance time past 30s lockout
+      const lockoutUntil5 = parseInt(mockStorage['aljazira_lockout_until'], 10);
+      vi.spyOn(Date, 'now').mockReturnValue(lockoutUntil5 + 1000);
+      expect(auth.getLockoutRemainingSeconds()).toBe(0);
+
+      // Correct PIN unlocks and resets failed attempts & lockout
+      const success = await auth.unlock('1234');
+      expect(success).toBe(true);
+      expect(auth.isLocked()).toBe(false);
+      expect(auth.getLockoutRemainingSeconds()).toBe(0);
+      expect(mockStorage['aljazira_failed_attempts']).toBeUndefined();
+      expect(mockStorage['aljazira_lockout_until']).toBeUndefined();
+
+      vi.restoreAllMocks();
+    });
+
+    it('preserves iterative salted fallback when window.crypto.subtle is undefined', async () => {
+      // Mock subtle as undefined
+      const originalSubtle = globalThis.crypto?.subtle;
+      try {
+        Object.defineProperty(globalThis.crypto, 'subtle', {
+          value: undefined,
+          configurable: true
+        });
+
+        const auth = new AuthService();
+        await auth.cacheCredentials('7890');
+        await auth.lock();
+
+        const ok = await auth.unlock('7890');
+        expect(ok).toBe(true);
+        expect(auth.isLocked()).toBe(false);
+
+        const fail = await auth.unlock('9999');
+        expect(fail).toBe(false);
+      } finally {
+        Object.defineProperty(globalThis.crypto, 'subtle', {
+          value: originalSubtle,
+          configurable: true
+        });
+      }
+    });
   });
 });

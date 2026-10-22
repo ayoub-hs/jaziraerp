@@ -19,7 +19,11 @@ export const LockScreenModal: React.FC<LockScreenModalProps> = ({
 
   const effectiveShopName = shopName || authService.getShopName();
   const [pin, setPin] = useState<string>('');
-  const [error, setError] = useState<string | null>(null);
+  const [lockoutRemaining, setLockoutRemaining] = useState<number>(() => authService.getLockoutRemainingSeconds());
+  const [error, setError] = useState<string | null>(() => {
+    const rem = authService.getLockoutRemainingSeconds();
+    return rem > 0 ? `Trop de tentatives. Veuillez patienter ${rem} seconde${rem > 1 ? 's' : ''}.` : null;
+  });
   const [isVerifying, setIsVerifying] = useState(false);
   const [isMasterMode, setIsMasterMode] = useState(false);
   const [masterPassword, setMasterPassword] = useState('');
@@ -37,12 +41,27 @@ export const LockScreenModal: React.FC<LockScreenModalProps> = ({
     }
   }, [isLocked]);
 
+  // Periodic lockout countdown timer
+  useEffect(() => {
+    if (!isLocked) return;
+    const interval = setInterval(() => {
+      const remaining = authService.getLockoutRemainingSeconds();
+      setLockoutRemaining(remaining);
+      if (remaining > 0) {
+        setError(`Trop de tentatives. Veuillez patienter ${remaining} seconde${remaining > 1 ? 's' : ''}.`);
+      } else if (lockoutRemaining > 0 && remaining === 0) {
+        setError(null);
+      }
+    }, 1000);
+    return () => clearInterval(interval);
+  }, [isLocked, lockoutRemaining]);
+
   // Handle physical keyboard typing
   useEffect(() => {
     if (!isLocked) return;
 
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (isMasterMode) return;
+      if (isMasterMode || lockoutRemaining > 0) return;
 
       if (e.key >= '0' && e.key <= '9') {
         if (pin.length < 4) {
@@ -57,16 +76,17 @@ export const LockScreenModal: React.FC<LockScreenModalProps> = ({
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [isLocked, pin, isMasterMode]);
+  }, [isLocked, pin, isMasterMode, lockoutRemaining]);
 
   // Auto-submit when 4 digits are entered
   useEffect(() => {
-    if (pin.length === 4 && !isMasterMode && isLocked) {
+    if (pin.length === 4 && !isMasterMode && isLocked && lockoutRemaining === 0) {
       submitPin(pin);
     }
-  }, [pin, isMasterMode, isLocked]);
+  }, [pin, isMasterMode, isLocked, lockoutRemaining]);
 
   const handleDigitPress = (digit: string) => {
+    if (lockoutRemaining > 0) return;
     if (pin.length < 4) {
       setError(null);
       setPin(prev => prev + digit);
@@ -74,25 +94,43 @@ export const LockScreenModal: React.FC<LockScreenModalProps> = ({
   };
 
   const handleBackspace = () => {
+    if (lockoutRemaining > 0) return;
     setError(null);
     setPin(prev => prev.slice(0, -1));
   };
 
   const handleClear = () => {
+    if (lockoutRemaining > 0) return;
     setError(null);
     setPin('');
   };
 
   const submitPin = async (inputPin: string) => {
+    const remaining = authService.getLockoutRemainingSeconds();
+    if (remaining > 0) {
+      setLockoutRemaining(remaining);
+      setError(`Trop de tentatives. Veuillez patienter ${remaining} seconde${remaining > 1 ? 's' : ''}.`);
+      setPin('');
+      return;
+    }
+
     try {
       setIsVerifying(true);
       setError(null);
       const success = await authService.unlock(inputPin, false);
       if (success) {
         setPin('');
+        setError(null);
+        setLockoutRemaining(0);
         onUnlocked();
       } else {
-        setError('Code PIN incorrect. Veuillez réessayer.');
+        const remainingAfter = authService.getLockoutRemainingSeconds();
+        setLockoutRemaining(remainingAfter);
+        if (remainingAfter > 0) {
+          setError(`Trop de tentatives. Veuillez patienter ${remainingAfter} seconde${remainingAfter > 1 ? 's' : ''}.`);
+        } else {
+          setError('Code PIN incorrect. Veuillez réessayer.');
+        }
         setPin('');
       }
     } catch {
@@ -107,6 +145,13 @@ export const LockScreenModal: React.FC<LockScreenModalProps> = ({
     e.preventDefault();
     if (!masterPassword.trim()) return;
 
+    const remaining = authService.getLockoutRemainingSeconds();
+    if (remaining > 0) {
+      setLockoutRemaining(remaining);
+      setError(`Trop de tentatives. Veuillez patienter ${remaining} seconde${remaining > 1 ? 's' : ''}.`);
+      return;
+    }
+
     try {
       setIsVerifying(true);
       setError(null);
@@ -114,9 +159,17 @@ export const LockScreenModal: React.FC<LockScreenModalProps> = ({
       if (success) {
         setMasterPassword('');
         setIsMasterMode(false);
+        setError(null);
+        setLockoutRemaining(0);
         onUnlocked();
       } else {
-        setError('Mot de passe maître incorrect.');
+        const remainingAfter = authService.getLockoutRemainingSeconds();
+        setLockoutRemaining(remainingAfter);
+        if (remainingAfter > 0) {
+          setError(`Trop de tentatives. Veuillez patienter ${remainingAfter} seconde${remainingAfter > 1 ? 's' : ''}.`);
+        } else {
+          setError('Mot de passe maître incorrect.');
+        }
       }
     } catch {
       setError('Échec de la vérification du mot de passe maître.');
@@ -197,8 +250,8 @@ export const LockScreenModal: React.FC<LockScreenModalProps> = ({
                   key={num}
                   type="button"
                   onClick={() => handleDigitPress(num)}
-                  disabled={isVerifying}
-                  className="h-10 sm:h-14 rounded-xl sm:rounded-2xl bg-slate-800/80 hover:bg-slate-700/80 active:bg-emerald-700 text-white font-mono text-lg sm:text-xl font-bold border border-slate-700/60 transition-all flex items-center justify-center active:scale-95 shadow-sm"
+                  disabled={isVerifying || lockoutRemaining > 0}
+                  className="h-10 sm:h-14 rounded-xl sm:rounded-2xl bg-slate-800/80 hover:bg-slate-700/80 active:bg-emerald-700 disabled:opacity-40 disabled:cursor-not-allowed text-white font-mono text-lg sm:text-xl font-bold border border-slate-700/60 transition-all flex items-center justify-center active:scale-95 shadow-sm"
                 >
                   {num}
                 </button>
@@ -206,24 +259,24 @@ export const LockScreenModal: React.FC<LockScreenModalProps> = ({
               <button
                 type="button"
                 onClick={handleClear}
-                disabled={isVerifying || pin.length === 0}
-                className="h-10 sm:h-14 rounded-xl sm:rounded-2xl bg-slate-800/40 hover:bg-slate-700/60 text-slate-400 font-bold text-xs border border-slate-800 transition-colors flex items-center justify-center active:scale-95"
+                disabled={isVerifying || pin.length === 0 || lockoutRemaining > 0}
+                className="h-10 sm:h-14 rounded-xl sm:rounded-2xl bg-slate-800/40 hover:bg-slate-700/60 disabled:opacity-40 disabled:cursor-not-allowed text-slate-400 font-bold text-xs border border-slate-800 transition-colors flex items-center justify-center active:scale-95"
               >
                 Effacer
               </button>
               <button
                 type="button"
                 onClick={() => handleDigitPress('0')}
-                disabled={isVerifying}
-                className="h-10 sm:h-14 rounded-xl sm:rounded-2xl bg-slate-800/80 hover:bg-slate-700/80 active:bg-emerald-700 text-white font-mono text-lg sm:text-xl font-bold border border-slate-700/60 transition-all flex items-center justify-center active:scale-95 shadow-sm"
+                disabled={isVerifying || lockoutRemaining > 0}
+                className="h-10 sm:h-14 rounded-xl sm:rounded-2xl bg-slate-800/80 hover:bg-slate-700/80 active:bg-emerald-700 disabled:opacity-40 disabled:cursor-not-allowed text-white font-mono text-lg sm:text-xl font-bold border border-slate-700/60 transition-all flex items-center justify-center active:scale-95 shadow-sm"
               >
                 0
               </button>
               <button
                 type="button"
                 onClick={handleBackspace}
-                disabled={isVerifying || pin.length === 0}
-                className="h-10 sm:h-14 rounded-xl sm:rounded-2xl bg-slate-800/40 hover:bg-slate-700/60 text-slate-400 font-bold text-xs border border-slate-800 transition-colors flex items-center justify-center active:scale-95"
+                disabled={isVerifying || pin.length === 0 || lockoutRemaining > 0}
+                className="h-10 sm:h-14 rounded-xl sm:rounded-2xl bg-slate-800/40 hover:bg-slate-700/60 disabled:opacity-40 disabled:cursor-not-allowed text-slate-400 font-bold text-xs border border-slate-800 transition-colors flex items-center justify-center active:scale-95"
               >
                 Suppr
               </button>
@@ -260,7 +313,7 @@ export const LockScreenModal: React.FC<LockScreenModalProps> = ({
 
             <button
               type="submit"
-              disabled={isVerifying || !masterPassword.trim()}
+              disabled={isVerifying || !masterPassword.trim() || lockoutRemaining > 0}
               className="w-full py-2.5 bg-emerald-700 hover:bg-emerald-800 disabled:opacity-50 text-white font-bold rounded-xl text-xs transition-colors flex items-center justify-center gap-1.5"
             >
               {isVerifying ? (
