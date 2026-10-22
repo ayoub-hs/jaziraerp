@@ -692,7 +692,8 @@ export const MobileRegister: React.FC<MobileRegisterProps> = ({
           </div>
           <button
             onClick={() => setScanAlert(null)}
-            className="p-1 hover:bg-black/20 text-white rounded-lg transition-colors"
+            aria-label="Fermer"
+            className="min-w-[44px] min-h-[44px] flex items-center justify-center p-1 hover:bg-black/20 text-white rounded-lg transition-colors"
           >
             <X className="w-4 h-4" />
           </button>
@@ -1258,7 +1259,8 @@ export const MobileRegister: React.FC<MobileRegisterProps> = ({
                 </button>
                 <button
                   onClick={() => setIsCartDrawerOpen(false)}
-                  className="min-w-[44px] min-h-[44px] flex items-center justify-center text-slate-400 hover:text-white rounded-lg transition-colors"
+                  aria-label="Fermer"
+                  className="min-w-[44px] min-h-[44px] flex items-center justify-center text-slate-300 hover:text-white rounded-lg transition-colors"
                   title="Fermer le panier"
                 >
                   <X className="w-5 h-5" />

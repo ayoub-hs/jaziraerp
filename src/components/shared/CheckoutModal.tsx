@@ -409,7 +409,8 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
               </div>
               <button
                 onClick={onClose}
-                className="text-slate-400 hover:text-white p-1 rounded-lg hover:bg-slate-800 transition-colors"
+                aria-label="Fermer"
+                className="text-slate-300 hover:text-white min-w-[44px] min-h-[44px] flex items-center justify-center p-2 rounded-lg hover:bg-slate-800 transition-colors"
               >
                 <X className="w-5 h-5" />
               </button>
@@ -418,7 +419,8 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
           {completedSale && (
             <button
               onClick={onClose}
-              className="text-slate-400 hover:text-white p-1 rounded-lg hover:bg-slate-800 transition-colors"
+              aria-label="Fermer"
+              className="text-slate-300 hover:text-white min-w-[44px] min-h-[44px] flex items-center justify-center p-2 rounded-lg hover:bg-slate-800 transition-colors"
             >
               <X className="w-5 h-5" />
             </button>

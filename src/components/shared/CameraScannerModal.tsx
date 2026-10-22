@@ -172,7 +172,8 @@ export const CameraScannerModal: React.FC<CameraScannerModalProps> = ({
             )}
             <button
               onClick={onClose}
-              className="p-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white transition-colors"
+              aria-label="Fermer"
+              className="min-w-[44px] min-h-[44px] flex items-center justify-center p-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white transition-colors"
             >
               <X className="w-4 h-4" />
             </button>

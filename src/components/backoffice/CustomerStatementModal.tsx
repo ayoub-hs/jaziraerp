@@ -308,7 +308,8 @@ export const CustomerStatementModal: React.FC<CustomerStatementModalProps> = ({
             <button
               type="button"
               onClick={onClose}
-              className="w-11 h-11 flex items-center justify-center text-slate-400 hover:text-white rounded-lg hover:bg-slate-800 transition-colors cursor-pointer shrink-0"
+              aria-label="Fermer"
+              className="w-11 h-11 min-w-[44px] min-h-[44px] flex items-center justify-center text-slate-300 hover:text-white rounded-lg hover:bg-slate-800 transition-colors cursor-pointer shrink-0"
               title="Fermer (Échap)"
             >
               <X className="w-5 h-5" />

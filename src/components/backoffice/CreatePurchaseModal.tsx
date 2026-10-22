@@ -251,7 +251,8 @@ export const CreatePurchaseModal: React.FC<CreatePurchaseModalProps> = ({
           </div>
           <button
             onClick={onClose}
-            className="w-8 h-8 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 flex items-center justify-center transition-colors"
+            aria-label="Fermer"
+            className="min-w-[44px] min-h-[44px] rounded-lg text-slate-600 hover:text-slate-900 hover:bg-slate-100 flex items-center justify-center transition-colors"
           >
             <X className="w-4 h-4" />
           </button>

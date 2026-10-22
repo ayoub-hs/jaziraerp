@@ -309,7 +309,8 @@ export const RefundModal: React.FC<RefundModalProps> = ({
           </div>
           <button
             onClick={onClose}
-            className="w-11 h-11 flex items-center justify-center text-slate-400 hover:text-white rounded-lg hover:bg-slate-800 transition-colors shrink-0 cursor-pointer"
+            aria-label="Fermer"
+            className="w-11 h-11 min-w-[44px] min-h-[44px] flex items-center justify-center text-slate-300 hover:text-white rounded-lg hover:bg-slate-800 transition-colors shrink-0 cursor-pointer"
             title="Fermer"
           >
             <X className="w-5 h-5" />

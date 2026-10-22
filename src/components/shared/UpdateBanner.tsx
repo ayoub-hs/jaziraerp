@@ -88,7 +88,7 @@ export const UpdateBanner: React.FC = () => {
         <button
           type="button"
           onClick={dismiss}
-          className="text-slate-950 hover:text-black min-w-[44px] min-h-[44px] sm:min-w-0 sm:min-h-0 sm:p-1 rounded font-bold text-lg leading-none"
+          className="text-slate-950 hover:text-black min-w-[44px] min-h-[44px] flex items-center justify-center rounded font-bold text-lg leading-none transition-colors"
           aria-label="Ignorer"
         >
           ×

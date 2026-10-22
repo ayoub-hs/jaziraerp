@@ -58,9 +58,10 @@ export const ConfirmDeleteModal: React.FC<ConfirmDeleteModalProps> = ({
             <button
               onClick={onClose}
               disabled={isDeleting}
-              className="p-1 text-slate-400 hover:text-slate-600 rounded-lg hover:bg-slate-100 transition-colors"
+              aria-label="Fermer"
+              className="text-slate-600 hover:text-slate-900 min-w-[44px] min-h-[44px] flex items-center justify-center p-2 rounded-lg hover:bg-slate-100 transition-colors"
             >
-              <X className="w-4 h-4" />
+              <X className="w-5 h-5" />
             </button>
           </div>
 
