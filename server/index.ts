@@ -23,6 +23,8 @@ import { categoriesRouter } from './routes/categories.js';
 import { reportsRouter } from './routes/reports.js';
 import { settingsRouter } from './routes/settings.js';
 import { versionRouter } from './routes/version.js';
+import { deliveryZonesRouter } from './routes/deliveryZones.js';
+import { clientOrdersRouter } from './routes/clientOrders.js';
 import { backupService } from './services/backupService.js';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -77,6 +79,8 @@ app.use('/api/categories', categoriesRouter);
 app.use('/api/reports', reportsRouter);
 app.use('/api/settings', settingsRouter);
 app.use('/api/version', versionRouter);
+app.use('/api/delivery-zones', deliveryZonesRouter);
+app.use('/api/orders', clientOrdersRouter);
 
 // Health check endpoint
 app.get('/api/health', (req, res) => {

@@ -102,7 +102,8 @@ customersRouter.post('/', (req: Request, res: Response) => {
     address = null,
     type = 'RETAIL',
     reseller_discount_percent = 0,
-    wallet_balance = 0
+    wallet_balance = 0,
+    credit_limit = null
   } = req.body;
 
   if (!name || !type) {
@@ -116,6 +117,16 @@ customersRouter.post('/', (req: Request, res: Response) => {
     return;
   }
 
+  let creditLimitVal: number | null = null;
+  if (credit_limit !== undefined && credit_limit !== null && credit_limit !== '') {
+    const parsed = Number(credit_limit);
+    if (!Number.isFinite(parsed) || parsed < 0) {
+      res.status(400).json({ error: 'La limite de crédit doit être un nombre positif ou nul.' });
+      return;
+    }
+    creditLimitVal = round3(parsed);
+  }
+
   const db = getDb();
   const id = crypto.randomUUID();
   const now = new Date().toISOString();
@@ -124,9 +135,9 @@ customersRouter.post('/', (req: Request, res: Response) => {
 
   const createTx = db.transaction(() => {
     db.prepare(`
-      INSERT INTO customers (id, name, phone, address, type, reseller_discount_percent, wallet_balance, created_at, updated_at)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-    `).run(id, name.trim(), phone, address, type, discount, wallet, now, now);
+      INSERT INTO customers (id, name, phone, address, type, reseller_discount_percent, wallet_balance, credit_limit, created_at, updated_at)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `).run(id, name.trim(), phone, address, type, discount, wallet, creditLimitVal, now, now);
 
     // Opening wallet balance is store credit, not register cash: log it as
     // TOP_UP "Solde initial" so the statement ledger reconciles. No cash movement.
@@ -145,13 +156,27 @@ customersRouter.post('/', (req: Request, res: Response) => {
 
 // PUT /api/customers/:id - update customer info
 customersRouter.put('/:id', (req: Request, res: Response) => {
-  const { name, phone, address, type, reseller_discount_percent } = req.body;
+  const { name, phone, address, type, reseller_discount_percent, credit_limit } = req.body;
   const db = getDb();
 
   const existing: any = db.prepare('SELECT * FROM customers WHERE id = ?').get(req.params.id);
   if (!existing) {
     res.status(404).json({ error: 'Customer not found' });
     return;
+  }
+
+  let creditLimitVal = existing.credit_limit;
+  if (credit_limit !== undefined) {
+    if (credit_limit === null || credit_limit === '') {
+      creditLimitVal = null;
+    } else {
+      const parsed = Number(credit_limit);
+      if (!Number.isFinite(parsed) || parsed < 0) {
+        res.status(400).json({ error: 'La limite de crédit doit être un nombre positif ou nul.' });
+        return;
+      }
+      creditLimitVal = round3(parsed);
+    }
   }
 
   const now = new Date().toISOString();
@@ -162,6 +187,7 @@ customersRouter.put('/:id', (req: Request, res: Response) => {
         address = COALESCE(?, address),
         type = COALESCE(?, type),
         reseller_discount_percent = COALESCE(?, reseller_discount_percent),
+        credit_limit = ?,
         updated_at = ?
     WHERE id = ?
   `).run(
@@ -170,6 +196,7 @@ customersRouter.put('/:id', (req: Request, res: Response) => {
     address !== undefined ? address : null,
     type !== undefined ? type : null,
     reseller_discount_percent !== undefined ? Number(reseller_discount_percent) : null,
+    creditLimitVal,
     now,
     req.params.id
   );
