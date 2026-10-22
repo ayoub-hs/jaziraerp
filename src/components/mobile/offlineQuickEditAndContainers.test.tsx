@@ -161,6 +161,90 @@ describe('F13: Quick-Edit and Container transactions offline queue fallback', ()
     expect(queueAddSpy).not.toHaveBeenCalled();
   });
 
+  it('online quick-edit: sends stock_quantity ONLY when stock changed; price-only sends NO stock_quantity key', async () => {
+    const fetchSpy = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({})
+    });
+    vi.stubGlobal('fetch', fetchSpy);
+    vi.stubGlobal('navigator', { onLine: true });
+
+    const mockProduct = {
+      id: 'prod-online-qe',
+      name: 'Produit Test Online QE',
+      barcode: '555666777',
+      retail_price: 5.000,
+      wholesale_price: 4.000,
+      stock_quantity: 12,
+      cost_price: 3.000,
+      category: 'Test',
+      family_id: 'fam-1',
+      low_stock_threshold: 2
+    };
+
+    const { unmount } = render(
+      <MobileRegister
+        products={[mockProduct as any]}
+        families={[]}
+        customers={[]}
+        containerTypes={[]}
+        activeSession={null}
+        onRefreshData={vi.fn()}
+        onProcessSale={vi.fn()}
+        onPrintReceipt={vi.fn()}
+        onPrintInvoice={vi.fn()}
+      />
+    );
+
+    // Navigate to QUICK-EDIT
+    fireEvent.click(screen.getByText('Quick-Edit'));
+    fireEvent.change(screen.getByPlaceholderText(/Scan barcode to edit.../i), { target: { value: '555666777' } });
+
+    await waitFor(() => {
+      expect(screen.getByText('Produit Test Online QE')).toBeDefined();
+    });
+
+    // Test (a): Price-only edit (modify retail_price to 6.000, leave stock untouched at 12)
+    const retailInput = screen.getByDisplayValue('5.000');
+    fireEvent.change(retailInput, { target: { value: '6.000' } });
+
+    const saveButton = screen.getByRole('button', { name: /Save & Update/i });
+    fireEvent.click(saveButton);
+
+    await waitFor(() => {
+      expect(fetchSpy).toHaveBeenCalledTimes(1);
+    });
+
+    const [firstUrl, firstOptions] = fetchSpy.mock.calls[0];
+    expect(firstUrl).toBe('/api/products/prod-online-qe');
+    expect(firstOptions.method).toBe('PUT');
+    const firstBody = JSON.parse(firstOptions.body);
+    expect(firstBody.retail_price).toBe(6.000);
+    // (a) price-only online edit: the request body has no stock_quantity key
+    expect('stock_quantity' in firstBody).toBe(false);
+    expect(firstBody.stock_quantity).toBeUndefined();
+
+    // Test (b): Stock actually changed online (modify stock from 12 to 18)
+    fetchSpy.mockClear();
+    const stockInput = screen.getByDisplayValue('12');
+    fireEvent.change(stockInput, { target: { value: '18' } });
+    fireEvent.click(saveButton);
+
+    await waitFor(() => {
+      expect(fetchSpy).toHaveBeenCalledTimes(1);
+    });
+
+    const [secondUrl, secondOptions] = fetchSpy.mock.calls[0];
+    expect(secondUrl).toBe('/api/products/prod-online-qe');
+    const secondBody = JSON.parse(secondOptions.body);
+    expect(secondBody.retail_price).toBe(6.000);
+    // (b) stock actually changed online: body carries the new stock_quantity
+    expect('stock_quantity' in secondBody).toBe(true);
+    expect(secondBody.stock_quantity).toBe(18);
+
+    unmount();
+  });
+
   it('MobileRegister container transaction falls back to pending_sync_queue when offline', async () => {
     const queueAddSpy = vi.spyOn(clientDb.pending_sync_queue, 'add').mockResolvedValue(1 as any);
 

@@ -581,7 +581,7 @@ export const MobileRegister: React.FC<MobileRegisterProps> = ({
         retail_price: parsedRetail,
         wholesale_price: parsedWholesale
       };
-      if (hasStock) {
+      if (stockChanged) {
         putBody.stock_quantity = parsedStock;
       }
       const res = await fetch(`/api/products/${editProduct.id}`, {
@@ -596,7 +596,7 @@ export const MobileRegister: React.FC<MobileRegisterProps> = ({
           retail_price: parsedRetail,
           wholesale_price: parsedWholesale
         };
-        if (hasStock) {
+        if (stockChanged) {
           updateFields.stock_quantity = parsedStock;
         }
         await clientDb.products.update(editProduct.id, updateFields).catch(() => {});
@@ -624,7 +624,7 @@ export const MobileRegister: React.FC<MobileRegisterProps> = ({
             retail_price: parsedRetail,
             wholesale_price: parsedWholesale
           };
-          if (hasStock) {
+          if (stockChanged) {
             updateFields.stock_quantity = parsedStock;
           }
           await clientDb.products.update(editProduct.id, updateFields).catch(() => {});

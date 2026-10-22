@@ -619,4 +619,45 @@ describe('Products & Sizing Model Module (HTTP Routes)', () => {
     const adjsNone = db.prepare('SELECT * FROM inventory_adjustments WHERE product_id = ?').all(prodIdNone);
     expect(adjsNone).toHaveLength(0);
   });
+
+  it('F13 online follow-up (c): PUT with price only leaves stock untouched and writes no adjustment, even if stock changed in DB after form load', async () => {
+    const db = (await import('../db/index.js')).getDb();
+    const famRes = await request(app).post('/api/products/families').send({
+      name: 'Resale Fam',
+      category: 'Test',
+      type: 'RESALE'
+    });
+    const familyId = famRes.body.id;
+
+    // 1. Initial product with stock_quantity = 20
+    const prodRes = await request(app).post('/api/products').send({
+      family_id: familyId,
+      name: 'Stale Stock Guard Product',
+      retail_price: 10,
+      wholesale_price: 8,
+      stock_quantity: 20
+    });
+    const prodId = prodRes.body.id;
+
+    // 2. Simulate stock changed in DB (e.g. sale or adjustment occurred while user had form open)
+    db.prepare('UPDATE products SET stock_quantity = 14 WHERE id = ?').run(prodId);
+
+    // 3. Client submits price-only edit (no stock_quantity key in body)
+    const updateRes = await request(app).put(`/api/products/${prodId}`).send({
+      retail_price: 13.5
+    });
+    expect(updateRes.status).toBe(200);
+    expect(updateRes.body.retail_price).toBe(13.5);
+    expect(updateRes.body.stock_quantity).toBe(14); // untouched, not overwritten to 20!
+
+    // 4. Verify in DB directly
+    const inDb: any = db.prepare('SELECT stock_quantity, retail_price FROM products WHERE id = ?').get(prodId);
+    expect(inDb.retail_price).toBe(13.5);
+    expect(inDb.stock_quantity).toBe(14);
+
+    // 5. Verify no PRODUCT_EDIT inventory_adjustments were written
+    const adjustments: any[] = db.prepare('SELECT * FROM inventory_adjustments WHERE product_id = ? AND reason = ?').all(prodId, 'PRODUCT_EDIT');
+    expect(adjustments).toHaveLength(0);
+  });
 });
+
