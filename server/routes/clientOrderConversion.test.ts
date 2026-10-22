@@ -7,6 +7,7 @@ describe('Order Conversion API — POST /api/orders/:id/convert (Phase 1a Step 4
   let zoneId: string;
   let prodBleachId: string;
   let prodSoapId: string;
+  let prodPieceId: string;
   let containerTypeId: string;
   let sessionId: string;
 
@@ -32,8 +33,9 @@ describe('Order Conversion API — POST /api/orders/:id/convert (Phase 1a Step 4
       INSERT INTO products (id, family_id, name, size_label, barcode, stock_quantity, retail_price, wholesale_price, created_at, updated_at)
       VALUES
         (?, 'fam-conv', 'Eau de Javel 5L', '5L', '619000777001', 100, 4.000, 3.000, '2026-10-22', '2026-10-22'),
-        (?, 'fam-conv', 'Savon Liquide 5L', '5L', '619000777002', 80, 12.000, 10.000, '2026-10-22', '2026-10-22')
-    `).run(prodBleachId, prodSoapId);
+        (?, 'fam-conv', 'Savon Liquide 5L', '5L', '619000777002', 80, 12.000, 10.000, '2026-10-22', '2026-10-22'),
+        (?, 'fam-conv', 'Balai Industriel', 'Piece', '619000777003', 50, 15.000, 12.000, '2026-10-22', '2026-10-22')
+    `).run(prodBleachId, prodSoapId, prodPieceId = 'prod-conv-piece');
 
     // 3. Seed delivery zone (fee 5 DT, min 20 DT)
     zoneId = 'zone-conv-midoun';
@@ -462,4 +464,155 @@ describe('Order Conversion API — POST /api/orders/:id/convert (Phase 1a Step 4
     expect(resWarn.body.warnings).toHaveLength(1);
     expect(resWarn.body.warnings[0]).toMatch(/plafond de crédit/i);
   });
+  // Requirement 1: Over-delivery check
+  it('rejects over-delivery even if cash matches: order stays CONFIRMED, stock unchanged, claim released, retry with same key succeeds', async () => {
+    const db = getDb();
+    const order = await createOrder('CONFIRMED');
+    const bleachItem = order.items.find((i: any) => i.product_id === prodBleachId);
+    const soapItem = order.items.find((i: any) => i.product_id === prodSoapId);
+
+    const stockBleachBefore: any = db.prepare('SELECT stock_quantity FROM products WHERE id = ?').get(prodBleachId);
+    const stockSoapBefore: any = db.prepare('SELECT stock_quantity FROM products WHERE id = ?').get(prodSoapId);
+
+    const overKey = 'req-conv-overdelivery-key';
+    // Bleach ordered: 4. Try to deliver: 5. Soap delivered: 2.
+    // Matching cash: (5 * 3 DT = 15 DT) + (2 * 10 DT = 20 DT) + 5 DT fee = 40 DT
+    const resOver = await request(app)
+      .post(`/api/orders/${order.id}/convert`)
+      .send({
+        client_request_id: overKey,
+        delivered_items: [
+          { order_item_id: bleachItem.id, delivered_quantity: 5 },
+          { order_item_id: soapItem.id, delivered_quantity: 2 }
+        ],
+        cash_paid: 40.000
+      });
+
+    expect(resOver.status).toBe(400);
+    expect(resOver.body.error).toMatch(/quantité livrée.*dépasser.*quantité commandée/i);
+
+    // Verify DB integrity: order is still CONFIRMED, no sale, stock unchanged
+    const orderAfter: any = db.prepare('SELECT status, sale_id FROM client_orders WHERE id = ?').get(order.id);
+    expect(orderAfter.status).toBe('CONFIRMED');
+    expect(orderAfter.sale_id).toBeNull();
+
+    const stockBleachAfter: any = db.prepare('SELECT stock_quantity FROM products WHERE id = ?').get(prodBleachId);
+    const stockSoapAfter: any = db.prepare('SELECT stock_quantity FROM products WHERE id = ?').get(prodSoapId);
+    expect(stockBleachAfter.stock_quantity).toBe(stockBleachBefore.stock_quantity);
+    expect(stockSoapAfter.stock_quantity).toBe(stockSoapBefore.stock_quantity);
+
+    // Claim is released from processed_requests
+    const claimRow: any = db.prepare('SELECT * FROM processed_requests WHERE request_id = ?').get(overKey);
+    expect(claimRow).toBeUndefined();
+
+    // Retry with corrected body (delivered 4) using the SAME idempotency key succeeds
+    const resRetry = await request(app)
+      .post(`/api/orders/${order.id}/convert`)
+      .send({
+        client_request_id: overKey,
+        delivered_items: [
+          { order_item_id: bleachItem.id, delivered_quantity: 4 },
+          { order_item_id: soapItem.id, delivered_quantity: 2 }
+        ],
+        cash_paid: 37.000
+      });
+
+    expect(resRetry.status).toBe(200);
+    expect(resRetry.body.order.status).toBe('DELIVERED');
+  });
+
+  // Requirement 2: Unknown item ID in delivered_items
+  it('rejects delivered_items entry whose order_item_id is not an item of this order with 400', async () => {
+    const order = await createOrder('CONFIRMED');
+    const res = await request(app)
+      .post(`/api/orders/${order.id}/convert`)
+      .send({
+        client_request_id: 'req-unknown-item-id',
+        delivered_items: [
+          { order_item_id: 'item-does-not-exist', delivered_quantity: 2 }
+        ],
+        cash_paid: 37.000
+      });
+
+    expect(res.status).toBe(400);
+    expect(res.body.error).toMatch(/n'appartient pas à cette commande/i);
+  });
+
+  // Requirement 2: Duplicate item ID in delivered_items
+  it('rejects duplicate order_item_id in delivered_items with 400', async () => {
+    const order = await createOrder('CONFIRMED');
+    const bleachItem = order.items.find((i: any) => i.product_id === prodBleachId);
+
+    const res = await request(app)
+      .post(`/api/orders/${order.id}/convert`)
+      .send({
+        client_request_id: 'req-dup-item-id',
+        delivered_items: [
+          { order_item_id: bleachItem.id, delivered_quantity: 2 },
+          { order_item_id: bleachItem.id, delivered_quantity: 2 }
+        ],
+        cash_paid: 37.000
+      });
+
+    expect(res.status).toBe(400);
+    expect(res.body.error).toMatch(/présent plusieurs fois/i);
+  });
+
+  // Requirement 3: Delivered quantity validation rules (0.0001, fractions on piece products, 0 allowed)
+  it('validates delivered_quantity: rejects 0.0001 with 400, rejects fractions on piece products, allows 0', async () => {
+    const order = await createOrder('CONFIRMED');
+    const bleachItem = order.items.find((i: any) => i.product_id === prodBleachId);
+
+    // 1. Rejects 0.0001 (more than 3 decimals)
+    const resDecimals = await request(app)
+      .post(`/api/orders/${order.id}/convert`)
+      .send({
+        client_request_id: 'req-qty-decimals',
+        delivered_items: [
+          { order_item_id: bleachItem.id, delivered_quantity: 0.0001 }
+        ],
+        cash_paid: 37.000
+      });
+
+    expect(resDecimals.status).toBe(400);
+    expect(resDecimals.body.error).toMatch(/plus de 3 décimales/i);
+
+    // 2. Order with a piece product rejects fractional delivered quantity
+    const orderPiece = await createOrder('CONFIRMED', [
+      { product_id: prodPieceId, quantity: 2 },
+      { product_id: prodSoapId, quantity: 2 }
+    ]);
+    const pieceItem = orderPiece.items.find((i: any) => i.product_id === prodPieceId);
+
+    const resFraction = await request(app)
+      .post(`/api/orders/${orderPiece.id}/convert`)
+      .send({
+        client_request_id: 'req-qty-fraction-piece',
+        delivered_items: [
+          { order_item_id: pieceItem.id, delivered_quantity: 1.5 }
+        ],
+        cash_paid: 49.000 // 1.5 * 12 = 18 + 2 * 10 = 20 + 5 = 43 or whatever, rejected at validation
+      });
+
+    expect(resFraction.status).toBe(400);
+    expect(resFraction.body.error).toMatch(/pièce.*fractionnaire/i);
+  });
+
+  // Requirement 4: French payment error text
+  it('returns French error text when payment total does not match sale total', async () => {
+    const order = await createOrder('CONFIRMED');
+
+    // Order total is 37.000 DT, send cash_paid = 10.000 DT
+    const res = await request(app)
+      .post(`/api/orders/${order.id}/convert`)
+      .send({
+        client_request_id: 'req-payment-mismatch',
+        cash_paid: 10.000
+      });
+
+    expect(res.status).toBe(400);
+    expect(res.body.error).toMatch(/Le total des paiements.*ne correspond pas au total de la vente/i);
+    expect(res.body.error).not.toMatch(/Payment total .* does not equal/);
+  });
+
 });

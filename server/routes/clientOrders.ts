@@ -680,6 +680,56 @@ clientOrdersRouter.put('/:id', (req: Request, res: Response) => {
   }
 });
 
+
+export function translateSaleError(message: string): string {
+  if (!message) return 'Erreur lors de la validation de la vente.';
+
+  // Payment total mismatch
+  if (/Payment total.*does not equal sale total/i.test(message)) {
+    const match = message.match(/Payment total \(([^)]+)\) does not equal sale total \(([^)]+)\)/i);
+    if (match) {
+      const paid = match[1];
+      const total = match[2];
+      return `Le total des paiements (${paid}) ne correspond pas au total de la vente (${total}).`;
+    }
+    return 'Le total des paiements ne correspond pas au total de la vente.';
+  }
+
+  // Non-negative / finite amount errors
+  if (/must be non-negative/i.test(message)) {
+    const field = message.split(' ')[0];
+    return `Le montant "${field}" doit être un nombre positif ou nul.`;
+  }
+  if (/must be a finite number/i.test(message)) {
+    const field = message.split(' ')[0];
+    return `Le montant "${field}" doit être un nombre valide.`;
+  }
+
+  // Cash tendered less than cash paid
+  if (/cannot be less than cash_paid/i.test(message)) {
+    return 'Le montant reçu en espèces ne peut pas être inférieur au montant payé.';
+  }
+
+  // Insufficient wallet
+  if (/Insufficient wallet balance/i.test(message)) {
+    return 'Solde du portefeuille client insuffisant pour couvrir le montant demandé.';
+  }
+
+  if (/Cannot pay with wallet without selecting a customer/i.test(message)) {
+    return 'Le paiement par portefeuille nécessite un compte client.';
+  }
+
+  if (/Credit sale.*requires selecting a customer/i.test(message)) {
+    return 'La vente à crédit nécessite un compte client.';
+  }
+
+  if (/At least one line item is required/i.test(message)) {
+    return 'La vente doit contenir au moins un article.';
+  }
+
+  return message;
+}
+
 // POST /api/orders/:id/convert - convert client order into sale and delivery note
 clientOrdersRouter.post('/:id/convert', (req: Request, res: Response) => {
   const db = getDb();
@@ -764,19 +814,77 @@ clientOrdersRouter.post('/:id/convert', (req: Request, res: Response) => {
 
     // 6. Item Quantities & Delivery Reconciliation
     const orderItems: any[] = db.prepare('SELECT * FROM client_order_items WHERE order_id = ? ORDER BY rowid ASC').all(order.id);
+    const orderItemMap = new Map<string, any>(orderItems.map(item => [item.id, item]));
+
+    const productMap = new Map<string, any>();
+    for (const item of orderItems) {
+      if (!productMap.has(item.product_id)) {
+        const prod = db.prepare('SELECT id, name, size_label FROM products WHERE id = ?').get(item.product_id);
+        productMap.set(item.product_id, prod);
+      }
+    }
+
     const deliveredMap = new Map<string, number>();
 
-    if (Array.isArray(req.body?.delivered_items)) {
+    if (req.body?.delivered_items !== undefined) {
+      if (!Array.isArray(req.body.delivered_items)) {
+        res.status(400).json({ error: 'delivered_items doit être une liste.' });
+        return;
+      }
+
+      const seenIds = new Set<string>();
+
       for (const di of req.body.delivered_items) {
-        const itemId = di.order_item_id || di.id;
-        if (itemId) {
-          const dQty = Number(di.delivered_quantity);
-          if (!Number.isFinite(dQty) || dQty < 0) {
-            res.status(400).json({ error: 'La quantité livrée doit être un nombre positif ou nul.' });
+        const itemId = di?.order_item_id || di?.id;
+        if (!itemId || typeof itemId !== 'string') {
+          res.status(400).json({ error: "L'identifiant de l'article (order_item_id) est obligatoire." });
+          return;
+        }
+
+        // Requirement 2: Any delivered_items entry whose order_item_id is not an item of this order gives 400
+        if (!orderItemMap.has(itemId)) {
+          res.status(400).json({ error: `L'article "${itemId}" n'appartient pas à cette commande.` });
+          return;
+        }
+
+        // Requirement 2: Duplicate ids in the array give 400
+        if (seenIds.has(itemId)) {
+          res.status(400).json({ error: `L'article "${itemId}" est présent plusieurs fois dans les articles livrés.` });
+          return;
+        }
+        seenIds.add(itemId);
+
+        const orderItem = orderItemMap.get(itemId)!;
+        const product = productMap.get(orderItem.product_id) || { name: 'Produit', size_label: null };
+
+        const rawQty = di.delivered_quantity;
+        if (rawQty === undefined || rawQty === null || rawQty === '') {
+          res.status(400).json({ error: `La quantité livrée pour l'article "${itemId}" est obligatoire.` });
+          return;
+        }
+
+        let dQty: number;
+        // Requirement 3: Delivered quantities go through validateOrderQuantity rules; 0 stays allowed as a refusal.
+        if (rawQty === 0 || rawQty === '0' || Number(rawQty) === 0) {
+          dQty = 0;
+        } else {
+          try {
+            dQty = validateOrderQuantity(rawQty, product, `quantité livrée pour le produit "${product.name}"`);
+          } catch (valErr: any) {
+            res.status(400).json({ error: valErr.message });
             return;
           }
-          deliveredMap.set(itemId, round3(dQty));
         }
+
+        // Requirement 1: delivered_quantity greater than the line's ordered_quantity gives 400 (French)
+        if (dQty > Number(orderItem.ordered_quantity)) {
+          res.status(400).json({
+            error: `La quantité livrée (${dQty}) ne peut pas dépasser la quantité commandée (${orderItem.ordered_quantity}) pour le produit "${product.name}".`
+          });
+          return;
+        }
+
+        deliveredMap.set(itemId, dQty);
       }
     }
 
@@ -975,7 +1083,9 @@ clientOrdersRouter.post('/:id/convert', (req: Request, res: Response) => {
     res.status(200).json(responsePayload);
   } catch (err: any) {
     if (err instanceof SaleError) {
-      res.status(err.status).json(err.body);
+      const rawMsg = typeof err.body === 'string' ? err.body : err.body?.error;
+      const frenchMsg = translateSaleError(rawMsg);
+      res.status(err.status).json({ error: frenchMsg });
       return;
     }
     if (err instanceof OrderError || err instanceof ValidationError || err instanceof NotFoundError) {
