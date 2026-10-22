@@ -266,6 +266,8 @@ export interface ZReportSessionData {
     reason: string;
     date?: string;
   }>;
+  notes?: string | null;
+  sync_override?: boolean;
   printed_at?: string;
 }
 
@@ -383,6 +385,17 @@ export function formatZReport(
     .twoColumns('Ecart / Variance:', formatMoney(variance))
     .bold(false)
     .divider('=');
+
+  if (sessionData.sync_override || (sessionData.notes && sessionData.notes.includes('Clôturer quand même'))) {
+    builder.divider('*');
+    builder.bold(true).line('AVERTISSEMENT : CLOTURE FORCEE').line('(Synchro en attente non terminee)').bold(false);
+    builder.divider('*');
+  }
+
+  if (sessionData.notes && sessionData.notes.trim()) {
+    builder.line(`Notes: ${sessionData.notes.trim()}`);
+    builder.divider('-');
+  }
 
   // Signature box & Footer
   builder

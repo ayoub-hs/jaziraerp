@@ -235,5 +235,19 @@ describe('ESC/POS Thermal & Drawer Kick Hardware Service', () => {
       expect(text).toContain('350.000 DT');
       expect(text).toContain('345.000 DT');
     });
+
+    it('F11: prints forced closure override warning on Z-report when sync was pending', () => {
+      const overrideSession: any = {
+        ...mockZSessionData,
+        sync_override: true,
+        notes: '[Clôturer quand même - Synchro en attente (2 op)]'
+      };
+
+      const bytes = formatZReport(overrideSession, 58);
+      const text = new TextDecoder().decode(bytes);
+
+      expect(text).toContain('CLOTURE FORCEE');
+      expect(text).toContain('Synchro en attente');
+    });
   });
 });

@@ -518,12 +518,14 @@ describe('Offline Storage & Sync Engine Module (HTTP Routes)', () => {
     const prod: any = db.prepare('SELECT stock_quantity FROM products WHERE id = ?').get(productId);
     expect(prod.stock_quantity).toBe(25);
 
-    // 4. Verify inventory_adjustments has a row with delta 15 and reason SYNC_PRICE_STOCK_EDIT
-    const adj: any = db.prepare('SELECT * FROM inventory_adjustments WHERE product_id = ?').get(productId);
-    expect(adj).toBeDefined();
-    expect(adj.quantity_delta).toBe(15);
-    expect(adj.reason).toBe('SYNC_PRICE_STOCK_EDIT');
-    expect(adj.item_type).toBe('PRODUCT');
+    // 4. Verify inventory_adjustments has both OPENING_STOCK (delta 10) and SYNC_PRICE_STOCK_EDIT (delta 15)
+    const adjs: any[] = db.prepare('SELECT * FROM inventory_adjustments WHERE product_id = ? ORDER BY created_at ASC, rowid ASC').all(productId);
+    expect(adjs).toHaveLength(2);
+    expect(adjs[0].reason).toBe('OPENING_STOCK');
+    expect(adjs[0].quantity_delta).toBe(10);
+    expect(adjs[1].reason).toBe('SYNC_PRICE_STOCK_EDIT');
+    expect(adjs[1].quantity_delta).toBe(15);
+    expect(adjs[1].item_type).toBe('PRODUCT');
   });
 
   it('GET /api/sync/pull returns identical pack_sizes arrays for products with multiple, single, and no pack sizes', async () => {

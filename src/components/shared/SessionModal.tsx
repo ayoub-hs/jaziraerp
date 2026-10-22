@@ -7,6 +7,7 @@ import { useModalScanPause } from '../../hooks/useModalScanPause.js';
 import { printZReportThermal } from '../../services/hardware/zReportPrinter.js';
 import type { ZReportSessionData } from '../../services/hardware/escpos.js';
 import { heldCartsService } from '../../services/heldCartsService.js';
+import { syncManager } from '../../services/syncManager.js';
 
 interface SessionModalProps {
   isOpen: boolean;
@@ -38,6 +39,8 @@ export const SessionModal: React.FC<SessionModalProps> = ({
   const [notes, setNotes] = useState('');
   const [expectedCash, setExpectedCash] = useState<number | null>(null);
   const [variance, setVariance] = useState<number>(0);
+  const [pendingSyncCount, setPendingSyncCount] = useState<number>(0);
+  const [syncOverrideText, setSyncOverrideText] = useState<string>('');
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [isSavingCounter, setIsSavingCounter] = useState(false);
@@ -62,14 +65,15 @@ export const SessionModal: React.FC<SessionModalProps> = ({
       .then(data => {
         const exp = data.expected_cash ?? data.opening_cash ?? 0;
         setExpectedCash(exp);
-        setClosingCountedCash(exp.toFixed(3));
+        setClosingCountedCash('');
         setVariance(0);
       })
       .catch(() => {
         const sess = openSessions.find(s => s.id === sessionId) || activeSession;
         if (sess) {
           setExpectedCash(sess.opening_cash);
-          setClosingCountedCash(sess.opening_cash.toFixed(3));
+          setClosingCountedCash('');
+          setVariance(0);
         }
       });
   };
@@ -82,6 +86,11 @@ export const SessionModal: React.FC<SessionModalProps> = ({
       setNewCounterName('');
       setClosedReportData(null);
       setPrintFeedback(null);
+      setSyncOverrideText('');
+
+      if (mode === 'CLOSE') {
+        syncManager.getPendingCount().then(setPendingSyncCount).catch(() => setPendingSyncCount(0));
+      }
 
       // Load registered counters
       fetch('/api/register/counters')
@@ -137,8 +146,9 @@ export const SessionModal: React.FC<SessionModalProps> = ({
   useEffect(() => {
     if (mode === 'CLOSE' && selectedSessionToCloseId) {
       loadSessionDetails(selectedSessionToCloseId);
+      syncManager.getPendingCount().then(setPendingSyncCount).catch(() => setPendingSyncCount(0));
     }
-  }, [selectedSessionToCloseId]);
+  }, [selectedSessionToCloseId, mode]);
 
   useEffect(() => {
     if (mode === 'CLOSE' && expectedCash !== null) {
@@ -202,9 +212,20 @@ export const SessionModal: React.FC<SessionModalProps> = ({
       return;
     }
 
+    if (pendingSyncCount > 0 && syncOverrideText.trim() !== 'Clôturer quand même') {
+      setError('Veuillez attendre la synchronisation des données ou taper « Clôturer quand même » pour forcer.');
+      return;
+    }
+
     setSubmitting(true);
     setError(null);
     try {
+      const isForced = pendingSyncCount > 0 && syncOverrideText.trim() === 'Clôturer quand même';
+      const overrideNote = isForced ? `[Clôturer quand même - Synchro en attente (${pendingSyncCount} op)]` : '';
+      const finalNotes = notes.trim()
+        ? (overrideNote ? `${notes.trim()} ${overrideNote}` : notes.trim())
+        : overrideNote;
+
       const res = await fetch('/api/register/close', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -212,7 +233,7 @@ export const SessionModal: React.FC<SessionModalProps> = ({
           session_id: targetSessionId,
           counted_cash: countedVal,
           closing_cash_counted: countedVal,
-          notes: notes.trim()
+          notes: finalNotes
         })
       });
 
@@ -238,6 +259,8 @@ export const SessionModal: React.FC<SessionModalProps> = ({
         counted_cash: closed.counted_cash,
         variance: closed.difference,
         difference: closed.difference,
+        notes: closed.notes ?? finalNotes,
+        sync_override: isForced,
         movements: closed.movements || []
       };
 
@@ -303,6 +326,18 @@ export const SessionModal: React.FC<SessionModalProps> = ({
                   </p>
                 </div>
               </div>
+
+              {(closedReportData.sync_override || (closedReportData.notes && closedReportData.notes.includes('Clôturer quand même'))) && (
+                <div className="bg-amber-50 border border-amber-300 rounded-xl p-3 flex items-start gap-2.5 text-amber-900 text-xs shadow-xs">
+                  <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
+                  <div>
+                    <span className="font-bold">Avertissement : Clôture forcée avec synchronisation en attente</span>
+                    <p className="text-xs text-amber-800 mt-0.5">
+                      Cette session a été clôturée avec des opérations en attente de synchronisation (« Clôturer quand même »).
+                    </p>
+                  </div>
+                </div>
+              )}
 
               <div className="bg-slate-50 border border-slate-200 rounded-xl p-3 space-y-1.5 text-xs">
                 <div className="flex justify-between text-slate-600">
@@ -558,7 +593,7 @@ export const SessionModal: React.FC<SessionModalProps> = ({
                 </div>
               )}
 
-              {/* Summary Box */}
+              {/* Summary Box (Blind cash count: opening cash only, expected cash hidden until closed) */}
               <div className="bg-slate-50 border border-slate-200 rounded-xl p-3 space-y-2 text-xs">
                 <div className="flex justify-between text-slate-600">
                   <span>Session:</span>
@@ -571,12 +606,6 @@ export const SessionModal: React.FC<SessionModalProps> = ({
                   <span>Fond de caisse initial :</span>
                   <span className="font-bold text-slate-900 font-mono">
                     {formatMoney((openSessions.find(s => s.id === selectedSessionToCloseId) || activeSession)?.opening_cash)}
-                  </span>
-                </div>
-                <div className="flex justify-between text-slate-600">
-                  <span>Espèces attendues en caisse :</span>
-                  <span className="font-bold text-slate-900 font-mono">
-                    {formatMoney(expectedCash)}
                   </span>
                 </div>
               </div>
@@ -598,23 +627,31 @@ export const SessionModal: React.FC<SessionModalProps> = ({
                 />
               </div>
 
-              {/* Variance indicator */}
-              <div
-                className={`p-3 rounded-xl border flex items-center justify-between font-bold ${
-                  variance === 0
-                    ? 'bg-emerald-50 border-emerald-200 text-emerald-800'
-                    : variance > 0
-                    ? 'bg-amber-50 border-amber-300 text-amber-900'
-                    : 'bg-rose-50 border-rose-200 text-rose-800'
-                }`}
-              >
-                <span className="text-sm font-bold">Écart de caisse :</span>
-                <span className={`text-lg font-mono font-black ${
-                  variance === 0 ? 'text-emerald-700' : variance > 0 ? 'text-amber-800' : 'text-rose-700'
-                }`}>
-                  {variance > 0 ? `+${formatMoney(variance)} (Excédent)` : variance < 0 ? `${formatMoney(variance)} (Déficit)` : '0.000 DT (Exact)'}
-                </span>
-              </div>
+              {pendingSyncCount > 0 && (
+                <div className="bg-amber-50 border border-amber-300 rounded-xl p-3 text-amber-900 text-xs space-y-2">
+                  <div className="flex items-start gap-2">
+                    <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
+                    <div>
+                      <p className="font-bold">Synchronisation en attente ({pendingSyncCount} opération(s))</p>
+                      <p className="text-amber-800 mt-0.5">
+                        Des opérations sont en attente de synchronisation. Veuillez attendre la synchronisation avant de clôturer pour que les totaux soient exacts.
+                      </p>
+                    </div>
+                  </div>
+                  <div className="pt-2 border-t border-amber-200">
+                    <label className="block text-xs font-semibold text-amber-950 mb-1">
+                      Pour forcer la clôture sans synchroniser, tapez exactement « Clôturer quand même » :
+                    </label>
+                    <input
+                      type="text"
+                      value={syncOverrideText}
+                      onChange={e => setSyncOverrideText(e.target.value)}
+                      placeholder="Clôturer quand même"
+                      className="w-full text-xs font-medium px-2.5 py-1.5 border border-amber-300 rounded-lg bg-white focus:ring-2 focus:ring-amber-500 focus:outline-none"
+                    />
+                  </div>
+                </div>
+              )}
 
               <div>
                 <label className="block text-xs font-bold text-slate-700 mb-1">
@@ -646,8 +683,8 @@ export const SessionModal: React.FC<SessionModalProps> = ({
               </button>
               <button
                 type="submit"
-                disabled={submitting}
-                className="flex-1 min-h-[44px] py-2.5 bg-rose-700 hover:bg-rose-800 text-white font-bold rounded-xl text-sm shadow transition-colors"
+                disabled={submitting || (pendingSyncCount > 0 && syncOverrideText.trim() !== 'Clôturer quand même') || !closingCountedCash.trim()}
+                className="flex-1 min-h-[44px] py-2.5 bg-rose-700 hover:bg-rose-800 disabled:opacity-50 text-white font-bold rounded-xl text-sm shadow transition-colors"
               >
                 {submitting ? 'Clôture...' : 'Clôturer la session'}
               </button>
