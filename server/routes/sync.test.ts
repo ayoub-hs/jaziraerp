@@ -971,6 +971,112 @@ describe('Offline Storage & Sync Engine Module (HTTP Routes)', () => {
     const loanRow: any = db.prepare('SELECT quantity_owed FROM customer_container_loans WHERE customer_id = ? AND container_type_id = ?').get(validCustId, validCtId);
     expect(loanRow.quantity_owed).toBe(4);
   });
+
+  it('F7 follow-up: rejects unreadable payload.date or date > 5 min in future in sync SALE, keeps valid and legacy dates', async () => {
+    const custRes = await request(app).post('/api/customers').send({
+      name: 'F7 Followup Customer', type: 'RETAIL'
+    });
+    const famRes = await request(app).post('/api/products/families').send({
+      name: 'F7 Fam', category: 'General', type: 'RESALE'
+    });
+    const prodRes = await request(app).post('/api/products').send({
+      family_id: famRes.body.id,
+      name: 'F7 Product',
+      stock_quantity: 100,
+      retail_price: 10,
+      wholesale_price: 8
+    });
+
+    const nowMs = Date.now();
+    const tenMinFuture = new Date(nowMs + 10 * 60 * 1000).toISOString();
+    const twoMinFuture = new Date(nowMs + 2 * 60 * 1000).toISOString();
+    const pastDate = new Date(nowMs - 24 * 60 * 60 * 1000).toISOString();
+
+    const res = await request(app).post('/api/sync/flush').send({
+      operations: [
+        {
+          temp_client_id: 'f7-unreadable-date',
+          action_type: 'SALE',
+          payload: {
+            customer_id: custRes.body.id,
+            items: [{ product_id: prodRes.body.id, quantity: 1, unit_price: 10 }],
+            cash_paid: 10,
+            cash_tendered: 10,
+            date: 'not-a-valid-date-string'
+          }
+        },
+        {
+          temp_client_id: 'f7-far-future-date',
+          action_type: 'SALE',
+          payload: {
+            customer_id: custRes.body.id,
+            items: [{ product_id: prodRes.body.id, quantity: 1, unit_price: 10 }],
+            cash_paid: 10,
+            cash_tendered: 10,
+            date: tenMinFuture
+          }
+        },
+        {
+          temp_client_id: 'f7-tolerated-future-date',
+          action_type: 'SALE',
+          payload: {
+            customer_id: custRes.body.id,
+            items: [{ product_id: prodRes.body.id, quantity: 1, unit_price: 10 }],
+            cash_paid: 10,
+            cash_tendered: 10,
+            date: twoMinFuture
+          }
+        },
+        {
+          temp_client_id: 'f7-valid-past-date',
+          action_type: 'SALE',
+          payload: {
+            customer_id: custRes.body.id,
+            items: [{ product_id: prodRes.body.id, quantity: 1, unit_price: 10 }],
+            cash_paid: 10,
+            cash_tendered: 10,
+            date: pastDate
+          }
+        },
+        {
+          temp_client_id: 'f7-legacy-no-date',
+          action_type: 'SALE',
+          created_at: '2026-07-01T10:00:00.000Z',
+          payload: {
+            customer_id: custRes.body.id,
+            items: [{ product_id: prodRes.body.id, quantity: 1, unit_price: 10 }],
+            cash_paid: 10,
+            cash_tendered: 10
+          }
+        }
+      ]
+    });
+
+    expect(res.status).toBe(200);
+
+    const failedMap = new Map(res.body.failed.map((f: any) => [f.temp_client_id, f.reason]));
+    expect(failedMap.get('f7-unreadable-date')).toMatch(/date.*invalide|illisible/i);
+    expect(failedMap.get('f7-far-future-date')).toMatch(/futur/i);
+
+    // Verify unreadable and far future sales were NOT stored in DB
+    const db = getDb();
+    const badSale1 = db.prepare('SELECT id FROM sales WHERE synced_from_client_id = ?').get('f7-unreadable-date');
+    expect(badSale1).toBeUndefined();
+    const badSale2 = db.prepare('SELECT id FROM sales WHERE synced_from_client_id = ?').get('f7-far-future-date');
+    expect(badSale2).toBeUndefined();
+
+    // Verify accepted sales
+    const reconciledIds = res.body.reconciled.map((r: any) => r.temp_client_id);
+    expect(reconciledIds).toContain('f7-tolerated-future-date');
+    expect(reconciledIds).toContain('f7-valid-past-date');
+    expect(reconciledIds).toContain('f7-legacy-no-date');
+
+    const pastSale: any = db.prepare('SELECT date FROM sales WHERE synced_from_client_id = ?').get('f7-valid-past-date');
+    expect(pastSale.date).toBe(pastDate);
+
+    const legacySale: any = db.prepare('SELECT date FROM sales WHERE synced_from_client_id = ?').get('f7-legacy-no-date');
+    expect(legacySale.date).toBe('2026-07-01T10:00:00.000Z');
+  });
 });
 
 

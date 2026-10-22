@@ -177,6 +177,18 @@ syncRouter.post('/flush', (req: Request, res: Response) => {
           return;
         };
 
+        if (payload?.date !== undefined && payload?.date !== null && payload?.date !== '') {
+          const parsedTime = Date.parse(String(payload.date));
+          if (isNaN(parsedTime)) {
+            failSale('Date de vente invalide ou illisible');
+            return;
+          }
+          if (parsedTime > Date.now() + 5 * 60 * 1000) {
+            failSale('Date de vente dans le futur (> 5 min)');
+            return;
+          }
+        }
+
         if (!Array.isArray(payload.items) || payload.items.length === 0) {
           failSale('At least one line item is required');
           return;
