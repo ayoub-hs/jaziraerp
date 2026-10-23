@@ -242,4 +242,15 @@ export interface DeliveryNote {
   created_at: string;
 }
 
+export interface DeliveryZone {
+  id: string;
+  name: string;
+  fee: number;
+  min_order_amount: number;
+  active: number;
+  created_at: string;
+  updated_at: string;
+}
+
 export const DELIVERY_FEE_LINE_NAME = 'Frais de livraison';
+

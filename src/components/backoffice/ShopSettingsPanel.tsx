@@ -3,6 +3,7 @@ import { Settings, Save, CheckCircle2, AlertCircle, RefreshCw, Store, KeyRound }
 import { getShopInfo, setCachedShopInfo, type ShopInfo } from '../../services/shopInfo.js';
 import { AuthCredentialsModal } from '../shared/AuthCredentialsModal.js';
 import { authService } from '../../services/authService.js';
+import { DeliveryZonesSettings } from './DeliveryZonesSettings.js';
 
 export const ShopSettingsPanel: React.FC = () => {
   const [shopName, setShopName] = useState('');
@@ -309,6 +310,9 @@ export const ShopSettingsPanel: React.FC = () => {
           </button>
         </div>
       </form>
+
+      {/* Delivery Zones Section */}
+      <DeliveryZonesSettings />
 
       {/* Security Section */}
       <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-4">

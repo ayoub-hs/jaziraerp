@@ -34,6 +34,12 @@ describe('ShopSettingsPanel', () => {
           })
         });
       }
+      if (url.includes('/api/delivery-zones')) {
+        return Promise.resolve({
+          ok: true,
+          json: () => Promise.resolve([])
+        });
+      }
       return Promise.reject(new Error(`Unhandled URL: ${url}`));
     });
   });
