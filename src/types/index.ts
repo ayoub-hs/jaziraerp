@@ -252,5 +252,58 @@ export interface DeliveryZone {
   updated_at: string;
 }
 
+export type ClientOrderStatus =
+  | 'NEW'
+  | 'CONFIRMED'
+  | 'PREPARING'
+  | 'OUT_FOR_DELIVERY'
+  | 'DELIVERED'
+  | 'CANCELLED';
+
+export interface ClientOrderItem {
+  id: string;
+  order_id: string;
+  product_id: string;
+  product_name?: string;
+  size_label?: string | null;
+  ordered_quantity: number;
+  delivered_quantity?: number | null;
+  unit_price_ttc: number;
+  total_line_ttc: number;
+}
+
+export interface ClientOrderRequestedContainer {
+  container_type_id: string;
+  container_name?: string;
+  quantity: number;
+}
+
+export interface ClientOrder {
+  id: string;
+  order_number: string;
+  customer_id: string | null;
+  customer_name?: string;
+  guest_name?: string | null;
+  phone: string;
+  delivery_zone_id: string;
+  delivery_zone_name?: string;
+  delivery_address: string;
+  expected_delivery_date?: string | null;
+  payment_preference: string;
+  notes?: string | null;
+  status: ClientOrderStatus;
+  delivery_fee: number;
+  subtotal_ttc: number;
+  total_ttc: number;
+  sale_id?: string | null;
+  delivered_by?: string | null;
+  cancelled_at?: string | null;
+  cancellation_reason?: string | null;
+  created_at: string;
+  updated_at: string;
+  items?: ClientOrderItem[];
+  containers_requested?: ClientOrderRequestedContainer[] | string;
+}
+
 export const DELIVERY_FEE_LINE_NAME = 'Frais de livraison';
 

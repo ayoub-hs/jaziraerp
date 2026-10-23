@@ -30,6 +30,7 @@ import {
   Settings,
   BarChart3,
   Calculator,
+  ShoppingBag,
   X
 } from 'lucide-react';
 import type { 
@@ -44,7 +45,8 @@ import type {
   Formulation, 
   RegisterSession, 
   DebtTicket, 
-  SupplierDebtTicket 
+  SupplierDebtTicket,
+  ClientOrder
 } from '../../types/index.js';
 import { formatMoney, formatDate, formatDateTime } from '../../utils/formatters.js';
 import { BarcodeLabelPrinter } from './BarcodeLabelPrinter.js';
@@ -69,6 +71,7 @@ import { SalesHistoryTab } from './SalesHistoryTab.js';
 import { CustomerStatementModal } from './CustomerStatementModal.js';
 import { PurchaseDetailModal } from './PurchaseDetailModal.js';
 import { BatchDetailModal } from './BatchDetailModal.js';
+import { OrdersTab } from './OrdersTab.js';
 import { printZReportThermal } from '../../services/hardware/zReportPrinter.js';
 import { useRequestKey } from '../../hooks/useRequestKey.js';
 import type { ZReportSessionData } from '../../services/hardware/escpos.js';
@@ -87,6 +90,7 @@ interface BackofficeProps {
 
 type BackofficeTab = 
   | 'SALES'
+  | 'ORDERS'
   | 'CATALOG' 
   | 'MATERIALS' 
   | 'PRODUCTION' 
@@ -112,7 +116,12 @@ export const Backoffice: React.FC<BackofficeProps> = ({
 }) => {
   const customerPaymentKey = useRequestKey();
   const supplierPaymentKey = useRequestKey();
-  const [activeTab, setActiveTab] = useState<BackofficeTab>('CATALOG');
+  const [activeTab, setActiveTab] = useState<BackofficeTab>(() => {
+    if (typeof window !== 'undefined' && window.location.pathname.includes('/orders')) {
+      return 'ORDERS';
+    }
+    return 'CATALOG';
+  });
 
   // Module states
   const [materials, setMaterials] = useState<RawMaterial[]>([]);
@@ -138,6 +147,10 @@ export const Backoffice: React.FC<BackofficeProps> = ({
   const [inventoryAdjDefaultType, setInventoryAdjDefaultType] = useState<'PRODUCT' | 'RAW_MATERIAL'>('PRODUCT');
   const [isCreateExpenseOpen, setIsCreateExpenseOpen] = useState(false);
   const [isCategoriesModalOpen, setIsCategoriesModalOpen] = useState(false);
+
+  // Client Orders Modals
+  const [orderForPreparationSlip, setOrderForPreparationSlip] = useState<ClientOrder | null>(null);
+  const [orderToConvert, setOrderToConvert] = useState<ClientOrder | null>(null);
 
   // Modals & Wizards
   const [isBarcodeLabelModalOpen, setIsBarcodeLabelModalOpen] = useState(false);
@@ -873,6 +886,20 @@ export const Backoffice: React.FC<BackofficeProps> = ({
             <span>Ventes</span>
           </button>
           <button
+            onClick={() => {
+              setActiveTab('ORDERS');
+              if (typeof window !== 'undefined' && window.history?.pushState) {
+                window.history.pushState({}, '', '/backoffice/orders');
+              }
+            }}
+            className={`flex items-center gap-2 px-3 py-2 rounded-lg transition-colors whitespace-nowrap ${
+              activeTab === 'ORDERS' ? 'bg-emerald-700 text-white shadow-sm' : 'hover:bg-slate-800'
+            }`}
+          >
+            <ShoppingBag className="w-4 h-4" />
+            <span>Commandes</span>
+          </button>
+          <button
             onClick={() => setActiveTab('CATALOG')}
             className={`flex items-center gap-2 px-3 py-2 rounded-lg transition-colors whitespace-nowrap ${
               activeTab === 'CATALOG' ? 'bg-emerald-700 text-white shadow-sm' : 'hover:bg-slate-800'
@@ -982,6 +1009,17 @@ export const Backoffice: React.FC<BackofficeProps> = ({
             onPrintReceipt={onPrintReceipt || (() => {})}
             onPrintInvoice={onPrintInvoice || (() => {})}
             onPrintDeliveryNote={onPrintDeliveryNote}
+          />
+        )}
+
+        {/* 0b. ORDERS TAB */}
+        {activeTab === 'ORDERS' && (
+          <OrdersTab
+            products={products}
+            customers={customers}
+            containerTypes={containerTypes}
+            onConvertOrder={setOrderToConvert}
+            onPrintPreparationSlip={setOrderForPreparationSlip}
           />
         )}
 
