@@ -73,6 +73,7 @@ import { PurchaseDetailModal } from './PurchaseDetailModal.js';
 import { BatchDetailModal } from './BatchDetailModal.js';
 import { OrdersTab } from './OrdersTab.js';
 import { PreparationSlipModal } from './PreparationSlipModal.js';
+import { OrderConversionModal } from './OrderConversionModal.js';
 import { printZReportThermal } from '../../services/hardware/zReportPrinter.js';
 import { useRequestKey } from '../../hooks/useRequestKey.js';
 import type { ZReportSessionData } from '../../services/hardware/escpos.js';
@@ -3440,6 +3441,19 @@ export const Backoffice: React.FC<BackofficeProps> = ({
         isOpen={Boolean(orderForPreparationSlip)}
         onClose={() => setOrderForPreparationSlip(null)}
         order={orderForPreparationSlip}
+      />
+
+      {/* Order Conversion Modal */}
+      <OrderConversionModal
+        isOpen={Boolean(orderToConvert)}
+        onClose={() => setOrderToConvert(null)}
+        order={orderToConvert}
+        containerTypes={containerTypes}
+        onSuccess={() => {
+          onRefreshData();
+          loadBackofficeData();
+        }}
+        onPrintDeliveryNote={onPrintDeliveryNote}
       />
     </div>
   );
