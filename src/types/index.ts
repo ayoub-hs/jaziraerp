@@ -11,6 +11,7 @@ export interface Customer {
   total_debt?: number;
   open_ticket_count?: number;
   has_overdue_tickets?: boolean;
+  credit_limit?: number | null;
 }
 
 export interface PackSize {

@@ -25,6 +25,7 @@ export const CreateCustomerModal: React.FC<CreateCustomerModalProps> = ({
   const [type, setType] = useState<'RETAIL' | 'WHOLESALE' | 'RESELLER'>('RETAIL');
   const [resellerDiscountPercent, setResellerDiscountPercent] = useState('0');
   const [walletBalance, setWalletBalance] = useState('0.000');
+  const [creditLimit, setCreditLimit] = useState('');
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -44,6 +45,11 @@ export const CreateCustomerModal: React.FC<CreateCustomerModalProps> = ({
         setType(customerToEdit.type || 'RETAIL');
         setResellerDiscountPercent(String(customerToEdit.reseller_discount_percent || 0));
         setWalletBalance(String(customerToEdit.wallet_balance || '0.000'));
+        setCreditLimit(
+          customerToEdit.credit_limit !== null && customerToEdit.credit_limit !== undefined
+            ? String(customerToEdit.credit_limit)
+            : ''
+        );
       } else {
         setName('');
         setPhone('');
@@ -51,6 +57,7 @@ export const CreateCustomerModal: React.FC<CreateCustomerModalProps> = ({
         setType('RETAIL');
         setResellerDiscountPercent('0');
         setWalletBalance('0.000');
+        setCreditLimit('');
       }
     }
   }, [isOpen, customerToEdit]);
@@ -67,6 +74,17 @@ export const CreateCustomerModal: React.FC<CreateCustomerModalProps> = ({
       return;
     }
 
+    const trimmedLimit = creditLimit.trim();
+    let parsedCreditLimit: number | null = null;
+    if (trimmedLimit !== '') {
+      const parsed = parseFloat(trimmedLimit);
+      if (isNaN(parsed) || parsed < 0) {
+        setError('Le plafond de crédit doit être un nombre positif ou nul');
+        return;
+      }
+      parsedCreditLimit = parsed;
+    }
+
     setIsSubmitting(true);
     try {
       const url = customerToEdit ? `/api/customers/${customerToEdit.id}` : '/api/customers';
@@ -78,7 +96,8 @@ export const CreateCustomerModal: React.FC<CreateCustomerModalProps> = ({
             phone: phone.trim() || null,
             address: address.trim() || null,
             type,
-            reseller_discount_percent: type === 'RESELLER' ? parseFloat(resellerDiscountPercent) || 0 : 0
+            reseller_discount_percent: type === 'RESELLER' ? parseFloat(resellerDiscountPercent) || 0 : 0,
+            credit_limit: parsedCreditLimit
           }
         : {
             name: finalName,
@@ -86,7 +105,8 @@ export const CreateCustomerModal: React.FC<CreateCustomerModalProps> = ({
             address: address.trim() || null,
             type,
             reseller_discount_percent: type === 'RESELLER' ? parseFloat(resellerDiscountPercent) || 0 : 0,
-            wallet_balance: parseFloat(walletBalance) || 0
+            wallet_balance: parseFloat(walletBalance) || 0,
+            credit_limit: parsedCreditLimit
           };
 
       const res = await fetch(url, {
@@ -235,6 +255,25 @@ export const CreateCustomerModal: React.FC<CreateCustomerModalProps> = ({
               </div>
             )}
           </div>
+
+          <div>
+            <label htmlFor="customer-credit-limit" className="block font-bold text-slate-700 mb-1">
+              Plafond de Crédit (DT)
+            </label>
+            <input
+              id="customer-credit-limit"
+              type="number"
+              min="0"
+              step="0.001"
+              placeholder="ex. 500.000 (vide = aucun plafond)"
+              value={creditLimit}
+              onChange={e => setCreditLimit(e.target.value)}
+              className="w-full font-bold font-mono px-3 py-2 border border-slate-300 rounded-xl focus:ring-2 focus:ring-amber-500 outline-none"
+            />
+            <p className="text-pos-badge text-slate-500 mt-1">
+              Laisser vide si aucun plafond de crédit n'est imposé.
+            </p>
+          </div>
           </div>
 
           {/* Footer */}
@@ -242,14 +281,14 @@ export const CreateCustomerModal: React.FC<CreateCustomerModalProps> = ({
             <button
               type="button"
               onClick={onClose}
-              className="flex-1 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl transition-colors"
+              className="flex-1 min-h-[44px] py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl transition-colors"
             >
               Annuler
             </button>
             <button
               type="submit"
               disabled={isSubmitting}
-              className="flex-1 py-2.5 bg-amber-600 hover:bg-amber-700 disabled:opacity-50 text-white font-bold rounded-xl shadow-sm transition-colors flex items-center justify-center gap-1.5"
+              className="flex-1 min-h-[44px] py-2.5 bg-amber-600 hover:bg-amber-700 disabled:opacity-50 text-white font-bold rounded-xl shadow-sm transition-colors flex items-center justify-center gap-1.5"
             >
               <Users className="w-4 h-4" />
               <span>{isSubmitting ? 'Enregistrement...' : (customerToEdit ? 'Enregistrer' : 'Créer le client')}</span>
