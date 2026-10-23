@@ -72,6 +72,7 @@ import { CustomerStatementModal } from './CustomerStatementModal.js';
 import { PurchaseDetailModal } from './PurchaseDetailModal.js';
 import { BatchDetailModal } from './BatchDetailModal.js';
 import { OrdersTab } from './OrdersTab.js';
+import { PreparationSlipModal } from './PreparationSlipModal.js';
 import { printZReportThermal } from '../../services/hardware/zReportPrinter.js';
 import { useRequestKey } from '../../hooks/useRequestKey.js';
 import type { ZReportSessionData } from '../../services/hardware/escpos.js';
@@ -3432,6 +3433,13 @@ export const Backoffice: React.FC<BackofficeProps> = ({
           onRefreshData();
           loadBackofficeData();
         }}
+      />
+
+      {/* Preparation Slip Print Modal */}
+      <PreparationSlipModal
+        isOpen={Boolean(orderForPreparationSlip)}
+        onClose={() => setOrderForPreparationSlip(null)}
+        order={orderForPreparationSlip}
       />
     </div>
   );
